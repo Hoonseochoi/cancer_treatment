@@ -1048,10 +1048,10 @@ function calculateHierarchicalSummary(results) {
 
             // Add visual note to summary details
             imrtData.items.push({
-                name: `+ ${radiationData.displayName} (중복보장)`,
+                name: `+ 26종항암방사선치료비 합산 (중복보장)`,
                 amount: formatKoAmount(radiationData.totalMin),
                 maxAmount: radiationData.totalMax !== radiationData.totalMin ? formatKoAmount(radiationData.totalMax) : undefined,
-                source: "기본 방사선 치료비 합산"
+                source: "26종 담보 합산"
             });
         }
 
@@ -1064,10 +1064,10 @@ function calculateHierarchicalSummary(results) {
 
             // Add visual note to summary details
             heavyData.items.push({
-                name: `+ ${radiationData.displayName} (중복보장)`,
+                name: `+ 26종항암방사선치료비 합산 (중복보장)`,
                 amount: formatKoAmount(radiationData.totalMin),
                 maxAmount: radiationData.totalMax !== radiationData.totalMin ? formatKoAmount(radiationData.totalMax) : undefined,
-                source: "기본 방사선 치료비 합산"
+                source: "26종 담보 합산"
             });
         }
     }
