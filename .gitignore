@@ -1,0 +1,8 @@
+*.pdf
+node_modules/
+.DS_Store
+*.log
+diagnose_output.txt
+test4_text.txt
+extract_test4.py
+test_extract.py
