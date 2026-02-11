@@ -1141,7 +1141,8 @@ function renderResults(results) {
             // Cube/Box Style Design
             // Cube Design + Aspect Square + Overflow Hidden
             // Wide Rectangle Style (Auto height)
-            card.className = "relative p-3 sm:py-5 sm:px-4 rounded-2xl flex flex-col justify-center gap-1 transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg cursor-pointer overflow-hidden";
+            // Wide Rectangle Style (Auto height, expandable)
+            card.className = "relative p-3 sm:py-5 sm:px-4 rounded-2xl flex flex-col justify-center gap-1 transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg cursor-pointer";
             card.style.background = "var(--surface-color)";
             card.style.border = "1px solid rgba(255,255,255,0.1)";
             // card.style.minHeight = "120px"; // Removed to let aspect-ratio control
@@ -1196,11 +1197,7 @@ function renderResults(results) {
                     <span class="text-lg sm:text-xl font-black block tracking-tight w-full flex justify-center" style="color:#3B82F6;">${cardAmountHtml}</span>
                 </div>
 
-                <div class="summary-details hidden absolute inset-0 bg-gray-900/95 p-4 z-20 overflow-y-auto flex flex-col justify-center text-left transition-opacity backdrop-blur-sm">
-                    <div class="text-xs font-bold mb-2 text-white border-b border-white/10 pb-1 flex justify-between items-center">
-                        <span>${data.displayName}</span>
-                        <span class="text-[10px] opacity-50">닫기 ✕</span>
-                    </div>
+                <div class="summary-details hidden mt-4 pt-4 border-t border-white/10 text-left w-full text-xs" style="color:rgba(232,236,244,0.7);">
                     ${subItemsHtml}
                 </div>
             `;
