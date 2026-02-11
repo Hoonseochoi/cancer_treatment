@@ -977,7 +977,8 @@ function calculateHierarchicalSummary(results) {
                     .replace(/\(급여\)/g, '')
                     .replace(/\(10년갱신\)/g, '')
                     .replace(/\(최초1회\)/g, '') // [NEW] Merge (최초1회) items
-                    .replace(/26종/g, '') // Remove 26종 prefix
+                    .replace(/\(최초1회\)/g, '') // [NEW] Merge (최초1회) items
+                    // .replace(/26종/g, '') // [REVOKED] Keep 26종 distinct
                     .replace(/\s+/g, '') // 2. Remove ALL spaces
                     .trim();
 
@@ -1019,7 +1020,8 @@ function calculateHierarchicalSummary(results) {
                         .replace(/\(급여\)/g, '')
                         .replace(/\(10년갱신\)/g, '')
                         .replace(/\(최초1회\)/g, '') // [NEW] Merge (최초1회) items
-                        .replace(/26종/g, '')
+                        .replace(/\(최초1회\)/g, '') // [NEW] Merge (최초1회) items
+                        // .replace(/26종/g, '')
                         .trim();
 
                     if (cleanNameWithSpaces.length > 0) {
@@ -1068,6 +1070,38 @@ function calculateHierarchicalSummary(results) {
                 source: "기본 방사선 치료비 합산"
             });
         }
+    }
+
+    // [NEW] Business Logic: Add "26-Type Coverage" amount to ALL non-surgery therapies
+    const type26Key = Array.from(summaryMap.keys()).find(k => k.includes("26종"));
+
+    if (type26Key) {
+        const type26Data = summaryMap.get(type26Key);
+
+        // Define keywords for non-surgery therapies (Radiation, Drug, Targeted, Immuno, Proton, Heavy Ion, IMRT)
+        const targetKeywords = ["항암방사선", "항암약물", "표적", "면역", "양성자", "중입자", "세기조절"];
+
+        summaryMap.forEach((data, key) => {
+            // Skip self
+            if (key.includes("26종")) return;
+            // Skip surgery
+            if (key.includes("수술")) return;
+
+            // Check if it matches any keyword
+            const isTarget = targetKeywords.some(kw => key.includes(kw));
+
+            if (isTarget) {
+                data.totalMin += type26Data.totalMin;
+                data.totalMax += type26Data.totalMax;
+
+                data.items.push({
+                    name: `+ ${type26Data.displayName} (중복보장)`,
+                    amount: formatKoAmount(type26Data.totalMin),
+                    maxAmount: type26Data.totalMax !== type26Data.totalMin ? formatKoAmount(type26Data.totalMax) : undefined,
+                    source: "26종 담보 합산"
+                });
+            }
+        });
     }
 
     return summaryMap;
