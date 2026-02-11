@@ -1,0 +1,6 @@
+﻿Start found at line 109: 가입담보리스트
+End found at line 364: 주의사항
+
+Range: 109 to 364
+Target line 182 in range: True
+Found 통합치료비Ⅱ at line 181: 갱신형 암 통합치료비Ⅱ(비급여(전액본인부담 포함), 암중점치료기관(상급
