@@ -1267,18 +1267,23 @@ function renderResults(results) {
 function toggleResultsList() {
     const list = document.getElementById('results-list');
     const icon = document.getElementById('results-toggle-icon');
-    const textSpan = icon.parentElement.nextElementSibling; // "클릭하여 펼치기" span
 
     if (list.classList.contains('hidden')) {
         list.classList.remove('hidden');
-        icon.classList.remove('-rotate-90');
-        icon.classList.add('rotate-0');
-        textSpan.textContent = '접기';
+        // Add a micro-delay for opacity transition
+        setTimeout(() => {
+            list.classList.remove('opacity-0');
+            list.classList.add('opacity-100');
+        }, 10);
+        icon.classList.add('rotate-180');
     } else {
-        list.classList.add('hidden');
-        icon.classList.remove('rotate-0');
-        icon.classList.add('-rotate-90');
-        textSpan.textContent = '클릭하여 펼치기';
+        list.classList.add('opacity-0');
+        list.classList.remove('opacity-100');
+        // Wait for transition before hiding
+        setTimeout(() => {
+            list.classList.add('hidden');
+        }, 400);
+        icon.classList.remove('rotate-180');
     }
 }
 
