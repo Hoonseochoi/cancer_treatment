@@ -6,7 +6,7 @@ if (typeof pdfjsLib !== 'undefined') {
 
 const defaultConfig = {
     main_title: "암 치료비 보장금액 분석 ( 테스트 )",
-    subtitle_text: "가입제안서 PDF를 업로드하면 모든 보장 내역을 추출합니다",
+    subtitle_text: "가입제안서 PDF를 업로드하면, 보장내역 중 암 치료비 파트만 추출 합니다",
     upload_button_text: "PDF 파일을 드래그하거나 클릭하세요",
     result_header_text: "전체 보장 내역 분석 결과",
     background_color: "#EBEBEB",
