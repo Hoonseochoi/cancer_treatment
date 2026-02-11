@@ -227,6 +227,9 @@ function extractRawCoverages(text) {
         // A. 블랙리스트 체크 (문장 전체)
         if (blacklist.some(word => trimmed.includes(word))) return;
 
+        // [NEW] "세부보장"으로 시작하는 줄은 노이즈로 간주하고 제외 (세부보장참조는 허용하되, 문장 시작이 세부보장이면 제외)
+        if (trimmed.startsWith("세부보장")) return;
+
         // B. 금액 패턴 찾기
         let match = trimmed.match(/([0-9,]+(?:억|천|백|십)*(?:만원|억원))/);
 
