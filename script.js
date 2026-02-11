@@ -1162,12 +1162,12 @@ function renderResults(results) {
                 }
 
                 subItemsHtml += `
-                    <div class="mt-2 pl-3 border-l-2 border-blue-500/20 text-xs">
-                        <div class="flex justify-between" style="color:var(--text-color);">
-                            <span>${sub.name}</span>
-                            <span class="font-bold text-blue-400">${amtDisplay}</span>
+                    <div class="mt-2 pl-3 border-l-2 border-blue-500/20 text-xs text-left">
+                        <div class="flex items-center justify-between" style="color:var(--text-color);">
+                            <span class="truncate mr-2 flex-1" title="${sub.name}">${sub.name}</span>
+                            <span class="font-bold text-blue-400 whitespace-nowrap flex-shrink-0">${amtDisplay}</span>
                         </div>
-                        <div class="text-[10px] mt-0.5" style="color:rgba(232,236,244,0.5);">
+                        <div class="text-[10px] mt-0.5 truncate opacity-50" style="color:rgba(232,236,244,0.7);">
                             └ 출처: ${sub.source}
                         </div>
                     </div>
