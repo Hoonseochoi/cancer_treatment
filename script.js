@@ -156,6 +156,50 @@ function extractRawCoverages(text) {
         console.warn("Start keyword not found. Scanning entire document.");
     }
 
+    // 1.5 줄 이어붙이기 (PDF 텍스트 레이어에서 줄이 분리된 경우 처리)
+    // 예: "갱신형 암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))(통합간\n편가입)\n1천만원"
+    //   → "갱신형 암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))(통합간편가입) 1천만원"
+    const amountRegex = /[0-9,]+(?:억|천|백|십)*(?:만원|억원)|세부보장참조/;
+    const mergedLines = [];
+    let pendingLine = '';
+
+    for (let i = 0; i < targetLines.length; i++) {
+        const trimmed = targetLines[i].trim();
+        if (!trimmed) {
+            if (pendingLine) { mergedLines.push(pendingLine); pendingLine = ''; }
+            mergedLines.push('');
+            continue;
+        }
+
+        // 현재 줄에 금액이 있는지 체크
+        const hasAmount = amountRegex.test(trimmed);
+
+        if (pendingLine) {
+            // 이전에 금액 없는 줄이 대기 중 → 현재 줄과 합침
+            pendingLine += ' ' + trimmed;
+            if (hasAmount || amountRegex.test(pendingLine)) {
+                mergedLines.push(pendingLine);
+                pendingLine = '';
+            }
+            // 금액 없으면 계속 대기 (다음 줄과도 합칠 수 있음)
+        } else {
+            if (hasAmount) {
+                mergedLines.push(trimmed);
+            } else {
+                // 금액 없는 줄 → 다음 줄과 합칠 수 있으므로 대기
+                // 단, 너무 짧은 줄(5자 미만)이거나 숫자만 있는 줄은 그냥 보냄
+                if (trimmed.length < 5 || /^\d+$/.test(trimmed)) {
+                    mergedLines.push(trimmed);
+                } else {
+                    pendingLine = trimmed;
+                }
+            }
+        }
+    }
+    if (pendingLine) mergedLines.push(pendingLine);
+    targetLines = mergedLines;
+    console.log(`Line merging: ${mergedLines.length} lines after merge`);
+
     const results = [];
 
     // 2. 추출 로직 + 강력한 필터링
@@ -535,6 +579,37 @@ const coverageDetailsMap = {
             ]
         }
     },
+    // 1-1. 실속형
+    "암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))": {
+        "type": "variant",
+        "data": {
+            "1000": [ // 1천만원
+                { name: "(급여/비급여) 암 수술비", amount: "100만" },
+                {
+                    name: "다빈치 로봇 수술비",
+                    amount: "200만",
+                    sub: ["(급여/비급여) 암 수술비 100만", "(비급여) 다빈치 로봇 수술 100만"]
+                },
+                { name: "(급여/비급여) 항암 약물 치료비", amount: "100만" },
+                { name: "(급여/비급여) 항암 방사선 치료비", amount: "100만" },
+                {
+                    name: "표적 항암 약물 치료비",
+                    amount: "400만",
+                    sub: ["(급여/비급여) 항암 약물 치료비 100만", "(비급여) 표적 항암 약물 치료비 300만"]
+                },
+                {
+                    name: "면역 항암 약물 치료비",
+                    amount: "700만",
+                    sub: ["(급여/비급여) 항암 약물 치료비 100만", "(비급여) 표적 항암 약물 치료비 300만", "(비급여) 면역 항암 약물 치료비 300만"]
+                },
+                {
+                    name: "양성자 방사선 치료비",
+                    amount: "400만",
+                    sub: ["(급여/비급여) 항암 방사선 치료비 100만", "(비급여) 양성자 방사선 치료비 300만"]
+                }
+            ]
+        }
+    },
     // 2. 비급여형
     "암 통합치료비Ⅱ(비급여)": {
         "type": "variant",
@@ -732,6 +807,8 @@ function calculateHierarchicalSummary(results) {
                 details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
             } else if (item.name.includes("암 통합치료비") && item.name.includes("기본형")) {
                 details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
+            } else if (item.name.includes("암 통합치료비") && item.name.includes("실속형")) {
+                details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
             }
             // 10년갱신 개별 담보 키워드 매칭
             else if (item.name.includes("중입자방사선")) {
@@ -940,6 +1017,9 @@ function renderResults(results) {
             // 1. 기본형 체크
             else if (item.name.includes("암 통합치료비") && item.name.includes("기본형")) {
                 details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
+            }
+            else if (item.name.includes("암 통합치료비") && item.name.includes("실속형")) {
+                details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
             }
             // 10년갱신 개별 담보
             else if (item.name.includes("중입자방사선")) {
