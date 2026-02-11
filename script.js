@@ -961,11 +961,12 @@ function calculateHierarchicalSummary(results) {
         if (details && Array.isArray(details)) {
             details.forEach(det => {
                 // Normalize Name to find "Common Group"
-                // 1. Remove prefixes: (급여/비급여), (비급여), (급여), (10년갱신)
+                // 1. Remove prefixes: (급여/비급여), (비급여), (급여), (10년갱신), (최초1회)
                 let normalizedName = det.name.replace(/\(급여\/비급여\)/g, '')
                     .replace(/\(비급여\)/g, '')
                     .replace(/\(급여\)/g, '')
                     .replace(/\(10년갱신\)/g, '')
+                    .replace(/\(최초1회\)/g, '') // [NEW] Merge (최초1회) items
                     .replace(/26종/g, '') // Remove 26종 prefix
                     .replace(/\s+/g, '') // 2. Remove ALL spaces
                     .trim();
@@ -1007,6 +1008,7 @@ function calculateHierarchicalSummary(results) {
                         .replace(/\(비급여\)/g, '')
                         .replace(/\(급여\)/g, '')
                         .replace(/\(10년갱신\)/g, '')
+                        .replace(/\(최초1회\)/g, '') // [NEW] Merge (최초1회) items
                         .replace(/26종/g, '')
                         .trim();
 
