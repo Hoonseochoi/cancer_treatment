@@ -793,26 +793,43 @@ const coverageDetailsMap = {
         }
     },
 
-    // 3. 10년갱신 개별 담보 (passthrough: 자기 자신의 금액을 그대로 사용)
+    // 3. 암 통합치료비 III (Range Type)
+    "암진단및치료비(암 통합치료비III)": {
+        "type": "variant",
+        "data": {
+            "5000": [
+                { name: "표적항암약물치료비", amount: "2,000만(3,000만)", maxAmount: "3,000만" },
+                { name: "면역항암약물치료비", amount: "2,000만(3,000만)", maxAmount: "3,000만", hiddenInDetail: true },
+                { name: "양성자 방사선 치료비", amount: "2,000만(3,000만)", maxAmount: "3,000만" }
+            ],
+            "4000": [
+                { name: "표적항암약물치료비", amount: "1,000만(3,000만)", maxAmount: "3,000만" },
+                { name: "면역항암약물치료비", amount: "1,000만(3,000만)", maxAmount: "3,000만", hiddenInDetail: true },
+                { name: "양성자 방사선 치료비", amount: "1,000만(3,000만)", maxAmount: "3,000만" }
+            ]
+        }
+    },
+
+    // 4. 10년갱신 개별 담보 (passthrough: 자기 자신의 금액을 그대로 사용)
     "항암중입자방사선치료비": {
         type: "passthrough",
-        displayName: "중입자방사선치료비"
+        displayName: "(최초1회) 중입자방사선치료비"
     },
     "항암세기조절방사선치료비": {
         type: "passthrough",
-        displayName: "(10년갱신) 세기조절방사선치료비"
+        displayName: "(10년갱신)(최초1회) 세기조절방사선치료비"
     },
     "특정면역항암약물허가치료비": {
         type: "passthrough",
-        displayName: "(10년갱신) 면역항암약물치료비"
+        displayName: "(10년갱신)(최초1회) 면역항암약물치료비"
     },
     "표적항암약물허가치료비": {
         type: "passthrough",
-        displayName: "(10년갱신) 표적항암약물치료비"
+        displayName: "(10년갱신)(최초1회) 표적항암약물치료비"
     },
     "항암양성자방사선치료비": {
         type: "passthrough",
-        displayName: "(10년갱신) 양성자방사선치료비"
+        displayName: "(10년갱신)(최초1회) 양성자방사선치료비"
     },
 
     // 4. 26종 항암방사선및약물치료비 (두 카테고리에 동시 반영)
@@ -895,6 +912,8 @@ function calculateHierarchicalSummary(results) {
                 details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
             } else if (item.name.includes("암 통합치료비") && item.name.includes("실속형")) {
                 details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
+            } else if (item.name.includes("암 통합치료비") && (item.name.includes("III") || item.name.includes("Ⅲ"))) {
+                details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
             }
             // 10년갱신 개별 담보 키워드 매칭
             else if (item.name.includes("중입자방사선")) {
@@ -957,36 +976,40 @@ function calculateHierarchicalSummary(results) {
                 const amount = parseKoAmount(det.amount); // det.amount: "500만"
 
                 if (!summaryMap.has(normalizedName)) {
-                    // Use the first encountered name as the "Display Name" (with spaces stripped? maybe restore spaces?)
-                    // For better UX, let's just use the normalized name but maybe add spaces back manually or use a mapping?
-                    // Let's stick to the current det.name stripped of prefix but keep original spaces? No, inconsistent.
-                    // Better approach: Use a predefined readable map or just formatted string.
-                    // For now, let's use the normalized string with manual space insertion if needed.
-                    // Actually, let's use the "longest" name found in group as display name?
-                    // Simpler: Just use the cleaned string.
-
                     summaryMap.set(normalizedName, {
-                        total: 0,
-                        items: [],
-                        displayName: normalizedName // Temporary, will refine below
+                        displayName: normalizedName, // Temporary
+                        totalMin: 0,
+                        totalMax: 0,
+                        items: []
                     });
                 }
 
                 const group = summaryMap.get(normalizedName);
-                group.total += amount;
+
+                // Amount Parsing (Support Range)
+                const valMin = parseKoAmount(det.amount);
+                const valMax = det.maxAmount ? parseKoAmount(det.maxAmount) : valMin;
+
+                group.totalMin += valMin;
+                group.totalMax += valMax;
+
                 group.items.push({
-                    displayName: det.name,
+                    name: det.name,
                     amount: det.amount,
-                    source: item.name
+                    maxAmount: det.maxAmount,
+                    source: item.name,
+                    hiddenInDetail: det.hiddenInDetail
                 });
 
-                // Update display name to be the one with spaces if available (longer usually means more spaces/detail)
-                // e.g. "표적항암약물치료비" (length 9) vs "표적 항암 약물 치료비" (length 13)
-                // We prefer the spaced version for readability.
-                // But wait, normalizedName has NO spaces. We need to store the "best" display name separately.
+                // Update display name (pick longest readable name)
                 if (det.name.length > group.displayName.length || group.displayName === normalizedName) {
-                    // Try to pick a name that has spaces and no prefix
-                    let cleanNameWithSpaces = det.name.replace(/\(급여\/비급여\)/g, '').replace(/\(비급여\)/g, '').replace(/\(급여\)/g, '').replace(/\(10년갱신\)/g, '').replace(/26종/g, '').trim();
+                    let cleanNameWithSpaces = det.name.replace(/\(급여\/비급여\)/g, '')
+                        .replace(/\(비급여\)/g, '')
+                        .replace(/\(급여\)/g, '')
+                        .replace(/\(10년갱신\)/g, '')
+                        .replace(/26종/g, '')
+                        .trim();
+
                     if (cleanNameWithSpaces.length > 0) {
                         group.displayName = cleanNameWithSpaces;
                     }
@@ -1022,6 +1045,14 @@ function renderResults(results) {
     // 1. Calculate Hierarchical Summary
     const summaryMap = calculateHierarchicalSummary(results);
 
+    // Calculate Grand Total Range
+    let grandTotalMin = 0;
+    let grandTotalMax = 0;
+    summaryMap.forEach(d => {
+        grandTotalMin += d.totalMin;
+        grandTotalMax += d.totalMax;
+    });
+
     // 2. Render Summary Grid
     if (summaryMap.size > 0) {
         summaryGrid.innerHTML = '';
@@ -1031,7 +1062,13 @@ function renderResults(results) {
         const header = document.createElement('div');
         header.className = "col-span-1 sm:col-span-2 text-sm font-bold mb-2 flex items-center";
         header.style.color = "var(--primary-color)";
-        header.innerHTML = `📊 한 눈에 치료비 보장 보기 (통합 합산)`;
+
+        let headerAmountStr = formatKoAmount(grandTotalMin);
+        if (grandTotalMin !== grandTotalMax) {
+            headerAmountStr = `${formatKoAmount(grandTotalMin)} ~ ${formatKoAmount(grandTotalMax)}`;
+        }
+
+        header.innerHTML = `📊 한 눈에 치료비 보장 보기 (통합 합산) <span style="font-size:0.9em; color:#10B981; margin-left:8px;">${headerAmountStr}</span>`;
         summaryGrid.appendChild(header);
 
         summaryMap.forEach((data, name) => {
@@ -1043,11 +1080,22 @@ function renderResults(results) {
             // Generate Sub-items HTML
             let subItemsHtml = '';
             data.items.forEach(sub => {
+                // If amount is a string with parens (e.g. "2천(3천)"), use it directly
+                let amtDisplay = sub.amount;
+                if (!amtDisplay.includes('(') && !amtDisplay.includes('~')) {
+                    amtDisplay = formatDisplayAmount(sub.amount);
+                }
+                // Handle ranges in sub item display if passed
+                if (sub.maxAmount && sub.maxAmount !== sub.amount && !amtDisplay.includes('(')) {
+                    // Fallback if not pre-formatted
+                    amtDisplay = `${formatDisplayAmount(sub.amount)}~${formatDisplayAmount(sub.maxAmount)}`;
+                }
+
                 subItemsHtml += `
                     <div class="mt-2 pl-3 border-l-2 border-blue-500/20 text-xs">
                         <div class="flex justify-between" style="color:var(--text-color);">
-                            <span>${sub.displayName}</span>
-                            <span class="font-bold text-blue-400">${formatDisplayAmount(sub.amount)}</span>
+                            <span>${sub.name}</span>
+                            <span class="font-bold text-blue-400">${amtDisplay}</span>
                         </div>
                         <div class="text-[10px] mt-0.5" style="color:rgba(232,236,244,0.5);">
                             └ 출처: ${sub.source}
@@ -1056,11 +1104,16 @@ function renderResults(results) {
                 `;
             });
 
+            let cardAmountStr = formatKoAmount(data.totalMin);
+            if (data.totalMin !== data.totalMax) {
+                cardAmountStr = `${formatKoAmount(data.totalMin)} ~ ${formatKoAmount(data.totalMax)}`;
+            }
+
             card.innerHTML = `
                 <div class="flex justify-between items-center w-full">
                     <span class="text-xs font-medium" style="color:var(--text-color);">${data.displayName}</span>
                     <div class="flex items-center gap-2">
-                         <span class="text-sm font-bold" style="color:#10B981;">${formatDisplayAmount(formatKoAmount(data.total))}</span>
+                         <span class="text-sm font-bold" style="color:#10B981;">${cardAmountStr}</span>
                          <span class="text-[10px] text-blue-400 opacity-70">▼</span>
                     </div>
                 </div>
@@ -1106,6 +1159,9 @@ function renderResults(results) {
             }
             else if (item.name.includes("암 통합치료비") && item.name.includes("실속형")) {
                 details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
+            }
+            else if (item.name.includes("암 통합치료비") && (item.name.includes("III") || item.name.includes("Ⅲ"))) {
+                details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
             }
             // 10년갱신 개별 담보
             else if (item.name.includes("중입자방사선")) {
@@ -1166,11 +1222,19 @@ function renderResults(results) {
                     <div class="space-y-2">
             `;
             details.forEach(det => {
+                if (det.hiddenInDetail) return; // Skip hidden items in detail list
+
+                // Use raw string if it has range format (parens or tilde)
+                let amtDisplay = det.amount;
+                if (!amtDisplay.includes('(') && !amtDisplay.includes('~')) {
+                    amtDisplay = formatDisplayAmount(det.amount);
+                }
+
                 detailHtml += `
                     <div class="flex flex-col text-xs" style="color:rgba(232,236,244,0.8);">
                         <div class="flex justify-between">
                             <span>• ${det.name}</span>
-                            <span class="font-medium text-white">${formatDisplayAmount(det.amount)}</span>
+                            <span class="font-medium text-white">${amtDisplay}</span>
                         </div>
                 `;
                 if (det.sub) {
