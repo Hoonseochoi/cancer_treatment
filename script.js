@@ -1030,6 +1030,34 @@ function calculateHierarchicalSummary(results) {
         }
     });
 
+    // [NEW] Business Logic: Add "Anticancer Radiation" amount to "IMRT" and "Heavy Ion"
+    // Because IMRT and Heavy Ion also cover base Radiation Therapy.
+    const radiationKey = Array.from(summaryMap.keys()).find(k => k.includes("항암방사선") && !k.includes("세기") && !k.includes("중입자") && !k.includes("양성자"));
+
+    if (radiationKey) {
+        const radiationData = summaryMap.get(radiationKey);
+
+        // 1. IMRT (Intensity Modulated) = IMRT + Base Radiation
+        const imrtKey = Array.from(summaryMap.keys()).find(k => k.includes("세기조절"));
+        if (imrtKey) {
+            const imrtData = summaryMap.get(imrtKey);
+            imrtData.totalMin += radiationData.totalMin;
+            imrtData.totalMax += radiationData.totalMax;
+
+            // Add a visual note or sub-item to explain? 
+            // The user just asked for the total to be reflected.
+            // imrtData.items.push({ name: `+ ${radiationData.displayName} (중복보장)`, amount: formatKoAmount(radiationData.totalMin) }); 
+        }
+
+        // 2. Heavy Ion = Heavy Ion + Base Radiation
+        const heavyKey = Array.from(summaryMap.keys()).find(k => k.includes("중입자"));
+        if (heavyKey) {
+            const heavyData = summaryMap.get(heavyKey);
+            heavyData.totalMin += radiationData.totalMin;
+            heavyData.totalMax += radiationData.totalMax;
+        }
+    }
+
     return summaryMap;
 }
 
