@@ -5,7 +5,7 @@ if (typeof pdfjsLib !== 'undefined') {
 }
 
 const defaultConfig = {
-    main_title: "메리츠 암보장 분석기",
+    main_title: "암 치료비 보장금액 분석 ( 테스트 )",
     subtitle_text: "가입제안서 PDF를 업로드하면 모든 보장 내역을 추출합니다",
     upload_button_text: "PDF 파일을 드래그하거나 클릭하세요",
     result_header_text: "전체 보장 내역 분석 결과",
@@ -1262,10 +1262,6 @@ function renderResults(results) {
         listEl.appendChild(itemCard);
     });
 }
-// Hide Expand All button since we have no details
-const expandBtn = document.getElementById('expand-all-btn');
-if (expandBtn) expandBtn.style.display = 'none';
-}
 
 // [NEW] Toggle Results List
 function toggleResultsList() {
@@ -1287,7 +1283,6 @@ function toggleResultsList() {
 }
 
 
-// ... (Previous code)
 
 // Helper to find details (Global Scope)
 function findDetails(itemName) {
