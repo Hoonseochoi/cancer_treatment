@@ -834,7 +834,7 @@ const coverageDetailsMap = {
     // [NEW] 다빈치로봇 암수술비
     "다빈치로봇암수술비": {
         type: "passthrough",
-        displayName: "다빈치 로봇 수술비"
+        displayName: "(10년갱신)(최초1회) 다빈치 로봇 수술비"
     },
 
     // 4. 26종 항암방사선및약물치료비 (두 카테고리에 동시 반영)
