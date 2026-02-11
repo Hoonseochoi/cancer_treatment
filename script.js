@@ -328,7 +328,11 @@ function extractRawCoverages(text) {
             // - 너무 짧으면(1글자) 제외
             // - 너무 길면(50글자 이상) 설명문일 확률 높음 -> 제외
             // - 문장형 어미로 끝나면 제외 ("다", "요", "음", "함")
-            if (namePart.length > 1 && namePart.length < 50) {
+            // D. 담보명 유효성 체크
+            // - 너무 짧으면(1글자) 제외
+            // - 너무 길면(120글자 이상) 설명문일 확률 높음 -> 제외
+            // - 문장형 어미로 끝나면 제외 ("다", "요", "음", "함")
+            if (namePart.length > 1 && namePart.length < 120) {
                 const lastChar = namePart.slice(-1);
                 if (!['다', '요', '음', '함', '는', '은'].includes(lastChar)) {
                     results.push({
@@ -339,7 +343,11 @@ function extractRawCoverages(text) {
                         period: period,
                         original: trimmed
                     });
+                } else {
+                    console.log(`Skipped (sentence end): ${namePart}`);
                 }
+            } else {
+                console.log(`Skipped (length): ${namePart} (${namePart.length} chars)`);
             }
         }
     });
