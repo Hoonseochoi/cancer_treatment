@@ -129,13 +129,19 @@
 
             <!-- Results -->
             <section id="results-section" class="hidden mt-6 space-y-3" aria-label="분석 결과">
-                <div class="flex items-center justify-between mb-1">
-                    <h3 class="text-sm font-semibold" style="color:rgba(232,236,244,0.6);">상세 보장 항목</h3>
-                    <button id="expand-all-btn" class="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors"
-                        style="background:rgba(59,130,246,0.1); color:var(--primary-color);" aria-label="모두 펼치기"> 모두 펼치기
-                    </button>
+                <div class="flex items-center justify-between mb-1 cursor-pointer group" onclick="toggleResultsList()">
+                    <h3 class="text-sm font-semibold flex items-center gap-2" style="color:rgba(232,236,244,0.6);">
+                        상세 보장 항목
+                        <svg id="results-toggle-icon"
+                            class="w-4 h-4 transition-transform duration-300 -rotate-90 opacity-50 group-hover:opacity-100"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </h3>
+                    <span class="text-xs" style="color:rgba(232,236,244,0.4);">클릭하여 펼치기</span>
                 </div>
-                <div id="results-list"></div>
+                <!-- Default Hidden -->
+                <div id="results-list" class="hidden transition-all duration-300"></div>
             </section>
 
             <!-- Empty State -->

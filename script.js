@@ -1406,6 +1406,25 @@ function renderResults(results) {
     if (expandBtn) expandBtn.style.display = 'none';
 }
 
+// [NEW] Toggle Results List
+function toggleResultsList() {
+    const list = document.getElementById('results-list');
+    const icon = document.getElementById('results-toggle-icon');
+    const textSpan = icon.parentElement.nextElementSibling; // "클릭하여 펼치기" span
+
+    if (list.classList.contains('hidden')) {
+        list.classList.remove('hidden');
+        icon.classList.remove('-rotate-90');
+        icon.classList.add('rotate-0');
+        textSpan.textContent = '접기';
+    } else {
+        list.classList.add('hidden');
+        icon.classList.remove('rotate-0');
+        icon.classList.add('-rotate-90');
+        textSpan.textContent = '클릭하여 펼치기';
+    }
+}
+
 
 // ... (Previous code)
 
