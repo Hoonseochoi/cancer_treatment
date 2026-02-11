@@ -652,6 +652,16 @@ const coverageDetailsMap = {
     "항암양성자방사선치료비": {
         type: "passthrough",
         displayName: "(10년갱신) 양성자방사선치료비"
+    },
+
+    // 4. 26종 항암방사선및약물치료비 (두 카테고리에 동시 반영)
+    "26종항암방사선및약물치료비": {
+        type: "26jong",
+        detailName: "26종 항암방사선 및 약물 치료비",
+        summaryItems: [
+            { name: "26종 항암 방사선 치료비" },
+            { name: "26종 항암 약물 치료비" }
+        ]
     }
 };
 
@@ -733,6 +743,8 @@ function calculateHierarchicalSummary(results) {
                 details = coverageDetailsMap["표적항암약물허가치료비"];
             } else if (item.name.includes("양성자방사선") || item.name.includes("양성자")) {
                 details = coverageDetailsMap["항암양성자방사선치료비"];
+            } else if (item.name.includes("26종")) {
+                details = coverageDetailsMap["26종항암방사선및약물치료비"];
             }
         }
 
@@ -753,6 +765,11 @@ function calculateHierarchicalSummary(results) {
             details = [{ name: details.displayName, amount: item.amount }];
         }
 
+        // Handle 26종 Type (항암방사선 + 항암약물 두 카테고리에 반영)
+        if (details && details.type === '26jong') {
+            details = details.summaryItems.map(d => ({ name: d.name, amount: item.amount }));
+        }
+
         if (details && Array.isArray(details)) {
             details.forEach(det => {
                 // Normalize Name to find "Common Group"
@@ -761,6 +778,7 @@ function calculateHierarchicalSummary(results) {
                     .replace(/\(비급여\)/g, '')
                     .replace(/\(급여\)/g, '')
                     .replace(/\(10년갱신\)/g, '')
+                    .replace(/26종/g, '') // Remove 26종 prefix
                     .replace(/\s+/g, '') // 2. Remove ALL spaces
                     .trim();
 
@@ -799,7 +817,7 @@ function calculateHierarchicalSummary(results) {
                 // But wait, normalizedName has NO spaces. We need to store the "best" display name separately.
                 if (det.name.length > group.displayName.length || group.displayName === normalizedName) {
                     // Try to pick a name that has spaces and no prefix
-                    let cleanNameWithSpaces = det.name.replace(/\(급여\/비급여\)/g, '').replace(/\(비급여\)/g, '').replace(/\(급여\)/g, '').replace(/\(10년갱신\)/g, '').trim();
+                    let cleanNameWithSpaces = det.name.replace(/\(급여\/비급여\)/g, '').replace(/\(비급여\)/g, '').replace(/\(급여\)/g, '').replace(/\(10년갱신\)/g, '').replace(/26종/g, '').trim();
                     if (cleanNameWithSpaces.length > 0) {
                         group.displayName = cleanNameWithSpaces;
                     }
@@ -902,6 +920,7 @@ function renderResults(results) {
 
     // 3. Render Detail List
     listEl.innerHTML = '';
+    let first26Found = false; // 26종 첫 번째만 세부내역 표시
     results.forEach((item, idx) => {
         // Dictionary Lookup (Same logic as before)
         let details = coverageDetailsMap[item.name];
@@ -927,6 +946,8 @@ function renderResults(results) {
                 details = coverageDetailsMap["표적항암약물허가치료비"];
             } else if (item.name.includes("양성자방사선") || item.name.includes("양성자")) {
                 details = coverageDetailsMap["항암양성자방사선치료비"];
+            } else if (item.name.includes("26종")) {
+                details = coverageDetailsMap["26종항암방사선및약물치료비"];
             }
         }
 
@@ -945,6 +966,16 @@ function renderResults(results) {
         // Handle Passthrough Type (자기 금액 그대로 사용)
         if (details && details.type === 'passthrough') {
             details = [{ name: details.displayName, amount: item.amount }];
+        }
+
+        // Handle 26종 Type (첫 번째만 세부내역 표시)
+        if (details && details.type === '26jong') {
+            if (!first26Found) {
+                first26Found = true;
+                details = [{ name: details.detailName, amount: item.amount }];
+            } else {
+                details = null;
+            }
         }
 
         const card = document.createElement('div');
