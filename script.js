@@ -1080,7 +1080,7 @@ function renderResults(results) {
             headerAmountStr = `${formatKoAmount(grandTotalMin)} ~ ${formatKoAmount(grandTotalMax)}`;
         }
 
-        header.innerHTML = `📊 한 눈에 치료비 보장 보기 (통합 합산) <span style="font-size:0.9em; color:#10B981; margin-left:8px;">${headerAmountStr}</span>`;
+        header.innerHTML = `📊 한 번에 치료비 모아보기 ( 통합 합산 ) <span style="font-size:0.9em; color:#10B981; margin-left:8px;">${headerAmountStr}</span>`;
         summaryGrid.appendChild(header);
 
         summaryMap.forEach((data, name) => {
@@ -1142,6 +1142,14 @@ function renderResults(results) {
 
             summaryGrid.appendChild(card);
         });
+
+        // [NEW] Disclaimer
+        const disclaimer = document.createElement('div');
+        disclaimer.className = "col-span-1 sm:col-span-2 text-[10px] text-right mt-2";
+        disclaimer.style.color = "rgba(232,236,244,0.5)";
+        disclaimer.innerHTML = "* 실제 가입제안서와 다를 수 있습니다. 참고용으로만 활용해주세요";
+        summaryGrid.appendChild(disclaimer);
+
     } else {
         // Fallback if no relevant coverage found
         summaryGrid.innerHTML = `
