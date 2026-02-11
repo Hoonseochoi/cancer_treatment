@@ -978,6 +978,7 @@ function calculateHierarchicalSummary(results) {
                     .replace(/\(급여\)/g, '')
                     .replace(/\(10년갱신\)/g, '')
                     .replace(/\(최초1회\)/g, '')
+                    .replace(/26종/g, '') // [RESTORED] Remove 26종 to merge into main category
                     .replace(/\s+/g, '') // Remove ALL spaces
                     .trim();
 
@@ -1020,6 +1021,7 @@ function calculateHierarchicalSummary(results) {
                         .replace(/\(급여\)/g, '')
                         .replace(/\(10년갱신\)/g, '')
                         .replace(/\(최초1회\)/g, '')
+                        .replace(/26종/g, '') // [RESTORED]
                         .trim();
 
                     if (cleanNameWithSpaces.length > 0) {
@@ -1070,36 +1072,56 @@ function calculateHierarchicalSummary(results) {
         }
     }
 
-    // [NEW] Business Logic: Add "26-Type Coverage" amount to ALL non-surgery therapies
-    const type26Key = Array.from(summaryMap.keys()).find(k => k.includes("26종"));
+    // [NEW] Business Logic: Add "26-Type Radiation" amount to Target/Immuno/Proton
+    // (IMRT/Heavy Ion handled by Base Radiation logic)
 
-    if (type26Key) {
-        const type26Data = summaryMap.get(type26Key);
+    // 1. Find the merged "Anticancer Radiation" group
+    const baseRadKey = Array.from(summaryMap.keys()).find(k => k.includes("항암방사선") && !k.includes("세기") && !k.includes("중입자") && !k.includes("양성자"));
 
-        // Define keywords for non-surgery therapies (Radiation, Drug, Targeted, Immuno, Proton, Heavy Ion, IMRT)
-        const targetKeywords = ["항암방사선", "항암약물", "표적", "면역", "양성자", "중입자", "세기조절"];
+    if (baseRadKey) {
+        const baseRadData = summaryMap.get(baseRadKey);
 
-        summaryMap.forEach((data, key) => {
-            // Skip self
-            if (key.includes("26종")) return;
-            // Skip surgery
-            if (key.includes("수술")) return;
+        // 2. Find "26종" items INSIDE this group
+        const type26Items = baseRadData.items.filter(item => item.name.includes("26종"));
 
-            // Check if it matches any keyword
-            const isTarget = targetKeywords.some(kw => key.includes(kw));
-
-            if (isTarget) {
-                data.totalMin += type26Data.totalMin;
-                data.totalMax += type26Data.totalMax;
-
-                data.items.push({
-                    name: `+ ${type26Data.displayName} (중복보장)`,
-                    amount: formatKoAmount(type26Data.totalMin),
-                    maxAmount: type26Data.totalMax !== type26Data.totalMin ? formatKoAmount(type26Data.totalMax) : undefined,
-                    source: "26종 담보 합산"
-                });
-            }
+        // 3. Sum them up
+        let type26Min = 0;
+        let type26Max = 0;
+        type26Items.forEach(item => {
+            const valMin = parseKoAmount(item.amount);
+            const valMax = item.maxAmount ? parseKoAmount(item.maxAmount) : valMin;
+            type26Min += valMin;
+            type26Max += valMax;
         });
+
+        if (type26Min > 0) {
+            // 4. Distribute to Target, Immuno, Proton (Drug-based therapies)
+            // Note: IMRT/Heavy Ion already get "Base Radiation" which INCLUDES these 26-type items now.
+            const targetKeywords = ["항암약물", "표적", "면역", "양성자"];
+
+            summaryMap.forEach((data, key) => {
+                if (key === baseRadKey) return; // Skip self
+                if (key.includes("수술")) return; // Skip surgery
+
+                // Check if it matches target keywords
+                const isTarget = targetKeywords.some(kw => key.includes(kw));
+
+                // Special check: Don't add to IMRT/Heavy Ion (avoid double count)
+                if (key.includes("세기조절") || key.includes("중입자")) return;
+
+                if (isTarget) {
+                    data.totalMin += type26Min;
+                    data.totalMax += type26Max;
+
+                    data.items.push({
+                        name: `+ 26종 항암 방사선 치료비 (중복보장)`,
+                        amount: formatKoAmount(type26Min),
+                        maxAmount: type26Max !== type26Min ? formatKoAmount(type26Max) : undefined,
+                        source: "26종 담보 합산"
+                    });
+                }
+            });
+        }
     }
 
     return summaryMap;
