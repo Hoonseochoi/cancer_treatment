@@ -1272,47 +1272,22 @@ function renderResults(results) {
 
     // 3. Render Detail List
     listEl.innerHTML = '';
+
+    // [NEW] Sort results: Items with details come first
+    results.sort((a, b) => {
+        const hasDetailsA = !!findDetails(a.name);
+        const hasDetailsB = !!findDetails(b.name);
+        if (hasDetailsA && !hasDetailsB) return -1;
+        if (!hasDetailsA && hasDetailsB) return 1;
+        return 0;
+    });
+
     let first26Found = false; // 26종 첫 번째만 세부내역 표시
     results.forEach((item, idx) => {
-        // Dictionary Lookup (Same logic as before)
-        let details = coverageDetailsMap[item.name];
+        // Dictionary Lookup
+        let details = findDetails(item.name);
 
-        // 만약 못 찾으면 키워드로 대략적으로 체크 (Fallback)
-        if (!details) {
-            // 2. 비급여형 체크 (우선순위)
-            if (item.name.includes("암 통합치료비") && (item.name.includes("Ⅱ") || item.name.includes("II")) && item.name.includes("비급여")) {
-                details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
-            }
-            // 1. 기본형 체크
-            else if (item.name.includes("암 통합치료비") && item.name.includes("기본형")) {
-                details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
-            }
-            else if (item.name.includes("암 통합치료비") && item.name.includes("실속형")) {
-                details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
-            }
-            else if (item.name.includes("암 통합치료비") && (item.name.includes("III") || item.name.includes("Ⅲ"))) {
-                details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
-            }
-            // 10년갱신 개별 담보
-            else if (item.name.includes("중입자방사선")) {
-                details = coverageDetailsMap["항암중입자방사선치료비"];
-            } else if (item.name.includes("세기조절방사선")) {
-                details = coverageDetailsMap["항암세기조절방사선치료비"];
-            } else if (item.name.includes("면역항암약물") || item.name.includes("면역항암")) {
-                details = coverageDetailsMap["특정면역항암약물허가치료비"];
-            } else if (item.name.includes("표적항암약물") || item.name.includes("표적항암")) {
-                details = coverageDetailsMap["표적항암약물허가치료비"];
-            } else if (item.name.includes("양성자방사선") || item.name.includes("양성자")) {
-                details = coverageDetailsMap["항암양성자방사선치료비"];
-            } else if (item.name.includes("26종")) {
-                details = coverageDetailsMap["26종항암방사선및약물치료비"];
-            } else if (item.name.includes("다빈치") && item.name.includes("로봇")) {
-                // Exclude "특정암" (Specific Cancer) but keep "특정암제외" (General)
-                if (!item.name.includes("특정암") || item.name.includes("제외")) {
-                    details = coverageDetailsMap["다빈치로봇암수술비"];
-                }
-            }
-        }
+        // Handle Variant Type (Amount-based selection)
 
         // Handle Variant Type (Amount-based selection)
         if (details && details.type === 'variant') {
@@ -1432,6 +1407,45 @@ function renderResults(results) {
 }
 
 
+// ... (Previous code)
+
+// Helper to find details (Global Scope)
+function findDetails(itemName) {
+    let details = coverageDetailsMap[itemName];
+    if (!details) {
+        if (itemName.includes("암 통합치료비") && (itemName.includes("Ⅱ") || itemName.includes("II")) && itemName.includes("비급여")) {
+            details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
+        }
+        else if (itemName.includes("암 통합치료비") && itemName.includes("기본형")) {
+            details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
+        }
+        else if (itemName.includes("암 통합치료비") && itemName.includes("실속형")) {
+            details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
+        }
+        else if (itemName.includes("암 통합치료비") && (itemName.includes("III") || itemName.includes("Ⅲ"))) {
+            details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
+        }
+        else if (itemName.includes("중입자방사선")) {
+            details = coverageDetailsMap["항암중입자방사선치료비"];
+        } else if (itemName.includes("세기조절방사선")) {
+            details = coverageDetailsMap["항암세기조절방사선치료비"];
+        } else if (itemName.includes("면역항암약물") || itemName.includes("면역항암")) {
+            details = coverageDetailsMap["특정면역항암약물허가치료비"];
+        } else if (itemName.includes("표적항암약물") || itemName.includes("표적항암")) {
+            details = coverageDetailsMap["표적항암약물허가치료비"];
+        } else if (itemName.includes("양성자방사선") || itemName.includes("양성자")) {
+            details = coverageDetailsMap["항암양성자방사선치료비"];
+        } else if (itemName.includes("26종")) {
+            details = coverageDetailsMap["26종항암방사선및약물치료비"];
+        } else if (itemName.includes("다빈치") && itemName.includes("로봇")) {
+            if (!itemName.includes("특정암") || itemName.includes("제외")) {
+                details = coverageDetailsMap["다빈치로봇암수술비"];
+            }
+        }
+    }
+    return details;
+}
+
 // ── File Processing ──
 async function processFile(file) {
     if (!file) return;
@@ -1481,10 +1495,6 @@ async function processFile(file) {
             text = await extractTextFromPDF(file, log);
             updateProgress(100, '분석 완료!');
         }
-        else {
-            throw new Error('지원되지 않는 파일 형식입니다.');
-        }
-
         // Debug output
         if (rawTextEl) {
             rawTextEl.textContent = text.substring(0, 5000) + (text.length > 5000 ? '\n...(이하 생략)' : '');
