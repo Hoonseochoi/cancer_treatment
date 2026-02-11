@@ -972,14 +972,13 @@ function calculateHierarchicalSummary(results) {
             details.forEach(det => {
                 // Normalize Name to find "Common Group"
                 // 1. Remove prefixes: (급여/비급여), (비급여), (급여), (10년갱신), (최초1회)
-                let normalizedName = det.name.replace(/\(급여\/비급여\)/g, '')
+                let normalizedName = det.name
+                    .replace(/\(급여\/비급여\)/g, '')
                     .replace(/\(비급여\)/g, '')
                     .replace(/\(급여\)/g, '')
                     .replace(/\(10년갱신\)/g, '')
-                    .replace(/\(최초1회\)/g, '') // [NEW] Merge (최초1회) items
-                    .replace(/\(최초1회\)/g, '') // [NEW] Merge (최초1회) items
-                    // .replace(/26종/g, '') // [REVOKED] Keep 26종 distinct
-                    .replace(/\s+/g, '') // 2. Remove ALL spaces
+                    .replace(/\(최초1회\)/g, '')
+                    .replace(/\s+/g, '') // Remove ALL spaces
                     .trim();
 
                 // 3. Make Display Name pretty if needed (or just use normalized?)
@@ -1015,13 +1014,12 @@ function calculateHierarchicalSummary(results) {
 
                 // Update display name (pick longest readable name)
                 if (det.name.length > group.displayName.length || group.displayName === normalizedName) {
-                    let cleanNameWithSpaces = det.name.replace(/\(급여\/비급여\)/g, '')
+                    let cleanNameWithSpaces = det.name
+                        .replace(/\(급여\/비급여\)/g, '')
                         .replace(/\(비급여\)/g, '')
                         .replace(/\(급여\)/g, '')
                         .replace(/\(10년갱신\)/g, '')
-                        .replace(/\(최초1회\)/g, '') // [NEW] Merge (최초1회) items
-                        .replace(/\(최초1회\)/g, '') // [NEW] Merge (최초1회) items
-                        // .replace(/26종/g, '')
+                        .replace(/\(최초1회\)/g, '')
                         .trim();
 
                     if (cleanNameWithSpaces.length > 0) {
