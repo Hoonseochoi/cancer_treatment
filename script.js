@@ -9,12 +9,12 @@ const defaultConfig = {
     subtitle_text: "가입제안서 PDF를 업로드하면 모든 보장 내역을 추출합니다",
     upload_button_text: "PDF 파일을 드래그하거나 클릭하세요",
     result_header_text: "전체 보장 내역 분석 결과",
-    background_color: "#0B1120",
-    surface_color: "#151D33",
-    text_color: "#E8ECF4",
-    primary_color: "#3B82F6",
-    secondary_color: "#1E293B",
-    font_family: "Noto Sans KR",
+    background_color: "#EBEBEB",
+    surface_color: "#FFFFFF",
+    text_color: "#404040",
+    primary_color: "#E60000",
+    secondary_color: "#8C8C8C",
+    font_family: "Outfit",
     font_size: 16
 };
 
@@ -1126,8 +1126,6 @@ function renderResults(results) {
     const summaryGrid = document.getElementById('summary-grid');
     const resultsSection = document.getElementById('results-section');
     const summarySection = document.getElementById('summary-section');
-
-    // emptyState variable is already declared above in previous fix
     const emptyState = document.getElementById('empty-state');
 
     if (!results || results.length === 0) {
@@ -1155,11 +1153,11 @@ function renderResults(results) {
     // 2. Render Summary Grid
     if (summaryMap.size > 0) {
         summaryGrid.innerHTML = '';
-        summaryGrid.className = "grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8";
+        summaryGrid.className = "grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12";
 
         // Header Title
         const header = document.createElement('div');
-        header.className = "col-span-1 sm:col-span-3 text-base font-bold mb-3 flex items-center justify-between";
+        header.className = "col-span-1 sm:col-span-3 text-lg font-black mb-2 flex items-center justify-between";
         header.style.color = "var(--primary-color)";
 
         let headerAmountStr = formatKoAmount(grandTotalMin);
@@ -1167,255 +1165,106 @@ function renderResults(results) {
             headerAmountStr = `${formatKoAmount(grandTotalMin)} ~ ${formatKoAmount(grandTotalMax)}`;
         }
 
-        header.innerHTML = `📊 한 번에 치료비 모아보기 ( 통합 합산 ) <span style="font-size:0.9em; color:#10B981; margin-left:8px;">${headerAmountStr}</span>`;
+        header.innerHTML = `🛡️ 집계된 암 치료 보장금액 합계 <span style="font-size:1.1em; color:var(--primary-dark); margin-left:12px; font-family:'Outfit';">${headerAmountStr}</span>`;
         summaryGrid.appendChild(header);
 
         // Convert Map to Array and Sort
         const sortedItems = Array.from(summaryMap.entries()).sort((a, b) => {
-            const nameA = a[0];
-            const nameB = b[0];
-            // Priority List: Targeted, Immuno, Proton
             const priorities = ["표적", "면역", "양성자"];
             const getPriority = (n) => {
                 for (let i = 0; i < priorities.length; i++) {
                     if (n.includes(priorities[i])) return i;
                 }
-                return 99; // Default low priority
+                return 99;
             };
-            const pA = getPriority(nameA);
-            const pB = getPriority(nameB);
-            if (pA !== pB) return pA - pB;
-            return 0; // Maintain original order for others
+            return getPriority(a[0]) - getPriority(b[0]);
         });
 
         sortedItems.forEach(([name, data]) => {
             const card = document.createElement('div');
-            // Cube/Box Style Design
-            // Cube Design + Aspect Square + Overflow Hidden
-            // Wide Rectangle Style (Auto height)
-            // Wide Rectangle Style (Auto height, expandable)
-            card.className = "relative p-3 sm:py-5 sm:px-4 rounded-2xl flex flex-col justify-center gap-1 transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg cursor-pointer";
-            card.style.background = "var(--surface-color)";
-            card.style.border = "1px solid rgba(255,255,255,0.1)";
-            // card.style.minHeight = "120px"; // Removed to let aspect-ratio control
+            card.className = "premium-card p-5 rounded-3xl flex flex-col justify-start gap-4 transition-all duration-300 group";
 
             // Generate Sub-items HTML
             let subItemsHtml = '';
             data.items.forEach(sub => {
-                // If amount is a string with parens (e.g. "2천(3천)"), use it directly
                 let amtDisplay = sub.amount;
                 if (!amtDisplay.includes('(') && !amtDisplay.includes('~')) {
                     amtDisplay = formatDisplayAmount(sub.amount);
                 }
-                // Handle ranges in sub item display if passed
                 if (sub.maxAmount && sub.maxAmount !== sub.amount && !amtDisplay.includes('(')) {
-                    // Fallback if not pre-formatted
                     amtDisplay = `${formatDisplayAmount(sub.amount)}~${formatDisplayAmount(sub.maxAmount)}`;
                 }
 
                 subItemsHtml += `
-                    <div class="mt-2 pl-3 border-l-2 border-blue-500/20 text-xs text-left">
-                        <div class="flex items-center justify-between" style="color:var(--text-color);">
+                    <div class="mt-3 pl-4 border-l-3 border-red-500/10 text-xs text-left">
+                        <div class="flex items-center justify-between font-bold text-gray-700">
                             <span class="truncate mr-2 flex-1" title="${sub.name}">${sub.name}</span>
-                            <span class="font-bold text-blue-400 whitespace-nowrap flex-shrink-0">${amtDisplay}</span>
+                            <span class="text-red-600 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
                         </div>
-                        <div class="text-[10px] mt-0.5 truncate opacity-50" style="color:rgba(232,236,244,0.7);">
-                            └ 출처: ${sub.source}
+                        <div class="text-[10px] mt-1 truncate font-medium text-gray-400">
+                            └ ${sub.source}
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
 
-            let cardAmountHtml = `<span class="whitespace-nowrap">${formatKoAmount(data.totalMin)}</span>`;
+            const icon = getCoverageIcon(name);
+            let totalDisplay = formatKoAmount(data.totalMin);
             if (data.totalMin !== data.totalMax) {
-                // Multi-line range for readability
-                cardAmountHtml = `
-                    <div class="flex flex-col items-center leading-tight">
-                        <span class="whitespace-nowrap">${formatKoAmount(data.totalMin)} ~</span>
-                        <span class="whitespace-nowrap">${formatKoAmount(data.totalMax)}</span>
-                    </div>
-                `;
+                totalDisplay = `${formatKoAmount(data.totalMin)}~${formatKoAmount(data.totalMax)}`;
             }
 
-            const iconPath = getCoverageIcon(data.displayName);
-
             card.innerHTML = `
-                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
-                    <svg width="80" height="80" viewbox="0 0 24 24" fill="currentColor">${iconPath}</svg>
-                </div>
-                
-                <div class="relative z-10 flex flex-col h-full items-center justify-center text-center gap-1">
-                    <span class="text-xs sm:text-sm font-bold block opacity-90 tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis w-full px-1" style="color:var(--text-color);">${data.displayName}</span>
-                    <span class="text-lg sm:text-xl font-black block tracking-tight w-full flex justify-center" style="color:#3B82F6;">${cardAmountHtml}</span>
-                </div>
-
-                <div class="summary-details hidden mt-4 pt-4 border-t border-white/10 text-left w-full text-xs" style="color:rgba(232,236,244,0.7);">
-                    ${subItemsHtml}
-                </div>
-            `;
-
-            // Toggle Event (Show overlay on click)
-            card.addEventListener('click', (e) => {
-                const details = card.querySelector('.summary-details');
-                details.classList.toggle('hidden');
-                e.stopPropagation();
-            });
-
+                <div class="flex flex-col gap-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm" style="background:rgba(230,0,0,0.05);">
+                            ${icon}
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">COVERAGE TOTAL</p>
+                            <p class="text-2xl font-black text-red-600 font-outfit" style="color:var(--primary-bright);">
+                                ${totalDisplay}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="h-px w-full bg-gray-50"></div>
+                    <div>
+                        <h4 class="text-sm font-black text-gray-800 mb-1 leading-tight">${name}</h4>
+                        <div class="sub-items-container">${subItemsHtml}</div>
+                    </div>
+                </div>`;
             summaryGrid.appendChild(card);
         });
-
-        // [NEW] Disclaimer
-        const disclaimer = document.createElement('div');
-        disclaimer.className = "col-span-1 sm:col-span-3 text-[11px] text-center mt-4 p-3 rounded-lg";
-        disclaimer.style.background = "rgba(232,236,244,0.03)";
-        disclaimer.style.color = "rgba(232,236,244,0.5)";
-        disclaimer.innerHTML = "* 실제 가입제안서와 다를 수 있습니다. 참고용으로만 활용해주세요";
-        summaryGrid.appendChild(disclaimer);
-
-    } else {
-        // Fallback if no relevant coverage found
-        summaryGrid.innerHTML = `
-            <div class="rounded-xl p-3 text-center col-span-2 sm:col-span-3" style="background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.12);">
-              <p class="text-xs mb-0.5" style="color:rgba(232,236,244,0.5);">발견된 담보 항목</p>
-              <p class="text-xl font-bold" style="color:var(--primary-color); font-family:'Outfit','Noto Sans KR',sans-serif;">${results.length}건</p>
-            </div>
-        `;
     }
 
     // 3. Render Detail List
     listEl.innerHTML = '';
 
-    // [NEW] Sort results: Items with details come first
-    results.sort((a, b) => {
-        const hasDetailsA = !!findDetails(a.name);
-        const hasDetailsB = !!findDetails(b.name);
-        if (hasDetailsA && !hasDetailsB) return -1;
-        if (!hasDetailsA && hasDetailsB) return 1;
-        return 0;
-    });
-
-    let first26Found = false; // 26종 첫 번째만 세부내역 표시
     results.forEach((item, idx) => {
-        // Dictionary Lookup
-        let details = findDetails(item.name);
+        const itemCard = document.createElement('div');
+        itemCard.className = "premium-card rounded-2xl p-4 flex items-center justify-between gap-4 stagger-in";
+        itemCard.style.animationDelay = `${idx * 40}ms`;
 
-        // Handle Variant Type (Amount-based selection)
+        const icon = getCoverageIcon(item.name);
 
-        // Handle Variant Type (Amount-based selection)
-        if (details && details.type === 'variant') {
-            const amountVal = parseKoAmount(item.amount);
-            let variantData = details.data[amountVal.toString()];
-
-            // Fallback default
-            if (!variantData) {
-                if (details.data["10000"]) variantData = details.data["10000"];
-            }
-            details = variantData;
-        }
-
-        // Handle Passthrough Type (자기 금액 그대로 사용)
-        if (details && details.type === 'passthrough') {
-            details = [{ name: details.displayName, amount: item.amount }];
-        }
-
-        // Handle 26종 Type (첫 번째만 세부내역 표시)
-        if (details && details.type === '26jong') {
-            if (!first26Found) {
-                first26Found = true;
-                details = [{ name: details.detailName, amount: item.amount }];
-            } else {
-                details = null;
-            }
-        }
-
-        const card = document.createElement('div');
-        card.className = 'result-card card-shine rounded-xl mb-3 stagger-in';
-        card.style.cssText = `background:var(--surface-color); border:1px solid rgba(255,255,255,0.05); animation-delay:${Math.min(idx * 30, 1000)}ms; cursor: pointer; transition: all 0.2s;`;
-
-        const premiumDisplay = item.premium !== '-' ? `<span class="text-xs mr-2" style="color:rgba(232,236,244,0.6);">보험료: ${item.premium}</span>` : '';
-        const periodDisplay = item.period !== '-' ? `<span class="text-xs" style="color:rgba(232,236,244,0.6);">납기/만기: ${item.period}</span>` : '';
-
-        // Detail Section HTML
-        let detailHtml = '';
-        if (details && Array.isArray(details)) {
-            detailHtml = `
-                <div class="detail-content hidden mt-4 pt-4 border-t border-gray-700/50">
-                    <p class="text-xs font-bold text-blue-400 mb-2">💡 세부 보장 내역 (예시)</p>
-                    <div class="space-y-2">
-            `;
-            details.forEach(det => {
-                if (det.hiddenInDetail) return; // Skip hidden items in detail list
-
-                // Use raw string if it has range format (parens or tilde)
-                let amtDisplay = det.amount;
-                if (!amtDisplay.includes('(') && !amtDisplay.includes('~')) {
-                    amtDisplay = formatDisplayAmount(det.amount);
-                }
-
-                detailHtml += `
-                    <div class="flex flex-col text-xs" style="color:rgba(232,236,244,0.8);">
-                        <div class="flex justify-between">
-                            <span>• ${det.name}</span>
-                            <span class="font-medium text-white">${amtDisplay}</span>
-                        </div>
-                `;
-                if (det.sub) {
-                    det.sub.forEach(sub => {
-                        // sub 문자열 파싱 (마지막 공백 기준으로 이름/금액 분리)
-                        // 예: "(비급여) 항암약물 치료비 1,000만"
-                        const parts = sub.trim().split(' ');
-                        const subAmount = parts.pop(); // 금액 (마지막 부분)
-                        const subName = parts.join(' '); // 이름 (나머지 전체)
-
-                        detailHtml += `
-                            <div class="flex justify-between pl-3 mt-1 text-[10px]" style="color:rgba(232,236,244,0.5);">
-                                <span>└ ${subName}</span>
-                                <span>${subAmount || ''}</span>
-                            </div>
-                         `;
-                    });
-                }
-                detailHtml += `</div>`;
-            });
-            detailHtml += `</div></div>`;
-        }
-
-        card.innerHTML = `
-            <div class="p-4">
-                <div class="flex items-center justify-between gap-4">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium break-keep mb-1" style="color:var(--text-color);">${item.name}</p>
-                        <div class="flex flex-wrap items-center">
-                            ${premiumDisplay}
-                            ${periodDisplay}
-                        </div>
-                    </div>
-                    <div class="text-right flex-shrink-0 flex flex-col items-end gap-1">
-                        <span class="inline-block px-2 py-1 rounded text-xs font-bold"
-                              style="background:rgba(16,185,129,0.1); color:#10B981; border:1px solid rgba(16,185,129,0.2);">
-                            ${formatDisplayAmount(item.amount)}
-                        </span>
-                        ${details ? '<span class="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">세부내역 ▼</span>' : ''}
-                    </div>
+        itemCard.innerHTML = `
+            <div class="flex items-center gap-4 flex-1 min-w-0">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-50 text-base shadow-inner">
+                    ${icon}
                 </div>
-                ${detailHtml}
+                <div class="min-w-0 flex-1">
+                    <h4 class="text-sm font-bold text-gray-800 truncate" title="${item.name}">${item.name}</h4>
+                    <p class="text-[11px] font-medium text-gray-400 mt-0.5">${item.desc || '가입담보리스트 추출 항목'}</p>
+                </div>
             </div>
-        `;
-
-        if (details && Array.isArray(details)) {
-            card.addEventListener('click', () => {
-                const content = card.querySelector('.detail-content');
-                content.classList.toggle('hidden');
-                // 화살표 변경 로직 추가 가능
-            });
-        }
-
-        listEl.appendChild(card);
+            <div class="text-right flex-shrink-0">
+                <span class="text-lg font-black text-red-600 font-outfit">${formatDisplayAmount(item.amount)}</span>
+            </div>`;
+        listEl.appendChild(itemCard);
     });
-
-    // Hide Expand All button since we have no details
-    const expandBtn = document.getElementById('expand-all-btn');
-    if (expandBtn) expandBtn.style.display = 'none';
+}
+// Hide Expand All button since we have no details
+const expandBtn = document.getElementById('expand-all-btn');
+if (expandBtn) expandBtn.style.display = 'none';
 }
 
 // [NEW] Toggle Results List
