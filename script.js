@@ -1140,7 +1140,8 @@ function renderResults(results) {
             const card = document.createElement('div');
             // Cube/Box Style Design
             // Cube Design + Aspect Square + Overflow Hidden
-            card.className = "relative p-3 sm:p-4 rounded-2xl flex flex-col justify-between transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg cursor-pointer overflow-hidden aspect-square";
+            // Wide Rectangle Style (Auto height)
+            card.className = "relative p-3 sm:py-5 sm:px-4 rounded-2xl flex flex-col justify-center gap-1 transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg cursor-pointer overflow-hidden";
             card.style.background = "var(--surface-color)";
             card.style.border = "1px solid rgba(255,255,255,0.1)";
             // card.style.minHeight = "120px"; // Removed to let aspect-ratio control
@@ -1172,9 +1173,15 @@ function renderResults(results) {
                 `;
             });
 
-            let cardAmountStr = formatKoAmount(data.totalMin);
+            let cardAmountHtml = `<span class="whitespace-nowrap">${formatKoAmount(data.totalMin)}</span>`;
             if (data.totalMin !== data.totalMax) {
-                cardAmountStr = `${formatKoAmount(data.totalMin)} ~ ${formatKoAmount(data.totalMax)}`;
+                // Multi-line range for readability
+                cardAmountHtml = `
+                    <div class="flex flex-col items-center leading-tight">
+                        <span class="whitespace-nowrap">${formatKoAmount(data.totalMin)} ~</span>
+                        <span class="whitespace-nowrap">${formatKoAmount(data.totalMax)}</span>
+                    </div>
+                `;
             }
 
             const iconPath = getCoverageIcon(data.displayName);
@@ -1186,7 +1193,7 @@ function renderResults(results) {
                 
                 <div class="relative z-10 flex flex-col h-full items-center justify-center text-center gap-1">
                     <span class="text-xs sm:text-sm font-bold block opacity-90 tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis w-full px-1" style="color:var(--text-color);">${data.displayName}</span>
-                    <span class="text-lg sm:text-xl font-black block tracking-tight whitespace-nowrap w-full" style="color:#3B82F6;">${cardAmountStr}</span>
+                    <span class="text-lg sm:text-xl font-black block tracking-tight w-full flex justify-center" style="color:#3B82F6;">${cardAmountHtml}</span>
                 </div>
 
                 <div class="summary-details hidden absolute inset-0 bg-gray-900/95 p-4 z-20 overflow-y-auto flex flex-col justify-center text-left transition-opacity backdrop-blur-sm">
