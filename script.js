@@ -1118,13 +1118,32 @@ function renderResults(results) {
         header.innerHTML = `📊 한 번에 치료비 모아보기 ( 통합 합산 ) <span style="font-size:0.9em; color:#10B981; margin-left:8px;">${headerAmountStr}</span>`;
         summaryGrid.appendChild(header);
 
-        summaryMap.forEach((data, name) => {
+        // Convert Map to Array and Sort
+        const sortedItems = Array.from(summaryMap.entries()).sort((a, b) => {
+            const nameA = a[0];
+            const nameB = b[0];
+            // Priority List: Targeted, Immuno, Proton
+            const priorities = ["표적", "면역", "양성자"];
+            const getPriority = (n) => {
+                for (let i = 0; i < priorities.length; i++) {
+                    if (n.includes(priorities[i])) return i;
+                }
+                return 99; // Default low priority
+            };
+            const pA = getPriority(nameA);
+            const pB = getPriority(nameB);
+            if (pA !== pB) return pA - pB;
+            return 0; // Maintain original order for others
+        });
+
+        sortedItems.forEach(([name, data]) => {
             const card = document.createElement('div');
             // Cube/Box Style Design
-            card.className = "relative p-5 rounded-2xl flex flex-col justify-between transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg cursor-pointer overflow-hidden";
+            // Cube Design + Aspect Square + Overflow Hidden
+            card.className = "relative p-3 sm:p-4 rounded-2xl flex flex-col justify-between transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg cursor-pointer overflow-hidden aspect-square";
             card.style.background = "var(--surface-color)";
             card.style.border = "1px solid rgba(255,255,255,0.1)";
-            card.style.minHeight = "120px"; // Ensure some height for "cube" feel
+            // card.style.minHeight = "120px"; // Removed to let aspect-ratio control
 
             // Generate Sub-items HTML
             let subItemsHtml = '';
@@ -1165,20 +1184,25 @@ function renderResults(results) {
                     <svg width="80" height="80" viewbox="0 0 24 24" fill="currentColor">${iconPath}</svg>
                 </div>
                 
-                <div class="relative z-10 flex flex-col h-full items-center justify-between text-center">
-                    <span class="text-base sm:text-lg font-extrabold block mb-2 opacity-90 break-keep tracking-wider" style="color:var(--text-color);">${data.displayName}</span>
-                    <span class="text-2xl sm:text-3xl font-black block tracking-tight mt-auto" style="color:#3B82F6;">${cardAmountStr}</span>
+                <div class="relative z-10 flex flex-col h-full items-center justify-center text-center gap-1">
+                    <span class="text-xs sm:text-sm font-bold block opacity-90 tracking-tighter whitespace-nowrap overflow-hidden text-ellipsis w-full px-1" style="color:var(--text-color);">${data.displayName}</span>
+                    <span class="text-lg sm:text-xl font-black block tracking-tight whitespace-nowrap w-full" style="color:#3B82F6;">${cardAmountStr}</span>
                 </div>
 
-                <div class="summary-details hidden mt-4 pt-4 border-t border-white/10 relative z-10 w-full text-left">
+                <div class="summary-details hidden absolute inset-0 bg-gray-900/95 p-4 z-20 overflow-y-auto flex flex-col justify-center text-left transition-opacity backdrop-blur-sm">
+                    <div class="text-xs font-bold mb-2 text-white border-b border-white/10 pb-1 flex justify-between items-center">
+                        <span>${data.displayName}</span>
+                        <span class="text-[10px] opacity-50">닫기 ✕</span>
+                    </div>
                     ${subItemsHtml}
                 </div>
             `;
 
-            // Toggle Event
-            card.addEventListener('click', () => {
+            // Toggle Event (Show overlay on click)
+            card.addEventListener('click', (e) => {
                 const details = card.querySelector('.summary-details');
                 details.classList.toggle('hidden');
+                e.stopPropagation();
             });
 
             summaryGrid.appendChild(card);
