@@ -1239,26 +1239,110 @@ function renderResults(results) {
     // 3. Render Detail List
     listEl.innerHTML = '';
 
+    // Sort results: Items with details come first
+    results.sort((a, b) => {
+        const hasDetailsA = !!findDetails(a.name);
+        const hasDetailsB = !!findDetails(b.name);
+        if (hasDetailsA && !hasDetailsB) return -1;
+        if (!hasDetailsA && hasDetailsB) return 1;
+        return 0;
+    });
+
     results.forEach((item, idx) => {
+        let details = findDetails(item.name);
+
+        // Handle Variant Type (Amount-based selection)
+        if (details && details.type === 'variant') {
+            const amountVal = parseKoAmount(item.amount);
+            let variantData = details.data[amountVal.toString()];
+            if (!variantData && details.data["10000"]) variantData = details.data["10000"];
+            details = variantData;
+        }
+        // Handle Passthrough Type
+        if (details && details.type === 'passthrough') {
+            details = [{ name: details.displayName, amount: item.amount }];
+        }
+        // Handle 26jong Type
+        if (details && details.type === '26jong') {
+            details = [{ name: details.detailName, amount: item.amount }];
+        }
+
         const itemCard = document.createElement('div');
-        itemCard.className = "premium-card rounded-2xl p-4 flex items-center justify-between gap-4 stagger-in";
+        itemCard.className = "premium-card rounded-2xl p-4 flex flex-col gap-4 stagger-in cursor-pointer hover:border-red-500/30 transition-all";
         itemCard.style.animationDelay = `${idx * 40}ms`;
 
         const icon = getCoverageIcon(item.name);
 
+        let detailHtml = '';
+        if (details && Array.isArray(details)) {
+            detailHtml = `
+                <div class="detail-content hidden mt-4 pt-4 border-t border-gray-100">
+                    <p class="text-[11px] font-black text-red-600 mb-3 flex items-center gap-1.5">
+                        <span class="w-1 h-1 bg-red-600 rounded-full"></span> 상세 보장 내역
+                    </p>
+                    <div class="space-y-3">
+            `;
+            details.forEach(det => {
+                let amtDisplay = det.amount;
+                if (!amtDisplay.includes('(') && !amtDisplay.includes('~')) {
+                    amtDisplay = formatDisplayAmount(det.amount);
+                }
+                detailHtml += `
+                    <div class="flex flex-col text-[11px] group/sub">
+                        <div class="flex justify-between items-center bg-gray-50/50 p-2 rounded-lg">
+                            <span class="font-bold text-gray-700 mr-2 flex-1">${det.name}</span>
+                            <span class="font-black text-gray-900">${amtDisplay}</span>
+                        </div>
+                `;
+                if (det.sub) {
+                    det.sub.forEach(sub => {
+                        const parts = sub.trim().split(' ');
+                        const subAmount = parts.pop();
+                        const subName = parts.join(' ');
+                        detailHtml += `
+                            <div class="flex justify-between pl-4 mt-1.5 text-[10px] text-gray-400 font-medium">
+                                <span>└ ${subName}</span>
+                                <span>${subAmount || ''}</span>
+                            </div>
+                         `;
+                    });
+                }
+                detailHtml += `</div>`;
+            });
+            detailHtml += `</div></div>`;
+        }
+
         itemCard.innerHTML = `
-            <div class="flex items-center gap-4 flex-1 min-w-0">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-50 text-base shadow-inner">
-                    ${icon}
+            <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-4 flex-1 min-w-0">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-50 text-base shadow-inner">
+                        ${icon}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <h4 class="text-sm font-bold text-gray-800 truncate" title="${item.name}">${item.name}</h4>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <p class="text-[11px] font-medium text-gray-400">${item.desc || '가입담보리스트 추출 항목'}</p>
+                            ${details ? '<span class="text-[9px] font-black text-red-400 bg-red-50 px-1.5 py-0.5 rounded leading-none">세부내역 ▼</span>' : ''}
+                        </div>
+                    </div>
                 </div>
-                <div class="min-w-0 flex-1">
-                    <h4 class="text-sm font-bold text-gray-800 truncate" title="${item.name}">${item.name}</h4>
-                    <p class="text-[11px] font-medium text-gray-400 mt-0.5">${item.desc || '가입담보리스트 추출 항목'}</p>
+                <div class="text-right flex-shrink-0">
+                    <span class="text-lg font-black text-red-600 font-outfit">${formatDisplayAmount(item.amount)}</span>
                 </div>
             </div>
-            <div class="text-right flex-shrink-0">
-                <span class="text-lg font-black text-red-600 font-outfit">${formatDisplayAmount(item.amount)}</span>
-            </div>`;
+            ${detailHtml}
+        `;
+
+        if (details) {
+            itemCard.addEventListener('click', () => {
+                const content = itemCard.querySelector('.detail-content');
+                if (content) {
+                    content.classList.toggle('hidden');
+                    const badge = itemCard.querySelector('.text-red-400');
+                    if (badge) badge.textContent = content.classList.contains('hidden') ? '세부내역 ▼' : '세부내역 ▲';
+                }
+            });
+        }
         listEl.appendChild(itemCard);
     });
 }
