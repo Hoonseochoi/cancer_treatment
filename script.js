@@ -1068,11 +1068,11 @@ function renderResults(results) {
     // 2. Render Summary Grid
     if (summaryMap.size > 0) {
         summaryGrid.innerHTML = '';
-        summaryGrid.className = "grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6";
+        summaryGrid.className = "grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8";
 
         // Header Title
         const header = document.createElement('div');
-        header.className = "col-span-1 sm:col-span-2 text-sm font-bold mb-2 flex items-center";
+        header.className = "col-span-1 sm:col-span-3 text-base font-bold mb-3 flex items-center justify-between";
         header.style.color = "var(--primary-color)";
 
         let headerAmountStr = formatKoAmount(grandTotalMin);
@@ -1085,9 +1085,11 @@ function renderResults(results) {
 
         summaryMap.forEach((data, name) => {
             const card = document.createElement('div');
-            card.className = "p-3 rounded-lg flex flex-col cursor-pointer transition-colors";
-            card.style.background = "rgba(59,130,246,0.05)";
-            card.style.border = "1px solid rgba(59,130,246,0.1)";
+            // Cube/Box Style Design
+            card.className = "relative p-5 rounded-2xl flex flex-col justify-between transition-all duration-300 group hover:-translate-y-1 hover:shadow-lg cursor-pointer overflow-hidden";
+            card.style.background = "var(--surface-color)";
+            card.style.border = "1px solid rgba(255,255,255,0.1)";
+            card.style.minHeight = "120px"; // Ensure some height for "cube" feel
 
             // Generate Sub-items HTML
             let subItemsHtml = '';
@@ -1122,14 +1124,16 @@ function renderResults(results) {
             }
 
             card.innerHTML = `
-                <div class="flex justify-between items-center w-full">
-                    <span class="text-xs font-medium" style="color:var(--text-color);">${data.displayName}</span>
-                    <div class="flex items-center gap-2">
-                         <span class="text-sm font-bold" style="color:#10B981;">${cardAmountStr}</span>
-                         <span class="text-[10px] text-blue-400 opacity-70">▼</span>
-                    </div>
+                <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <svg width="60" height="60" viewbox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                 </div>
-                <div class="summary-details hidden pt-2 mt-1 border-t border-blue-500/10">
+                
+                <div class="relative z-10">
+                    <span class="text-xs font-bold block mb-1 opacity-70 break-keep tracking-wide" style="color:var(--text-color);">${data.displayName}</span>
+                    <span class="text-xl sm:text-2xl font-black block tracking-tight mt-auto" style="color:#3B82F6;">${cardAmountStr}</span>
+                </div>
+
+                <div class="summary-details hidden mt-3 pt-3 border-t border-white/5 relative z-10">
                     ${subItemsHtml}
                 </div>
             `;
@@ -1145,7 +1149,8 @@ function renderResults(results) {
 
         // [NEW] Disclaimer
         const disclaimer = document.createElement('div');
-        disclaimer.className = "col-span-1 sm:col-span-2 text-[10px] text-right mt-2";
+        disclaimer.className = "col-span-1 sm:col-span-3 text-[11px] text-center mt-4 p-3 rounded-lg";
+        disclaimer.style.background = "rgba(232,236,244,0.03)";
         disclaimer.style.color = "rgba(232,236,244,0.5)";
         disclaimer.innerHTML = "* 실제 가입제안서와 다를 수 있습니다. 참고용으로만 활용해주세요";
         summaryGrid.appendChild(disclaimer);
