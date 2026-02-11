@@ -594,7 +594,7 @@ const coverageDetailsMap = {
                     sub: ["(비급여) 항암 방사선 치료비 750만"]
                 },
                 {
-                    name: "(비급여) 양성자방사선",
+                    name: "(비급여) 양성자 방사선 치료비",
                     amount: "2,750만",
                     sub: ["(비급여) 항암방사선 치료비 750만", "(비급여) 양성자 방사선 치료비 2,000만"]
                 }
@@ -624,7 +624,7 @@ const coverageDetailsMap = {
                     sub: ["(비급여) 항암 방사선 치료비 500만"]
                 },
                 {
-                    name: "(비급여) 양성자방사선",
+                    name: "(비급여) 양성자 방사선 치료비",
                     amount: "1,500만",
                     sub: ["(비급여) 항암방사선 치료비 500만", "(비급여) 양성자 방사선 치료비 1,000만"]
                 }
@@ -698,6 +698,14 @@ function formatKoAmount(val) {
     if (man > 0) result += `${man.toLocaleString()}만`;
 
     return result.trim() + "원";
+}
+
+// ── Helper: Normalize any amount string to #,###만원 format ──
+function formatDisplayAmount(str) {
+    if (!str) return str;
+    const val = parseKoAmount(str);
+    if (val === 0) return str; // 파싱 실패 시 원본 유지
+    return formatKoAmount(val);
 }
 
 // ── Aggregate Hierarchical Summary Logic ──
@@ -852,7 +860,7 @@ function renderResults(results) {
                     <div class="mt-2 pl-3 border-l-2 border-blue-500/20 text-xs">
                         <div class="flex justify-between" style="color:var(--text-color);">
                             <span>${sub.displayName}</span>
-                            <span class="font-bold text-blue-400">${sub.amount}</span>
+                            <span class="font-bold text-blue-400">${formatDisplayAmount(sub.amount)}</span>
                         </div>
                         <div class="text-[10px] mt-0.5" style="color:rgba(232,236,244,0.5);">
                             └ 출처: ${sub.source}
@@ -865,7 +873,7 @@ function renderResults(results) {
                 <div class="flex justify-between items-center w-full">
                     <span class="text-xs font-medium" style="color:var(--text-color);">${data.displayName}</span>
                     <div class="flex items-center gap-2">
-                         <span class="text-sm font-bold" style="color:#10B981;">${formatKoAmount(data.total)}</span>
+                         <span class="text-sm font-bold" style="color:#10B981;">${formatDisplayAmount(formatKoAmount(data.total))}</span>
                          <span class="text-[10px] text-blue-400 opacity-70">▼</span>
                     </div>
                 </div>
@@ -959,7 +967,7 @@ function renderResults(results) {
                     <div class="flex flex-col text-xs" style="color:rgba(232,236,244,0.8);">
                         <div class="flex justify-between">
                             <span>• ${det.name}</span>
-                            <span class="font-medium text-white">${det.amount}</span>
+                            <span class="font-medium text-white">${formatDisplayAmount(det.amount)}</span>
                         </div>
                 `;
                 if (det.sub) {
@@ -996,7 +1004,7 @@ function renderResults(results) {
                     <div class="text-right flex-shrink-0 flex flex-col items-end gap-1">
                         <span class="inline-block px-2 py-1 rounded text-xs font-bold"
                               style="background:rgba(16,185,129,0.1); color:#10B981; border:1px solid rgba(16,185,129,0.2);">
-                            ${item.amount}
+                            ${formatDisplayAmount(item.amount)}
                         </span>
                         ${details ? '<span class="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">세부내역 ▼</span>' : ''}
                     </div>
