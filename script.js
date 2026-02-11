@@ -1044,9 +1044,13 @@ function calculateHierarchicalSummary(results) {
             imrtData.totalMin += radiationData.totalMin;
             imrtData.totalMax += radiationData.totalMax;
 
-            // Add a visual note or sub-item to explain? 
-            // The user just asked for the total to be reflected.
-            // imrtData.items.push({ name: `+ ${radiationData.displayName} (중복보장)`, amount: formatKoAmount(radiationData.totalMin) }); 
+            // Add visual note to summary details
+            imrtData.items.push({
+                name: `+ ${radiationData.displayName} (중복보장)`,
+                amount: formatKoAmount(radiationData.totalMin),
+                maxAmount: radiationData.totalMax !== radiationData.totalMin ? formatKoAmount(radiationData.totalMax) : undefined,
+                source: "기본 방사선 치료비 합산"
+            });
         }
 
         // 2. Heavy Ion = Heavy Ion + Base Radiation
@@ -1055,6 +1059,14 @@ function calculateHierarchicalSummary(results) {
             const heavyData = summaryMap.get(heavyKey);
             heavyData.totalMin += radiationData.totalMin;
             heavyData.totalMax += radiationData.totalMax;
+
+            // Add visual note to summary details
+            heavyData.items.push({
+                name: `+ ${radiationData.displayName} (중복보장)`,
+                amount: formatKoAmount(radiationData.totalMin),
+                maxAmount: radiationData.totalMax !== radiationData.totalMin ? formatKoAmount(radiationData.totalMax) : undefined,
+                source: "기본 방사선 치료비 합산"
+            });
         }
     }
 
