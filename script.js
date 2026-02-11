@@ -934,7 +934,10 @@ function calculateHierarchicalSummary(results) {
             } else if (item.name.includes("26종")) {
                 details = coverageDetailsMap["26종항암방사선및약물치료비"];
             } else if (item.name.includes("다빈치") && item.name.includes("로봇")) {
-                details = coverageDetailsMap["다빈치로봇암수술비"];
+                // Exclude "특정암" (Specific Cancer) but keep "특정암제외" (General)
+                if (!item.name.includes("특정암") || item.name.includes("제외")) {
+                    details = coverageDetailsMap["다빈치로봇암수술비"];
+                }
             }
         }
 
@@ -1186,7 +1189,10 @@ function renderResults(results) {
             } else if (item.name.includes("26종")) {
                 details = coverageDetailsMap["26종항암방사선및약물치료비"];
             } else if (item.name.includes("다빈치") && item.name.includes("로봇")) {
-                details = coverageDetailsMap["다빈치로봇암수술비"];
+                // Exclude "특정암" (Specific Cancer) but keep "특정암제외" (General)
+                if (!item.name.includes("특정암") || item.name.includes("제외")) {
+                    details = coverageDetailsMap["다빈치로봇암수술비"];
+                }
             }
         }
 
