@@ -721,6 +721,7 @@ function formatDisplayAmount(str) {
 // ── Aggregate Hierarchical Summary Logic ──
 function calculateHierarchicalSummary(results) {
     const summaryMap = new Map();
+    let first26SummaryFound = false; // 26종 첫 번째만 한눈에보기에 반영
 
     results.forEach(item => {
         let details = coverageDetailsMap[item.name];
@@ -765,9 +766,14 @@ function calculateHierarchicalSummary(results) {
             details = [{ name: details.displayName, amount: item.amount }];
         }
 
-        // Handle 26종 Type (항암방사선 + 항암약물 두 카테고리에 반영)
+        // Handle 26종 Type (항암방사선 + 항암약물 두 카테고리에 반영, 첫 번째만)
         if (details && details.type === '26jong') {
-            details = details.summaryItems.map(d => ({ name: d.name, amount: item.amount }));
+            if (!first26SummaryFound) {
+                first26SummaryFound = true;
+                details = details.summaryItems.map(d => ({ name: d.name, amount: item.amount }));
+            } else {
+                details = null; // 이후 26종 항목은 한눈에보기에 반영 안함
+            }
         }
 
         if (details && Array.isArray(details)) {
