@@ -1033,6 +1033,41 @@ function calculateHierarchicalSummary(results) {
     return summaryMap;
 }
 
+// Helper: Get Icon based on coverage name
+function getCoverageIcon(name) {
+    // 1. Robot (Da Vinci)
+    if (name.includes("다빈치") || name.includes("로봇")) {
+        // Robot Arm / Robot Icon
+        return `<path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1c1.1 0 2 .9 2 2v6h2v-2c0-1.1.9-2 2-2h1V9c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v2h1c1.1 0 2 .9 2 2v2h2V9c0-1.1.9-2 2-2h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5V19c0 1.1.9 2 2 2h3a2 2 0 0 0 2-2v-3.5A2.5 2.5 0 0 0 9.5 13m0 2a.5.5 0 0 1 .5.5v3.5a.5.5 0 0 1-.5.5.5.5 0 0 1-.5-.5v-3.5a.5.5 0 0 1 .5-.5m9 0A2.5 2.5 0 0 0 14 15.5V19c0 1.1.9 2 2 2h3a2 2 0 0 0 2-2v-3.5A2.5 2.5 0 0 0 16.5 13m0 2a.5.5 0 0 1 .5.5v3.5a.5.5 0 0 1-.5.5.5.5 0 0 1-.5-.5v-3.5a.5.5 0 0 1 .5-.5"/>`;
+    }
+    // 2. Targeted (Target/Syringe)
+    if (name.includes("표적")) {
+        // Crosshair / Target
+        return `<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2m0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8m0-14a6 6 0 1 0 6 6 6 6 0 0 0-6-6m0 10a4 4 0 1 1 4-4 4 4 0 0 1-4 4"/>`;
+    }
+    // 3. Immuno/Drug/Chemo (Pill/Medicine)
+    if (name.includes("면역") || name.includes("약물") || name.includes("26종")) {
+        // Pill capsule
+        return `<path d="M10.5 2a8.5 8.5 0 0 0 0 17 8.5 8.5 0 0 0 0-17m0 2.5a6 6 0 0 1 0 12 6 6 0 0 1 0-12m10.84 5.37-7.41 7.42a2 2 0 0 1-2.83 0l-1.42-1.42a2 2 0 0 1 0-2.83l7.42-7.41a2 2 0 0 1 2.83 0l1.42 1.42a2 2 0 0 1 0 2.83"/>`;
+    }
+    // 4. Radiation/Proton/Heavy Ion (Radioactive/Atom)
+    if (name.includes("방사선") || name.includes("양성자") || name.includes("중입자")) {
+        // Radiation / Atom
+        return `<path d="M12 2L9 7h6l-3-5m0 20l3-5H9l3 5M4.93 4.93L7.5 9H2.5L4.93 4.93m14.14 0L16.5 9h5l-2.43-4.07M2.5 15h5l-2.57 4.07L2.5 15m19 0h-5l2.57 4.07L21.5 15"/>`;
+    }
+    // 5. Surgery (Scalpel/Hospital)
+    if (name.includes("수술")) {
+        return `<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m0 16H5V5h14v14m-8.5-2h3v-3.5h3.5v-3h-3.5V6h-3v3.5H6.5v3h3.5z"/>`;
+    }
+    // 6. Diagnosis (Report/Clipboard)
+    if (name.includes("진단") || name.includes("치료비")) {
+        return `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM6 20V4h8v4h4v12H6m8-10V4.5L18.5 9H14"/>`;
+    }
+
+    // Default (Shield/Guard)
+    return `<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4m0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>`;
+}
+
 // Raw List Renderer (Updated for Hierarchical Summary)
 function renderResults(results) {
     const listEl = document.getElementById('results-list');
@@ -1123,17 +1158,19 @@ function renderResults(results) {
                 cardAmountStr = `${formatKoAmount(data.totalMin)} ~ ${formatKoAmount(data.totalMax)}`;
             }
 
+            const iconPath = getCoverageIcon(data.displayName);
+
             card.innerHTML = `
-                <div class="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <svg width="60" height="60" viewbox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-5 pointer-events-none">
+                    <svg width="80" height="80" viewbox="0 0 24 24" fill="currentColor">${iconPath}</svg>
                 </div>
                 
-                <div class="relative z-10">
-                    <span class="text-xs font-bold block mb-1 opacity-70 break-keep tracking-wide" style="color:var(--text-color);">${data.displayName}</span>
-                    <span class="text-xl sm:text-2xl font-black block tracking-tight mt-auto" style="color:#3B82F6;">${cardAmountStr}</span>
+                <div class="relative z-10 flex flex-col h-full items-center justify-between text-center">
+                    <span class="text-base sm:text-lg font-extrabold block mb-2 opacity-90 break-keep tracking-wider" style="color:var(--text-color);">${data.displayName}</span>
+                    <span class="text-2xl sm:text-3xl font-black block tracking-tight mt-auto" style="color:#3B82F6;">${cardAmountStr}</span>
                 </div>
 
-                <div class="summary-details hidden mt-3 pt-3 border-t border-white/5 relative z-10">
+                <div class="summary-details hidden mt-4 pt-4 border-t border-white/10 relative z-10 w-full text-left">
                     ${subItemsHtml}
                 </div>
             `;
