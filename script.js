@@ -536,6 +536,11 @@ const coverageDetailsMap = {
                     name: "양성자 방사선 치료비",
                     amount: "4,000만",
                     sub: ["(급여/비급여) 항암 방사선 치료비 1,000만", "(비급여) 양성자 방사선 치료비 3,000만"]
+                },
+                {
+                    name: "중입자 방사선 치료비",
+                    amount: "1,000만",
+                    sub: ["(급여/비급여) 항암 방사선 치료비 1,000만"]
                 }
             ],
             "8000": [ // 8천만원
@@ -561,6 +566,11 @@ const coverageDetailsMap = {
                     name: "양성자 방사선 치료비",
                     amount: "2,750만",
                     sub: ["(급여/비급여) 항암 방사선 치료비 750만", "(비급여) 양성자 방사선 치료비 2,000만"]
+                },
+                {
+                    name: "중입자 방사선 치료비",
+                    amount: "750만",
+                    sub: ["(급여/비급여) 항암 방사선 치료비 750만"]
                 }
             ],
             "4000": [ // 4천만원 (기존 데이터)
@@ -586,6 +596,11 @@ const coverageDetailsMap = {
                     name: "양성자 방사선 치료비",
                     amount: "1,500만",
                     sub: ["(급여/비급여) 항암 방사선 치료비 500만", "(비급여) 양성자 방사선 치료비 1,000만"]
+                },
+                {
+                    name: "중입자 방사선 치료비",
+                    amount: "500만",
+                    sub: ["(급여/비급여) 항암 방사선 치료비 500만"]
                 }
             ]
         }
@@ -617,6 +632,11 @@ const coverageDetailsMap = {
                     name: "양성자 방사선 치료비",
                     amount: "2,000만",
                     sub: ["(급여/비급여) 항암 방사선 치료비 1,000만", "(비급여) 양성자 방사선 치료비 1,000만"]
+                },
+                {
+                    name: "중입자 방사선 치료비",
+                    amount: "1,000만",
+                    sub: ["(급여/비급여) 항암 방사선 치료비 1,000만"]
                 }
             ],
             "5000": [ // 5천만원
@@ -642,6 +662,11 @@ const coverageDetailsMap = {
                     name: "양성자 방사선 치료비",
                     amount: "1,500만",
                     sub: ["(급여/비급여) 항암 방사선 치료비 750만", "(비급여) 양성자 방사선 치료비 750만"]
+                },
+                {
+                    name: "중입자 방사선 치료비",
+                    amount: "750만",
+                    sub: ["(급여/비급여) 항암 방사선 치료비 750만"]
                 }
             ],
             "3000": [ // 3천만원
@@ -667,6 +692,11 @@ const coverageDetailsMap = {
                     name: "양성자 방사선 치료비",
                     amount: "1,000만",
                     sub: ["(급여/비급여) 항암 방사선 치료비 500만", "(비급여) 양성자 방사선 치료비 500만"]
+                },
+                {
+                    name: "중입자 방사선 치료비",
+                    amount: "500만",
+                    sub: ["(급여/비급여) 항암 방사선 치료비 500만"]
                 }
             ],
             "1000": [ // 1천만원
@@ -692,6 +722,11 @@ const coverageDetailsMap = {
                     name: "양성자 방사선 치료비",
                     amount: "500만",
                     sub: ["(급여/비급여) 항암 방사선 치료비 250만", "(비급여) 양성자 방사선 치료비 250만"]
+                },
+                {
+                    name: "중입자 방사선 치료비",
+                    amount: "250만",
+                    sub: ["(급여/비급여) 항암 방사선 치료비 250만"]
                 }
             ]
         }
@@ -728,6 +763,11 @@ const coverageDetailsMap = {
                     name: "(비급여) 양성자 방사선 치료비",
                     amount: "4,000만",
                     sub: ["(비급여) 항암 방사선 치료비 1,000만", "(비급여) 양성자 방사선 치료비 3,000만"]
+                },
+                {
+                    name: "중입자 방사선 치료비",
+                    amount: "1,000만",
+                    sub: ["(비급여) 항암 방사선 치료비 1,000만"]
                 }
             ],
             "7000": [ // 7천만원
@@ -758,6 +798,11 @@ const coverageDetailsMap = {
                     name: "(비급여) 양성자 방사선 치료비",
                     amount: "2,750만",
                     sub: ["(비급여) 항암방사선 치료비 750만", "(비급여) 양성자 방사선 치료비 2,000만"]
+                },
+                {
+                    name: "중입자 방사선 치료비",
+                    amount: "750만",
+                    sub: ["(비급여) 항암 방사선 치료비 750만"]
                 }
             ],
             "4000": [ // 4천만원
@@ -788,6 +833,11 @@ const coverageDetailsMap = {
                     name: "(비급여) 양성자 방사선 치료비",
                     amount: "1,500만",
                     sub: ["(비급여) 항암방사선 치료비 500만", "(비급여) 양성자 방사선 치료비 1,000만"]
+                },
+                {
+                    name: "중입자 방사선 치료비",
+                    amount: "500만",
+                    sub: ["(비급여) 항암 방사선 치료비 500만"]
                 }
             ]
         }
@@ -1031,98 +1081,6 @@ function calculateHierarchicalSummary(results) {
             });
         }
     });
-
-    // [NEW] Business Logic: Add "Anticancer Radiation" amount to "IMRT" and "Heavy Ion"
-    // Because IMRT and Heavy Ion also cover base Radiation Therapy.
-    const radiationKey = Array.from(summaryMap.keys()).find(k => k.includes("항암방사선") && !k.includes("세기") && !k.includes("중입자") && !k.includes("양성자"));
-
-    if (radiationKey) {
-        const radiationData = summaryMap.get(radiationKey);
-
-        // 1. IMRT (Intensity Modulated) = IMRT + Base Radiation
-        const imrtKey = Array.from(summaryMap.keys()).find(k => k.includes("세기조절"));
-        if (imrtKey) {
-            const imrtData = summaryMap.get(imrtKey);
-            imrtData.totalMin += radiationData.totalMin;
-            imrtData.totalMax += radiationData.totalMax;
-
-            // Add visual note to summary details
-            imrtData.items.push({
-                name: `+ 26종항암방사선치료비 합산 (중복보장)`,
-                amount: formatKoAmount(radiationData.totalMin),
-                maxAmount: radiationData.totalMax !== radiationData.totalMin ? formatKoAmount(radiationData.totalMax) : undefined,
-                source: "26종 담보 합산"
-            });
-        }
-
-        // 2. Heavy Ion = Heavy Ion + Base Radiation
-        const heavyKey = Array.from(summaryMap.keys()).find(k => k.includes("중입자"));
-        if (heavyKey) {
-            const heavyData = summaryMap.get(heavyKey);
-            heavyData.totalMin += radiationData.totalMin;
-            heavyData.totalMax += radiationData.totalMax;
-
-            // Add visual note to summary details
-            heavyData.items.push({
-                name: `+ 26종항암방사선치료비 합산 (중복보장)`,
-                amount: formatKoAmount(radiationData.totalMin),
-                maxAmount: radiationData.totalMax !== radiationData.totalMin ? formatKoAmount(radiationData.totalMax) : undefined,
-                source: "26종 담보 합산"
-            });
-        }
-    }
-
-    // [NEW] Business Logic: Add "26-Type Radiation" amount to Target/Immuno/Proton
-    // (IMRT/Heavy Ion handled by Base Radiation logic)
-
-    // 1. Find the merged "Anticancer Radiation" group
-    const baseRadKey = Array.from(summaryMap.keys()).find(k => k.includes("항암방사선") && !k.includes("세기") && !k.includes("중입자") && !k.includes("양성자"));
-
-    if (baseRadKey) {
-        const baseRadData = summaryMap.get(baseRadKey);
-
-        // 2. Find "26종" items INSIDE this group
-        const type26Items = baseRadData.items.filter(item => item.name.includes("26종"));
-
-        // 3. Sum them up
-        let type26Min = 0;
-        let type26Max = 0;
-        type26Items.forEach(item => {
-            const valMin = parseKoAmount(item.amount);
-            const valMax = item.maxAmount ? parseKoAmount(item.maxAmount) : valMin;
-            type26Min += valMin;
-            type26Max += valMax;
-        });
-
-        if (type26Min > 0) {
-            // 4. Distribute to Target, Immuno, Proton (Drug-based therapies)
-            // Note: IMRT/Heavy Ion already get "Base Radiation" which INCLUDES these 26-type items now.
-            const targetKeywords = ["항암약물", "표적", "면역", "양성자"];
-
-            summaryMap.forEach((data, key) => {
-                if (key === baseRadKey) return; // Skip self
-                if (key.includes("수술")) return; // Skip surgery
-
-                // Check if it matches target keywords
-                const isTarget = targetKeywords.some(kw => key.includes(kw));
-
-                // Special check: Don't add to IMRT/Heavy Ion (avoid double count)
-                if (key.includes("세기조절") || key.includes("중입자")) return;
-
-                if (isTarget) {
-                    data.totalMin += type26Min;
-                    data.totalMax += type26Max;
-
-                    data.items.push({
-                        name: `+ 26종 항암 방사선 치료비 (중복보장)`,
-                        amount: formatKoAmount(type26Min),
-                        maxAmount: type26Max !== type26Min ? formatKoAmount(type26Max) : undefined,
-                        source: "26종 담보 합산"
-                    });
-                }
-            });
-        }
-    }
 
     return summaryMap;
 }
