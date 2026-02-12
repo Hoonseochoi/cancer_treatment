@@ -1496,46 +1496,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── PDF Export Function ──
 window.exportToPDF = async function () {
-    const target = document.querySelector('main');
+    const fileInfo = document.getElementById('file-info');
+    const summarySection = document.getElementById('summary-section');
     
-    // 폰트가 로드될 때까지 넉넉하게 대기
+    if (!fileInfo || !summarySection) {
+        alert('캡처할 영역을 찾을 수 없습니다.');
+        return;
+    }
+
+    // 폰트 대기
     await document.fonts.ready;
 
+    // 1. 임시 캡처 컨테이너 생성 (원본에 영향 주지 않음)
+    const captureContainer = document.createElement('div');
+    captureContainer.style.position = 'fixed';
+    captureContainer.style.left = '-9999px';
+    captureContainer.style.top = '0';
+    captureContainer.style.width = '800px'; // 고정 너비로 안정성 확보
+    captureContainer.style.padding = '40px';
+    captureContainer.style.background = '#EBEBEB';
+    captureContainer.style.display = 'flex';
+    captureContainer.style.flexDirection = 'column';
+    captureContainer.style.gap = '20px';
+    
+    // 2. 필요한 부분만 복제해서 컨테이너에 넣기
+    const fileInfoClone = fileInfo.cloneNode(true);
+    const summaryClone = summarySection.cloneNode(true);
+    
+    // 복제본 내 hidden 제거 (혹시 모르니)
+    fileInfoClone.classList.remove('hidden');
+    summaryClone.classList.remove('hidden');
+    
+    // 파일 취소 버튼 등 불필요 요소 제거
+    const itemsToRemove = [
+        fileInfoClone.querySelector('#reset-btn'),
+        summaryClone.querySelector('#export-pdf-btn')
+    ];
+    itemsToRemove.forEach(el => { if(el) el.remove(); });
+
+    captureContainer.appendChild(fileInfoClone);
+    captureContainer.appendChild(summaryClone);
+    document.body.appendChild(captureContainer);
+
     const options = {
-        scale: 2, // 3은 너무 높아서 메모리 오류로 레이아웃이 깨질 수 있음
+        scale: 2,
         useCORS: true,
         backgroundColor: '#EBEBEB',
         logging: false,
-        // 글자 잘림 방지를 위한 핵심 설정
-        imageTimeout: 0,
-        removeContainer: true,
-        // 현재 보이는 화면 그대로를 캡처하기 위해 윈도우 좌표 고정
-        width: target.offsetWidth,
-        height: target.offsetHeight,
-        windowWidth: document.documentElement.offsetWidth,
-        windowHeight: document.documentElement.offsetHeight,
-        
         onclone: (clonedDoc) => {
-            const cloneMain = clonedDoc.querySelector('main');
-            
-            // 1. 강제 스타일 주입 (잘림 방지 및 폰트 고정)
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
-                /* 폰트를 단순화하여 계산 오차 방지 */
                 * {
-                    font-family: sans-serif !important; /* 복잡한 폰트 대신 시스템 폰트로 우선 테스트 */
+                    font-family: sans-serif !important;
                     letter-spacing: 0 !important;
                     word-spacing: 0 !important;
-                    text-transform: none !important;
                 }
-                /* 글자 하단 잘림 해결을 위한 유일한 방법: Line-height 상향 */
                 span, div, p, b, h1, h2, h3 {
-                    line-height: 1.6 !important; 
+                    line-height: 1.6 !important;
                     overflow: visible !important;
-                }
-                /* 버튼 등 UI 제거 */
-                #export-pdf-btn, #reset-btn, #upload-section {
-                    display: none !important;
                 }
             `;
             clonedDoc.head.appendChild(style);
@@ -1543,7 +1561,7 @@ window.exportToPDF = async function () {
     };
 
     try {
-        const canvas = await html2canvas(target, options);
+        const canvas = await html2canvas(captureContainer, options);
         const imgData = canvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.href = imgData;
@@ -1551,5 +1569,7 @@ window.exportToPDF = async function () {
         link.click();
     } catch (err) {
         console.error(err);
+    } finally {
+        document.body.removeChild(captureContainer);
     }
 };
