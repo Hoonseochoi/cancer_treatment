@@ -1,9 +1,8 @@
-// ── Configuration & PDF.js ──
+﻿// ── Configuration & PDF.js ──
 // PDF.js worker setup
 if (typeof pdfjsLib !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
-
 const defaultConfig = {
     main_title: "암 치료비 보장금액 분석 ( 테스트 )",
     subtitle_text: "가입제안서 PDF를 업로드하면, 보장내역 중 암 치료비 파트만 추출 합니다",
@@ -17,7 +16,6 @@ const defaultConfig = {
     font_family: "Outfit",
     font_size: 16
 };
-
 function applyConfig(config) {
     const c = { ...defaultConfig, ...config };
     const font = c.font_family || defaultConfig.font_family;
@@ -28,18 +26,15 @@ function applyConfig(config) {
     document.documentElement.style.setProperty('--text-color', c.text_color);
     document.documentElement.style.setProperty('--primary-color', c.primary_color);
     document.documentElement.style.setProperty('--secondary-color', c.secondary_color);
-
     const wrapper = document.getElementById('app-wrapper');
     if (wrapper) {
         wrapper.style.background = c.background_color;
         wrapper.style.color = c.text_color;
     }
-
     const titleEl = document.getElementById('main-title');
     const subtitleEl = document.getElementById('subtitle');
     const uploadBtnEl = document.getElementById('upload-btn-text');
     const resultHeaderEl = document.getElementById('result-header');
-
     if (titleEl) {
         titleEl.textContent = c.main_title;
         titleEl.style.fontFamily = `'Outfit', '${font}', sans-serif`;
@@ -60,11 +55,9 @@ function applyConfig(config) {
         resultHeaderEl.style.fontFamily = `'Outfit', '${font}', sans-serif`;
         resultHeaderEl.style.fontSize = `${baseSize}px`;
     }
-
     document.body.style.fontFamily = `'${font}', sans-serif`;
     document.body.style.fontSize = `${baseSize}px`;
 }
-
 if (window.elementSdk) {
     window.elementSdk.init({
         defaultConfig,
@@ -95,13 +88,10 @@ if (window.elementSdk) {
         ])
     });
 }
-
 document.addEventListener('DOMContentLoaded', () => {
     console.log("Script v1.5: Name Cleaning Updated");
     applyConfig(defaultConfig);
 });
-
-
 // ── RAW Extraction Logic ──
 // 모든 텍스트 줄을 분석하되, 특정 범위(가입담보리스트 ~ 주의사항) 내에서만 추출
 // + 노이즈 필터링 강화
@@ -110,20 +100,16 @@ function extractRawCoverages(text) {
         console.warn("extractRawCoverages: Invalid text input", text);
         return [];
     }
-
     const lines = text.split('\n');
     let targetLines = lines;
     let startIndex = -1;
     let endIndex = -1;
-
     // 1. 범위 필터링 (Noise Reduction) - 개선: 설명문이 아닌 실제 테이블 헤더만 감지
     const startKeywords = ["가입담보리스트", "가입담보", "담보사항"];
     const endKeywords = ["주의사항", "유의사항", "알아두실"];
-
     // 시작점: 짧은 줄에서만 찾기 (설명문이 아닌 테이블 헤더/제목)
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].replace(/\s+/g, '');
-
         if (startIndex === -1) {
             // 40자 이하인 줄에서만 시작 키워드 검색 (긴 설명문 제외)
             if (line.length < 40 && startKeywords.some(k => line.includes(k))) {
@@ -140,12 +126,10 @@ function extractRawCoverages(text) {
             }
         }
     }
-
     if (startIndex !== -1) {
         if (endIndex === -1) endIndex = lines.length;
         targetLines = lines.slice(startIndex, endIndex);
         console.log(`Range filtering applied: ${startIndex} ~ ${endIndex} (${targetLines.length} lines)`);
-
         // 범위가 너무 작으면 (10줄 미만) 전체 문서 스캔으로 Fallback
         if (targetLines.length < 10) {
             console.warn(`Range too small (${targetLines.length} lines). Falling back to full document scan.`);
@@ -155,14 +139,12 @@ function extractRawCoverages(text) {
     } else {
         console.warn("Start keyword not found. Scanning entire document.");
     }
-
     // 1.5 줄 이어붙이기 (PDF 텍스트 레이어에서 줄이 분리된 경우 처리)
     // 예: "갱신형 암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))(통합간\n편가입)\n1천만원"
     //   → "갱신형 암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))(통합간편가입) 1천만원"
     const amountRegex = /[0-9,]+(?:억|천|백|십)*(?:만원|억원|만|억)|세부보장참조/;
     const mergedLines = [];
     let pendingLine = '';
-
     for (let i = 0; i < targetLines.length; i++) {
         const trimmed = targetLines[i].trim();
         if (!trimmed) {
@@ -170,10 +152,8 @@ function extractRawCoverages(text) {
             mergedLines.push('');
             continue;
         }
-
         // 현재 줄에 금액이 있는지 체크
         const hasAmount = amountRegex.test(trimmed);
-
         if (pendingLine) {
             // 이전에 금액 없는 줄이 대기 중 → 현재 줄과 합침
             pendingLine += ' ' + trimmed;
@@ -199,9 +179,7 @@ function extractRawCoverages(text) {
     if (pendingLine) mergedLines.push(pendingLine);
     targetLines = mergedLines;
     console.log(`Line merging: ${mergedLines.length} lines after merge`);
-
     const results = [];
-
     // 2. 추출 로직 + 강력한 필터링
     // 제외할 단어들 (법적 문구, 설명, 예시표 등)
     const blacklist = [
@@ -218,26 +196,20 @@ function extractRawCoverages(text) {
         // 계약 정보 필터
         "남성", "여성", "만기", "가입금액"
     ];
-
     targetLines.forEach((line, idx) => {
         const originalIdx = (startIndex === -1 ? 0 : startIndex) + idx;
         const trimmed = line.trim();
         if (!trimmed) return;
-
         // A. 블랙리스트 체크 (문장 전체)
         if (blacklist.some(word => trimmed.includes(word))) return;
-
         // [NEW] "세부보장"으로 시작하는 줄은 노이즈로 간주하고 제외 (세부보장참조는 허용하되, 문장 시작이 세부보장이면 제외)
         if (trimmed.startsWith("세부보장")) return;
-
         // B. 금액 패턴 찾기
         let match = trimmed.match(/([0-9,]+(?:억|천|백|십)*(?:만원|억원|만|억))/);
-
         // "원"만 있는 경우도 찾되, 너무 작은 금액(100원 미만)이나 긴 문장은 제외
         if (!match) {
             match = trimmed.match(/([0-9,]+(?:천|백|십)?원)/);
         }
-
         // "세부보장참조" 패턴도 금액으로 인정 (상위 담보항목)
         let isRefAmount = false;
         if (!match && trimmed.includes('세부보장참조')) {
@@ -249,24 +221,19 @@ function extractRawCoverages(text) {
                 isRefAmount = true;
             }
         }
-
         if (match) {
             const amountStr = match[1];
-
             // C. 담보명 추출 및 정제
             let namePart = trimmed.substring(0, match.index).trim();
-
             // 0. [NEW] 앞부분에 붙은 "20년 / 20년" 같은 날짜 패턴 제거 (텍스트 병합 이슈 해결)
             // 패턴: "숫자년" 또는 "숫자세"가 포함된 앞부분 제거
             namePart = namePart.replace(/^[\d]+(년|세|월)\s*[\/]?\s*[\d]*(년|세|월)?\s*/, '').trim();
             // 혹시 숫자가 남아있다면 한번 더 제거 (예: "278 갱신형...")
             namePart = namePart.replace(/^[\d]+\s+/, '').trim();
-
             // 1. 카테고리 헤더 제거 (표의 첫번째 열 내용이 섞여 들어간 경우)
             // 예: "치료비 112 암...", "기본계약 32...", "3대진단 64..."
             // 주의: "기타피부암" 처럼 단어의 일부인 경우는 제외하고, "기타 110" 처럼 분리된 경우만 제거
             const categoryKeywords = ["기본계약", "3대진단", "치료비", "수술비", "입원비", "배상책임", "후유장해", "기타", "2대진단", "질병", "상해", "운전자"];
-
             for (const key of categoryKeywords) {
                 // 키워드 뒤에 공백이나 숫자가 오는 경우에만 제거 (정규식 사용)
                 // 예: "기타 110" -> 제거, "기타피부암" -> 유지
@@ -275,42 +242,31 @@ function extractRawCoverages(text) {
                     namePart = namePart.replace(regex, '').trim();
                 }
             }
-
             // 2. 순번/코드 제거 (예: "32 ", "112 ", "64 ", "ㄴ ", "- ")
             // 주의: "26종" 같은건 지우면 안됨. 숫자 뒤에 공백이나 기호가 있는 경우만 제거
             namePart = namePart.replace(/^[\d]+\s+/, '');
             namePart = namePart.replace(/^[ㄴ\-•·\s]+/, '');
-
             // 한번 더 체크 (예: "치료비" 지우고 났더니 "112 "가 남은 경우)
             namePart = namePart.replace(/^[\d]+\s+/, '');
-
             // 3. 끝부분 공백/점 제거
             namePart = namePart.replace(/[.\s]+$/, '');
             // 4. "세부보장참조" 제거
             namePart = namePart.replace(/세부보장참조/g, '').trim();
-
             // 5. 괄호 안 내용 정리
             // 맨 앞의 짧은 괄호만 제거 (예: "(무)암진단비" -> "암진단비")
             // 주의: non-greedy로 첫 번째 괄호쌍만 제거 ("(무)암(실속형)" -> "암(실속형)" 유지)
             namePart = namePart.replace(/^\([^)]*\)/, '').trim();
-
             // 6. [NEW] 끝부분에 붙은 숫자/코드 제거 (예: "상급종합병원116" -> "상급종합병원")
             // 패턴: 한글 뒤에 붙은 숫자들 제거
             namePart = namePart.replace(/([가-힣])\d+$/, '$1').trim();
-
-
-
             // E. 세부 내용(보험료, 납기/만기) 추출
             // 나머지 뒷부분에서 정보 추출
             // 예: "4천만원 15,560 20년 / 100세"
             // match[0]은 "4천만원" (금액 전체 매치)
-
             // 금액 뒷부분 자르기
             let suffix = trimmed.substring(match.index + match[0].length).trim();
-
             let premium = "-";
             let period = "-";
-
             // 1. 보험료 찾기 (숫자 + 콤마 조합, 보통 금액 바로 뒤에 옴)
             // 예: "15,560" 또는 "2,144"
             const premiumMatch = suffix.match(/([0-9,]+)/);
@@ -319,14 +275,12 @@ function extractRawCoverages(text) {
                 // 보험료 찾았으면 그 뒤 내용에서 기간 찾기
                 suffix = suffix.substring(premiumMatch.index + premiumMatch[0].length).trim();
             }
-
             // 2. 납기/만기 찾기 (예: "20년 / 100세", "20년/100세")
             // 패턴: "숫자년" 또는 "숫자세"가 포함된 문자열
             const periodMatch = suffix.match(/([0-9]+\s*년\s*\/?[^]*)/);
             if (periodMatch) {
                 period = periodMatch[1].trim();
             }
-
             // D. 담보명 유효성 체크
             // - 너무 짧으면(1글자) 제외
             // - 너무 길면(50글자 이상) 설명문일 확률 높음 -> 제외
@@ -354,11 +308,9 @@ function extractRawCoverages(text) {
             }
         }
     });
-
     console.log(`extractRawCoverages: ${results.length}건 추출 완료 (전체 ${targetLines.length}줄 분석)`);
     return results;
 }
-
 // ── PDF Extraction (Hybrid: Text Layer + OCR + Line Preservation) ──
 async function extractTextFromPDF(file, log = console.log) {
     log("PDF 로딩 시작...");
@@ -366,30 +318,23 @@ async function extractTextFromPDF(file, log = console.log) {
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     log(`PDF 로드 완료. 총 ${pdf.numPages}페이지`);
     let fullText = '';
-
     // 가입담보리스트는 보통 3~6페이지에 위치 (전체 스캔시 약관/조건문 노이즈 발생)
     const startPage = Math.min(3, pdf.numPages);
     const endPage = Math.min(6, pdf.numPages);
     const totalPagesToProcess = endPage - startPage + 1;
-
     showToast(`총 ${totalPagesToProcess}페이지 정밀 분석을 시작합니다.`, false);
-
     for (let i = startPage; i <= endPage; i++) {
         let pageText = "";
-
         try {
             updateProgress(
                 Math.round(((i - startPage) / totalPagesToProcess) * 100),
                 `${i}페이지 분석 중...`
             );
-
             const page = await pdf.getPage(i);
-
             // 1. 텍스트 레이어 시도 (줄바꿈 보존 로직 추가)
             try {
                 const content = await page.getTextContent();
                 if (content && content.items && content.items.length > 0) {
-
                     // Y 좌표 기준 정렬 (PDF.js는 가끔 순서가 섞임)
                     // transform[5]가 Y좌표 (PDF좌표계는 아래에서 위로 증가)
                     // Y가 큰 순서대로(위->아래) 정렬, 같은 줄은 X(transform[4])가 작은 순서대로(왼->오) 정렬
@@ -400,7 +345,6 @@ async function extractTextFromPDF(file, log = console.log) {
                         w: item.width,
                         h: item.height
                     }));
-
                     // 정렬: Y 내림차순 (허용오차 5), X 오름차순
                     items.sort((a, b) => {
                         if (Math.abs(a.y - b.y) < 5) { // 같은 줄로 간주
@@ -408,11 +352,9 @@ async function extractTextFromPDF(file, log = console.log) {
                         }
                         return b.y - a.y; // 위에서 아래로
                     });
-
                     // 텍스트 조립
                     let lastY = items[0].y;
                     let lastX = items[0].x;
-
                     for (const item of items) {
                         // 줄바꿈 감지 (Y차이가 큼)
                         if (Math.abs(item.y - lastY) > 8) { // 줄 간격 임계값 8
@@ -424,7 +366,6 @@ async function extractTextFromPDF(file, log = console.log) {
                                 pageText += " ";
                             }
                         }
-
                         pageText += item.str;
                         lastY = item.y;
                         lastX = item.x + item.w; // 다음 글자 예상 시작 위치
@@ -433,25 +374,20 @@ async function extractTextFromPDF(file, log = console.log) {
             } catch (err) {
                 console.warn(`Page ${i} Text Layer Error:`, err);
             }
-
             // 2. OCR Fallback
             // 텍스트가 너무 적으면(50자 미만) 이미지로 간주
             const len = pageText.trim().length;
-
             if (len < 50) {
                 updateProgress(
                     Math.round(((i - startPage) / totalPagesToProcess) * 100),
                     `${i}페이지 OCR 변환 중...`
                 );
-
                 const viewport = page.getViewport({ scale: 2.0 });
                 const canvas = document.createElement('canvas');
                 const context = canvas.getContext('2d');
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
-
                 await page.render({ canvasContext: context, viewport: viewport }).promise;
-
                 try {
                     const result = await Tesseract.recognize(
                         canvas,
@@ -468,10 +404,8 @@ async function extractTextFromPDF(file, log = console.log) {
                             }
                         }
                     );
-
                     pageText = (result && result.data && result.data.text) || "";
                     log(`Page ${i} OCR 완료: ${pageText.length}자`);
-
                 } catch (ocrErr) {
                     console.error(`Page ${i} OCR Error:`, ocrErr);
                     log(`Page ${i} OCR 실패: ${ocrErr.message}`);
@@ -479,18 +413,14 @@ async function extractTextFromPDF(file, log = console.log) {
             } else {
                 log(`Page ${i} 텍스트 레이어 발견: ${len}자`);
             }
-
         } catch (pageErr) {
             console.error(`Page ${i} Critical Error:`, pageErr);
             log(`Page ${i} 처리 중 오류: ${pageErr.message}`);
         }
-
         fullText += (pageText || "") + '\n';
     }
-
     return fullText || "";
 }
-
 // ── UI Helpers ──
 function updateProgress(pct, text) {
     const bar = document.getElementById('progress-bar');
@@ -498,7 +428,6 @@ function updateProgress(pct, text) {
     if (bar) bar.style.width = pct + '%';
     if (txt) txt.textContent = text;
 }
-
 function showToast(msg, isError = true) {
     const toast = document.getElementById('toast');
     toast.textContent = msg;
@@ -506,7 +435,6 @@ function showToast(msg, isError = true) {
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 4000);
 }
-
 // ── Coverage Detail Dictionary ──
 const coverageDetailsMap = {
     // 4. 비급여(상급종합병원 포함)형
@@ -886,7 +814,6 @@ const coverageDetailsMap = {
             ]
         }
     },
-
     // 3. 암 통합치료비 III (Range Type)
     "암진단및치료비(암 통합치료비III)": {
         "type": "variant",
@@ -903,7 +830,6 @@ const coverageDetailsMap = {
             ]
         }
     },
-
     // 4. 10년갱신 개별 담보 (passthrough: 자기 자신의 금액을 그대로 사용)
     "항암중입자방사선치료비": {
         type: "passthrough",
@@ -930,7 +856,6 @@ const coverageDetailsMap = {
         type: "passthrough",
         displayName: "(10년갱신)(최초1회) 다빈치 로봇 수술비"
     },
-
     // [NEW] 암 통합치료비 (주요치료) - 비급여 (7천/5천/3천)
     "암 통합치료비(주요치료)(비급여(전액본인부담 포함), 암중점치료기관(상급 종합병원 포함))": {
         "type": "variant",
@@ -977,7 +902,6 @@ const coverageDetailsMap = {
             ]
         }
     },
-
     // 4. 26종 항암방사선및약물치료비 (여러 카테고리에 동시 반영)
     "26종항암방사선및약물치료비": {
         type: "26jong",
@@ -992,14 +916,12 @@ const coverageDetailsMap = {
         ]
     }
 };
-
 // ── Helper: Parse Korean Amount ──
 function parseKoAmount(str) {
     if (!str) return 0;
     // Remove "원", ",", " "
     let clean = str.replace(/[원,\s]/g, '');
     let val = 0;
-
     // Check units
     if (clean.includes('억')) {
         let parts = clean.split('억');
@@ -1024,20 +946,16 @@ function parseKoAmount(str) {
     }
     return val; // 만원 단위 반환
 }
-
 // ── Helper: Format Korean Amount ──
 function formatKoAmount(val) {
     if (val === 0) return "0원";
     let uk = Math.floor(val / 10000);
     let man = val % 10000;
-
     let result = "";
     if (uk > 0) result += `${uk}억 `;
     if (man > 0) result += `${man.toLocaleString()}만`;
-
     return result.trim() + "원";
 }
-
 // ── Helper: Normalize any amount string to #,###만원 format ──
 function formatDisplayAmount(str) {
     if (!str) return str;
@@ -1045,15 +963,12 @@ function formatDisplayAmount(str) {
     if (val === 0) return str; // 파싱 실패 시 원본 유지
     return formatKoAmount(val);
 }
-
 // ── Aggregate Hierarchical Summary Logic ──
 function calculateHierarchicalSummary(results) {
     const summaryMap = new Map();
     let first26SummaryFound = false; // 26종 첫 번째만 한눈에보기에 반영
-
     results.forEach(item => {
         let details = coverageDetailsMap[item.name];
-
         // Dictionary Lookup (Fallback Logic)
         if (!details) {
             if (item.name.includes("암 통합치료비") && (item.name.includes("III") || item.name.includes("Ⅲ"))) {
@@ -1069,7 +984,6 @@ function calculateHierarchicalSummary(results) {
                 details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
             } else if (item.name.includes("암 통합치료비") && item.name.includes("기본형")) {
                 details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
-
                 details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
             }
             // 10년갱신 개별 담보 키워드 매칭
@@ -1092,29 +1006,24 @@ function calculateHierarchicalSummary(results) {
                 }
             }
         }
-
         // Handle Variant Type (Amount-based selection)
         if (details && details.type === 'variant') {
             const amountVal = parseKoAmount(item.amount);
             let variantData = details.data[amountVal.toString()];
-
             // Fallback default
             if (!variantData) {
                 // Approximate matching for limits (e.g. 7XXX -> 8000, 4XXX -> 5000)
                 if (amountVal > 6000) variantData = details.data["8000"] || details.data["10000"];
                 else if (amountVal > 3000) variantData = details.data["5000"] || details.data["4000"];
                 else if (amountVal > 1000) variantData = details.data["2000"] || details.data["1000"];
-
                 if (!variantData && details.data["10000"]) variantData = details.data["10000"];
             }
             details = variantData;
         }
-
         // Handle Passthrough Type (자기 금액 그대로 사용)
         if (details && details.type === 'passthrough') {
             details = [{ name: details.displayName, amount: item.amount }];
         }
-
         if (details && details.type === '26jong') {
             if (!first26SummaryFound) {
                 first26SummaryFound = true;
@@ -1127,13 +1036,11 @@ function calculateHierarchicalSummary(results) {
                 details = null;
             }
         }
-
         if (details && Array.isArray(details)) {
             details.forEach(det => {
                 // Normalize Name to find "Common Group"
                 let groupingSource = det.targetName || det.name;
                 let normalizedName = groupingSource;
-
                 // [KEYWORD-BASED CATEGORIZATION]
                 // 1. targetName이 명시적으로 있으면 최우선 적용 (26종 매핑 보장)
                 if (det.targetName) {
@@ -1162,12 +1069,9 @@ function calculateHierarchicalSummary(results) {
                     // Fallback: Remove special chars
                     normalizedName = groupingSource.replace(/[^가-힣0-9]/g, '');
                 }
-
                 // 3. Make Display Name pretty if needed (or just use normalized?)
                 // Actually, we want to group by "meaning", so removing spaces helps matching "표적 항암" == "표적항암"
-
                 const amount = parseKoAmount(det.amount); // det.amount: "500만"
-
                 if (!summaryMap.has(normalizedName)) {
                     summaryMap.set(normalizedName, {
                         displayName: normalizedName, // Temporary
@@ -1176,16 +1080,12 @@ function calculateHierarchicalSummary(results) {
                         items: []
                     });
                 }
-
                 const group = summaryMap.get(normalizedName);
-
                 // Amount Parsing (Support Range)
                 const valMin = parseKoAmount(det.amount);
                 const valMax = det.maxAmount ? parseKoAmount(det.maxAmount) : valMin;
-
                 group.totalMin += valMin;
                 group.totalMax += valMax;
-
                 group.items.push({
                     name: det.name,
                     amount: det.amount,
@@ -1193,7 +1093,6 @@ function calculateHierarchicalSummary(results) {
                     source: item.name,
                     hiddenInDetail: det.hiddenInDetail
                 });
-
                 // Update display name (pick longest readable name)
                 const is26JongItem = det.name.includes("26종");
                 if ((det.name.length > group.displayName.length || group.displayName === normalizedName) && !is26JongItem) {
@@ -1206,10 +1105,8 @@ function calculateHierarchicalSummary(results) {
             });
         }
     });
-
     return summaryMap;
 }
-
 // Helper: Get Icon based on coverage name
 function getCoverageIcon(name) {
     // 1. Robot (Da Vinci)
@@ -1240,11 +1137,9 @@ function getCoverageIcon(name) {
     if (name.includes("진단") || name.includes("치료비")) {
         return `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM6 20V4h8v4h4v12H6m8-10V4.5L18.5 9H14"/>`;
     }
-
     // Default (Shield/Guard)
     return `<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4m0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>`;
 }
-
 // Raw List Renderer (Updated for Hierarchical Summary)
 function renderResults(results) {
     const listEl = document.getElementById('results-list');
@@ -1252,21 +1147,17 @@ function renderResults(results) {
     const resultsSection = document.getElementById('results-section');
     const summarySection = document.getElementById('summary-section');
     const emptyState = document.getElementById('empty-state');
-
     if (!results || results.length === 0) {
         resultsSection.classList.add('hidden');
         summarySection.classList.add('hidden');
         emptyState.classList.remove('hidden');
         return;
     }
-
     emptyState.classList.add('hidden');
     resultsSection.classList.remove('hidden');
     summarySection.classList.remove('hidden');
-
     // 1. Calculate Hierarchical Summary
     const summaryMap = calculateHierarchicalSummary(results);
-
     // Calculate Grand Total Range
     let grandTotalMin = 0;
     let grandTotalMax = 0;
@@ -1274,25 +1165,20 @@ function renderResults(results) {
         grandTotalMin += d.totalMin;
         grandTotalMax += d.totalMax;
     });
-
     // 2. Render Summary Grid
     if (summaryMap.size > 0) {
         summaryGrid.innerHTML = '';
         summaryGrid.className = "grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12";
-
         // Header Title
         const header = document.createElement('div');
         header.className = "col-span-1 sm:col-span-3 text-lg font-black mb-2 flex items-center justify-between";
         header.style.color = "var(--primary-color)";
-
         let headerAmountStr = formatKoAmount(grandTotalMin);
         if (grandTotalMin !== grandTotalMax) {
             headerAmountStr = `${formatKoAmount(grandTotalMin)} ~ ${formatKoAmount(grandTotalMax)}`;
         }
-
         header.innerHTML = `🛡️ 집계된 암 치료 보장금액 합계 <span style="font-size:1.1em; color:var(--primary-dark); margin-left:12px; font-family:'Outfit';">${headerAmountStr}</span>`;
         summaryGrid.appendChild(header);
-
         // Convert Map to Array and Sort
         const sortedItems = Array.from(summaryMap.entries()).sort((a, b) => {
             const priorities = ["표적", "면역", "양성자"];
@@ -1304,11 +1190,9 @@ function renderResults(results) {
             };
             return getPriority(a[0]) - getPriority(b[0]);
         });
-
         sortedItems.forEach(([name, data]) => {
             const card = document.createElement('div');
             card.className = "premium-card p-5 rounded-3xl flex flex-col justify-start gap-4 transition-all duration-300 group";
-
             // Generate Sub-items HTML
             let subItemsHtml = '';
             data.items.forEach(sub => {
@@ -1319,7 +1203,6 @@ function renderResults(results) {
                 if (sub.maxAmount && sub.maxAmount !== sub.amount && !amtDisplay.includes('(')) {
                     amtDisplay = `${formatDisplayAmount(sub.amount)}~${formatDisplayAmount(sub.maxAmount)}`;
                 }
-
                 subItemsHtml += `
                     <div class="mt-3 pl-4 border-l-3 border-red-500/10 text-xs text-left">
                         <div class="flex items-center justify-between font-bold text-gray-700">
@@ -1331,13 +1214,11 @@ function renderResults(results) {
                         </div>
                     </div>`;
             });
-
             const icon = getCoverageIcon(name);
             let totalDisplay = formatKoAmount(data.totalMin);
             if (data.totalMin !== data.totalMax) {
                 totalDisplay = `${formatKoAmount(data.totalMin)}~${formatKoAmount(data.totalMax)}`;
             }
-
             card.innerHTML = `
                 <div class="flex flex-col gap-4">
                     <div class="flex items-center justify-between">
@@ -1360,10 +1241,8 @@ function renderResults(results) {
             summaryGrid.appendChild(card);
         });
     }
-
     // 3. Render Detail List
     listEl.innerHTML = '';
-
     // Sort results: Items with details come first
     results.sort((a, b) => {
         const hasDetailsA = !!findDetails(a.name);
@@ -1372,10 +1251,8 @@ function renderResults(results) {
         if (!hasDetailsA && hasDetailsB) return 1;
         return 0;
     });
-
     results.forEach((item, idx) => {
         let details = findDetails(item.name);
-
         // Handle Variant Type (Amount-based selection)
         if (details && details.type === 'variant') {
             const amountVal = parseKoAmount(item.amount);
@@ -1396,13 +1273,10 @@ function renderResults(results) {
         if (details && details.type === '26jong') {
             details = [{ name: details.detailName, amount: item.amount }];
         }
-
         const itemCard = document.createElement('div');
         itemCard.className = "premium-card rounded-2xl p-4 flex flex-col gap-4 stagger-in cursor-pointer hover:border-red-500/30 transition-all";
         itemCard.style.animationDelay = `${idx * 40}ms`;
-
         const icon = getCoverageIcon(item.name);
-
         let detailHtml = '';
         if (details && Array.isArray(details)) {
             detailHtml = `
@@ -1441,7 +1315,6 @@ function renderResults(results) {
             });
             detailHtml += `</div></div>`;
         }
-
         itemCard.innerHTML = `
             <div class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-4 flex-1 min-w-0">
@@ -1462,7 +1335,6 @@ function renderResults(results) {
             </div>
             ${detailHtml}
         `;
-
         if (details) {
             itemCard.addEventListener('click', () => {
                 const content = itemCard.querySelector('.detail-content');
@@ -1476,12 +1348,10 @@ function renderResults(results) {
         listEl.appendChild(itemCard);
     });
 }
-
 // [NEW] Toggle Results List
 function toggleResultsList() {
     const list = document.getElementById('results-list');
     const icon = document.getElementById('results-toggle-icon');
-
     if (list.classList.contains('hidden')) {
         list.classList.remove('hidden');
         // Add a micro-delay for opacity transition
@@ -1500,9 +1370,6 @@ function toggleResultsList() {
         icon.classList.remove('rotate-180');
     }
 }
-
-
-
 // Helper to find details (Global Scope)
 function findDetails(itemName) {
     let details = coverageDetailsMap[itemName];
@@ -1523,7 +1390,6 @@ function findDetails(itemName) {
         else if (itemName.includes("암 통합치료비") && itemName.includes("기본형")) {
             details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
         }
-
         else if (itemName.includes("암 통합치료비") && itemName.includes("실속형")) {
             details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
         }
@@ -1547,38 +1413,31 @@ function findDetails(itemName) {
     }
     return details;
 }
-
 // ── File Processing ──
 async function processFile(file) {
     if (!file) return;
-
     document.getElementById('progress-section').classList.remove('hidden');
     document.getElementById('upload-section').style.display = 'none';
     document.getElementById('results-section').classList.add('hidden');
     document.getElementById('summary-section').classList.add('hidden');
     document.getElementById('empty-state').classList.add('hidden');
-
     try {
         let text = '';
         const nameEl = document.getElementById('file-name');
         const sizeEl = document.getElementById('file-size');
         const infoEl = document.getElementById('file-info');
-
         if (nameEl) nameEl.textContent = file.name;
         if (sizeEl) sizeEl.textContent = (file.size / 1024).toFixed(1) + ' KB';
         if (infoEl) infoEl.classList.remove('hidden');
-
         const rawTextEl = document.getElementById('raw-text');
         const log = (msg) => {
             console.log(msg);
             if (rawTextEl) rawTextEl.textContent += msg + "\n";
         }
-
         // Image Mode
         if (file.type.startsWith('image/')) {
             updateProgress(0, '이미지 OCR 분석 준비 중...');
             if (typeof Tesseract === 'undefined') throw new Error("Tesseract.js 로드 실패");
-
             const result = await Tesseract.recognize(file, 'kor+eng', {
                 logger: m => {
                     if (m?.status === 'recognizing text') {
@@ -1602,21 +1461,16 @@ async function processFile(file) {
             rawTextEl.textContent = text.substring(0, 5000) + (text.length > 5000 ? '\n...(이하 생략)' : '');
             document.getElementById('debug-section').classList.remove('hidden');
         }
-
         // Run Raw Extraction
         const results = extractRawCoverages(text);
-
         await new Promise(r => setTimeout(r, 500));
         document.getElementById('progress-section').classList.add('hidden');
-
         renderResults(results);
-
         if (results.length > 0) {
             showToast(`${results.length}개의 항목을 추출했습니다.`, false);
         } else {
             showToast('추출된 항목이 없습니다. 텍스트 인식 결과를 확인해주세요.', true);
         }
-
     } catch (err) {
         document.getElementById('progress-section').classList.add('hidden');
         document.getElementById('upload-section').style.display = '';
@@ -1624,19 +1478,16 @@ async function processFile(file) {
         console.error(err);
     }
 }
-
 // ── Event Handlers ──
 document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-input');
     const uploadZone = document.getElementById('upload-zone');
     const resetBtn = document.getElementById('reset-btn');
-
     if (fileInput) {
         fileInput.addEventListener('change', (e) => {
             if (e.target.files && e.target.files[0]) processFile(e.target.files[0]);
         });
     }
-
     if (uploadZone) {
         uploadZone.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -1652,7 +1503,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.dataTransfer.files && e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
         });
     }
-
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
             document.getElementById('upload-section').style.display = '';
@@ -1666,3 +1516,73 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// ── PDF Export Function ──
+window.exportToPDF = async function () {
+    const fileName = document.getElementById('file-name').innerText || '분석결과';
+    const originalTarget = document.querySelector('main');
+
+    // 1. 복제본 생성 (현재 화면의 스크롤/뷰포트 영향 받지 않기 위해)
+    const clone = originalTarget.cloneNode(true);
+
+    // 2. 복제본 스타일 설정 (절대 위치로 최상단 배치)
+    clone.style.position = 'absolute';
+    clone.style.top = '0px';
+    clone.style.left = '0px';
+    // 너비는 원본과 동일하게 유지하거나, 화면 너비에 맞춤
+    clone.style.width = document.documentElement.scrollWidth + 'px'; 
+    clone.style.zIndex = '-9999'; // 화면에 보이지 않게 뒤로 숨김
+    clone.style.background = '#EBEBEB'; // 배경색 지정
+
+    // 3. 복제본 내 불필요한 요소 제거/숨김
+    const toolsToHide = [
+        'export-pdf-btn', 
+        'reset-btn', 
+        'upload-section'
+    ];
+    
+    toolsToHide.forEach(id => {
+        const el = clone.querySelector('#' + id);
+        if (el) el.style.display = 'none';
+    });
+    
+    const resultsSection = clone.querySelector('#results-section');
+    if (resultsSection) resultsSection.classList.add('hidden');
+
+    // Body에 복제본 추가
+    document.body.appendChild(clone);
+
+    // 폰트/이미지 로딩 대기
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    try {
+        // 4. html2canvas로 '복제본' 캡처
+        // 복제본은 (0,0)에 있으므로 scrollY, x, y 문제에서 자유로움
+        const canvas = await html2canvas(clone, {
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            backgroundColor: '#EBEBEB',
+            // scrollY: 0, // 기본값 사용 (절대위치라 문제없음)
+            windowWidth: document.documentElement.scrollWidth,
+            windowHeight: clone.scrollHeight + 100 // 여유 높이
+        });
+
+        // 5. 이미지저장
+        const imgData = canvas.toDataURL('image/png');
+        
+        const link = document.createElement('a');
+        link.href = imgData;
+        link.download = fileName + '_분석결과.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    } catch (err) {
+        console.error('Image Export Error:', err);
+        alert('이미지 생성 중 오류가 발생했습니다: ' + err.message);
+    } finally {
+        // 6. 복제본 제거 (메모리 정리)
+        document.body.removeChild(clone);
+    }
+};
