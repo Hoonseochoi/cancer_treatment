@@ -1520,81 +1520,58 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── PDF Export Function ──
 window.exportToPDF = async function () {
     const fileName = document.getElementById('file-name').innerText || '분석결과';
-    const originalTarget = document.querySelector('main');
+    const target = document.querySelector('main');
 
-    // 1. 복제본 생성
-    const clone = originalTarget.cloneNode(true);
-
-    // 2. 복제본 스타일 설정
-    clone.style.position = 'absolute';
-    clone.style.top = '0px';
-    clone.style.left = '0px';
-    clone.style.width = document.documentElement.scrollWidth + 'px'; 
-    clone.style.zIndex = '-9999'; 
-    clone.style.background = '#EBEBEB';
-
-    // 텍스트 렌더링 최적화
-    clone.style.webkitFontSmoothing = 'antialiased';
-    clone.style.mozOsxFontSmoothing = 'grayscale';
-    clone.style.transform = 'translateZ(0)';
-
-    // 3. 복제본 내 불필요한 요소 제거/숨김
-    const toolsToHide = ['export-pdf-btn', 'reset-btn', 'upload-section'];
-    toolsToHide.forEach(id => {
-        const el = clone.querySelector('#' + id);
-        if (el) el.style.display = 'none';
-    });
+    // 로딩 표시가 있다면 여기서 시작 (선택 사항)
     
-    const resultsSection = clone.querySelector('#results-section');
-    if (resultsSection) resultsSection.classList.add('hidden');
-
-    // Body에 복제본 추가
-    document.body.appendChild(clone);
-
-    // 폰트 대기
     try {
-        await document.fonts.ready;
-    } catch (e) {
-        console.warn("Font loading wait failed", e);
-    }
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    try {
-        // 4. html2canvas로 캡처 (onclone 추가로 텍스트 겹침 방지)
-        const canvas = await html2canvas(clone, {
-            scale: 3, 
-            useCORS: true, 
-            logging: false,
+        const canvas = await html2canvas(target, {
+            scale: 3,             // 화질을 위해 3으로 상향
+            useCORS: true,
             backgroundColor: '#EBEBEB',
-            windowWidth: document.documentElement.scrollWidth,
-            windowHeight: clone.scrollHeight + 100,
+            logging: false,
+            
             onclone: (clonedDoc) => {
                 const cloneMain = clonedDoc.querySelector('main');
-                if (cloneMain) {
-                    // 글자 겹침 방지를 위한 명시적 스타일 부여
-                    cloneMain.style.letterSpacing = 'normal';
-                    cloneMain.querySelectorAll('*').forEach(el => {
-                        el.style.fontVariantLigatures = 'none';
-                    });
-                }
+                
+                // 1. 텍스트 겹침 방지를 위한 핵심 스타일 주입
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    * { 
+                        letter-spacing: normal !important; 
+                        word-spacing: normal !important; 
+                        font-variant-ligatures: none !important;
+                        text-rendering: optimizeLegibility !important;
+                        -webkit-font-smoothing: antialiased;
+                    }
+                    /* 숫자가 겹치는 경우를 대비해 폰트 고정폭 해제 */
+                    .coverage-amount, .price { 
+                        font-variant-numeric: tabular-nums; 
+                    }
+                `;
+                clonedDoc.head.appendChild(style);
+
+                // 2. 불필요한 UI 숨기기
+                const toolsToHide = ['export-pdf-btn', 'reset-btn', 'upload-section'];
+                toolsToHide.forEach(id => {
+                    const el = clonedDoc.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+
+                // 3. 레이아웃 깨짐 방지: 너비를 원본과 동일하게 강제 고정
+                cloneMain.style.width = target.offsetWidth + 'px';
             }
         });
 
-        // 5. 이미지저장
+        // 이미지 저장 실행
         const imgData = canvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.href = imgData;
-        link.download = fileName + '_분석결과.png';
-        document.body.appendChild(link);
+        link.download = `${fileName}_분석결과.png`;
         link.click();
-        document.body.removeChild(link);
 
     } catch (err) {
-        console.error('Image Export Error:', err);
-        alert('이미지 생성 중 오류가 발생했습니다: ' + err.message);
-    } finally {
-        // 6. 복제본 제거
-        document.body.removeChild(clone);
+        console.error('Export Error:', err);
+        alert('이미지 생성 실패: ' + err.message);
     }
 };
