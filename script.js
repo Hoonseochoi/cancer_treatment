@@ -931,6 +931,43 @@ const coverageDetailsMap = {
         displayName: "(10년갱신)(최초1회) 다빈치 로봇 수술비"
     },
 
+    // [NEW] 암 통합치료비 (주요치료) - 비급여 (7천/5천/3천)
+    "암 통합치료비(주요치료)(비급여(전액본인부담 포함), 암중점치료기관(상급 종합병원 포함))": {
+        "type": "variant",
+        "data": {
+            "7000": [
+                { name: "(비급여) 암 수술비", amount: "1,000만" },
+                { name: "(비급여) 항암 방사선 치료비", amount: "1,000만" },
+                { name: "(비급여) 항암 약물 치료비", amount: "1,000만" },
+                { name: "(비급여) 표적항암약물치료비", amount: "1,000만" },
+                { name: "(비급여) 면역항암약물치료비", amount: "1,000만" },
+                { name: "(비급여) 중입자방사선치료비", amount: "1,000만" },
+                { name: "(비급여) 양성자방사선치료비", amount: "1,000만" },
+                { name: "(비급여) 다빈치로봇수술비", amount: "1,000만" }
+            ],
+            "5000": [
+                { name: "(비급여) 암 수술비", amount: "750만" },
+                { name: "(비급여) 항암 방사선 치료비", amount: "750만" },
+                { name: "(비급여) 항암 약물 치료비", amount: "750만" },
+                { name: "(비급여) 표적항암약물치료비", amount: "750만" },
+                { name: "(비급여) 면역항암약물치료비", amount: "750만" },
+                { name: "(비급여) 중입자방사선치료비", amount: "750만" },
+                { name: "(비급여) 양성자방사선치료비", amount: "750만" },
+                { name: "(비급여) 다빈치로봇수술비", amount: "750만" }
+            ],
+            "3000": [
+                { name: "(비급여) 암 수술비", amount: "500만" },
+                { name: "(비급여) 항암 방사선 치료비", amount: "500만" },
+                { name: "(비급여) 항암 약물 치료비", amount: "500만" },
+                { name: "(비급여) 표적항암약물치료비", amount: "500만" },
+                { name: "(비급여) 면역항암약물치료비", amount: "500만" },
+                { name: "(비급여) 중입자방사선치료비", amount: "500만" },
+                { name: "(비급여) 양성자방사선치료비", amount: "500만" },
+                { name: "(비급여) 다빈치로봇수술비", amount: "500만" }
+            ]
+        }
+    },
+
     // 4. 26종 항암방사선및약물치료비 (여러 카테고리에 동시 반영)
     "26종항암방사선및약물치료비": {
         type: "26jong",
@@ -1011,13 +1048,18 @@ function calculateHierarchicalSummary(results) {
         if (!details) {
             if (item.name.includes("암 통합치료비") && (item.name.includes("III") || item.name.includes("Ⅲ"))) {
                 details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
-            } else if (item.name.includes("암 통합치료비") && item.name.includes("비급여") && item.name.includes("전액본인부담")) {
+            }
+            // [MOVED] 주요치료 우선 체크
+            else if (item.name.includes("암 통합치료비") && item.name.includes("주요치료")) {
+                details = coverageDetailsMap["암 통합치료비(주요치료)(비급여(전액본인부담 포함), 암중점치료기관(상급 종합병원 포함))"];
+            }
+            else if (item.name.includes("암 통합치료비") && item.name.includes("비급여") && item.name.includes("전액본인부담")) {
                 details = coverageDetailsMap["암 통합치료비(비급여(전액본인부담 포함), 암중점치료기관(상급종합병원 포함))"];
             } else if (item.name.includes("암 통합치료비") && (item.name.includes("Ⅱ") || item.name.includes("II")) && item.name.includes("비급여")) {
                 details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
             } else if (item.name.includes("암 통합치료비") && item.name.includes("기본형")) {
                 details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
-            } else if (item.name.includes("암 통합치료비") && item.name.includes("실속형")) {
+
                 details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
             }
             // 10년갱신 개별 담보 키워드 매칭
@@ -1100,6 +1142,8 @@ function calculateHierarchicalSummary(results) {
                     normalizedName = "다빈치로봇수술비";
                 } else if (groupingSource.includes("세기조절")) {
                     normalizedName = "세기조절방사선치료비";
+                } else if (groupingSource.includes("수술") && groupingSource.includes("암") && !groupingSource.includes("다빈치") && !groupingSource.includes("로봇")) {
+                    normalizedName = "암수술비";
                 } else if (groupingSource.includes("약물") && !groupingSource.includes("표적") && !groupingSource.includes("면역")) {
                     normalizedName = "항암약물치료비";
                 } else if (groupingSource.includes("방사선") && !groupingSource.includes("양성자") && !groupingSource.includes("중입자") && !groupingSource.includes("세기")) {
@@ -1456,6 +1500,10 @@ function findDetails(itemName) {
         if (itemName.includes("암 통합치료비") && (itemName.includes("III") || itemName.includes("Ⅲ"))) {
             details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
         }
+        // [MOVED] 주요치료 우선 체크 (비급여/전액본인부담 키워드가 겹치므로 먼저 확인해야 함)
+        else if (itemName.includes("암 통합치료비") && itemName.includes("주요치료")) {
+            details = coverageDetailsMap["암 통합치료비(주요치료)(비급여(전액본인부담 포함), 암중점치료기관(상급 종합병원 포함))"];
+        }
         else if (itemName.includes("암 통합치료비") && itemName.includes("비급여") && itemName.includes("전액본인부담")) {
             details = coverageDetailsMap["암 통합치료비(비급여(전액본인부담 포함), 암중점치료기관(상급종합병원 포함))"];
         }
@@ -1465,6 +1513,7 @@ function findDetails(itemName) {
         else if (itemName.includes("암 통합치료비") && itemName.includes("기본형")) {
             details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
         }
+
         else if (itemName.includes("암 통합치료비") && itemName.includes("실속형")) {
             details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
         }
