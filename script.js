@@ -931,13 +931,17 @@ const coverageDetailsMap = {
         displayName: "(10년갱신)(최초1회) 다빈치 로봇 수술비"
     },
 
-    // 4. 26종 항암방사선및약물치료비 (두 카테고리에 동시 반영)
+    // 4. 26종 항암방사선및약물치료비 (여러 카테고리에 동시 반영)
     "26종항암방사선및약물치료비": {
         type: "26jong",
         detailName: "26종 항암방사선 및 약물 치료비",
         summaryItems: [
-            { name: "26종 항암 방사선 치료비" },
-            { name: "26종 항암 약물 치료비" }
+            { name: "26종 항암 방사선 치료비", targetName: "항암방사선치료비" },
+            { name: "26종 항암 약물 치료비", targetName: "항암약물치료비" },
+            { name: "26종항암방사선치료비", targetName: "표적항암약물치료비" },
+            { name: "26종항암방사선치료비", targetName: "면역항암약물치료비" },
+            { name: "26종항암방사선치료비", targetName: "양성자방사선치료비" },
+            { name: "26종항암방사선치료비", targetName: "중입자방사선치료비" }
         ]
     }
 };
@@ -1027,7 +1031,7 @@ function calculateHierarchicalSummary(results) {
                 details = coverageDetailsMap["표적항암약물허가치료비"];
             } else if (item.name.includes("양성자방사선") || item.name.includes("양성자")) {
                 details = coverageDetailsMap["항암양성자방사선치료비"];
-            } else if (item.name.includes("26종")) {
+            } else if (item.name.includes("26종") && (item.name.includes("치료비") || item.name.includes("약물"))) {
                 details = coverageDetailsMap["26종항암방사선및약물치료비"];
             } else if (item.name.includes("다빈치") && item.name.includes("로봇")) {
                 // Exclude "특정암" (Specific Cancer) but keep "특정암제외" (General)
@@ -1059,29 +1063,51 @@ function calculateHierarchicalSummary(results) {
             details = [{ name: details.displayName, amount: item.amount }];
         }
 
-        // Handle 26종 Type (항암방사선 + 항암약물 두 카테고리에 반영, 첫 번째만)
         if (details && details.type === '26jong') {
             if (!first26SummaryFound) {
                 first26SummaryFound = true;
-                details = details.summaryItems.map(d => ({ name: d.name, amount: item.amount }));
+                details = details.summaryItems.map(d => ({
+                    name: d.name,
+                    amount: item.amount,
+                    targetName: d.targetName // targetName 전달
+                }));
             } else {
-                details = null; // 이후 26종 항목은 한눈에보기에 반영 안함
+                details = null;
             }
         }
 
         if (details && Array.isArray(details)) {
             details.forEach(det => {
                 // Normalize Name to find "Common Group"
-                // 1. Remove prefixes: (급여/비급여), (비급여), (급여), (10년갱신), (최초1회)
-                let normalizedName = det.name
-                    .replace(/\(급여\/비급여\)/g, '')
-                    .replace(/\(비급여\)/g, '')
-                    .replace(/\(급여\)/g, '')
-                    .replace(/\(10년갱신\)/g, '')
-                    .replace(/\(최초1회\)/g, '')
-                    .replace(/26종/g, '') // [RESTORED] Remove 26종 to merge into main category
-                    .replace(/\s+/g, '') // Remove ALL spaces
-                    .trim();
+                let groupingSource = det.targetName || det.name;
+                let normalizedName = groupingSource;
+
+                // [KEYWORD-BASED CATEGORIZATION]
+                // 1. targetName이 명시적으로 있으면 최우선 적용 (26종 매핑 보장)
+                if (det.targetName) {
+                    normalizedName = det.targetName;
+                }
+                // 2. 그 외의 경우 키워드 매칭
+                else if (groupingSource.includes("표적")) {
+                    normalizedName = "표적항암약물치료비";
+                } else if (groupingSource.includes("면역")) {
+                    normalizedName = "면역항암약물치료비";
+                } else if (groupingSource.includes("양성자")) {
+                    normalizedName = "양성자방사선치료비";
+                } else if (groupingSource.includes("중입자")) {
+                    normalizedName = "중입자방사선치료비";
+                } else if (groupingSource.includes("다빈치") || groupingSource.includes("로봇")) {
+                    normalizedName = "다빈치로봇수술비";
+                } else if (groupingSource.includes("세기조절")) {
+                    normalizedName = "세기조절방사선치료비";
+                } else if (groupingSource.includes("약물") && !groupingSource.includes("표적") && !groupingSource.includes("면역")) {
+                    normalizedName = "항암약물치료비";
+                } else if (groupingSource.includes("방사선") && !groupingSource.includes("양성자") && !groupingSource.includes("중입자") && !groupingSource.includes("세기")) {
+                    normalizedName = "항암방사선치료비";
+                } else {
+                    // Fallback: Remove special chars
+                    normalizedName = groupingSource.replace(/[^가-힣0-9]/g, '');
+                }
 
                 // 3. Make Display Name pretty if needed (or just use normalized?)
                 // Actually, we want to group by "meaning", so removing spaces helps matching "표적 항암" == "표적항암"
@@ -1115,18 +1141,12 @@ function calculateHierarchicalSummary(results) {
                 });
 
                 // Update display name (pick longest readable name)
-                if (det.name.length > group.displayName.length || group.displayName === normalizedName) {
-                    let cleanNameWithSpaces = det.name
-                        .replace(/\(급여\/비급여\)/g, '')
-                        .replace(/\(비급여\)/g, '')
-                        .replace(/\(급여\)/g, '')
-                        .replace(/\(10년갱신\)/g, '')
-                        .replace(/\(최초1회\)/g, '')
-                        .replace(/26종/g, '') // [RESTORED]
-                        .trim();
-
-                    if (cleanNameWithSpaces.length > 0) {
-                        group.displayName = cleanNameWithSpaces;
+                const is26JongItem = det.name.includes("26종");
+                if ((det.name.length > group.displayName.length || group.displayName === normalizedName) && !is26JongItem) {
+                    // 괄호 및 특수문자 제거 후 예쁜 이름으로 저장
+                    let cleanName = det.name.replace(/\([^)]*\)/g, '').trim();
+                    if (cleanName.length > 0) {
+                        group.displayName = cleanName;
                     }
                 }
             });
