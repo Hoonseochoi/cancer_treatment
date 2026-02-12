@@ -1499,6 +1499,14 @@ window.exportToPDF = async function () {
     const target = document.querySelector('main');
     if (!target) return;
 
+    // 원본 파일명 가져오기 및 분석 키워드 추가
+    const fileNameEl = document.getElementById('file-name');
+    let originalName = '분석결과';
+    if (fileNameEl && fileNameEl.innerText) {
+        originalName = fileNameEl.innerText.replace(/\.pdf$/i, '');
+    }
+    const finalFileName = `${originalName}분석.png`;
+
     // 폰트 대기
     await document.fonts.ready;
 
@@ -1559,7 +1567,7 @@ window.exportToPDF = async function () {
         const imgData = canvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.href = imgData;
-        link.download = `분석결과.png`;
+        link.download = finalFileName;
         link.click();
     } catch (err) {
         console.error('Capture Error:', err);
