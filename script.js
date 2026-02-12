@@ -1507,7 +1507,7 @@ window.exportToPDF = async function () {
     }
     const finalFileName = `${originalName}분석.png`;
 
-    // 폰트 대기
+    // 폰트 대기 (Google Font 로딩 보장)
     await document.fonts.ready;
 
     const options = {
@@ -1545,11 +1545,13 @@ window.exportToPDF = async function () {
                 if (exportBtn) exportBtn.style.display = 'none';
             }
 
-            // 3. 폰트 및 텍스트 렌더링 안정화 스타일 주입
+            // 3. 폰트 명시적 주입 (환경 간 차이 방지)
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
+                @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+                
                 * {
-                    font-family: sans-serif !important;
+                    font-family: 'Noto Sans KR', sans-serif !important;
                     letter-spacing: 0 !important;
                     word-spacing: 0 !important;
                 }
