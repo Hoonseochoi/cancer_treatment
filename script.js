@@ -159,7 +159,7 @@ function extractRawCoverages(text) {
     // 1.5 줄 이어붙이기 (PDF 텍스트 레이어에서 줄이 분리된 경우 처리)
     // 예: "갱신형 암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))(통합간\n편가입)\n1천만원"
     //   → "갱신형 암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))(통합간편가입) 1천만원"
-    const amountRegex = /[0-9,]+(?:억|천|백|십)*(?:만원|억원)|세부보장참조/;
+    const amountRegex = /[0-9,]+(?:억|천|백|십)*(?:만원|억원|만|억)|세부보장참조/;
     const mergedLines = [];
     let pendingLine = '';
 
@@ -231,7 +231,7 @@ function extractRawCoverages(text) {
         if (trimmed.startsWith("세부보장")) return;
 
         // B. 금액 패턴 찾기
-        let match = trimmed.match(/([0-9,]+(?:억|천|백|십)*(?:만원|억원))/);
+        let match = trimmed.match(/([0-9,]+(?:억|천|백|십)*(?:만원|억원|만|억))/);
 
         // "원"만 있는 경우도 찾되, 너무 작은 금액(100원 미만)이나 긴 문장은 제외
         if (!match) {
@@ -509,6 +509,30 @@ function showToast(msg, isError = true) {
 
 // ── Coverage Detail Dictionary ──
 const coverageDetailsMap = {
+    // 4. 비급여(상급종합병원 포함)형
+    "암 통합치료비(비급여(전액본인부담 포함), 암중점치료기관(상급종합병원 포함))": {
+        "type": "variant",
+        "data": {
+            "8000": [
+                { name: "(비급여)다빈치로봇수술비", amount: "1,000만" },
+                { name: "(비급여) 표적항암약물치료비", amount: "3,000만" },
+                { name: "(비급여) 면역항암약물치료비", amount: "6,000만" },
+                { name: "(비급여) 양성자방사선 치료비", amount: "3,000만" }
+            ],
+            "5000": [
+                { name: "(비급여)다빈치로봇수술비", amount: "750만" },
+                { name: "(비급여) 표적항암약물치료비", amount: "2,000만" },
+                { name: "(비급여) 면역항암약물치료비", amount: "4,000만" },
+                { name: "(비급여) 양성자방사선 치료비", amount: "2,000만" }
+            ],
+            "2000": [
+                { name: "(비급여)다빈치로봇수술비", amount: "500만" },
+                { name: "(비급여) 표적항암약물치료비", amount: "1,000만" },
+                { name: "(비급여) 면역항암약물치료비", amount: "2,000만" },
+                { name: "(비급여) 양성자방사선 치료비", amount: "1,000만" }
+            ]
+        }
+    },
     // 1. 기본형 (사용자 요청 통일 + 금액별 분기)
     "암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))": {
         "type": "variant",
@@ -981,14 +1005,16 @@ function calculateHierarchicalSummary(results) {
 
         // Dictionary Lookup (Fallback Logic)
         if (!details) {
-            if (item.name.includes("암 통합치료비") && (item.name.includes("Ⅱ") || item.name.includes("II")) && item.name.includes("비급여")) {
+            if (item.name.includes("암 통합치료비") && (item.name.includes("III") || item.name.includes("Ⅲ"))) {
+                details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
+            } else if (item.name.includes("암 통합치료비") && item.name.includes("비급여") && item.name.includes("전액본인부담")) {
+                details = coverageDetailsMap["암 통합치료비(비급여(전액본인부담 포함), 암중점치료기관(상급종합병원 포함))"];
+            } else if (item.name.includes("암 통합치료비") && (item.name.includes("Ⅱ") || item.name.includes("II")) && item.name.includes("비급여")) {
                 details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
             } else if (item.name.includes("암 통합치료비") && item.name.includes("기본형")) {
                 details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
             } else if (item.name.includes("암 통합치료비") && item.name.includes("실속형")) {
                 details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
-            } else if (item.name.includes("암 통합치료비") && (item.name.includes("III") || item.name.includes("Ⅲ"))) {
-                details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
             }
             // 10년갱신 개별 담보 키워드 매칭
             else if (item.name.includes("중입자방사선")) {
@@ -1018,7 +1044,12 @@ function calculateHierarchicalSummary(results) {
 
             // Fallback default
             if (!variantData) {
-                if (details.data["10000"]) variantData = details.data["10000"];
+                // Approximate matching for limits (e.g. 7XXX -> 8000, 4XXX -> 5000)
+                if (amountVal > 6000) variantData = details.data["8000"] || details.data["10000"];
+                else if (amountVal > 3000) variantData = details.data["5000"] || details.data["4000"];
+                else if (amountVal > 1000) variantData = details.data["2000"] || details.data["1000"];
+
+                if (!variantData && details.data["10000"]) variantData = details.data["10000"];
             }
             details = variantData;
         }
@@ -1275,6 +1306,11 @@ function renderResults(results) {
         if (details && details.type === 'variant') {
             const amountVal = parseKoAmount(item.amount);
             let variantData = details.data[amountVal.toString()];
+            if (!variantData) {
+                if (amountVal > 6000) variantData = details.data["8000"] || details.data["10000"];
+                else if (amountVal > 3000) variantData = details.data["5000"] || details.data["4000"];
+                else if (amountVal > 1000) variantData = details.data["2000"] || details.data["1000"];
+            }
             if (!variantData && details.data["10000"]) variantData = details.data["10000"];
             details = variantData;
         }
@@ -1397,7 +1433,13 @@ function toggleResultsList() {
 function findDetails(itemName) {
     let details = coverageDetailsMap[itemName];
     if (!details) {
-        if (itemName.includes("암 통합치료비") && (itemName.includes("Ⅱ") || itemName.includes("II")) && itemName.includes("비급여")) {
+        if (itemName.includes("암 통합치료비") && (itemName.includes("III") || itemName.includes("Ⅲ"))) {
+            details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
+        }
+        else if (itemName.includes("암 통합치료비") && itemName.includes("비급여") && itemName.includes("전액본인부담")) {
+            details = coverageDetailsMap["암 통합치료비(비급여(전액본인부담 포함), 암중점치료기관(상급종합병원 포함))"];
+        }
+        else if (itemName.includes("암 통합치료비") && (itemName.includes("Ⅱ") || itemName.includes("II")) && itemName.includes("비급여")) {
             details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
         }
         else if (itemName.includes("암 통합치료비") && itemName.includes("기본형")) {
@@ -1405,9 +1447,6 @@ function findDetails(itemName) {
         }
         else if (itemName.includes("암 통합치료비") && itemName.includes("실속형")) {
             details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
-        }
-        else if (itemName.includes("암 통합치료비") && (itemName.includes("III") || itemName.includes("Ⅲ"))) {
-            details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
         }
         else if (itemName.includes("중입자방사선")) {
             details = coverageDetailsMap["항암중입자방사선치료비"];
