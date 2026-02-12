@@ -983,12 +983,12 @@ const coverageDetailsMap = {
         type: "26jong",
         detailName: "26종 항암방사선 및 약물 치료비",
         summaryItems: [
-            { name: "26종 항암 방사선 치료비", targetName: "(최대 26회) 항암방사선치료비" },
-            { name: "26종 항암 약물 치료비", targetName: "(최대 26회) 항암약물치료비" },
-            { name: "26종항암방사선치료비", targetName: "(최대 26회) 표적항암약물치료비" },
-            { name: "26종항암방사선치료비", targetName: "(최대 26회) 면역항암약물치료비" },
-            { name: "26종항암방사선치료비", targetName: "(최대 26회) 양성자방사선치료비" },
-            { name: "26종항암방사선치료비", targetName: "(최대 26회) 중입자방사선치료비" }
+            { name: "(최대 26회) 26종 항암 방사선 치료비", targetName: "항암방사선치료비" },
+            { name: "(최대 26회) 26종 항암 약물 치료비", targetName: "항암약물치료비" },
+            { name: "(최대 26회) 26종항암방사선치료비", targetName: "표적항암약물치료비" },
+            { name: "(최대 26회) 26종항암방사선치료비", targetName: "면역항암약물치료비" },
+            { name: "(최대 26회) 26종항암방사선치료비", targetName: "양성자방사선치료비" },
+            { name: "(최대 26회) 26종항암방사선치료비", targetName: "중입자방사선치료비" }
         ]
     }
 };
@@ -1141,23 +1141,23 @@ function calculateHierarchicalSummary(results) {
                 }
                 // 2. 그 외의 경우 키워드 매칭
                 else if (groupingSource.includes("표적")) {
-                    normalizedName = "(연1회) 표적항암약물치료비";
+                    normalizedName = "표적항암약물치료비";
                 } else if (groupingSource.includes("면역")) {
-                    normalizedName = "(연1회) 면역항암약물치료비";
+                    normalizedName = "면역항암약물치료비";
                 } else if (groupingSource.includes("양성자")) {
-                    normalizedName = "(연1회) 양성자방사선치료비";
+                    normalizedName = "양성자방사선치료비";
                 } else if (groupingSource.includes("중입자")) {
-                    normalizedName = "(연1회) 중입자방사선치료비";
+                    normalizedName = "중입자방사선치료비";
                 } else if (groupingSource.includes("다빈치") || groupingSource.includes("로봇")) {
-                    normalizedName = "(매회) 다빈치로봇수술비";
+                    normalizedName = "다빈치로봇수술비";
                 } else if (groupingSource.includes("세기조절")) {
-                    normalizedName = "(연1회) 세기조절방사선치료비";
+                    normalizedName = "세기조절방사선치료비";
                 } else if (groupingSource.includes("수술") && groupingSource.includes("암") && !groupingSource.includes("다빈치") && !groupingSource.includes("로봇")) {
-                    normalizedName = "(매회) 암수술비";
+                    normalizedName = "암수술비";
                 } else if (groupingSource.includes("약물") && !groupingSource.includes("표적") && !groupingSource.includes("면역")) {
-                    normalizedName = "(연1회) 항암약물치료비";
+                    normalizedName = "항암약물치료비";
                 } else if (groupingSource.includes("방사선") && !groupingSource.includes("양성자") && !groupingSource.includes("중입자") && !groupingSource.includes("세기")) {
-                    normalizedName = "(연1회) 항암방사선치료비";
+                    normalizedName = "항암방사선치료비";
                 } else {
                     // Fallback: Remove special chars
                     normalizedName = groupingSource.replace(/[^가-힣0-9]/g, '');
