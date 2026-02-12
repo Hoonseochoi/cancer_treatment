@@ -1506,30 +1506,43 @@ window.exportToPDF = async function () {
             scale: 3,
             useCORS: true,
             backgroundColor: '#EBEBEB',
-            // 텍스트가 겹치는 문제를 해결하는 핵심 설정
             removeContainer: true, 
             scrollX: 0,
             scrollY: -window.scrollY, // 현재 스크롤 위치 보정
             
             onclone: (clonedDoc) => {
-                const cloneMain = clonedDoc.querySelector('main');
-                
-                // 폰트 설정 재정의: Outfit을 뒤로 밀고 한글 폰트를 앞으로
-                // html2canvas가 한글 폭을 계산할 때 영문 폰트(Outfit) 기준을 따르지 않게 함
-                const allText = clonedDoc.querySelectorAll('h1, h2, h3, div, p, span, b');
-                allText.forEach(el => {
-                    // 기존 스타일에 한글 폰트 강제 삽입
-                    const currentFont = el.style.fontFamily;
-                    el.style.fontFamily = `'Malgun Gothic', 'Apple SD Gothic Neo', ${currentFont}`;
-                    el.style.letterSpacing = '0px';
-                });
+                // 1. 캡처용 강제 스타일 시트 생성
+                const style = clonedDoc.createElement('style');
+                style.innerHTML = `
+                    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+                    
+                    /* 모든 요소에 대해 한글 폰트를 최우선으로 강제 적용 */
+                    * {
+                        font-family: 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif !important;
+                        letter-spacing: -0.5px !important; /* 자간을 살짝 좁혀서 겹침 방지 */
+                        word-spacing: 0px !important;
+                        text-rendering: optimizeLegibility !important;
+                        -webkit-font-smoothing: antialiased;
+                    }
 
-                // 불필요 UI 제거
+                    /* 금액, 숫자 등 강조된 부분 겹침 방지 */
+                    b, strong, .coverage-amount, [style*="fontSize"] {
+                        display: inline-block !important; 
+                        letter-spacing: 0px !important;
+                    }
+                `;
+                clonedDoc.head.appendChild(style);
+
+                // 2. 불필요 UI 제거 로직
                 const hideIds = ['export-pdf-btn', 'reset-btn', 'upload-section'];
                 hideIds.forEach(id => {
                     const el = clonedDoc.getElementById(id);
                     if (el) el.style.display = 'none';
                 });
+
+                // 3. 결과 섹션이 hidden이라면 강제로 보여주기
+                const resultsSection = clonedDoc.querySelector('#results-section');
+                if (resultsSection) resultsSection.style.display = 'block';
             }
         });
 
