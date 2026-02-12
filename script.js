@@ -1525,7 +1525,7 @@ window.exportToPDF = async function () {
     // 1. 복제본 생성
     const clone = originalTarget.cloneNode(true);
 
-    // 2. 복제본 스타일 설정 (절대 위치로 최상단 배치)
+    // 2. 복제본 스타일 설정
     clone.style.position = 'absolute';
     clone.style.top = '0px';
     clone.style.left = '0px';
@@ -1533,18 +1533,13 @@ window.exportToPDF = async function () {
     clone.style.zIndex = '-9999'; 
     clone.style.background = '#EBEBEB';
 
-    // 폰트 렌더링 최적화 추가
+    // 텍스트 렌더링 최적화
     clone.style.webkitFontSmoothing = 'antialiased';
     clone.style.mozOsxFontSmoothing = 'grayscale';
     clone.style.transform = 'translateZ(0)';
 
     // 3. 복제본 내 불필요한 요소 제거/숨김
-    const toolsToHide = [
-        'export-pdf-btn', 
-        'reset-btn', 
-        'upload-section'
-    ];
-    
+    const toolsToHide = ['export-pdf-btn', 'reset-btn', 'upload-section'];
     toolsToHide.forEach(id => {
         const el = clone.querySelector('#' + id);
         if (el) el.style.display = 'none';
@@ -1556,30 +1551,38 @@ window.exportToPDF = async function () {
     // Body에 복제본 추가
     document.body.appendChild(clone);
 
-    // 폰트가 완전히 로드될 때까지 대기
+    // 폰트 대기
     try {
         await document.fonts.ready;
     } catch (e) {
-        console.warn("Font loading wait failed, falling back to timeout", e);
+        console.warn("Font loading wait failed", e);
     }
     
-    // 추가 렌더링 안정화 대기
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     try {
-        // 4. html2canvas로 '복제본' 캡처
+        // 4. html2canvas로 캡처 (onclone 추가로 텍스트 겹침 방지)
         const canvas = await html2canvas(clone, {
-            scale: 3, // 해상도 3배로 상향
+            scale: 3, 
             useCORS: true, 
             logging: false,
             backgroundColor: '#EBEBEB',
             windowWidth: document.documentElement.scrollWidth,
-            windowHeight: clone.scrollHeight + 100
+            windowHeight: clone.scrollHeight + 100,
+            onclone: (clonedDoc) => {
+                const cloneMain = clonedDoc.querySelector('main');
+                if (cloneMain) {
+                    // 글자 겹침 방지를 위한 명시적 스타일 부여
+                    cloneMain.style.letterSpacing = 'normal';
+                    cloneMain.querySelectorAll('*').forEach(el => {
+                        el.style.fontVariantLigatures = 'none';
+                    });
+                }
+            }
         });
 
         // 5. 이미지저장
         const imgData = canvas.toDataURL('image/png');
-        
         const link = document.createElement('a');
         link.href = imgData;
         link.download = fileName + '_분석결과.png';
