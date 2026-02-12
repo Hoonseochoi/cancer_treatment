@@ -11,6 +11,9 @@
     <!-- PDF.js & Tesseract.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js'></script>
+    <!-- PDF Export Libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <!-- Element SDK -->
     <script src="/_sdk/element_sdk.js"></script>
@@ -128,6 +131,18 @@
                     <p class="text-[10px] text-gray-400 font-medium text-right mt-8">
                         * 가입제안서를 기반으로 작성한 내용이며, 실제 값과 상이할 수 있습니다. 가입제안서를 확인해주세요
                     </p>
+                    <div class="mt-4 flex justify-start">
+                        <button id="export-pdf-btn" onclick="exportToPDF()"
+                            class="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-xl text-xs font-bold hover:bg-gray-700 transition-colors shadow-lg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            PDF 내보내기
+                        </button>
+                    </div>
                 </div>
             </div>
 

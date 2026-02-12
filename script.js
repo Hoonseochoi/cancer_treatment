@@ -1666,3 +1666,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+window.exportToPDF = async function () {
+    const { jsPDF } = window.jspdf;
+    const summarySection = document.getElementById('summary-section');
+    const fileName = document.getElementById('file-name').innerText || '분석결과';
+
+    // PDF ?�성 �?버튼 ?�기�?
+    const btn = document.getElementById('export-pdf-btn');
+    btn.style.display = 'none';
+
+    try {
+        const canvas = await html2canvas(summarySection, {
+            scale: 2, // 고해?�도
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+
+        // ?��?지 비율 계산
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        // ?�목 추�?
+        pdf.setFontSize(16);
+        pdf.text(fileName + ' - ??보장 분석 결과', 10, 15);
+
+        // ?��?지 추�? (?�목 ?�래)
+        pdf.addImage(imgData, 'PNG', 0, 25, pdfWidth, imgHeight);
+
+        pdf.save(fileName + '_분석결과.pdf');
+
+    } catch (err) {
+        console.error('PDF Export Error:', err);
+        alert('PDF ?�성 �??�류가 발생?�습?�다.');
+    } finally {
+        // 버튼 ?�시 ?�시
+        btn.style.display = 'flex';
+    }
+};
