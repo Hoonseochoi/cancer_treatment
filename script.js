@@ -33,30 +33,7 @@ function applyConfig(config) {
     }
     const titleEl = document.getElementById('main-title');
     const subtitleEl = document.getElementById('subtitle');
-    const uploadBtnEl = document.getElementById('upload-btn-text');
-    const resultHeaderEl = document.getElementById('result-header');
-    if (titleEl) {
-        titleEl.textContent = c.main_title;
-        titleEl.style.fontFamily = `'Outfit', '${font}', sans-serif`;
-        titleEl.style.fontSize = `${baseSize * 2}px`;
-    }
-    if (subtitleEl) {
-        subtitleEl.textContent = c.subtitle_text;
-        subtitleEl.style.fontFamily = `'${font}', sans-serif`;
-        subtitleEl.style.fontSize = `${baseSize * 0.875}px`;
-    }
-    if (uploadBtnEl) {
-        uploadBtnEl.textContent = c.upload_button_text;
-        uploadBtnEl.style.fontFamily = `'${font}', sans-serif`;
-        uploadBtnEl.style.fontSize = `${baseSize}px`;
-    }
-    if (resultHeaderEl) {
-        resultHeaderEl.textContent = c.result_header_text;
-        resultHeaderEl.style.fontFamily = `'Outfit', '${font}', sans-serif`;
-        resultHeaderEl.style.fontSize = `${baseSize}px`;
-    }
-    document.body.style.fontFamily = `'${font}', sans-serif`;
-    document.body.style.fontSize = `${baseSize}px`;
+
 }
 if (window.elementSdk) {
     window.elementSdk.init({
@@ -1519,59 +1496,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── PDF Export Function ──
 window.exportToPDF = async function () {
-    const fileName = document.getElementById('file-name').innerText || '분석결과';
     const target = document.querySelector('main');
-
-    // 로딩 표시가 있다면 여기서 시작 (선택 사항)
     
+    // 폰트가 로드될 때까지 확실히 대기
+    await document.fonts.ready;
+
     try {
         const canvas = await html2canvas(target, {
-            scale: 3,             // 화질을 위해 3으로 상향
+            scale: 3,
             useCORS: true,
             backgroundColor: '#EBEBEB',
-            logging: false,
+            // 텍스트가 겹치는 문제를 해결하는 핵심 설정
+            removeContainer: true, 
+            scrollX: 0,
+            scrollY: -window.scrollY, // 현재 스크롤 위치 보정
             
             onclone: (clonedDoc) => {
                 const cloneMain = clonedDoc.querySelector('main');
                 
-                // 1. 텍스트 겹침 방지를 위한 핵심 스타일 주입
-                const style = document.createElement('style');
-                style.innerHTML = `
-                    * { 
-                        letter-spacing: normal !important; 
-                        word-spacing: normal !important; 
-                        font-variant-ligatures: none !important;
-                        text-rendering: optimizeLegibility !important;
-                        -webkit-font-smoothing: antialiased;
-                    }
-                    /* 숫자가 겹치는 경우를 대비해 폰트 고정폭 해제 */
-                    .coverage-amount, .price { 
-                        font-variant-numeric: tabular-nums; 
-                    }
-                `;
-                clonedDoc.head.appendChild(style);
+                // 폰트 설정 재정의: Outfit을 뒤로 밀고 한글 폰트를 앞으로
+                // html2canvas가 한글 폭을 계산할 때 영문 폰트(Outfit) 기준을 따르지 않게 함
+                const allText = clonedDoc.querySelectorAll('h1, h2, h3, div, p, span, b');
+                allText.forEach(el => {
+                    // 기존 스타일에 한글 폰트 강제 삽입
+                    const currentFont = el.style.fontFamily;
+                    el.style.fontFamily = `'Malgun Gothic', 'Apple SD Gothic Neo', ${currentFont}`;
+                    el.style.letterSpacing = '0px';
+                });
 
-                // 2. 불필요한 UI 숨기기
-                const toolsToHide = ['export-pdf-btn', 'reset-btn', 'upload-section'];
-                toolsToHide.forEach(id => {
+                // 불필요 UI 제거
+                const hideIds = ['export-pdf-btn', 'reset-btn', 'upload-section'];
+                hideIds.forEach(id => {
                     const el = clonedDoc.getElementById(id);
                     if (el) el.style.display = 'none';
                 });
-
-                // 3. 레이아웃 깨짐 방지: 너비를 원본과 동일하게 강제 고정
-                cloneMain.style.width = target.offsetWidth + 'px';
             }
         });
 
-        // 이미지 저장 실행
+        // 저장 처리
         const imgData = canvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.href = imgData;
-        link.download = `${fileName}_분석결과.png`;
+        link.download = `분석결과.png`;
         link.click();
 
     } catch (err) {
-        console.error('Export Error:', err);
-        alert('이미지 생성 실패: ' + err.message);
+        console.error(err);
     }
 };
