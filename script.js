@@ -1522,17 +1522,21 @@ window.exportToPDF = async function () {
     const fileName = document.getElementById('file-name').innerText || '분석결과';
     const originalTarget = document.querySelector('main');
 
-    // 1. 복제본 생성 (현재 화면의 스크롤/뷰포트 영향 받지 않기 위해)
+    // 1. 복제본 생성
     const clone = originalTarget.cloneNode(true);
 
     // 2. 복제본 스타일 설정 (절대 위치로 최상단 배치)
     clone.style.position = 'absolute';
     clone.style.top = '0px';
     clone.style.left = '0px';
-    // 너비는 원본과 동일하게 유지하거나, 화면 너비에 맞춤
     clone.style.width = document.documentElement.scrollWidth + 'px'; 
-    clone.style.zIndex = '-9999'; // 화면에 보이지 않게 뒤로 숨김
-    clone.style.background = '#EBEBEB'; // 배경색 지정
+    clone.style.zIndex = '-9999'; 
+    clone.style.background = '#EBEBEB';
+
+    // 폰트 렌더링 최적화 추가
+    clone.style.webkitFontSmoothing = 'antialiased';
+    clone.style.mozOsxFontSmoothing = 'grayscale';
+    clone.style.transform = 'translateZ(0)';
 
     // 3. 복제본 내 불필요한 요소 제거/숨김
     const toolsToHide = [
@@ -1552,20 +1556,25 @@ window.exportToPDF = async function () {
     // Body에 복제본 추가
     document.body.appendChild(clone);
 
-    // 폰트/이미지 로딩 대기
+    // 폰트가 완전히 로드될 때까지 대기
+    try {
+        await document.fonts.ready;
+    } catch (e) {
+        console.warn("Font loading wait failed, falling back to timeout", e);
+    }
+    
+    // 추가 렌더링 안정화 대기
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     try {
         // 4. html2canvas로 '복제본' 캡처
-        // 복제본은 (0,0)에 있으므로 scrollY, x, y 문제에서 자유로움
         const canvas = await html2canvas(clone, {
-            scale: 2, 
+            scale: 3, // 해상도 3배로 상향
             useCORS: true, 
             logging: false,
             backgroundColor: '#EBEBEB',
-            // scrollY: 0, // 기본값 사용 (절대위치라 문제없음)
             windowWidth: document.documentElement.scrollWidth,
-            windowHeight: clone.scrollHeight + 100 // 여유 높이
+            windowHeight: clone.scrollHeight + 100
         });
 
         // 5. 이미지저장
@@ -1582,7 +1591,7 @@ window.exportToPDF = async function () {
         console.error('Image Export Error:', err);
         alert('이미지 생성 중 오류가 발생했습니다: ' + err.message);
     } finally {
-        // 6. 복제본 제거 (메모리 정리)
+        // 6. 복제본 제거
         document.body.removeChild(clone);
     }
 };
