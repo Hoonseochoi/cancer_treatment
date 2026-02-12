@@ -1498,80 +1498,57 @@ document.addEventListener('DOMContentLoaded', () => {
 window.exportToPDF = async function () {
     const target = document.querySelector('main');
     
-    // 폰트가 로드될 때까지 확실히 대기
+    // 폰트가 로드될 때까지 넉넉하게 대기
     await document.fonts.ready;
 
-    try {
-        const canvas = await html2canvas(target, {
-            scale: 3,
-            useCORS: true,
-            backgroundColor: '#EBEBEB',
-            removeContainer: true, 
-            scrollX: 0,
-            scrollY: -window.scrollY, 
-            // 중요: 내부 렌더링 시 높이 계산 오류를 방지하기 위해 스크롤 및 윈도우 크기 고정
-            windowWidth: target.scrollWidth,
-            windowHeight: target.scrollHeight,
+    const options = {
+        scale: 2, // 3은 너무 높아서 메모리 오류로 레이아웃이 깨질 수 있음
+        useCORS: true,
+        backgroundColor: '#EBEBEB',
+        logging: false,
+        // 글자 잘림 방지를 위한 핵심 설정
+        imageTimeout: 0,
+        removeContainer: true,
+        // 현재 보이는 화면 그대로를 캡처하기 위해 윈도우 좌표 고정
+        width: target.offsetWidth,
+        height: target.offsetHeight,
+        windowWidth: document.documentElement.offsetWidth,
+        windowHeight: document.documentElement.offsetHeight,
+        
+        onclone: (clonedDoc) => {
+            const cloneMain = clonedDoc.querySelector('main');
             
-            onclone: (clonedDoc) => {
-                // 1. 캡처용 강제 스타일 시트 생성
-                const style = clonedDoc.createElement('style');
-                style.innerHTML = `
-                    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
-                    
-                    /* 모든 요소에 대해 한글 폰트를 최우선으로 강제 적용 */
-                    * {
-                        font-family: 'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif !important;
-                        letter-spacing: -0.5px !important;
-                        word-spacing: 0px !important;
-                        text-rendering: optimizeLegibility !important;
-                        -webkit-font-smoothing: antialiased;
-                    }
+            // 1. 강제 스타일 주입 (잘림 방지 및 폰트 고정)
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+                /* 폰트를 단순화하여 계산 오차 방지 */
+                * {
+                    font-family: sans-serif !important; /* 복잡한 폰트 대신 시스템 폰트로 우선 테스트 */
+                    letter-spacing: 0 !important;
+                    word-spacing: 0 !important;
+                    text-transform: none !important;
+                }
+                /* 글자 하단 잘림 해결을 위한 유일한 방법: Line-height 상향 */
+                span, div, p, b, h1, h2, h3 {
+                    line-height: 1.6 !important; 
+                    overflow: visible !important;
+                }
+                /* 버튼 등 UI 제거 */
+                #export-pdf-btn, #reset-btn, #upload-section {
+                    display: none !important;
+                }
+            `;
+            clonedDoc.head.appendChild(style);
+        }
+    };
 
-                    /* 모든 텍스트 요소에 라인 높이를 강제로 부여 */
-                    h1, h2, h3, div, span, p, b, strong {
-                        line-height: 1.4 !important; /* 글자 높이의 1.4배 확보 */
-                        padding-bottom: 2px !important; /* 하단 잘림 방지용 미세 여백 */
-                        display: inline-block !important; /* 텍스트 박스 모델 정규화 */
-                        vertical-align: middle !important;
-                    }
-
-                    /* 금액이나 큰 숫자가 있는 곳은 더 확실하게 */
-                    .coverage-amount, .price, [style*="fontSize"] {
-                        overflow: visible !important; /* 박스 밖으로 나간 글자도 보여줌 */
-                        letter-spacing: 0px !important;
-                    }
-                `;
-                clonedDoc.head.appendChild(style);
-
-                // 2. 부모 요소가 텍스트를 꽉 잡고 있다면 여유를 줌
-                const textElements = clonedDoc.querySelectorAll('span, b, strong');
-                textElements.forEach(el => {
-                    el.style.display = 'inline-flex';
-                    el.style.alignItems = 'center';
-                    el.style.height = 'auto';
-                });
-
-                // 3. 불필요 UI 제거 로직
-                const hideIds = ['export-pdf-btn', 'reset-btn', 'upload-section'];
-                hideIds.forEach(id => {
-                    const el = clonedDoc.getElementById(id);
-                    if (el) el.style.display = 'none';
-                });
-
-                // 4. 결과 섹션이 hidden이라면 강제로 보여주기
-                const resultsSection = clonedDoc.querySelector('#results-section');
-                if (resultsSection) resultsSection.style.display = 'block';
-            }
-        });
-
-        // 저장 처리
+    try {
+        const canvas = await html2canvas(target, options);
         const imgData = canvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.href = imgData;
         link.download = `분석결과.png`;
         link.click();
-
     } catch (err) {
         console.error(err);
     }
