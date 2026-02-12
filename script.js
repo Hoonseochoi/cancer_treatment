@@ -983,12 +983,12 @@ const coverageDetailsMap = {
         type: "26jong",
         detailName: "26종 항암방사선 및 약물 치료비",
         summaryItems: [
-            { name: "26종 항암 방사선 치료비", targetName: "항암방사선치료비" },
-            { name: "26종 항암 약물 치료비", targetName: "항암약물치료비" },
-            { name: "26종항암방사선치료비", targetName: "표적항암약물치료비" },
-            { name: "26종항암방사선치료비", targetName: "면역항암약물치료비" },
-            { name: "26종항암방사선치료비", targetName: "양성자방사선치료비" },
-            { name: "26종항암방사선치료비", targetName: "중입자방사선치료비" }
+            { name: "26종 항암 방사선 치료비", targetName: "(최대 26회) 항암방사선치료비" },
+            { name: "26종 항암 약물 치료비", targetName: "(최대 26회) 항암약물치료비" },
+            { name: "26종항암방사선치료비", targetName: "(최대 26회) 표적항암약물치료비" },
+            { name: "26종항암방사선치료비", targetName: "(최대 26회) 면역항암약물치료비" },
+            { name: "26종항암방사선치료비", targetName: "(최대 26회) 양성자방사선치료비" },
+            { name: "26종항암방사선치료비", targetName: "(최대 26회) 중입자방사선치료비" }
         ]
     }
 };
