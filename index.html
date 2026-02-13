@@ -43,6 +43,37 @@
                         alt="Meritz Logo" class="header-logo" style="mix-blend-mode: multiply;">
                 </div>
 
+                <!-- Analysis Counter Badge (Dual Design) -->
+                <div id="counter-badge"
+                    class="flex items-center gap-3 mb-6 transition-all duration-500 opacity-0 scale-95 origin-center">
+                    <!-- Today Counter -->
+                    <div class="flex items-center gap-2 px-4 py-2 rounded-2xl text-[11px] font-black shadow-lg bg-white/60 backdrop-blur-xl border border-white/80 ring-1 ring-black/5"
+                        style="color:var(--primary-bright);">
+                        <div class="flex items-center gap-1.5">
+                            <span class="relative flex h-2 w-2">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                            </span>
+                            <span class="text-gray-500 font-bold tracking-tight">TODAY</span>
+                        </div>
+                        <div class="flex items-baseline gap-0.5 ml-1">
+                            <span id="analysis-count-today" class="text-sm tabular-nums tracking-tighter">0</span>
+                            <span class="text-[9px] text-gray-400 font-medium">건</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Counter -->
+                    <div class="flex items-center gap-2 px-4 py-2 rounded-2xl text-[11px] font-black shadow-lg bg-black/5 backdrop-blur-xl border border-black/5"
+                        style="color:#333;">
+                        <span class="text-gray-400 font-bold tracking-tight uppercase opacity-70">Total Analysis</span>
+                        <div class="flex items-baseline gap-0.5 ml-1">
+                            <span id="analysis-count-total" class="text-sm tabular-nums tracking-tighter">0</span>
+                            <span class="text-[9px] text-gray-400 font-medium whitespace-nowrap">건 분석완료</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-4"
                     style="background:rgba(230,0,0,0.06); color:var(--primary-bright); border:1px solid rgba(230,0,0,0.15);">
                     <svg width="14" height="14" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">

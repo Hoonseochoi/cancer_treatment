@@ -1446,6 +1446,10 @@ async function processFile(file) {
         renderResults(results);
         if (results.length > 0) {
             showToast(`${results.length}개의 항목을 추출했습니다.`, false);
+            // Increment remote counters (Today & Total)
+            if (typeof incrementAnalysisCounts === 'function') {
+                incrementAnalysisCounts();
+            }
         } else {
             showToast('추출된 항목이 없습니다. 텍스트 인식 결과를 확인해주세요.', true);
         }
@@ -1577,3 +1581,84 @@ window.exportToPDF = async function () {
         alert('이미지 저장 중 오류가 발생했습니다.');
     }
 };
+
+/**
+ * --- COUNTER API LOGIC (DUAL: TODAY & TOTAL) ---
+ * tracks analysis counts via api.counterapi.dev
+ */
+const COUNTER_NAMESPACE = "meritz_analyzer";
+
+// Get KST Date Key: meritz_daily_YYYYMMDD
+function getTodayKey() {
+    const now = new Date();
+    // Offset to KST (UTC+9)
+    const kst = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const yyyy = kst.getUTCFullYear();
+    const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(kst.getUTCDate()).padStart(2, '0');
+    return `meritz_daily_${yyyy}${mm}${dd}`;
+}
+
+const TOTAL_KEY = "meritz_total_analysis";
+const DAILY_KEY = getTodayKey();
+
+const API_BASE = "https://api.counterapi.dev/v1";
+
+async function fetchAnalysisCounts() {
+    try {
+        // Fetch Total and Daily in parallel
+        const [totalRes, dailyRes] = await Promise.all([
+            fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${TOTAL_KEY}`),
+            fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${DAILY_KEY}`)
+        ]);
+
+        const totalData = await totalRes.json();
+        const dailyData = await dailyRes.json();
+
+        updateCounterUI(dailyData.count || 0, totalData.count || 0);
+    } catch (error) {
+        console.error('Failed to fetch counts:', error);
+    }
+}
+
+async function incrementAnalysisCounts() {
+    try {
+        // Increment both in parallel
+        const [totalRes, dailyRes] = await Promise.all([
+            fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${TOTAL_KEY}/up`),
+            fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${DAILY_KEY}/up`)
+        ]);
+
+        const totalData = await totalRes.json();
+        const dailyData = await dailyRes.json();
+
+        updateCounterUI(dailyData.count, totalData.count);
+    } catch (error) {
+        console.error('Failed to increment counts:', error);
+    }
+}
+
+function updateCounterUI(daily, total) {
+    const todayEl = document.getElementById('analysis-count-today');
+    const totalEl = document.getElementById('analysis-count-total');
+    const badgeEl = document.getElementById('counter-badge');
+
+    if (todayEl) todayEl.innerText = Number(daily).toLocaleString();
+    if (totalEl) totalEl.innerText = Number(total).toLocaleString();
+
+    if (badgeEl) {
+        badgeEl.style.opacity = '1';
+        badgeEl.style.transform = 'scale(1)';
+    }
+}
+
+// Global exposure for increment
+window.incrementAnalysisCounts = incrementAnalysisCounts;
+
+// Initial fetch on load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fetchAnalysisCounts);
+} else {
+    fetchAnalysisCounts();
+}
+
