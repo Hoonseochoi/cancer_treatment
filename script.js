@@ -961,6 +961,7 @@ function calculateHierarchicalSummary(results) {
                 details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
             } else if (item.name.includes("암 통합치료비") && item.name.includes("기본형")) {
                 details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
+            } else if (item.name.includes("암 통합치료비") && item.name.includes("실속형")) {
                 details = coverageDetailsMap["암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))"];
             }
             // 10년갱신 개별 담보 키워드 매칭
@@ -1530,7 +1531,7 @@ window.exportToPDF = async function () {
             // 2. 대상 섹션 강제 노출 및 내부 버튼 숨김
             const fileInfo = clonedDoc.getElementById('file-info');
             const summary = clonedDoc.getElementById('summary-section');
-            
+
             if (fileInfo) {
                 fileInfo.style.display = 'flex';
                 fileInfo.classList.remove('hidden');
