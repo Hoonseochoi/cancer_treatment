@@ -221,7 +221,7 @@ function renderResults(results, customerName = '고객') {
         let detailHtml = '';
         if (details && Array.isArray(details)) {
             detailHtml = `
-            < div class="detail-content hidden mt-4 pt-4 border-t border-gray-100" >
+            <div class="detail-content hidden mt-4 pt-4 border-t border-gray-100">
                     <p class="text-[11px] font-black text-red-600 mb-3 flex items-center gap-1.5">
                         <span class="w-1 h-1 bg-red-600 rounded-full"></span> 상세 보장 내역
                     </p>
@@ -254,10 +254,10 @@ function renderResults(results, customerName = '고객') {
                 }
                 detailHtml += `</div>`;
             });
-            detailHtml += `</div></div > `;
+            detailHtml += `</div></div>`;
         }
         itemCard.innerHTML = `
-            < div class="flex items-center justify-between gap-4" >
+            <div class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-4 flex-1 min-w-0">
                     <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-50 text-base shadow-inner">
                         ${icon}
@@ -273,7 +273,7 @@ function renderResults(results, customerName = '고객') {
                 <div class="text-right flex-shrink-0">
                     <span class="text-lg font-black text-red-600 font-outfit">${formatDisplayAmount(item.amount)}</span>
                 </div>
-            </div >
+            </div>
             ${detailHtml}
         `;
         if (details) {
