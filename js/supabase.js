@@ -26,7 +26,8 @@ async function logManagerActivity(code, name, fileName) {
         return;
     }
     try {
-        const { data, error } = await supabaseClient
+        // 1. Insert history log
+        const { error: logError } = await supabaseClient
             .from('manager_logs')
             .insert([
                 {
@@ -35,10 +36,10 @@ async function logManagerActivity(code, name, fileName) {
                     file_name: fileName
                 }
             ]);
-        if (error) throw error;
-        console.log("Activity logged successfully:");
+        if (logError) throw logError;
+        console.log("Activity logged successfully.");
 
-        // Fetch total count for this manager
+        // 2. Fetch total count from logs to calculate new level
         const { count, error: countError } = await supabaseClient
             .from('manager_logs')
             .select('*', { count: 'exact', head: true })
@@ -47,11 +48,39 @@ async function logManagerActivity(code, name, fileName) {
         if (countError) throw countError;
 
         const totalCount = count || 1;
+        const currentLevel = calculateLevelFromCount(totalCount);
+
+        // 3. Upsert into manager_profiles
+        const { error: profileError } = await supabaseClient
+            .from('manager_profiles')
+            .upsert({
+                manager_code: code,
+                manager_name: name,
+                execution_count: totalCount,
+                level: currentLevel,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'manager_code' });
+
+        if (profileError) throw profileError;
+        console.log("Manager profile updated successfully.");
+
+        // 4. Update local state and UI
         updateManagerLevel(totalCount, name);
 
     } catch (err) {
         console.error("Failed to log activity:", err);
     }
+}
+
+// Helper to get level from count based on thresholds
+function calculateLevelFromCount(count) {
+    let level = 1;
+    for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) {
+        if (count >= LEVEL_THRESHOLDS[i].min) {
+            level = LEVEL_THRESHOLDS[i].level;
+        }
+    }
+    return level;
 }
 
 function updateManagerLevel(totalCount, name) {
@@ -83,9 +112,57 @@ function updateManagerLevel(totalCount, name) {
 
     currentManagerData = { count: totalCount, level: currentLevel, exp, required, name };
 
+    // Render the changes immediately
+    renderManagerLevel();
+
     if (justLeveledUp) {
         showLevelUpNotification();
     }
+}
+
+function renderManagerLevel() {
+    const { level, exp, required, name } = currentManagerData;
+    const badgeContainer = document.getElementById('manager-badge-container');
+    if (!badgeContainer) return;
+
+    // 1. Update Top Badge Level Indicator
+    const welcomeLvEl = document.getElementById('welcome-manager-level');
+    if (welcomeLvEl) {
+        welcomeLvEl.textContent = `LV.${level}`;
+        welcomeLvEl.classList.remove('hidden');
+    }
+
+    // 2. Update Expanded Panel Info
+    const lvNumEl = document.getElementById('level-modal-lv-num');
+    if (lvNumEl) lvNumEl.textContent = level;
+
+    const currExpEl = document.getElementById('level-modal-current-exp');
+    if (currExpEl) currExpEl.textContent = exp;
+
+    const nextExpEl = document.getElementById('level-modal-next-exp');
+    if (nextExpEl) nextExpEl.textContent = required;
+
+    const progressPercent = level >= 10 ? 100 : Math.min(100, Math.round((exp / required) * 100));
+    const progressEl = document.getElementById('level-modal-progress');
+    if (progressEl) progressEl.style.width = `${progressPercent}%`;
+
+    const hintEl = document.getElementById('level-modal-exp-hint');
+    if (hintEl) {
+        if (level >= 10) {
+            hintEl.textContent = '최고 레벨에 도달했습니다!';
+        } else {
+            hintEl.textContent = `다음 레벨까지 ${required - exp}회 남았습니다.`;
+        }
+    }
+
+    const imgEl = document.getElementById('level-modal-image');
+    if (imgEl) {
+        imgEl.src = `level/lv${level}.png`;
+    }
+
+    // 3. Update Theme
+    badgeContainer.className = badgeContainer.className.replace(/level-theme-\d+/g, '');
+    badgeContainer.classList.add(`level-theme-${level}`);
 }
 
 function showLevelUpNotification() {
@@ -121,43 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (badgeContainer.classList.contains('badge-expanded')) {
             badgeContainer.classList.remove('badge-expanded');
         } else {
-            // Expand and populate data
+            // Expand and ensure data is rendered
             badgeContainer.classList.add('badge-expanded');
-
-            if (typeof currentManagerData !== 'undefined') {
-                const { level, exp, required, name } = currentManagerData;
-
-                const lvNumEl = document.getElementById('level-modal-lv-num');
-                if (lvNumEl) lvNumEl.textContent = level;
-
-                const currExpEl = document.getElementById('level-modal-current-exp');
-                if (currExpEl) currExpEl.textContent = exp;
-
-                const nextExpEl = document.getElementById('level-modal-next-exp');
-                if (nextExpEl) nextExpEl.textContent = required;
-
-                const progressPercent = level >= 10 ? 100 : Math.min(100, Math.round((exp / required) * 100));
-                const progressEl = document.getElementById('level-modal-progress');
-                if (progressEl) progressEl.style.width = `${progressPercent}%`;
-
-                const hintEl = document.getElementById('level-modal-exp-hint');
-                if (hintEl) {
-                    if (level >= 10) {
-                        hintEl.textContent = '최고 레벨에 도달했습니다!';
-                    } else {
-                        hintEl.textContent = `다음 레벨까지 ${required - exp}회 남았습니다.`;
-                    }
-                }
-
-                const imgEl = document.getElementById('level-modal-image');
-                if (imgEl) {
-                    imgEl.src = `level/lv${level}.png`;
-                }
-
-                // Add theme to badge container
-                badgeContainer.className = badgeContainer.className.replace(/level-theme-\d+/g, '');
-                badgeContainer.classList.add(`level-theme-${level}`);
-            }
+            renderManagerLevel();
         }
     }
 

@@ -27,7 +27,11 @@ async function processFile(file) {
         if (name) {
             // Case: Manager Matched
             if (nameEl) nameEl.textContent = name;
-            if (nameContainer) nameContainer.innerHTML = `<span id="welcome-manager-name">${name}</span> 매니저님`;
+            // Preserving the level indicator if it exists
+            const levelEl = document.getElementById('welcome-manager-level');
+            if (nameContainer) {
+                nameContainer.innerHTML = `<span id="welcome-manager-name">${name}</span> 매니저님 ${levelEl ? levelEl.outerHTML : ''}`;
+            }
 
             // [NEW] Log activity to Supabase
             logManagerActivity(code, name, file.name);

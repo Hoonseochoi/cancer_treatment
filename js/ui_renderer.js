@@ -180,17 +180,17 @@ function renderResults(results, customerName = '고객') {
             }
             const getSummaryIcon = (name) => {
                 const map = {
-                    "표적항암약물치료비": "a.png",
-                    "면역항암약물치료비": "b.png",
-                    "양성자방사선치료비": "c.png",
-                    "암수술비": "d.png",
-                    "다빈치로봇수술비": "e.png",
-                    "항암약물치료비": "f.png",
-                    "항암방사선치료비": "g.png",
-                    "중입자방사선치료비": "h.png",
-                    "세기조절방사선치료비": "i.png"
+                    "표적항암약물치료비": ICON_A_B64,
+                    "면역항암약물치료비": ICON_B_B64,
+                    "양성자방사선치료비": ICON_C_B64,
+                    "암수술비": ICON_D_B64,
+                    "다빈치로봇수술비": ICON_E_B64,
+                    "항암약물치료비": ICON_F_B64,
+                    "항암방사선치료비": ICON_G_B64,
+                    "중입자방사선치료비": ICON_H_B64,
+                    "세기조절방사선치료비": ICON_I_B64
                 };
-                return map[name] ? `icon/${map[name]}` : null;
+                return map[name] || ICON_A_B64;
             };
 
             const iconPath = getSummaryIcon(name);
@@ -212,7 +212,13 @@ function renderResults(results, customerName = '고객') {
                 <div class="flex flex-col gap-4">
                     <div class="flex items-start justify-between min-h-[64px]">
                         <div class="w-20 h-20 flex-shrink-0 -mt-2 -ml-2">
-                            ${iconPath ? `<img src="${iconPath}" class="w-full h-full object-contain ${iconPath.includes('c.png') || iconPath.includes('f.png') ? 'scale-125' : ''}" alt="${name} icon">` : ""}
+                            ${(() => {
+                    if (!iconPath) return "";
+                    let style = "";
+                    if (iconPath === ICON_C_B64) style = 'style="transform: scale(1.8);"';
+                    else if (iconPath === ICON_F_B64) style = 'style="transform: scale(1.4);"';
+                    return `<img src="${iconPath}" class="w-full h-full object-contain" ${style} alt="${name} icon">`;
+                })()}
                         </div>
                         <div class="text-right pt-1 flex-1">
                             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">COVERAGE TOTAL</p>
