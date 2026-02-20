@@ -95,14 +95,14 @@ function showLevelUpNotification() {
     const bubble = document.getElementById('level-up-notification');
     if (!bubble) return;
 
-    // Show the text dropping down
-    bubble.classList.remove('opacity-0', '-translate-y-8', 'pointer-events-none');
-    bubble.classList.add('opacity-100', 'translate-y-0');
+    // Fade in & gently slide down
+    bubble.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none');
+    bubble.classList.add('opacity-95', 'translate-y-0');
 
-    // Display for 4 seconds, then hide
+    // Display for 4 seconds, then gently fade out & slide back up
     setTimeout(() => {
-        bubble.classList.remove('opacity-100', 'translate-y-0');
-        bubble.classList.add('opacity-0', '-translate-y-8', 'pointer-events-none');
+        bubble.classList.remove('opacity-95', 'translate-y-0');
+        bubble.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none');
     }, 4000);
 }
 
