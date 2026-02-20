@@ -1162,22 +1162,26 @@ function getCoverageIcon(name) {
     // Default (Shield/Guard)
     return `<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4m0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>`;
 }
-// Raw List Renderer (Updated for Hierarchical Summary)
-function renderResults(results) {
+// Raw List Renderer (Updated for Hierarchical Summary and Insight Card)
+function renderResults(results, customerName = '고객') {
     const listEl = document.getElementById('results-list');
     const summaryGrid = document.getElementById('summary-grid');
     const resultsSection = document.getElementById('results-section');
     const summarySection = document.getElementById('summary-section');
     const emptyState = document.getElementById('empty-state');
+    const insightSection = document.getElementById('insight-section');
+
     if (!results || results.length === 0) {
         resultsSection.classList.add('hidden');
         summarySection.classList.add('hidden');
+        if (insightSection) insightSection.classList.add('hidden');
         emptyState.classList.remove('hidden');
         return;
     }
     emptyState.classList.add('hidden');
     resultsSection.classList.remove('hidden');
     summarySection.classList.remove('hidden');
+
     // 1. Calculate Hierarchical Summary
     const summaryMap = calculateHierarchicalSummary(results);
     // Calculate Grand Total Range
@@ -1187,6 +1191,53 @@ function renderResults(results) {
         grandTotalMin += d.totalMin;
         grandTotalMax += d.totalMax;
     });
+
+    // ── Render 5-Year Insight Card ──
+    if (insightSection) {
+        insightSection.innerHTML = '';
+        const total5Min = grandTotalMin * 5;
+        const total5Max = grandTotalMax * 5;
+
+        let total5Display = formatKoAmount(total5Min);
+        if (total5Min !== total5Max) {
+            total5Display = `${formatKoAmount(total5Min)} ~ ${formatKoAmount(total5Max)}`;
+        }
+
+        insightSection.innerHTML = `
+            <div class="premium-card rounded-3xl p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
+                <!-- Background Decoration -->
+                <div class="absolute -right-4 -top-4 w-32 h-32 bg-red-500/5 rounded-full blur-3xl group-hover:bg-red-500/10 transition-colors"></div>
+                
+                <div class="flex flex-col sm:flex-row items-center gap-6 relative z-10">
+                    <div class="relative shrink-0">
+                        <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-lg shadow-red-100 border-2 border-white ring-1 ring-red-100">
+                             <img src="mery.png" alt="보험전문가 메리" class="w-full h-full object-cover object-top">
+                        </div>
+                        <div class="absolute -bottom-2 -right-2 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
+                            Expert
+                        </div>
+                    </div>
+                    <div class="text-center sm:text-left flex-1">
+                        <p class="text-gray-500 text-[11px] font-bold mb-1 opacity-80">
+                            🛡️ <span class="text-gray-400">보험전문가 <b class="text-gray-600">메리</b>의 분석 Insight</span>
+                        </p>
+                        <h3 class="text-lg sm:text-xl font-medium text-gray-800 leading-relaxed">
+                            <span class="font-black text-red-600 underline decoration-red-200 underline-offset-4">${customerName}</span>님이 
+                            <span class="font-bold text-gray-900 mx-1">5년간</span> 보장받을 수 있는 
+                            <span class="font-black text-gray-900 border-b-2 border-red-500/30">암 치료비</span>는 최대
+                        </h3>
+                        <div class="mt-2 flex items-baseline gap-2 justify-center sm:justify-start">
+                            <span class="text-3xl sm:text-4xl font-black text-red-600 tracking-tight font-outfit">
+                                ${total5Display}
+                            </span>
+                            <span class="text-gray-400 text-xs font-bold ml-1">입니다.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        insightSection.classList.remove('hidden');
+    }
     // 2. Render Summary Grid
     if (summaryMap.size > 0) {
         summaryGrid.innerHTML = '';
@@ -1483,11 +1534,18 @@ async function processFile(file) {
             updateProgress(100, '분석 완료!');
         }
 
+        // ── Customer Name Extraction ──
+        let customerName = '고객';
+        const nameMatch = text.match(/피보험자\s*[:：]?\s*([가-힣\w\s]{2,10})/);
+        if (nameMatch && nameMatch[1]) {
+            customerName = nameMatch[1].trim();
+        }
+
         // Run Raw Extraction
         const results = extractRawCoverages(text);
         await new Promise(r => setTimeout(r, 500));
         document.getElementById('progress-section').classList.add('hidden');
-        renderResults(results);
+        renderResults(results, customerName);
         if (results.length > 0) {
             showToast(`${results.length}개의 항목을 추출했습니다.`, false);
             // Increment remote counters (Today & Total)
@@ -1536,6 +1594,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('results-section').classList.add('hidden');
             document.getElementById('summary-section').classList.add('hidden');
             document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('insight-section').classList.add('hidden');
 
             document.getElementById('progress-section').classList.add('hidden');
             if (fileInput) fileInput.value = '';

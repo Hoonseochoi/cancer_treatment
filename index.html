@@ -29,6 +29,28 @@
 
     <!-- External Styles -->
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Floating Animation for Insight Card */
+        @keyframes insightFloat {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-8px) scale(1.01);
+            }
+        }
+
+        .animate-insight {
+            animation: insightFloat 4s ease-in-out infinite;
+        }
+
+        .insight-card-gradient {
+            background: linear-gradient(135deg, #fff 0%, #fffafa 100%);
+        }
+    </style>
 </head>
 
 <body class="h-full">
@@ -153,6 +175,10 @@
                     파일 취소 하기
                 </button>
             </div>
+
+            <!-- Insight Section -->
+            <div id="insight-section" class="hidden mt-8 stagger-in"></div>
+
 
             <!-- Summary -->
             <div id="summary-section" class="hidden mt-10">
