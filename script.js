@@ -1162,6 +1162,7 @@ function getCoverageIcon(name) {
     // Default (Shield/Guard)
     return `<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4m0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>`;
 }
+let currentFileName = ""; // Global state for conditional mapping
 // Raw List Renderer (Updated for Hierarchical Summary and Insight Card)
 function renderResults(results, customerName = '고객') {
     const listEl = document.getElementById('results-list');
@@ -1203,6 +1204,14 @@ function renderResults(results, customerName = '고객') {
             total5Display = `${formatKoAmount(total5Min)} ~ ${formatKoAmount(total5Max)}`;
         }
 
+        // Conditional Expert Mapping
+        let expertName = "메리";
+        let expertImg = "mery.png";
+        if (currentFileName && currentFileName.startsWith("325001957")) {
+            expertName = "예원";
+            expertImg = "yewon.png";
+        }
+
         insightSection.innerHTML = `
             <div class="premium-card rounded-3xl p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
                 <!-- Background Decoration -->
@@ -1211,7 +1220,7 @@ function renderResults(results, customerName = '고객') {
                 <div class="flex flex-col sm:flex-row items-center gap-6 relative z-10">
                     <div class="relative shrink-0">
                         <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-lg shadow-red-100 border-2 border-white ring-1 ring-red-100">
-                             <img src="mery.png" alt="보험전문가 메리" class="w-full h-full object-cover object-top">
+                             <img src="${expertImg}" alt="보험전문가 ${expertName}" class="w-full h-full object-cover object-top">
                         </div>
                         <div class="absolute -bottom-2 -right-2 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
                             Expert
@@ -1219,7 +1228,7 @@ function renderResults(results, customerName = '고객') {
                     </div>
                     <div class="text-center sm:text-left flex-1">
                         <p class="text-gray-500 text-[11px] font-bold mb-1 opacity-80">
-                            🛡️ <span class="text-gray-400">보험전문가 <b class="text-gray-600">메리</b>의 분석 Insight</span>
+                            🛡️ <span class="text-gray-400">보험전문가 <b class="text-gray-600">${expertName}</b>의 분석 Insight</span>
                         </p>
                         <h3 class="text-lg sm:text-xl font-medium text-gray-800 leading-relaxed">
                             <span class="font-black text-red-600 underline decoration-red-200 underline-offset-4">${customerName}</span>님이 
@@ -1494,6 +1503,7 @@ function findDetails(itemName) {
 // ── File Processing ──
 async function processFile(file) {
     if (!file) return;
+    currentFileName = file.name; // Save filename for mapping
     document.getElementById('progress-section').classList.remove('hidden');
     document.getElementById('upload-section').style.display = 'none';
     document.getElementById('results-section').classList.add('hidden');
