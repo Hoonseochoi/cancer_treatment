@@ -1166,15 +1166,16 @@ function getCoverageIcon(name) {
 // ── Supabase Integration ──
 const SUPABASE_URL = "https://omgwvnibssizmhovporl.supabase.co";
 const SUPABASE_KEY = "sb_publishable_RwpnmzYtRaskL8bNWxV2Cw_5FG05XJh";
-const supabase = (typeof supabase !== 'undefined') ? supabase : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
+// Use a safe check for the global supabase object provided by the CDN
+const supabaseClient = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 async function logManagerActivity(code, name, fileName) {
-    if (!supabase) {
+    if (!supabaseClient) {
         console.warn("Supabase client not initialized.");
         return;
     }
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('manager_logs')
             .insert([
                 {
