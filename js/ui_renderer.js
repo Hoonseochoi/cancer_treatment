@@ -245,9 +245,12 @@ function renderResults(results, customerName = '고객') {
                         const subAmount = parts.pop();
                         const subName = parts.join(' ');
                         detailHtml += `
-                            <div class="flex justify-between pl-4 mt-1.5 text-[10px] text-gray-400 font-medium">
-                                <span>└ ${subName}</span>
-                                <span>${subAmount || ''}</span>
+                            <div class="flex justify-between pl-4 mt-1.5 text-[10px] text-gray-400/80 font-medium leading-tight">
+                                <span class="flex-1 mr-2 flex items-start gap-1">
+                                    <span class="text-gray-300">ㄴ</span>
+                                    <span>${subName}</span>
+                                </span>
+                                <span class="flex-shrink-0">${subAmount || ''}</span>
                             </div>
                          `;
                     });
