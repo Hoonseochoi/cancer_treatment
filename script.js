@@ -889,7 +889,8 @@ const coverageDetailsMap = {
             { name: "(최대 26회) 26종항암방사선치료비", targetName: "표적항암약물치료비" },
             { name: "(최대 26회) 26종항암방사선치료비", targetName: "면역항암약물치료비" },
             { name: "(최대 26회) 26종항암방사선치료비", targetName: "양성자방사선치료비" },
-            { name: "(최대 26회) 26종항암방사선치료비", targetName: "중입자방사선치료비" }
+            { name: "(최대 26회) 26종항암방사선치료비", targetName: "중입자방사선치료비" },
+            { name: "(최대 26회) 26종항암방사선치료비", targetName: "세기조절방사선치료비" }
         ]
     }
 };
