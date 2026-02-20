@@ -1182,14 +1182,19 @@ function renderResults(results) {
                 if (sub.maxAmount && sub.maxAmount !== sub.amount && !amtDisplay.includes('(')) {
                     amtDisplay = `${formatDisplayAmount(sub.amount)}~${formatDisplayAmount(sub.maxAmount)}`;
                 }
+                let truncatedSource = sub.source;
+                if (truncatedSource.length > 30) {
+                    truncatedSource = truncatedSource.substring(0, 30) + "...";
+                }
+
                 subItemsHtml += `
                     <div class="mt-3 pl-4 border-l-3 border-red-500/10 text-xs text-left">
                         <div class="flex items-center justify-between font-bold text-gray-700">
-                            <span class="truncate mr-2 flex-1" title="${sub.name}">${sub.name}</span>
-                            <span class="text-red-600 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
+                            <span class="truncate mr-2 flex-1" title="${sub.source}">${truncatedSource}</span>
                         </div>
-                        <div class="text-[10px] mt-1 truncate font-medium text-gray-400">
-                            └ ${sub.source}
+                        <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
+                            <span class="truncate mr-2 flex-1">└ ${sub.name}</span>
+                            <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
                         </div>
                     </div>`;
             });
