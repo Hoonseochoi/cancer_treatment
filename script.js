@@ -1450,7 +1450,6 @@ async function processFile(file) {
         const rawTextEl = document.getElementById('raw-text');
         const log = (msg) => {
             console.log(msg);
-            if (rawTextEl) rawTextEl.textContent += msg + "\n";
         }
         // Image Mode
         if (file.type.startsWith('image/')) {
@@ -1474,11 +1473,7 @@ async function processFile(file) {
             text = await extractTextFromPDF(file, log);
             updateProgress(100, '분석 완료!');
         }
-        // Debug output
-        if (rawTextEl) {
-            rawTextEl.textContent = text.substring(0, 5000) + (text.length > 5000 ? '\n...(이하 생략)' : '');
-            document.getElementById('debug-section').classList.remove('hidden');
-        }
+
         // Run Raw Extraction
         const results = extractRawCoverages(text);
         await new Promise(r => setTimeout(r, 500));
@@ -1532,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('results-section').classList.add('hidden');
             document.getElementById('summary-section').classList.add('hidden');
             document.getElementById('empty-state').classList.add('hidden');
-            document.getElementById('debug-section').classList.add('hidden');
+
             document.getElementById('progress-section').classList.add('hidden');
             if (fileInput) fileInput.value = '';
         });
