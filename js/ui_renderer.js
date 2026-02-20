@@ -195,25 +195,31 @@ function renderResults(results, customerName = '고객') {
 
             const iconPath = getSummaryIcon(name);
 
-            // Dynamic Font Size for Total Display
-            let fontSize = "text-2xl";
-            if (totalDisplay.length > 15) fontSize = "text-[18px]";
-            else if (totalDisplay.length > 12) fontSize = "text-[20px]";
+            // Staggered Two-Line Display Logic
+            let totalHtml = '';
+            if (totalDisplay.includes('~')) {
+                const [min, max] = totalDisplay.split('~');
+                totalHtml = `
+                        <div class="flex flex-col items-end leading-tight">
+                            <span class="text-2xl font-black text-red-600 font-outfit" style="color:var(--primary-bright);">${min}~</span>
+                            <span class="text-2xl font-black text-red-600 font-outfit pr-10" style="color:var(--primary-bright);">${max}</span>
+                        </div>`;
+            } else {
+                totalHtml = `<p class="text-2xl font-black text-red-600 font-outfit leading-tight break-keep" style="color:var(--primary-bright);">${totalDisplay}</p>`;
+            }
 
             card.innerHTML = `
-            <div class="flex flex-col gap-4">
-                <div class="flex items-start justify-between">
-                    <div class="w-20 h-20 flex-shrink-0 -mt-2 -ml-2">
-                        ${iconPath ? `<img src="${iconPath}" class="w-full h-full object-contain ${iconPath.includes('c.png') || iconPath.includes('f.png') ? 'scale-125' : ''}" alt="${name} icon">` : ""}
+                <div class="flex flex-col gap-4">
+                    <div class="flex items-start justify-between min-h-[64px]">
+                        <div class="w-20 h-20 flex-shrink-0 -mt-2 -ml-2">
+                            ${iconPath ? `<img src="${iconPath}" class="w-full h-full object-contain ${iconPath.includes('c.png') || iconPath.includes('f.png') ? 'scale-125' : ''}" alt="${name} icon">` : ""}
+                        </div>
+                        <div class="text-right pt-1 flex-1">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">COVERAGE TOTAL</p>
+                            ${totalHtml}
+                        </div>
                     </div>
-                    <div class="text-right pt-1">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">COVERAGE TOTAL</p>
-                        <p class="${fontSize} font-black text-red-600 font-outfit leading-tight break-keep" style="color:var(--primary-bright);">
-                            ${totalDisplay}
-                        </p>
-                    </div>
-                </div>
-                <div class="h-px w-full bg-gray-50"></div>
+                    <div class="h-px w-full bg-gray-50 border-t border-dashed border-gray-100"></div>
                 <div class="flex-1">
                     <h4 class="text-sm font-black text-gray-800 mb-1 leading-tight">${name}</h4>
                     <div class="sub-items-container">${subItemsHtml}</div>
