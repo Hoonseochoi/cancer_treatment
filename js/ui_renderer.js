@@ -203,10 +203,10 @@ function renderResults(results, customerName = '고객') {
             card.innerHTML = `
             <div class="flex flex-col gap-4">
                 <div class="flex items-start justify-between">
-                    <div class="w-14 h-14 flex-shrink-0">
+                    <div class="w-20 h-20 flex-shrink-0 -mt-2 -ml-2">
                         ${iconPath ? `<img src="${iconPath}" class="w-full h-full object-contain" alt="${name} icon">` : ""}
                     </div>
-                    <div class="text-right">
+                    <div class="text-right pt-1">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">COVERAGE TOTAL</p>
                         <p class="${fontSize} font-black text-red-600 font-outfit leading-tight break-keep" style="color:var(--primary-bright);">
                             ${totalDisplay}
