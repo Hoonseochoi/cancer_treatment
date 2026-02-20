@@ -1638,7 +1638,7 @@ window.exportToPDF = async function () {
             if (!cloneMain) return;
 
             // 1. main의 모든 자식을 돌며 지정한 섹션 외에는 모두 숨김
-            const allowedIds = ['file-info', 'summary-section'];
+            const allowedIds = ['file-info', 'insight-section', 'summary-section'];
             Array.from(cloneMain.children).forEach(child => {
                 if (!allowedIds.includes(child.id)) {
                     child.style.display = 'none';
@@ -1647,6 +1647,7 @@ window.exportToPDF = async function () {
 
             // 2. 대상 섹션 강제 노출 및 내부 버튼 숨김
             const fileInfo = clonedDoc.getElementById('file-info');
+            const insight = clonedDoc.getElementById('insight-section');
             const summary = clonedDoc.getElementById('summary-section');
 
             if (fileInfo) {
@@ -1655,6 +1656,14 @@ window.exportToPDF = async function () {
                 fileInfo.style.marginBottom = '24px';
                 const resetBtn = fileInfo.querySelector('#reset-btn');
                 if (resetBtn) resetBtn.style.display = 'none';
+            }
+            if (insight) {
+                insight.style.display = 'block';
+                insight.classList.remove('hidden');
+                insight.style.marginBottom = '24px';
+                // stagger-in 애니메이션에 의해 투명도가 0일 수 있으므로 강제 설정
+                insight.style.opacity = '1';
+                insight.style.transform = 'translateY(0)';
             }
             if (summary) {
                 summary.style.display = 'block';
