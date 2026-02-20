@@ -111,9 +111,9 @@ function renderResults(results, customerName = '고객') {
         header.style.color = "var(--primary-color)";
         let headerAmountStr = formatKoAmount(grandTotalMin);
         if (grandTotalMin !== grandTotalMax) {
-            headerAmountStr = `${formatKoAmount(grandTotalMin)} ~${formatKoAmount(grandTotalMax)} `;
+            headerAmountStr = `${formatKoAmount(grandTotalMin)} ~${formatKoAmount(grandTotalMax)}`;
         }
-        header.innerHTML = `🛡️ 집계된 암 치료 보장금액 합계 < span style = "font-size:1.1em; color:var(--primary-dark); margin-left:12px; font-family:'Outfit';" > ${headerAmountStr}</span > `;
+        header.innerHTML = `🛡️ 집계된 암 치료 보장금액 합계 <span style="font-size:1.1em; color:var(--primary-dark); margin-left:12px; font-family:'Outfit';">${headerAmountStr}</span>`;
         summaryGrid.appendChild(header);
         // Convert Map to Array and Sort
         const sortedItems = Array.from(summaryMap.entries()).sort((a, b) => {
@@ -137,7 +137,7 @@ function renderResults(results, customerName = '고객') {
                     amtDisplay = formatDisplayAmount(sub.amount);
                 }
                 if (sub.maxAmount && sub.maxAmount !== sub.amount && !amtDisplay.includes('(')) {
-                    amtDisplay = `${formatDisplayAmount(sub.amount)} ~${formatDisplayAmount(sub.maxAmount)} `;
+                    amtDisplay = `${formatDisplayAmount(sub.amount)}~${formatDisplayAmount(sub.maxAmount)}`;
                 }
                 let truncatedSource = sub.source;
                 if (truncatedSource.length > 30) {
@@ -145,7 +145,7 @@ function renderResults(results, customerName = '고객') {
                 }
 
                 subItemsHtml += `
-            < div class="mt-3 pl-4 border-l-3 border-red-500/10 text-xs text-left" >
+                    <div class="mt-3 pl-4 border-l-3 border-red-500/10 text-xs text-left">
                         <div class="flex items-center justify-between font-bold text-gray-700">
                             <span class="truncate mr-2 flex-1" title="${sub.source}">${truncatedSource}</span>
                         </div>
@@ -153,15 +153,15 @@ function renderResults(results, customerName = '고객') {
                             <span class="truncate mr-2 flex-1">└ ${sub.name}</span>
                             <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
                         </div>
-                    </div > `;
+                    </div>`;
             });
             const icon = getCoverageIcon(name);
             let totalDisplay = formatKoAmount(data.totalMin);
             if (data.totalMin !== data.totalMax) {
-                totalDisplay = `${formatKoAmount(data.totalMin)} ~${formatKoAmount(data.totalMax)} `;
+                totalDisplay = `${formatKoAmount(data.totalMin)}~${formatKoAmount(data.totalMax)}`;
             }
             card.innerHTML = `
-            < div class="flex flex-col gap-4" >
+                <div class="flex flex-col gap-4">
                     <div class="flex items-center justify-between">
                         <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm" style="background:rgba(230,0,0,0.05);">
                             ${icon}
