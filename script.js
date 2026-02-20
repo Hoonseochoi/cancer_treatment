@@ -1162,9 +1162,27 @@ function getCoverageIcon(name) {
     // Default (Shield/Guard)
     return `<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4m0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>`;
 }
+
+// Helper to convert image to base64 to avoid tainted canvas
+async function toBase64(url) {
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.warn(`Failed to convert ${url} to Base64:`, e);
+        return url; // Fallback to original URL
+    }
+}
+
 let currentFileName = ""; // Global state for conditional mapping
 // Raw List Renderer (Updated for Hierarchical Summary and Insight Card)
-function renderResults(results, customerName = '고객') {
+async function renderResults(results, customerName = '고객') {
     const listEl = document.getElementById('results-list');
     const summaryGrid = document.getElementById('summary-grid');
     const resultsSection = document.getElementById('results-section');
@@ -1212,6 +1230,9 @@ function renderResults(results, customerName = '고객') {
             expertImg = "yewon.png";
         }
 
+        // Convert image to Base64 to prevent tainted canvas issue during export
+        const expertImgBase64 = await toBase64(expertImg);
+
         insightSection.innerHTML = `
             <div class="premium-card rounded-3xl p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
                 <!-- Background Decoration -->
@@ -1220,7 +1241,7 @@ function renderResults(results, customerName = '고객') {
                 <div class="flex flex-col sm:flex-row items-center gap-6 relative z-10">
                     <div class="relative shrink-0">
                         <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-lg shadow-red-100 border-2 border-white ring-1 ring-red-100">
-                             <img src="${expertImg}" alt="보험전문가 ${expertName}" class="w-full h-full object-cover object-top">
+                             <img src="${expertImgBase64}" alt="보험전문가 ${expertName}" class="w-full h-full object-cover object-top">
                         </div>
                         <div class="absolute -bottom-2 -right-2 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
                             Expert
@@ -1634,8 +1655,8 @@ window.exportToPDF = async function () {
 
     const options = {
         scale: 2,
-        useCORS: true, // Keep true but handle assets carefully
-        allowTaint: true, // Allow tainting for local file access if needed
+        useCORS: true,
+        allowTaint: false, // Set to false to allow export if assets are clean
         backgroundColor: '#EBEBEB',
         logging: true,
         onclone: (clonedDoc) => {
