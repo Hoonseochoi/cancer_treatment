@@ -132,27 +132,46 @@ function renderResults(results, customerName = '고객') {
             // Generate Sub-items HTML
             let subItemsHtml = '';
             data.items.forEach(sub => {
-                let amtDisplay = sub.amount;
-                if (!amtDisplay.includes('(') && !amtDisplay.includes('~')) {
-                    amtDisplay = formatDisplayAmount(sub.amount);
-                }
-                if (sub.maxAmount && sub.maxAmount !== sub.amount && !amtDisplay.includes('(')) {
-                    amtDisplay = `${formatDisplayAmount(sub.amount)}~${formatDisplayAmount(sub.maxAmount)}`;
-                }
                 let truncatedSource = sub.source;
-                if (truncatedSource.length > 30) {
-                    truncatedSource = truncatedSource.substring(0, 30) + "...";
+                if (truncatedSource.length > 28) {
+                    truncatedSource = truncatedSource.substring(0, 28) + "...";
+                }
+
+                let innerTreeHtml = '';
+                if (sub.sub && Array.isArray(sub.sub)) {
+                    // Cumulative Logic (Custom II variant or similar)
+                    sub.sub.forEach(inner => {
+                        const parts = inner.trim().split(' ');
+                        const iAmt = parts.pop();
+                        const iName = parts.join(' ');
+                        innerTreeHtml += `
+                            <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
+                                <span class="truncate mr-2 flex-1 pl-3">ㄴ ${iName}</span>
+                                <span class="whitespace-nowrap flex-shrink-0 group-hover/row:text-red-400 transition-colors">${iAmt}</span>
+                            </div>`;
+                    });
+                } else {
+                    // Normal Item
+                    let amtDisplay = sub.amount;
+                    if (!amtDisplay.includes('(') && !amtDisplay.includes('~')) {
+                        amtDisplay = formatDisplayAmount(sub.amount);
+                    }
+                    if (sub.maxAmount && sub.maxAmount !== sub.amount && !amtDisplay.includes('(')) {
+                        amtDisplay = `${formatDisplayAmount(sub.amount)}(${formatDisplayAmount(sub.maxAmount)})`;
+                    }
+                    innerTreeHtml = `
+                        <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
+                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${sub.name}</span>
+                            <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
+                        </div>`;
                 }
 
                 subItemsHtml += `
-                    <div class="mt-3 pl-4 border-l-3 border-red-500/10 text-xs text-left">
-                        <div class="flex items-center justify-between font-bold text-gray-700">
-                            <span class="truncate mr-2 flex-1" title="${sub.source}">${truncatedSource}</span>
+                    <div class="mt-4 pl-2 border-l-2 border-red-500/10 group/row">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-gray-700/90 mb-0.5">
+                            <span class="truncate mr-2 flex-1" title="${sub.source}">ㄴ ${truncatedSource}</span>
                         </div>
-                        <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
-                            <span class="truncate mr-2 flex-1">└ ${sub.name}</span>
-                            <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
-                        </div>
+                        ${innerTreeHtml}
                     </div>`;
             });
             const icon = getCoverageIcon(name);

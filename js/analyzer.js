@@ -177,7 +177,8 @@ function calculateHierarchicalSummary(results) {
                     amount: det.amount,
                     maxAmount: det.maxAmount,
                     source: item.name,
-                    hiddenInDetail: det.hiddenInDetail
+                    hiddenInDetail: det.hiddenInDetail,
+                    sub: det.sub // 전달용 sub 항목 추가
                 });
                 // Update display name (pick longest readable name)
                 const is26JongItem = det.name.includes("26종");
