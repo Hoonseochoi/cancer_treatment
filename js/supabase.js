@@ -83,9 +83,6 @@ function updateManagerLevel(totalCount, name) {
 
     currentManagerData = { count: totalCount, level: currentLevel, exp, required, name };
 
-    // [테스트용] 임시로 무조건 알림이 뜨도록 강제 설정
-    justLeveledUp = true;
-
     if (justLeveledUp) {
         showLevelUpNotification();
     }
