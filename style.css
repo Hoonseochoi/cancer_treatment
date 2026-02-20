@@ -153,27 +153,41 @@ body {
 @view-transition {
     navigation: auto;
 }
+
 /* ── Typographic Enhancements ── */
 .title-accent {
     color: var(--primary-bright);
-    letter-spacing: -0.05em;
-    text-shadow: 2px 2px 4px rgba(230, 0, 0, 0.05);
+    letter-spacing: -0.04em;
+    text-shadow: 0 4px 15px rgba(230, 0, 0, 0.12);
+    background: linear-gradient(to right, #A60000, #E60000);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding-right: 2px;
+    /* Prevent subtle clipping on some browsers */
 }
 
 .title-main {
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    color: var(--gray-dark);
+    font-weight: 800;
 }
 
 /* ── Capture specific overrides ── */
 /* 한글 폰트를 앞에 배치하여 자간 계산 오류 방지 */
 .html2canvas-container {
     font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif !important;
-    letter-spacing: -0.02em !important; /* 약간의 자간 조절 */
+    letter-spacing: -0.02em !important;
+    /* 약간의 자간 조절 */
     line-height: 1.4 !important;
 }
 
 /* 겹침이 심한 숫자/단위 부분 강제 설정 */
-.coverage-amount, .price, b, strong {
-    display: inline-block !important; /* 글자 뭉침 방지 */
+.coverage-amount,
+.price,
+b,
+strong {
+    display: inline-block !important;
+    /* 글자 뭉침 방지 */
     letter-spacing: 0px !important;
 }
