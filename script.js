@@ -1165,7 +1165,7 @@ function getCoverageIcon(name) {
 
 let currentFileName = ""; // Global state for conditional mapping
 // Raw List Renderer (Updated for Hierarchical Summary and Insight Card)
-async function renderResults(results, customerName = '고객') {
+function renderResults(results, customerName = '고객') {
     const listEl = document.getElementById('results-list');
     const summaryGrid = document.getElementById('summary-grid');
     const resultsSection = document.getElementById('results-section');
@@ -1183,6 +1183,13 @@ async function renderResults(results, customerName = '고객') {
     emptyState.classList.add('hidden');
     resultsSection.classList.remove('hidden');
     summarySection.classList.remove('hidden');
+
+    // [New] Ensure the results list is actually visible (not hidden by default opacity)
+    if (listEl) {
+        listEl.classList.remove('hidden');
+        listEl.classList.remove('opacity-0');
+        listEl.classList.add('opacity-100');
+    }
 
     // 1. Calculate Hierarchical Summary
     const summaryMap = calculateHierarchicalSummary(results);
