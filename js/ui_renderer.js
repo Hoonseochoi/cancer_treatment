@@ -389,7 +389,7 @@ window.exportToPDF = async function () {
     await document.fonts.ready;
 
     const options = {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         allowTaint: false, // Set to false to allow export if assets are clean
         backgroundColor: '#EBEBEB',
@@ -425,6 +425,11 @@ window.exportToPDF = async function () {
                 insight.style.marginBottom = '24px';
                 insight.style.opacity = '1';
                 insight.style.transform = 'translateY(0)';
+                // Remove floating animation for capture
+                insight.style.animation = 'none';
+                // Hide blurred decoration which can cause artifacts in html2canvas
+                const deco = insight.querySelector('.blur-3xl');
+                if (deco) deco.style.display = 'none';
             }
             if (summary) {
                 summary.style.display = 'block';
@@ -433,19 +438,20 @@ window.exportToPDF = async function () {
                 if (exportBtn) exportBtn.style.display = 'none';
             }
 
-            // 3. 폰트 명시적 주입 (외부 @import 제거 - Tainted Canvas 방지)
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
             * {
-            font- family: 'Noto Sans KR', 'Malgun Gothic', sans - serif!important;
-        letter - spacing: 0!important;
-        word - spacing: 0!important;
-    }
-    span, div, p, b, h1, h2, h3 {
-        line - height: 1.6!important;
-        overflow: visible!important;
-    }
-    `;
+                font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
+                letter-spacing: 0 !important;
+                word-spacing: 0 !important;
+                animation: none !important;
+                transition: none !important;
+            }
+            span, div, p, b, h1, h2, h3 {
+                line-height: 1.6 !important;
+                overflow: visible !important;
+            }
+            `;
             clonedDoc.head.appendChild(style);
         }
     };
