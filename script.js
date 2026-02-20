@@ -1634,9 +1634,10 @@ window.exportToPDF = async function () {
 
     const options = {
         scale: 2,
-        useCORS: true,
+        useCORS: true, // Keep true but handle assets carefully
+        allowTaint: true, // Allow tainting for local file access if needed
         backgroundColor: '#EBEBEB',
-        logging: true, // Internal html2canvas logging enabled for debug
+        logging: true,
         onclone: (clonedDoc) => {
             console.log('Clone created successfully');
             const cloneMain = clonedDoc.querySelector('main');
@@ -1666,7 +1667,6 @@ window.exportToPDF = async function () {
                 insight.style.display = 'block';
                 insight.classList.remove('hidden');
                 insight.style.marginBottom = '24px';
-                // stagger-in 애니메이션에 의해 투명도가 0일 수 있으므로 강제 설정
                 insight.style.opacity = '1';
                 insight.style.transform = 'translateY(0)';
             }
@@ -1677,13 +1677,11 @@ window.exportToPDF = async function () {
                 if (exportBtn) exportBtn.style.display = 'none';
             }
 
-            // 3. 폰트 명시적 주입 (환경 간 차이 방지)
+            // 3. 폰트 명시적 주입 (외부 @import 제거 - Tainted Canvas 방지)
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
-                @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
-                
                 * {
-                    font-family: 'Noto Sans KR', sans-serif !important;
+                    font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
                     letter-spacing: 0 !important;
                     word-spacing: 0 !important;
                 }
