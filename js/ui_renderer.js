@@ -179,25 +179,25 @@ function renderResults(results, customerName = '고객') {
             if (data.totalMin !== data.totalMax) {
                 totalDisplay = `${formatKoAmount(data.totalMin)}~${formatKoAmount(data.totalMax)}`;
             }
+            // Dynamic Font Size for Total Display
+            let fontSize = "text-2xl";
+            if (totalDisplay.length > 15) fontSize = "text-[18px]";
+            else if (totalDisplay.length > 12) fontSize = "text-[20px]";
+
             card.innerHTML = `
                 <div class="flex flex-col gap-4">
-                    <div class="flex items-center justify-between">
-                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-sm" style="background:rgba(230,0,0,0.05);">
-                            ${icon}
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">COVERAGE TOTAL</p>
-                            <p class="text-2xl font-black text-red-600 font-outfit" style="color:var(--primary-bright);">
-                                ${totalDisplay}
-                            </p>
-                        </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">COVERAGE TOTAL</p>
+                        <p class="${fontSize} font-black text-red-600 font-outfit leading-tight break-keep" style="color:var(--primary-bright);">
+                            ${totalDisplay}
+                        </p>
                     </div>
                     <div class="h-px w-full bg-gray-50"></div>
-                    <div>
+                    <div class="flex-1">
                         <h4 class="text-sm font-black text-gray-800 mb-1 leading-tight">${name}</h4>
                         <div class="sub-items-container">${subItemsHtml}</div>
                     </div>
-                </div > `;
+                </div>`;
             summaryGrid.appendChild(card);
         });
     }
