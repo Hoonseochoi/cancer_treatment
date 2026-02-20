@@ -53,17 +53,20 @@ function calculateHierarchicalSummary(results) {
         let details = coverageDetailsMap[item.name];
         // Dictionary Lookup (Fallback Logic)
         if (!details) {
+            // 1. III (Best Priority)
             if (item.name.includes("암 통합치료비") && (item.name.includes("III") || item.name.includes("Ⅲ"))) {
                 details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
             }
-            // [MOVED] 주요치료 우선 체크
+            // 2. II (High Priority) - Must check before generic non-covered
+            else if (item.name.includes("암 통합치료비") && (item.name.includes("Ⅱ") || item.name.includes("II")) && item.name.includes("비급여")) {
+                details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
+            }
+            // 3. Special variants or Generic fallback
             else if (item.name.includes("암 통합치료비") && item.name.includes("주요치료")) {
                 details = coverageDetailsMap["암 통합치료비(주요치료)(비급여(전액본인부담 포함), 암중점치료기관(상급 종합병원 포함))"];
             }
             else if (item.name.includes("암 통합치료비") && item.name.includes("비급여") && item.name.includes("전액본인부담")) {
                 details = coverageDetailsMap["암 통합치료비(비급여(전액본인부담 포함), 암중점치료기관(상급종합병원 포함))"];
-            } else if (item.name.includes("암 통합치료비") && (item.name.includes("Ⅱ") || item.name.includes("II")) && item.name.includes("비급여")) {
-                details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
             } else if (item.name.includes("암 통합치료비") && item.name.includes("기본형")) {
                 details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
             } else if (item.name.includes("암 통합치료비") && item.name.includes("실속형")) {
@@ -195,18 +198,20 @@ function calculateHierarchicalSummary(results) {
 function findDetails(itemName) {
     let details = coverageDetailsMap[itemName];
     if (!details) {
+        // 1. III (Best Priority)
         if (itemName.includes("암 통합치료비") && (itemName.includes("III") || itemName.includes("Ⅲ"))) {
             details = coverageDetailsMap["암진단및치료비(암 통합치료비III)"];
         }
-        // [MOVED] 주요치료 우선 체크 (비급여/전액본인부담 키워드가 겹치므로 먼저 확인해야 함)
+        // 2. II (High Priority)
+        else if (itemName.includes("암 통합치료비") && (itemName.includes("Ⅱ") || itemName.includes("II")) && itemName.includes("비급여")) {
+            details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
+        }
+        // 3. Fallbacks
         else if (itemName.includes("암 통합치료비") && itemName.includes("주요치료")) {
             details = coverageDetailsMap["암 통합치료비(주요치료)(비급여(전액본인부담 포함), 암중점치료기관(상급 종합병원 포함))"];
         }
         else if (itemName.includes("암 통합치료비") && itemName.includes("비급여") && itemName.includes("전액본인부담")) {
             details = coverageDetailsMap["암 통합치료비(비급여(전액본인부담 포함), 암중점치료기관(상급종합병원 포함))"];
-        }
-        else if (itemName.includes("암 통합치료비") && (itemName.includes("Ⅱ") || itemName.includes("II")) && itemName.includes("비급여")) {
-            details = coverageDetailsMap["암 통합치료비Ⅱ(비급여)"];
         }
         else if (itemName.includes("암 통합치료비") && itemName.includes("기본형")) {
             details = coverageDetailsMap["암 통합치료비(기본형)(암중점치료기관(상급종합병원 포함))"];
