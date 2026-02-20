@@ -201,8 +201,8 @@ function renderResults(results, customerName = '고객') {
                 const [min, max] = totalDisplay.split('~');
                 totalHtml = `
                         <div class="flex flex-col items-end leading-tight">
-                            <span class="text-2xl font-black text-red-600 font-outfit" style="color:var(--primary-bright);">${min}~</span>
-                            <span class="text-2xl font-black text-red-600 font-outfit pr-10" style="color:var(--primary-bright);">${max}</span>
+                            <span class="text-2xl font-black text-red-600 font-outfit pr-8" style="color:var(--primary-bright);">${min}~</span>
+                            <span class="text-2xl font-black text-red-600 font-outfit" style="color:var(--primary-bright);">${max}</span>
                         </div>`;
             } else {
                 totalHtml = `<p class="text-2xl font-black text-red-600 font-outfit leading-tight break-keep" style="color:var(--primary-bright);">${totalDisplay}</p>`;
