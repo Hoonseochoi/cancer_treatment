@@ -153,6 +153,17 @@ body {
 @view-transition {
     navigation: auto;
 }
+/* ── Typographic Enhancements ── */
+.title-accent {
+    color: var(--primary-bright);
+    letter-spacing: -0.05em;
+    text-shadow: 2px 2px 4px rgba(230, 0, 0, 0.05);
+}
+
+.title-main {
+    letter-spacing: -0.02em;
+}
+
 /* ── Capture specific overrides ── */
 /* 한글 폰트를 앞에 배치하여 자간 계산 오류 방지 */
 .html2canvas-container {
