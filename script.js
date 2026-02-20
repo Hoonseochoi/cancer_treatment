@@ -1614,8 +1614,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── PDF Export Function ──
 window.exportToPDF = async function () {
+    console.log('Exporting image started...');
     const target = document.querySelector('main');
-    if (!target) return;
+    if (!target) {
+        console.error('Target main element not found');
+        return;
+    }
 
     // 원본 파일명 가져오기 및 분석 키워드 추가
     const fileNameEl = document.getElementById('file-name');
@@ -1632,8 +1636,9 @@ window.exportToPDF = async function () {
         scale: 2,
         useCORS: true,
         backgroundColor: '#EBEBEB',
-        logging: false,
+        logging: true, // Internal html2canvas logging enabled for debug
         onclone: (clonedDoc) => {
+            console.log('Clone created successfully');
             const cloneMain = clonedDoc.querySelector('main');
             if (!cloneMain) return;
 
@@ -1692,15 +1697,18 @@ window.exportToPDF = async function () {
     };
 
     try {
+        console.log('Calling html2canvas...');
         const canvas = await html2canvas(target, options);
+        console.log('Canvas generated successfully');
         const imgData = canvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.href = imgData;
         link.download = finalFileName;
         link.click();
+        console.log('Image download triggered');
     } catch (err) {
-        console.error('Capture Error:', err);
-        alert('이미지 저장 중 오류가 발생했습니다.');
+        console.error('Capture Error Details:', err);
+        alert(`이미지 저장 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
     }
 };
 
