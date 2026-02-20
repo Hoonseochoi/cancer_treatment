@@ -174,30 +174,51 @@ function renderResults(results, customerName = '고객') {
                         ${innerTreeHtml}
                     </div>`;
             });
-            const icon = getCoverageIcon(name);
             let totalDisplay = formatKoAmount(data.totalMin);
             if (data.totalMin !== data.totalMax) {
                 totalDisplay = `${formatKoAmount(data.totalMin)}~${formatKoAmount(data.totalMax)}`;
             }
+            const getSummaryIcon = (name) => {
+                const map = {
+                    "표적항암약물치료비": "a.png",
+                    "면역항암약물치료비": "b.png",
+                    "양성자방사선치료비": "c.png",
+                    "암수술비": "d.png",
+                    "다빈치로봇수술비": "e.png",
+                    "항암약물치료비": "f.png",
+                    "항암방사선치료비": "g.png",
+                    "중입자방사선치료비": "h.png",
+                    "세기조절방사선치료비": "i.png"
+                };
+                return map[name] ? `icon/${map[name]}` : null;
+            };
+
+            const iconPath = getSummaryIcon(name);
+
             // Dynamic Font Size for Total Display
             let fontSize = "text-2xl";
             if (totalDisplay.length > 15) fontSize = "text-[18px]";
             else if (totalDisplay.length > 12) fontSize = "text-[20px]";
 
             card.innerHTML = `
-                <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-4">
+                <div class="flex items-start justify-between">
+                    <div class="w-14 h-14 flex-shrink-0">
+                        ${iconPath ? `<img src="${iconPath}" class="w-full h-full object-contain" alt="${name} icon">` : ""}
+                    </div>
                     <div class="text-right">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">COVERAGE TOTAL</p>
                         <p class="${fontSize} font-black text-red-600 font-outfit leading-tight break-keep" style="color:var(--primary-bright);">
                             ${totalDisplay}
                         </p>
                     </div>
-                    <div class="h-px w-full bg-gray-50"></div>
-                    <div class="flex-1">
-                        <h4 class="text-sm font-black text-gray-800 mb-1 leading-tight">${name}</h4>
-                        <div class="sub-items-container">${subItemsHtml}</div>
-                    </div>
-                </div>`;
+                </div>
+                <div class="h-px w-full bg-gray-50"></div>
+                <div class="flex-1">
+                    <h4 class="text-sm font-black text-gray-800 mb-1 leading-tight">${name}</h4>
+                    <div class="sub-items-container">${subItemsHtml}</div>
+                </div>
+            </div>`;
             summaryGrid.appendChild(card);
         });
     }
