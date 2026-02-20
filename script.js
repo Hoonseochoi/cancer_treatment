@@ -1184,13 +1184,6 @@ function renderResults(results, customerName = '고객') {
     resultsSection.classList.remove('hidden');
     summarySection.classList.remove('hidden');
 
-    // [New] Ensure the results list is actually visible (not hidden by default opacity)
-    if (listEl) {
-        listEl.classList.remove('hidden');
-        listEl.classList.remove('opacity-0');
-        listEl.classList.add('opacity-100');
-    }
-
     // 1. Calculate Hierarchical Summary
     const summaryMap = calculateHierarchicalSummary(results);
     // Calculate Grand Total Range
