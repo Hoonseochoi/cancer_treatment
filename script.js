@@ -1163,6 +1163,33 @@ function getCoverageIcon(name) {
     return `<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4m0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>`;
 }
 
+// ── Supabase Integration ──
+const SUPABASE_URL = "https://omgwvnibssizmhovporl.supabase.co";
+const SUPABASE_KEY = "sb_publishable_RwpnmzYtRaskL8bNWxV2Cw_5FG05XJh";
+const supabase = (typeof supabase !== 'undefined') ? supabase : (window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null);
+
+async function logManagerActivity(code, name, fileName) {
+    if (!supabase) {
+        console.warn("Supabase client not initialized.");
+        return;
+    }
+    try {
+        const { data, error } = await supabase
+            .from('manager_logs')
+            .insert([
+                {
+                    manager_code: code,
+                    manager_name: name,
+                    file_name: fileName
+                }
+            ]);
+        if (error) throw error;
+        console.log("Activity logged successfully:", data);
+    } catch (err) {
+        console.error("Failed to log activity:", err);
+    }
+}
+
 let currentFileName = ""; // Global state for conditional mapping
 // Raw List Renderer (Updated for Hierarchical Summary and Insight Card)
 function renderResults(results, customerName = '고객') {
@@ -1505,6 +1532,57 @@ function findDetails(itemName) {
 async function processFile(file) {
     if (!file) return;
     currentFileName = file.name; // Save filename for mapping
+
+    // ── Manager Recognition ──
+    const badge = document.getElementById('manager-badge-container');
+    if (badge) {
+        badge.classList.add('hidden', 'scale-90', 'opacity-0');
+        badge.classList.remove('scale-100', 'opacity-100');
+    }
+
+    try {
+        const managerCodeMatch = file.name.match(/^\d{9}/);
+        let name = null;
+        let code = null;
+
+        if (managerCodeMatch && typeof MANAGERS_MAP !== 'undefined') {
+            code = managerCodeMatch[0];
+            name = MANAGERS_MAP[code];
+        }
+
+        const nameEl = document.getElementById('welcome-manager-name');
+        const codeEl = document.getElementById('welcome-manager-code');
+        const nameContainer = document.querySelector('.welcome-name');
+
+        if (name) {
+            // Case: Manager Matched
+            if (nameEl) nameEl.textContent = name;
+            if (nameContainer) nameContainer.innerHTML = `<span id="welcome-manager-name">${name}</span> 매니저님`;
+
+            // [NEW] Log activity to Supabase
+            logManagerActivity(code, name, file.name);
+
+            if (codeEl) {
+                // codeEl.textContent = `M-${code}`;
+                // codeEl.classList.remove('hidden');
+            }
+        } else {
+            // Case: No Match - Fallback
+            if (nameContainer) nameContainer.innerHTML = "환영합니다!";
+            if (codeEl) codeEl.classList.add('hidden');
+        }
+
+        if (badge) {
+            badge.classList.remove('hidden');
+            setTimeout(() => {
+                badge.classList.remove('scale-90', 'opacity-0');
+                badge.classList.add('scale-100', 'opacity-100');
+            }, 100);
+        }
+    } catch (mErr) {
+        console.warn("Manager recognition failed:", mErr);
+    }
+
     document.getElementById('progress-section').classList.remove('hidden');
     document.getElementById('upload-section').style.display = 'none';
     document.getElementById('results-section').classList.add('hidden');
