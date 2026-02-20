@@ -204,7 +204,7 @@ function renderResults(results, customerName = '고객') {
             <div class="flex flex-col gap-4">
                 <div class="flex items-start justify-between">
                     <div class="w-20 h-20 flex-shrink-0 -mt-2 -ml-2">
-                        ${iconPath ? `<img src="${iconPath}" class="w-full h-full object-contain" alt="${name} icon">` : ""}
+                        ${iconPath ? `<img src="${iconPath}" class="w-full h-full object-contain ${iconPath.includes('c.png') || iconPath.includes('f.png') ? 'scale-125' : ''}" alt="${name} icon">` : ""}
                     </div>
                     <div class="text-right pt-1">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">COVERAGE TOTAL</p>
