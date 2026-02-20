@@ -316,6 +316,38 @@
         .animate-shimmer {
             animation: shimmer 2s infinite;
         }
+
+        @keyframes badge-red-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px 2px rgba(230, 0, 0, 0.35), 0 4px 30px rgba(0, 0, 0, 0.15);
+            }
+
+            50% {
+                box-shadow: 0 0 28px 8px rgba(230, 0, 0, 0.65), 0 4px 40px rgba(0, 0, 0, 0.2);
+            }
+        }
+
+        .badge-levelup-glow {
+            animation: badge-red-glow 1.2s ease-in-out infinite;
+        }
+
+        @keyframes orange-border-pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 4px 1px rgba(251, 146, 60, 0.5), inset 0 0 4px rgba(251, 146, 60, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 12px 4px rgba(251, 146, 60, 0.85), inset 0 0 8px rgba(251, 146, 60, 0.35);
+            }
+        }
+
+        #level-up-notification.visible span {
+            animation: orange-border-pulse 1.4s ease-in-out infinite;
+        }
     </style>
 </head>
 
@@ -398,10 +430,11 @@
 
                 <!-- Level Up Notification (Dynamic Drop-down) -->
                 <div id="level-up-notification"
-                    class="absolute top-[100px] right-[35px] z-[90] transition-all duration-1000 ease-out transform -translate-y-4 opacity-0 pointer-events-none flex items-center justify-center">
-                    <span style="font-family: 'Outfit', 'Noto Sans KR', sans-serif; letter-spacing: 0.06em;"
-                        class="text-sm font-semibold text-red-500/90 drop-shadow-[0_1px_3px_rgba(255,255,255,0.95)] tracking-wide">Level
-                        UP ! Click !</span>
+                    class="absolute top-[100px] right-[30px] z-[90] transition-all duration-1000 ease-out transform -translate-y-4 opacity-0 pointer-events-none flex items-center justify-center">
+                    <span
+                        style="font-family: 'Outfit', 'Noto Sans KR', sans-serif; letter-spacing: 0.07em; border: 1.5px solid rgba(251,146,60,0.7); border-radius: 999px; padding: 3px 12px; background: rgba(255,255,255,0.85); backdrop-filter: blur(4px);"
+                        class="text-[13px] font-semibold text-orange-500 tracking-wide whitespace-nowrap">⬆ Level UP !
+                        Click Here!</span>
                 </div>
 
                 <!-- Analysis Counter Badge (Dual Design) -->

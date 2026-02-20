@@ -93,16 +93,21 @@ function updateManagerLevel(totalCount, name) {
 
 function showLevelUpNotification() {
     const bubble = document.getElementById('level-up-notification');
+    const badge = document.getElementById('manager-badge-container');
     if (!bubble) return;
 
-    // Fade in & gently slide down
+    // Slide in + fade in
     bubble.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none');
-    bubble.classList.add('opacity-95', 'translate-y-0');
+    bubble.classList.add('opacity-95', 'translate-y-0', 'visible');
 
-    // Display for 4 seconds, then gently fade out & slide back up
+    // Red pulsing glow around the badge
+    if (badge) badge.classList.add('badge-levelup-glow');
+
+    // After 4 seconds, slide out + remove glows
     setTimeout(() => {
-        bubble.classList.remove('opacity-95', 'translate-y-0');
+        bubble.classList.remove('opacity-95', 'translate-y-0', 'visible');
         bubble.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none');
+        if (badge) badge.classList.remove('badge-levelup-glow');
     }, 4000);
 }
 
