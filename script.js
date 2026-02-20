@@ -1163,23 +1163,6 @@ function getCoverageIcon(name) {
     return `<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4m0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>`;
 }
 
-// Helper to convert image to base64 to avoid tainted canvas
-async function toBase64(url) {
-    try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    } catch (e) {
-        console.warn(`Failed to convert ${url} to Base64:`, e);
-        return url; // Fallback to original URL
-    }
-}
-
 let currentFileName = ""; // Global state for conditional mapping
 // Raw List Renderer (Updated for Hierarchical Summary and Insight Card)
 async function renderResults(results, customerName = '고객') {
@@ -1224,14 +1207,11 @@ async function renderResults(results, customerName = '고객') {
 
         // Conditional Expert Mapping
         let expertName = "메리";
-        let expertImg = "mery.png";
+        let expertImgBase64 = MERY_B64; // Use global Base64 string
         if (currentFileName && currentFileName.startsWith("325001957")) {
             expertName = "예원";
-            expertImg = "yewon.png";
+            expertImgBase64 = YEWON_B64; // Use global Base64 string
         }
-
-        // Convert image to Base64 to prevent tainted canvas issue during export
-        const expertImgBase64 = await toBase64(expertImg);
 
         insightSection.innerHTML = `
             <div class="premium-card rounded-3xl p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
