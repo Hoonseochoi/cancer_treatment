@@ -59,7 +59,7 @@ function renderResults(results, customerName = '고객') {
         let expertName = "메리";
         let expertImgBase64 = MERY_B64; // Use global Base64 string
         if (currentFileName && currentFileName.startsWith("323003978")) {
-            expertName = "지안이";
+            expertName = "보장분석 마스터";
             expertImgBase64 = JIAN_B64; // Base64 for download/export compatibility
         } else if (currentFileName && currentFileName.startsWith("325001957")) {
             expertName = "예원";
