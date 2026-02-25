@@ -5,16 +5,16 @@ async function extractTextFromPDF(file, log = console.log) {
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     log(`PDF 로드 완료. 총 ${pdf.numPages}페이지`);
     let fullText = '';
-    // 가입담보리스트는 보통 3~6페이지에 위치 (전체 스캔시 약관/조건문 노이즈 발생)
-    const startPage = Math.min(3, pdf.numPages);
-    const endPage = Math.min(6, pdf.numPages);
-    const totalPagesToProcess = endPage - startPage + 1;
+    // 1페이지: 가계약번호 (매니저 인식용), 3~6페이지: 가입담보리스트
+    const pagesToProcess = [1, 3, 4, 5, 6].filter(p => p <= pdf.numPages);
+    const totalPagesToProcess = pagesToProcess.length;
     showToast(`총 ${totalPagesToProcess}페이지 정밀 분석을 시작합니다.`, false);
-    for (let i = startPage; i <= endPage; i++) {
+    for (let idx = 0; idx < pagesToProcess.length; idx++) {
+        const i = pagesToProcess[idx];
         let pageText = "";
         try {
             updateProgress(
-                Math.round(((i - startPage) / totalPagesToProcess) * 100),
+                Math.round((idx / totalPagesToProcess) * 100),
                 `${i}페이지 분석 중...`
             );
             const page = await pdf.getPage(i);
@@ -66,7 +66,7 @@ async function extractTextFromPDF(file, log = console.log) {
             const len = pageText.trim().length;
             if (len < 50) {
                 updateProgress(
-                    Math.round(((i - startPage) / totalPagesToProcess) * 100),
+                    Math.round((idx / totalPagesToProcess) * 100),
                     `${i}페이지 OCR 변환 중...`
                 );
                 const viewport = page.getViewport({ scale: 2.0 });
@@ -84,7 +84,7 @@ async function extractTextFromPDF(file, log = console.log) {
                                 if (m && m.status === 'recognizing text') {
                                     const progress = Math.round((m.progress || 0) * 100);
                                     updateProgress(
-                                        Math.round(((i - startPage) / totalPagesToProcess) * 100),
+                                        Math.round((idx / totalPagesToProcess) * 100),
                                         `${i}페이지 인식 중... ${progress}%`
                                     );
                                 }

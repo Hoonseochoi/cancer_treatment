@@ -6,3 +6,6 @@ diagnose_output.txt
 test4_text.txt
 extract_test4.py
 test_extract.py
+
+# MCP 설정 (토큰 포함 - 보안)
+.cursor/mcp.json

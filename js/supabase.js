@@ -1,10 +1,25 @@
-// ── Supabase Integration ──
+/**
+ * supabase.js
+ * ─────────────────────────────────────────────────────────────
+ * 1. Supabase 연동: 매니저 로그/프로필, 미인식 업로드 기록
+ * 2. 매니저 레벨 시스템: 실행 횟수 기반 레벨(1~10), 경험치, 레벨업 알림
+ * 3. 분석 횟수 카운터: api.counterapi.dev로 오늘/전체 분석 횟수 추적
+ * ─────────────────────────────────────────────────────────────
+ */
+
+/**
+ * ── Supabase 연동 설정 ──
+ * Supabase 프로젝트 URL과 공개(anon) API 키로 클라이언트를 초기화합니다.
+ */
 const SUPABASE_URL = "https://omgwvnibssizmhovporl.supabase.co";
-const SUPABASE_KEY = "sb_publishable_RwpnmzYtRaskL8bNWxV2Cw_5FG05XJh";
-// Use a safe check for the global supabase object provided by the CDN
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tZ3d2bmlic3Npem1ob3Zwb3JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NzA4MDYsImV4cCI6MjA4NzE0NjgwNn0.Cx9OFo_UAJOB2AnsRUg1FbWAD8avU7ktYIea1z4hCDY";
+// CDN에서 로드된 supabase 객체가 있을 때만 클라이언트 생성 (안전 체크)
 const supabaseClient = (window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
-// ── Manager Level Logic ──
+/**
+ * ── 매니저 레벨 시스템 ──
+ * 실행 횟수(min)에 따른 레벨 구간 정의. next는 다음 레벨까지 필요한 최소 횟수.
+ */
 const LEVEL_THRESHOLDS = [
     { level: 1, min: 0, next: 2 },
     { level: 2, min: 2, next: 5 },
@@ -18,15 +33,20 @@ const LEVEL_THRESHOLDS = [
     { level: 10, min: 54, next: Infinity }
 ];
 
+// 현재 매니저 상태: 실행 횟수, 레벨, 현재 경험치, 다음 레벨 필요 경험치, 이름
 let currentManagerData = { count: 0, level: 1, exp: 0, required: 1, name: '' };
 
+/**
+ * 매니저 활동 기록 (PDF 분석 실행 시 호출)
+ * 1) manager_logs에 로그 삽입 → 2) 총 실행 횟수 조회 → 3) manager_profiles 업데이트 → 4) UI 갱신
+ */
 async function logManagerActivity(code, name, fileName) {
     if (!supabaseClient) {
         console.warn("Supabase client not initialized.");
         return;
     }
     try {
-        // 1. Insert history log
+        // 1. manager_logs 테이블에 실행 이력 저장
         const { error: logError } = await supabaseClient
             .from('manager_logs')
             .insert([
@@ -39,7 +59,7 @@ async function logManagerActivity(code, name, fileName) {
         if (logError) throw logError;
         console.log("Activity logged successfully.");
 
-        // 2. Fetch total count from logs to calculate new level
+        // 2. 해당 매니저의 총 실행 횟수를 조회하여 새 레벨 계산
         const { count, error: countError } = await supabaseClient
             .from('manager_logs')
             .select('*', { count: 'exact', head: true })
@@ -50,7 +70,7 @@ async function logManagerActivity(code, name, fileName) {
         const totalCount = count || 1;
         const currentLevel = calculateLevelFromCount(totalCount);
 
-        // 3. Upsert into manager_profiles
+        // 3. manager_profiles 테이블에 upsert (있으면 갱신, 없으면 삽입)
         const { error: profileError } = await supabaseClient
             .from('manager_profiles')
             .upsert({
@@ -64,7 +84,7 @@ async function logManagerActivity(code, name, fileName) {
         if (profileError) throw profileError;
         console.log("Manager profile updated successfully.");
 
-        // 4. Update local state and UI
+        // 4. 로컬 상태 및 화면 UI 갱신
         updateManagerLevel(totalCount, name);
 
     } catch (err) {
@@ -72,7 +92,30 @@ async function logManagerActivity(code, name, fileName) {
     }
 }
 
-// Helper to get level from count based on thresholds
+/**
+ * ── 미인식 매니저 업로드 로그 ──
+ * 매니저 코드를 찾지 못한 PDF 파일명을 unrecognized_uploads 테이블에 기록
+ */
+async function logUnrecognizedUpload(fileName) {
+    if (!supabaseClient) {
+        console.warn("Supabase client not initialized.");
+        return;
+    }
+    try {
+        const { error } = await supabaseClient
+            .from('unrecognized_uploads')
+            .insert([{
+                file_name: fileName,
+                created_at: new Date().toISOString()
+            }]);
+        if (error) throw error;
+        console.log("Unrecognized upload logged:", fileName);
+    } catch (err) {
+        console.error("Failed to log unrecognized upload:", err);
+    }
+}
+
+/** 실행 횟수로 레벨 계산 (LEVEL_THRESHOLDS 기준) */
 function calculateLevelFromCount(count) {
     let level = 1;
     for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) {
@@ -83,10 +126,14 @@ function calculateLevelFromCount(count) {
     return level;
 }
 
+/**
+ * 매니저 레벨 상태 갱신 및 UI 반영
+ * 레벨업 시 알림 표시
+ */
 function updateManagerLevel(totalCount, name) {
     let currentLevel = 1;
-    let nextThreshold = 2;
-    let prevThreshold = 0;
+    let nextThreshold = 2;   // 다음 레벨까지 필요한 총 횟수
+    let prevThreshold = 0;  // 현재 레벨 시작 횟수
     let justLeveledUp = false;
 
     for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) {
@@ -112,7 +159,7 @@ function updateManagerLevel(totalCount, name) {
 
     currentManagerData = { count: totalCount, level: currentLevel, exp, required, name };
 
-    // Render the changes immediately
+    // 변경 사항 즉시 화면에 반영
     renderManagerLevel();
 
     if (justLeveledUp) {
@@ -120,19 +167,20 @@ function updateManagerLevel(totalCount, name) {
     }
 }
 
+/** 매니저 배지 UI에 레벨/경험치 정보 표시 */
 function renderManagerLevel() {
     const { level, exp, required, name } = currentManagerData;
     const badgeContainer = document.getElementById('manager-badge-container');
     if (!badgeContainer) return;
 
-    // 1. Update Top Badge Level Indicator
+    // 1. 상단 배지 레벨 표시
     const welcomeLvEl = document.getElementById('welcome-manager-level');
     if (welcomeLvEl) {
         welcomeLvEl.textContent = `LV.${level}`;
         welcomeLvEl.classList.remove('hidden');
     }
 
-    // 2. Update Expanded Panel Info
+    // 2. 펼친 패널 내 상세 정보 (경험치, 진행률 등)
     const lvNumEl = document.getElementById('level-modal-lv-num');
     if (lvNumEl) lvNumEl.textContent = level;
 
@@ -144,7 +192,7 @@ function renderManagerLevel() {
 
     const progressPercent = level >= 10 ? 100 : Math.min(100, Math.round((exp / required) * 100));
     const progressEl = document.getElementById('level-modal-progress');
-    if (progressEl) progressEl.style.width = `${progressPercent}%`;
+    if (progressEl) progressEl.style.width = `${progressPercent}%`;  // 진행률 바 너비
 
     const hintEl = document.getElementById('level-modal-exp-hint');
     if (hintEl) {
@@ -157,27 +205,28 @@ function renderManagerLevel() {
 
     const imgEl = document.getElementById('level-modal-image');
     if (imgEl) {
-        imgEl.src = `level/lv${level}.png`;
+        imgEl.src = `level/lv${level}.png`;  // 레벨별 이미지
     }
 
-    // 3. Update Theme
+    // 3. 레벨 테마 클래스 적용 (level-theme-1 ~ level-theme-10)
     badgeContainer.className = badgeContainer.className.replace(/level-theme-\d+/g, '');
     badgeContainer.classList.add(`level-theme-${level}`);
 }
 
+/** 레벨업 시 알림 버블 표시 (4초 후 자동 숨김) */
 function showLevelUpNotification() {
     const bubble = document.getElementById('level-up-notification');
     const badge = document.getElementById('manager-badge-container');
     if (!bubble) return;
 
-    // Slide in + fade in
+    // 슬라이드 인 + 페이드 인
     bubble.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none');
     bubble.classList.add('opacity-95', 'translate-y-0', 'visible');
 
-    // Red pulsing glow around the badge
+    // 배지 주변 빨간 펄스 글로우 효과
     if (badge) badge.classList.add('badge-levelup-glow');
 
-    // After 4 seconds, slide out + remove glows
+    // 4초 후 슬라이드 아웃 + 글로우 제거
     setTimeout(() => {
         bubble.classList.remove('opacity-95', 'translate-y-0', 'visible');
         bubble.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none');
@@ -185,26 +234,29 @@ function showLevelUpNotification() {
     }, 4000);
 }
 
-// ── Expandable Badge Event Listeners ──
+/**
+ * ── 배지 클릭 이벤트 ──
+ * 배지 클릭 시 펼침/접힘 토글, 바깥 클릭 시 접힘
+ */
 document.addEventListener('DOMContentLoaded', () => {
     const badgeContainer = document.getElementById('manager-badge-container');
 
     function toggleBadge(e) {
         if (!badgeContainer) return;
 
-        // Prevent click from bubbling to document and immediately closing
+        // 클릭이 document로 전파되어 바로 닫히는 것 방지
         e.stopPropagation();
 
         if (badgeContainer.classList.contains('badge-expanded')) {
             badgeContainer.classList.remove('badge-expanded');
         } else {
-            // Expand and ensure data is rendered
+            // 펼치고 데이터 렌더링
             badgeContainer.classList.add('badge-expanded');
             renderManagerLevel();
         }
     }
 
-    // Close when clicking outside
+    // 배지 바깥 클릭 시 접기
     document.addEventListener('click', (e) => {
         if (badgeContainer && badgeContainer.classList.contains('badge-expanded') && !badgeContainer.contains(e.target)) {
             badgeContainer.classList.remove('badge-expanded');
@@ -216,15 +268,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 /**
- * --- COUNTER API LOGIC (DUAL: TODAY & TOTAL) ---
- * tracks analysis counts via api.counterapi.dev
+ * ── 분석 횟수 카운터 API (오늘 / 전체) ──
+ * api.counterapi.dev를 사용해 분석 실행 횟수 추적
  */
 const COUNTER_NAMESPACE = "meritz_analyzer";
 
-// Get KST Date Key: meritz_daily_YYYYMMDD
+// 한국 시간(KST) 기준 오늘 날짜 키: meritz_daily_YYYYMMDD
 function getTodayKey() {
     const now = new Date();
-    // Offset to KST (UTC+9)
+    // KST(UTC+9)로 변환
     const kst = new Date(now.getTime() + (9 * 60 * 60 * 1000));
     const yyyy = kst.getUTCFullYear();
     const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
@@ -232,14 +284,15 @@ function getTodayKey() {
     return `meritz_daily_${yyyy}${mm}${dd}`;
 }
 
-const TOTAL_KEY = "meritz_total_analysis";
-const DAILY_KEY = getTodayKey();
+const TOTAL_KEY = "meritz_total_analysis";  // 전체 누적 횟수
+const DAILY_KEY = getTodayKey();            // 오늘 날짜별 횟수
 
 const API_BASE = "https://api.counterapi.dev/v1";
 
+/** 오늘/전체 분석 횟수 조회 후 UI 갱신 */
 async function fetchAnalysisCounts() {
     try {
-        // Fetch Total and Daily in parallel
+        // 전체·오늘 횟수를 동시에 조회
         const [totalRes, dailyRes] = await Promise.all([
             fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${TOTAL_KEY}`),
             fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${DAILY_KEY}`)
@@ -254,9 +307,10 @@ async function fetchAnalysisCounts() {
     }
 }
 
+/** 분석 실행 시 오늘/전체 횟수 1씩 증가 */
 async function incrementAnalysisCounts() {
     try {
-        // Increment both in parallel
+        // 전체·오늘 횟수를 동시에 1 증가
         const [totalRes, dailyRes] = await Promise.all([
             fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${TOTAL_KEY}/up`),
             fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${DAILY_KEY}/up`)
@@ -271,6 +325,7 @@ async function incrementAnalysisCounts() {
     }
 }
 
+/** 카운터 UI에 오늘/전체 횟수 표시 */
 function updateCounterUI(daily, total) {
     const todayEl = document.getElementById('analysis-count-today');
     const totalEl = document.getElementById('analysis-count-total');
@@ -285,10 +340,10 @@ function updateCounterUI(daily, total) {
     }
 }
 
-// Global exposure for increment
+// 전역 노출 (다른 스크립트에서 분석 실행 시 호출)
 window.incrementAnalysisCounts = incrementAnalysisCounts;
 
-// Initial fetch on load
+// 페이지 로드 시 초기 조회
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', fetchAnalysisCounts);
 } else {

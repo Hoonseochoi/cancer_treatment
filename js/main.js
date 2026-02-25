@@ -3,58 +3,10 @@ async function processFile(file) {
     if (!file) return;
     currentFileName = file.name; // Save filename for mapping
 
-    // ── Manager Recognition ──
     const badge = document.getElementById('manager-badge-container');
     if (badge) {
         badge.classList.add('hidden', 'scale-90', 'opacity-0');
         badge.classList.remove('scale-100', 'opacity-100');
-    }
-
-    try {
-        const managerCodeMatch = file.name.match(/^\d{9}/);
-        let name = null;
-        let code = null;
-
-        if (managerCodeMatch && typeof MANAGERS_MAP !== 'undefined') {
-            code = managerCodeMatch[0];
-            name = MANAGERS_MAP[code];
-        }
-
-        const nameEl = document.getElementById('welcome-manager-name');
-        const codeEl = document.getElementById('welcome-manager-code');
-        const nameContainer = document.querySelector('.welcome-name');
-
-        if (name) {
-            // Case: Manager Matched
-            if (nameEl) nameEl.textContent = name;
-            // Preserving the level indicator if it exists
-            const levelEl = document.getElementById('welcome-manager-level');
-            if (nameContainer) {
-                nameContainer.innerHTML = `<span id="welcome-manager-name">${name}</span> 매니저님 ${levelEl ? levelEl.outerHTML : ''}`;
-            }
-
-            // [NEW] Log activity to Supabase
-            logManagerActivity(code, name, file.name);
-
-            if (codeEl) {
-                // codeEl.textContent = `M-${code}`;
-                // codeEl.classList.remove('hidden');
-            }
-        } else {
-            // Case: No Match - Fallback
-            if (nameContainer) nameContainer.innerHTML = "환영합니다!";
-            if (codeEl) codeEl.classList.add('hidden');
-        }
-
-        if (badge) {
-            badge.classList.remove('hidden');
-            setTimeout(() => {
-                badge.classList.remove('scale-90', 'opacity-0');
-                badge.classList.add('scale-100', 'opacity-100');
-            }, 100);
-        }
-    } catch (mErr) {
-        console.warn("Manager recognition failed:", mErr);
     }
 
     document.getElementById('progress-section').classList.remove('hidden');
@@ -95,6 +47,41 @@ async function processFile(file) {
             if (typeof Tesseract === 'undefined') throw new Error("Tesseract.js 로드 실패");
             text = await extractTextFromPDF(file, log);
             updateProgress(100, '분석 완료!');
+        }
+
+        // ── Manager Recognition (가계약번호 OCR → managers.js 매칭) ──
+        let name = null;
+        let code = null;
+        const gaMatch = text.match(/가계약번호\s*[:：]?\s*(\d{9,})/);
+        if (gaMatch && gaMatch[1] && typeof MANAGERS_MAP !== 'undefined') {
+            code = gaMatch[1].substring(0, 9);  // 앞 9자리 = 매니저코드
+            name = MANAGERS_MAP[code];
+        }
+        const welcomeNameEl = document.getElementById('welcome-manager-name');
+        const codeEl = document.getElementById('welcome-manager-code');
+        const nameContainer = document.querySelector('.welcome-name');
+        if (name) {
+            if (welcomeNameEl) welcomeNameEl.textContent = name;
+            const levelEl = document.getElementById('welcome-manager-level');
+            if (nameContainer) {
+                nameContainer.innerHTML = `<span id="welcome-manager-name">${name}</span> 매니저님 ${levelEl ? levelEl.outerHTML : ''}`;
+            }
+            if (typeof logManagerActivity === 'function') {
+                logManagerActivity(code, name, file.name);
+            }
+        } else {
+            if (nameContainer) nameContainer.innerHTML = "환영합니다!";
+            if (codeEl) codeEl.classList.add('hidden');
+            if (typeof logUnrecognizedUpload === 'function') {
+                logUnrecognizedUpload(file.name);
+            }
+        }
+        if (badge) {
+            badge.classList.remove('hidden');
+            setTimeout(() => {
+                badge.classList.remove('scale-90', 'opacity-0');
+                badge.classList.add('scale-100', 'opacity-100');
+            }, 100);
         }
 
         // ── Customer Name Extraction ──
