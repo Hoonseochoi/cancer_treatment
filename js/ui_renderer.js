@@ -58,7 +58,10 @@ function renderResults(results, customerName = '고객') {
         // Conditional Expert Mapping
         let expertName = "메리";
         let expertImgBase64 = MERY_B64; // Use global Base64 string
-        if (currentFileName && currentFileName.startsWith("325001957")) {
+        if (currentFileName && currentFileName.startsWith("323003978")) {
+            expertName = "지안이";
+            expertImgBase64 = JIAN_B64; // Base64 for download/export compatibility
+        } else if (currentFileName && currentFileName.startsWith("325001957")) {
             expertName = "예원";
             expertImgBase64 = YEWON_B64; // Use global Base64 string
         }
