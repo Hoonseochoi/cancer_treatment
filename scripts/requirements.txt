@@ -1,0 +1,4 @@
+# test9.pdf 분석 스크립트용
+pymupdf>=1.23.0
+# 또는 pdfplumber
+# pdfplumber>=0.10.0

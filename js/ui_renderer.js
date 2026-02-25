@@ -265,6 +265,10 @@ function renderResults(results, customerName = '고객') {
         if (details && details.type === 'passthrough') {
             details = [{ name: details.displayName, amount: item.amount }];
         }
+        // Handle Passthrough-Dual (암 수술비(유사암제외)) - 세부내역에 "암 수술비 ###원" 표시
+        if (details && details.type === 'passthrough-dual') {
+            details = [{ name: details.displayName, amount: item.amount }];
+        }
         // Handle 26jong Type
         if (details && details.type === '26jong') {
             details = [{ name: details.detailName, amount: item.amount }];

@@ -90,6 +90,10 @@ function calculateHierarchicalSummary(results) {
                 if (!item.name.includes("특정암") || item.name.includes("제외")) {
                     details = coverageDetailsMap["다빈치로봇암수술비"];
                 }
+            } else if ((item.name.includes("암수술비") || item.name.includes("암 수술비")) && item.name.includes("유사암제외")) {
+                details = coverageDetailsMap["암수술비(유사암제외)"];
+            } else if (item.name.includes("계속받는") && item.name.includes("항암방사선") && item.name.includes("약물") && item.name.includes("급여")) {
+                details = coverageDetailsMap["계속받는 항암방사선약물치료비(급여)"];
             }
         }
         // Handle Variant Type (Amount-based selection)
@@ -109,6 +113,14 @@ function calculateHierarchicalSummary(results) {
         // Handle Passthrough Type (자기 금액 그대로 사용)
         if (details && details.type === 'passthrough') {
             details = [{ name: details.displayName, amount: item.amount }];
+        }
+        // Handle Passthrough-Dual: 세부내역 "암 수술비 ###원", 한눈에보기 암수술비+다빈치로봇수술비 둘 다 반영
+        if (details && details.type === 'passthrough-dual') {
+            details = details.summaryTargets.map(t => ({
+                name: details.displayName,
+                amount: item.amount,
+                targetName: t
+            }));
         }
         if (details && details.type === '26jong') {
             if (!first26SummaryFound) {
@@ -236,6 +248,10 @@ function findDetails(itemName) {
             if (!itemName.includes("특정암") || itemName.includes("제외")) {
                 details = coverageDetailsMap["다빈치로봇암수술비"];
             }
+        } else if ((itemName.includes("암수술비") || itemName.includes("암 수술비")) && itemName.includes("유사암제외")) {
+            details = coverageDetailsMap["암수술비(유사암제외)"];
+        } else if (itemName.includes("계속받는") && itemName.includes("항암방사선") && itemName.includes("약물") && itemName.includes("급여")) {
+            details = coverageDetailsMap["계속받는 항암방사선약물치료비(급여)"];
         }
     }
     return details;
@@ -291,11 +307,24 @@ function extractRawCoverages(text) {
     const amountRegex = /[0-9,]+(?:억|천|백|십)*(?:만원|억원|만|억)|세부보장참조/;
     const mergedLines = [];
     let pendingLine = '';
+    // [NEW] 페이지 맨윗줄 이슈: "담보사항", "가입담보 가입금액 보험료" 등 테이블 헤더가 병합되면
+    // "가입금액" 블랙리스트에 걸림. 헤더 행 감지 시 병합 중단.
+    const isTableHeader = (s) => {
+        const t = s.replace(/\s+/g, '');
+        return (t.length < 50 && t.includes('가입담보') && t.includes('가입금액') && t.includes('보험료')) ||
+            (t.length < 30 && ['담보사항', '가입담보리스트', '가입담보'].some(k => t.includes(k)));
+    };
     for (let i = 0; i < targetLines.length; i++) {
         const trimmed = targetLines[i].trim();
         if (!trimmed) {
             if (pendingLine) { mergedLines.push(pendingLine); pendingLine = ''; }
             mergedLines.push('');
+            continue;
+        }
+        // [NEW] 테이블 헤더 행 감지 시 병합 중단 (가입금액 블랙리스트 오탐 방지)
+        if (isTableHeader(trimmed)) {
+            if (pendingLine) { mergedLines.push(pendingLine); pendingLine = ''; }
+            mergedLines.push(trimmed);
             continue;
         }
         // 현재 줄에 금액이 있는지 체크
@@ -405,6 +434,10 @@ function extractRawCoverages(text) {
             // 6. [NEW] 끝부분에 붙은 숫자/코드 제거 (예: "상급종합병원116" -> "상급종합병원")
             // 패턴: 한글 뒤에 붙은 숫자들 제거
             namePart = namePart.replace(/([가-힣])\d+$/, '$1').trim();
+            // 7. [NEW] OCR 변형: "치료비암통합치료비" -> "암 통합치료비" (카테고리+담보가 붙어 인식된 경우)
+            namePart = namePart.replace(/^치료비암통합치료비/, '암 통합치료비');
+            // 8. [NEW] OCR 변형: "암통합치료비" -> "암 통합치료비" (공백 누락 시 정규화)
+            namePart = namePart.replace(/암통합치료비/g, '암 통합치료비');
             // E. 세부 내용(보험료, 납기/만기) 추출
             // 나머지 뒷부분에서 정보 추출
             // 예: "4천만원 15,560 20년 / 100세"
