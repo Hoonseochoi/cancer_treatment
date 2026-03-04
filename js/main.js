@@ -86,10 +86,23 @@ async function processFile(file) {
 
         // ── Customer Name Extraction ──
         let customerName = '고객';
-        const nameMatch = text.match(/피보험자\s*[:：]?\s*([가-힣\w\s]{2,10})/);
-        if (nameMatch && nameMatch[1]) {
-            customerName = nameMatch[1].trim();
+        // 1. Try "피보험자 | 연령" table style first (often has name on next line)
+        const tableMatch = text.match(/피보험자\s*\|\s*연령\s*[\r\n]+([^\s\|\n\r\t]+)/);
+        if (tableMatch && tableMatch[1]) {
+            customerName = tableMatch[1].trim();
+        } else {
+            // 2. Standard "피보험자: 이름" or "피보험자 이름"
+            const nameMatch = text.match(/피보험자\s*[:：|]?\s*([^|\n\r\t:：]{2,10})/);
+            if (nameMatch && nameMatch[1]) {
+                const tempName = nameMatch[1].trim().split(/[\s|]/)[0];
+                // If the matched "name" is just a header like "연령", skip it
+                if (tempName && tempName !== '연령' && tempName !== '성별') {
+                    customerName = tempName;
+                }
+            }
         }
+        // Last resort: ensure we didn't capture "보험료"
+        if (customerName.includes('보험료')) customerName = '고객';
 
         // Run Raw Extraction
         const results = extractRawCoverages(text);
