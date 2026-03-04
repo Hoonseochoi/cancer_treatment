@@ -375,8 +375,8 @@ function toggleResultsList() {
     }
 }
 
-// ── PDF Export Function ──
-window.exportToPDF = async function () {
+// ── Image Export Function (Renamed from PDF for clarity) ──
+window.exportAsImage = async function () {
     console.log('Exporting image started...');
     const target = document.querySelector('main');
     if (!target) {
