@@ -329,6 +329,14 @@ function extractRawCoverages(text) {
         }
         // 현재 줄에 금액이 있는지 체크
         const hasAmount = amountRegex.test(trimmed);
+
+        // [NEW] 만약 대기중인 줄이 있는데, 현재 줄이 새로운 항목 시작(숫자 또는 ┗)이라면
+        // 절대 이전 줄과 합쳐져서는 안 되므로 대기중인 줄을 강제로 내보냄.
+        if (pendingLine && /^(\d{1,4}\s+|┗\s+)/.test(trimmed)) {
+            mergedLines.push(pendingLine);
+            pendingLine = '';
+        }
+
         if (pendingLine) {
             // 이전에 금액 없는 줄이 대기 중 → 현재 줄과 합침
             pendingLine += ' ' + trimmed;

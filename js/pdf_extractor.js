@@ -32,30 +32,29 @@ async function extractTextFromPDF(file, log = console.log) {
                         w: item.width,
                         h: item.height
                     }));
-                    // 정렬: Y 내림차순 (허용오차 5), X 오름차순
-                    items.sort((a, b) => {
-                        if (Math.abs(a.y - b.y) < 5) { // 같은 줄로 간주
-                            return a.x - b.x;
-                        }
-                        return b.y - a.y; // 위에서 아래로
-                    });
-                    // 텍스트 조립
-                    let lastY = items[0].y;
-                    let lastX = items[0].x;
-                    for (const item of items) {
-                        // 줄바꿈 감지 (Y차이가 큼)
-                        if (Math.abs(item.y - lastY) > 8) { // 줄 간격 임계값 8
-                            pageText += "\n";
-                        } else {
-                            // 같은 줄인데 X차이가 큼 (공백)
-                            // 글자 크기에 따라 다르지만 대략 5 이상이면 공백 추가
-                            if (item.x - lastX > 5) { // 문자 간격 임계값
+                    // 정렬 로직 제거: PDF 원본 스트림 순서(논리적 읽기 순서)를 존중
+                    let lastY = null;
+                    let lastX = null;
+                    for (let i = 0; i < items.length; i++) {
+                        const item = items[i];
+                        if (lastY !== null) {
+                            if (Math.abs(item.y - lastY) > 8) {
+                                pageText += "\n";
+                            } else if (lastX !== null && i > 0 && Math.abs(item.x - lastX) > 5) {
                                 pageText += " ";
                             }
                         }
+
                         pageText += item.str;
-                        lastY = item.y;
-                        lastX = item.x + item.w; // 다음 글자 예상 시작 위치
+
+                        // PDF native EOL support
+                        if (item.hasEOL) {
+                            pageText += "\n";
+                            lastY = null;
+                        } else {
+                            lastY = item.y;
+                            lastX = item.x + item.w;
+                        }
                     }
                 }
             } catch (err) {
