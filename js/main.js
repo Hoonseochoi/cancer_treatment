@@ -94,7 +94,8 @@ async function processFile(file) {
             // 2. Standard "피보험자: 이름" or "피보험자 이름"
             const nameMatch = text.match(/피보험자\s*[:：|]?\s*([^|\n\r\t:：]{2,10})/);
             if (nameMatch && nameMatch[1]) {
-                const tempName = nameMatch[1].trim().split(/[\s|]/)[0];
+                // Split by space, pipe, parenthesis, or bracket
+                const tempName = nameMatch[1].trim().split(/[\s|(\[]/)[0];
                 // If the matched "name" is just a header like "연령", skip it
                 if (tempName && tempName !== '연령' && tempName !== '성별') {
                     customerName = tempName;
