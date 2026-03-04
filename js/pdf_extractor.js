@@ -5,8 +5,11 @@ async function extractTextFromPDF(file, log = console.log) {
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     log(`PDF 로드 완료. 총 ${pdf.numPages}페이지`);
     let fullText = '';
-    // 1페이지: 가계약번호 (매니저 인식용), 3~6페이지: 가입담보리스트
-    const pagesToProcess = [1, 3, 4, 5, 6].filter(p => p <= pdf.numPages);
+    // 1페이지: 가계약번호 (매니저 인식용), 3페이지부터 최대 15페이지까지: 가입담보리스트
+    const pagesToProcess = [1];
+    for (let p = 3; p <= Math.min(pdf.numPages, 15); p++) {
+        pagesToProcess.push(p);
+    }
     const totalPagesToProcess = pagesToProcess.length;
     showToast(`총 ${totalPagesToProcess}페이지 정밀 분석을 시작합니다.`, false);
     for (let idx = 0; idx < pagesToProcess.length; idx++) {
