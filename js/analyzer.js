@@ -268,7 +268,7 @@ function extractRawCoverages(text) {
     let endIndex = -1;
     // 1. 범위 필터링 (Noise Reduction) - 개선: 설명문이 아닌 실제 테이블 헤더만 감지
     const startKeywords = ["가입담보리스트", "가입담보", "담보사항"];
-    const endKeywords = ["주의사항", "유의사항", "알아두실", "계약자/피보험자사항", "보험료사항", "가입제안서"];
+    const endKeywords = ["주의사항", "유의사항", "알아두실", "계약자/피보험자사항", "보험료사항"];
     // 시작점: 짧은 줄에서만 찾기 (설명문이 아닌 테이블 헤더/제목)
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].replace(/\s+/g, '');
