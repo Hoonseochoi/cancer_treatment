@@ -479,3 +479,100 @@ window.exportAsImage = async function () {
     }
 };
 
+// ── Error Report Dynamic Island Logic ──
+window.toggleErrorReport = function(e) {
+    if (e) e.stopPropagation();
+    window.expandErrorReport();
+};
+
+window.expandErrorReport = function(e) {
+    if (e) e.stopPropagation();
+    const island = document.getElementById('error-report-island');
+    const collapsed = document.getElementById('error-island-collapsed');
+    const expanded = document.getElementById('error-island-expanded');
+    
+    // Check if already expanded (by checking height)
+    if (island.style.height === '420px') return;
+    
+    // Expand dimensions (growing upwards from bottom right)
+    island.style.width = '320px';
+    island.style.height = '420px';
+    island.style.borderRadius = '24px';
+    // Remove pointer-cursor once expanded
+    island.style.cursor = 'default';
+    
+    collapsed.style.opacity = '0';
+    setTimeout(() => {
+        collapsed.classList.add('hidden');
+        expanded.classList.remove('hidden');
+        // small delay for display block to apply before opacity transition
+        setTimeout(() => {
+            expanded.style.opacity = '1';
+            expanded.style.pointerEvents = 'auto';
+        }, 50);
+    }, 150);
+};
+
+window.closeErrorReport = function(e) {
+    if (e) e.stopPropagation();
+    const island = document.getElementById('error-report-island');
+    const collapsed = document.getElementById('error-island-collapsed');
+    const expanded = document.getElementById('error-island-expanded');
+    
+    // Revert to button state
+    island.style.width = '130px';
+    island.style.height = '36px';
+    island.style.borderRadius = '12px';
+    island.style.cursor = 'pointer';
+    
+    expanded.style.opacity = '0';
+    expanded.style.pointerEvents = 'none';
+    
+    setTimeout(() => {
+        expanded.classList.add('hidden');
+        collapsed.classList.remove('hidden');
+        setTimeout(() => {
+            collapsed.style.opacity = '1';
+        }, 50);
+    }, 300);
+    
+    // Clear form
+    setTimeout(() => {
+        document.getElementById('error-report-form').reset();
+    }, 400);
+};
+
+window.submitErrorReport = async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('error-email').value;
+    const content = document.getElementById('error-content').value;
+    const fileInput = document.getElementById('error-file');
+    const file = fileInput.files[0];
+    
+    const statusEl = document.getElementById('error-upload-status');
+    const submitBtn = document.getElementById('error-submit-btn');
+    
+    statusEl.classList.remove('hidden');
+    statusEl.classList.add('flex');
+    submitBtn.classList.add('opacity-50', 'pointer-events-none');
+    submitBtn.innerHTML = '<span>처리 중...</span>';
+    
+    try {
+        if (typeof window.uploadErrorReport === 'function') {
+            await window.uploadErrorReport(email, content, file);
+        } else {
+            throw new Error("Supabase 함수를 찾을 수 없습니다.");
+        }
+        
+        showToast('오류 제보가 성공적으로 접수되었습니다!', false);
+        window.closeErrorReport();
+    } catch (err) {
+        showToast('오류 제보 중 문제가 발생했습니다: ' + err.message, true);
+    } finally {
+        statusEl.classList.add('hidden');
+        statusEl.classList.remove('flex');
+        submitBtn.classList.remove('opacity-50', 'pointer-events-none');
+        submitBtn.innerHTML = '<span>제보하기</span>';
+    }
+};
+

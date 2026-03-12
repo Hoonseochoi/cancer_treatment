@@ -350,3 +350,58 @@ if (document.readyState === 'loading') {
     fetchAnalysisCounts();
 }
 
+/**
+ * ── 오류 제보 Supabase 연동 ──
+ * 파일(선택)을 Storage에 업로드하고 DB(error_reports)에 제보 내용을 저장합니다.
+ */
+async function uploadErrorReport(email, content, file) {
+    if (!supabaseClient) {
+        throw new Error("Supabase 클라이언트가 초기화되지 않았습니다.");
+    }
+
+    let attachmentUrl = null;
+
+    try {
+        // 1. 첨부 파일이 있을 경우 Storage에 업로드
+        if (file) {
+            // 파일명 중복 방지를 위한 타임스탬프 추가
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+            const filePath = `reports/${fileName}`;
+
+            const { data: uploadData, error: uploadError } = await supabaseClient
+                .storage
+                .from('error_attachments')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            // 파일의 Public URL 가져오기
+            const { data: publicUrlData } = supabaseClient
+                .storage
+                .from('error_attachments')
+                .getPublicUrl(filePath);
+
+            attachmentUrl = publicUrlData.publicUrl;
+        }
+
+        // 2. DB (error_reports)에 데이터 삽입
+        const { error: insertError } = await supabaseClient
+            .from('error_reports')
+            .insert([{
+                email: email,
+                content: content,
+                attachment_url: attachmentUrl
+            }]);
+
+        if (insertError) throw insertError;
+
+        return true;
+    } catch (error) {
+        console.error("Error in uploadErrorReport:", error);
+        throw error;
+    }
+}
+
+// 전역 노출
+window.uploadErrorReport = uploadErrorReport;

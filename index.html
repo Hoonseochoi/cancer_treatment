@@ -603,7 +603,7 @@
                     <p class="text-[10px] text-gray-400 font-medium text-right mt-8">
                         * 가입제안서를 기반으로 작성한 내용이며, 실제 값과 상이할 수 있습니다. 가입제안서를 확인해주세요
                     </p>
-                    <div class="mt-4 flex justify-start">
+                    <div class="mt-4 flex flex-wrap justify-between items-center gap-4 relative">
                         <button id="export-pdf-btn" onclick="exportAsImage()"
                             class="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-xl text-xs font-bold hover:bg-gray-700 transition-colors shadow-lg">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -614,6 +614,62 @@
                             </svg>
                             이미지 저장
                         </button>
+
+                        <div class="relative w-[130px] h-[36px]">
+                            <!-- Error Report Dynamic Island (Anchored to bottom right) -->
+                            <div id="error-report-island" class="absolute bottom-0 right-0 z-[1001] bg-red-50 text-red-600 border border-red-100 shadow-sm overflow-hidden transition-all duration-[700ms] cursor-pointer" style="width: 130px; height: 36px; border-radius: 12px; transform-origin: bottom right;" onclick="expandErrorReport(event)">
+                                
+                                <!-- Collapsed State Content (Button) -->
+                                <div id="error-island-collapsed" class="absolute inset-0 flex items-center justify-center gap-1.5 font-bold text-xs transition-opacity duration-300 hover:bg-red-100">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                    <span>오류가 생겼나요?</span>
+                                </div>
+
+                                <!-- Expanded State Content (Form) -->
+                                <div id="error-island-expanded" class="absolute inset-0 p-6 flex flex-col opacity-0 pointer-events-none transition-opacity duration-300 hidden text-left text-gray-800 bg-white">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5 text-red-500">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                            오류 제보
+                                        </h3>
+                                        <button onclick="closeErrorReport(event)" class="text-gray-400 hover:text-gray-600 p-1">
+                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-5 h-5 pointer-events-none">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    
+                                    <form id="error-report-form" class="flex flex-col gap-3 flex-1" onsubmit="submitErrorReport(event)">
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-600 mb-1">이메일 주소</label>
+                                            <input type="email" id="error-email" required placeholder="답변 받을 이메일 입력" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-red-300 focus:ring-1 focus:ring-red-200 transition-all text-gray-800 pl-3">
+                                        </div>
+                                        <div class="flex-1">
+                                            <label class="block text-xs font-bold text-gray-600 mb-1">오류 내용</label>
+                                            <textarea id="error-content" required placeholder="어떤 오류가 발생했나요?" class="w-full h-[80px] bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-red-300 focus:ring-1 focus:ring-red-200 transition-all text-gray-800"></textarea>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-600 mb-1">파일 첨부 (선택)</label>
+                                            <input type="file" id="error-file" accept=".pdf,.png,.jpg,.jpeg" class="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-600 hover:file:bg-red-100 transition-colors">
+                                        </div>
+                                        <!-- Upload Progress Status -->
+                                        <div id="error-upload-status" class="hidden flex items-center justify-center gap-2 mt-1">
+                                            <div class="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                                            <span class="text-xs text-red-600 font-bold">내용 전송 중...</span>
+                                        </div>
+                                        <button type="submit" id="error-submit-btn" class="mt-auto w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm transition-colors flex justify-center items-center relative shadow-[0_4px_14px_0_rgba(220,38,38,0.39)]">
+                                            <span>제보하기</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
