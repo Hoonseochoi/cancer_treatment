@@ -1,32 +1,62 @@
 // ── Helper: Parse Korean Amount ──
 function parseKoAmount(str) {
     if (!str) return 0;
-    // Remove "원", ",", " "
-    let clean = str.replace(/[원,\s]/g, '');
-    let val = 0;
-    // Check units
+    // Remove ",", " ", and "원" at the very end
+    let clean = str.replace(/[,원\s]/g, '');
+    let total = 0;
+
+    // 1. Split by '억'
     if (clean.includes('억')) {
         let parts = clean.split('억');
-        let uk = parseInt(parts[0]) || 0;
-        let rest = parts[1] || '';
-        val += uk * 10000; // 만원 단위로 계산 (1억 = 10000만)
-        if (rest.includes('천')) {
-            val += (parseInt(rest.replace('천', '')) || 0) * 1000;
-        } else if (rest.includes('만')) {
-            val += parseInt(rest.replace('만', '')) || 0;
-        }
-    } else if (clean.includes('천만')) {
-        val = (parseInt(clean.replace('천만', '')) || 0) * 1000;
-    } else if (clean.includes('백만')) {
-        val = (parseInt(clean.replace('백만', '')) || 0) * 100;
-    } else if (clean.includes('만')) {
-        val = parseInt(clean.replace('만', '')) || 0;
-    } else {
-        // 단위가 없거나 '원'만 있는 경우 (보험료는 제외하고 가입금액만 본다면 보통 만원 단위 이상임)
-        // 여기서는 '만' 단위로 통일해서 리턴
-        val = parseInt(clean) || 0;
+        total += (parseInt(parts[0]) || 0) * 10000; // 1억 = 10000만
+        clean = parts[1] || '';
     }
-    return val; // 만원 단위 반환
+
+    // 2. Handle remaining parts (천, 백, 십, 만)
+    if (clean.includes('만')) {
+        let parts = clean.split('만');
+        let manPart = parts[0];
+        let val = 0;
+        
+        if (manPart.includes('천')) {
+            let p = manPart.split('천');
+            val += (parseInt(p[0]) || 0) * 1000;
+            manPart = p[1] || '';
+        }
+        if (manPart.includes('백')) {
+            let p = manPart.split('백');
+            val += (parseInt(p[0]) || 0) * 100;
+            manPart = p[1] || '';
+        }
+        if (manPart.includes('십')) {
+            let p = manPart.split('십');
+            val += (parseInt(p[0]) || 0) * 10;
+            manPart = p[1] || '';
+        }
+        val += (parseInt(manPart) || 0);
+        total += val;
+    } else if (clean) {
+        // No '만', but might have '천' etc. (e.g., "500" or "2천500")
+        let val = 0;
+        if (clean.includes('천')) {
+            let p = clean.split('천');
+            val += (parseInt(p[0]) || 0) * 1000;
+            clean = p[1] || '';
+        }
+        if (clean.includes('백')) {
+            let p = clean.split('백');
+            val += (parseInt(p[0]) || 0) * 100;
+            clean = p[1] || '';
+        }
+        if (clean.includes('십')) {
+            let p = clean.split('십');
+            val += (parseInt(p[0]) || 0) * 10;
+            clean = p[1] || '';
+        }
+        val += (parseInt(clean) || 0);
+        total += val;
+    }
+    return total; // 만원 단위 반환
 }
 // ── Helper: Format Korean Amount ──
 function formatKoAmount(val) {
@@ -304,7 +334,7 @@ function extractRawCoverages(text) {
     // 1.5 줄 이어붙이기 (PDF 텍스트 레이어에서 줄이 분리된 경우 처리)
     // 예: "갱신형 암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))(통합간\n편가입)\n1천만원"
     //   → "갱신형 암 통합치료비(실속형)(암중점치료기관(상급종합병원 포함))(통합간편가입) 1천만원"
-    const amountRegex = /[0-9,]+(?:억|천|백|십)*(?:만원|억원|만|억)|세부보장참조/;
+    const amountRegex = /(?:[0-9,]+\s*(?:억원|만원|억|만|천|백|십|원)\s*)+|세부보장참조/;
     const mergedLines = [];
     let pendingLine = '';
     // [NEW] 페이지 맨윗줄 이슈: "담보사항", "가입담보 가입금액 보험료" 등 테이블 헤더가 병합되면
@@ -388,11 +418,9 @@ function extractRawCoverages(text) {
         // [NEW] "세부보장"으로 시작하는 줄은 노이즈로 간주하고 제외 (세부보장참조는 허용하되, 문장 시작이 세부보장이면 제외)
         if (trimmed.startsWith("세부보장")) return;
         // B. 금액 패턴 찾기
-        let match = trimmed.match(/([0-9,]+(?:억|천|백|십)*(?:만원|억원|만|억))/);
-        // "원"만 있는 경우도 찾되, 너무 작은 금액(100원 미만)이나 긴 문장은 제외
-        if (!match) {
-            match = trimmed.match(/([0-9,]+(?:천|백|십)?원)/);
-        }
+        let match = trimmed.match(/((?:[0-9,]+\s*(?:억원|만원|억|만|천|백|십|원)\s*)+)/);
+        // "원"만 있는 경우는 위에서 이미 처리됨 (천|백|십|원 합쳐져서)
+        // match가 없으면 fallback 없음 (이미 통합함)
         // "세부보장참조" 패턴도 금액으로 인정 (상위 담보항목)
         let isRefAmount = false;
         if (!match && trimmed.includes('세부보장참조')) {
