@@ -9,3 +9,6 @@ test_extract.py
 
 # MCP 설정 (토큰 포함 - 보안)
 .cursor/mcp.json
+
+# Ignore nested analyzer repository
+analyzer-next/
