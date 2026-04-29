@@ -129,9 +129,9 @@ function extractRawCoveragesSamsung(text) {
         //   \s+([\d억만천백십원,]+원|세부보장참조)   — 가입금액
         //   \s+(\d[\d,]*원|\(공통\))   — 보험료
         //   \s+(\d+년[^\n]*)   — 납입기간
-        const fullPattern = /^(\d{1,4})\s+(\[[^\]]+\]\s*)(.+?)\s+((?:\d[\d,]*\s*(?:억원|만원|억|만|천|백|십)\s*)*\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원|\(공통\))\s+(\d+년.*)/;
+        const fullPattern = /^(\d{1,4})\s+(\[[^\]]+\]\s*)(.+?)\s+(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원?|\(공통\))\s+(\d+년.*)/;
         // Also try without leading 번호:
-        const noIdPattern = /^(\[[^\]]+\]\s*)(.+?)\s+((?:\d[\d,]*\s*(?:억원|만원|억|만|천|백|십)\s*)*\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원|\(공통\))\s+(\d+년.*)/;
+        const noIdPattern = /^(\[[^\]]+\]\s*)(.+?)\s+(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원?|\(공통\))\s+(\d+년.*)/;
 
         let id = '';
         let bracketPrefix = '';
@@ -177,7 +177,7 @@ function extractRawCoveragesSamsung(text) {
             if (idM) id = idM[1];
 
             // Find amount
-            const amountM = afterBracket.match(/((?:\d[\d,]*\s*(?:억원|만원|억|만|천|백|십)\s*)*\d[\d,]*원|세부보장참조)/);
+            const amountM = afterBracket.match(/(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)/);
             if (!amountM) {
                 console.warn(`[Samsung] Fallback parse failed (no amount found): ${trimmed.substring(0, 80)}`);
                 return;
@@ -187,7 +187,7 @@ function extractRawCoveragesSamsung(text) {
             const afterAmount = afterBracket.substring(amountM.index + amountM[0].length).trim();
 
             // Find premium
-            const premM = afterAmount.match(/^(\d[\d,]*원|\(공통\))/);
+            const premM = afterAmount.match(/^(\d[\d,]*원?|\(공통\))/);
             if (premM) {
                 premiumStr = premM[1];
                 const afterPrem = afterAmount.substring(premM[0].length).trim();
