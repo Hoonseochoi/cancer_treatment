@@ -12,3 +12,6 @@ test_extract.py
 
 # Ignore nested analyzer repository
 analyzer-next/
+
+# Claude worktrees
+.claude/worktrees/
