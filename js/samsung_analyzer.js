@@ -110,36 +110,10 @@ function extractRawCoveragesSamsung(text) {
         "암", "항암", "중입자", "양성자", "표적", "면역", "다빈치", "로봇", "중환자실", "호르몬"
     ];
 
-    // ── 4-pre. Inject premium from bare "번호 보험료 기간" lines into preceding amtOnly lines ──
-    // e.g. "111 409 20년납 100세만기" has no bracket — but the premium belongs to the
-    // coverage-name lines immediately before/after it (e.g. 항암 방사선 치료비 2종).
-    const premiumOnlyLine = /^\s*(\d{1,4})\s+(\d[\d,]+)\s+(\d+년.*)/;
-    const mergedLinesAnnotated = mergedLines.map((line, i) => {
-        const m = line.trim().match(premiumOnlyLine);
-        // Only treat as premium-only if line has NO bracket
-        if (m && !line.includes('[')) {
-            return { line, pendingPremium: { premium: m[2].replace(/,/g, ''), period: m[3].trim() } };
-        }
-        return { line, pendingPremium: null };
-    });
-
     // ── 4. Parse each merged line ──
     const results = [];
 
-    mergedLinesAnnotated.forEach(({ line, pendingPremium }, idx) => {
-        // Skip bare premium lines — premium already queued for injection below
-        if (pendingPremium) {
-            // Retroactively apply premium/period to preceding amtOnly results (those with no premium yet)
-            for (let r = results.length - 1; r >= 0; r--) {
-                if (!results[r].premium && !results[r].period || results[r].period === '-') {
-                    results[r].premium = pendingPremium.premium;
-                    results[r].period = pendingPremium.period;
-                }
-                // Stop at first result that already has full info
-                if (results[r].premium) break;
-            }
-            return;
-        }
+    mergedLines.forEach((line, idx) => {
         const trimmed = line.trim();
         if (!trimmed) return;
 
@@ -155,16 +129,9 @@ function extractRawCoveragesSamsung(text) {
         //   \s+([\d억만천백십원,]+원|세부보장참조)   — 가입금액
         //   \s+(\d[\d,]*원|\(공통\))   — 보험료
         //   \s+(\d+년[^\n]*)   — 납입기간
-        // Samsung amount format: "5,000만원", "1억원", "1억2,000만원", "300만원"
-        // Samsung premium format: "1,500", "14,528" — NO 원 suffix
-        // ※ 혼합단위(1억2,000만원) 패턴을 단순단위보다 먼저 시도해야 함
-        const AMT = /\d[\d,]*억\d[\d,]*만원|\d[\d,]*\s*(?:억원|만원|천원|백원|원)|세부보장참조/;
-        const PRM = /\d[\d,]+|\(공통\)/;
-        const fullPattern  = new RegExp(`^(\\d{1,4})\\s+(\\[[^\\]]+\\]\\s*)(.+?)\\s+(${AMT.source})\\s+(${PRM.source})\\s+(\\d+년.*)`);
-        const noIdPattern  = new RegExp(`^(\\[[^\\]]+\\]\\s*)(.+?)\\s+(${AMT.source})\\s+(${PRM.source})\\s+(\\d+년.*)`);
-        // Amount-only pattern: paired lines with no premium/period
-        const amtOnlyFull  = new RegExp(`^(\\d{1,4})\\s+(\\[[^\\]]+\\]\\s*)(.+?)\\s+(${AMT.source})\\s*$`);
-        const amtOnlyNoId  = new RegExp(`^(\\[[^\\]]+\\]\\s*)(.+?)\\s+(${AMT.source})\\s*$`);
+        const fullPattern = /^(\d{1,4})\s+(\[[^\]]+\]\s*)(.+?)\s+((?:\d[\d,]*\s*(?:억원|만원|억|만|천|백|십)\s*)*\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원|\(공통\))\s+(\d+년.*)/;
+        // Also try without leading 번호:
+        const noIdPattern = /^(\[[^\]]+\]\s*)(.+?)\s+((?:\d[\d,]*\s*(?:억원|만원|억|만|천|백|십)\s*)*\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원|\(공통\))\s+(\d+년.*)/;
 
         let id = '';
         let bracketPrefix = '';
@@ -176,25 +143,23 @@ function extractRawCoveragesSamsung(text) {
 
         let m = trimmed.match(fullPattern);
         if (m) {
-            id = m[1]; bracketPrefix = m[2]; rawName = m[3];
-            amountStr = m[4]; premiumStr = m[5]; periodStr = m[6];
+            id = m[1];
+            bracketPrefix = m[2];
+            rawName = m[3];
+            amountStr = m[4];
+            premiumStr = m[5];
+            periodStr = m[6];
             matched = true;
         } else {
             m = trimmed.match(noIdPattern);
             if (m) {
-                bracketPrefix = m[1]; rawName = m[2]; amountStr = m[3];
-                premiumStr = m[4]; periodStr = m[5];
+                bracketPrefix = m[1];
+                rawName = m[2];
+                amountStr = m[3];
+                premiumStr = m[4];
+                periodStr = m[5];
                 matched = true;
             }
-        }
-        // Amount-only fallback (paired lines: no premium or period)
-        if (!matched) {
-            m = trimmed.match(amtOnlyFull);
-            if (m) { id = m[1]; bracketPrefix = m[2]; rawName = m[3]; amountStr = m[4]; matched = true; }
-        }
-        if (!matched) {
-            m = trimmed.match(amtOnlyNoId);
-            if (m) { bracketPrefix = m[1]; rawName = m[2]; amountStr = m[3]; matched = true; }
         }
 
         // Fallback: more lenient parse — find amount anywhere in line
@@ -211,8 +176,8 @@ function extractRawCoveragesSamsung(text) {
             const idM = beforeBracket.match(/^(\d{1,4})$/);
             if (idM) id = idM[1];
 
-            // Find amount — simple: 숫자 + 억원/만원/천원/원
-            const amountM = afterBracket.match(/(\d[\d,]*\s*(?:억원|만원|천원|백원|원)|세부보장참조)/);
+            // Find amount
+            const amountM = afterBracket.match(/((?:\d[\d,]*\s*(?:억원|만원|억|만|천|백|십)\s*)*\d[\d,]*원|세부보장참조)/);
             if (!amountM) {
                 console.warn(`[Samsung] Fallback parse failed (no amount found): ${trimmed.substring(0, 80)}`);
                 return;
@@ -221,8 +186,8 @@ function extractRawCoveragesSamsung(text) {
             rawName = afterBracket.substring(0, amountM.index).trim();
             const afterAmount = afterBracket.substring(amountM.index + amountM[0].length).trim();
 
-            // Find premium — Samsung: no 원 suffix (e.g. "14,528" not "14,528원")
-            const premM = afterAmount.match(/^(\d[\d,]+|\(공통\))/);
+            // Find premium
+            const premM = afterAmount.match(/^(\d[\d,]*원|\(공통\))/);
             if (premM) {
                 premiumStr = premM[1];
                 const afterPrem = afterAmount.substring(premM[0].length).trim();
@@ -254,12 +219,13 @@ function extractRawCoveragesSamsung(text) {
             return;
         }
 
-        // Parse premium — Samsung format has no 원 suffix (e.g. "14,528")
+        // Parse premium
         let premium = '';
         if (premiumStr && premiumStr !== '(공통)') {
-            premium = premiumStr.replace(/,/g, '');
+            // Strip trailing 원, keep digits and commas
+            premium = premiumStr.replace(/원$/, '').replace(/,/g, '');
         }
-        // (공통) or empty → premium stays ""
+        // (공통) → premium stays ""
 
         // Parse period: trim to essential (e.g. "20년" or "20년납 100세만기")
         let period = periodStr ? periodStr.trim() : '-';
