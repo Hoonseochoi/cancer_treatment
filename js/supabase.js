@@ -297,7 +297,10 @@ async function fetchAnalysisCounts() {
 
         const totalRow = (data || []).find(r => r.key === TOTAL_KEY);
         const dailyRow = (data || []).find(r => r.key === DAILY_KEY);
-        updateCounterUI(dailyRow?.count || 0, totalRow?.count || 0);
+        // 값이 있을 때만 UI 업데이트 (실패 시 기존 표시값 유지)
+        if (totalRow || dailyRow) {
+            updateCounterUI(dailyRow?.count || 0, totalRow?.count || 0);
+        }
     } catch (error) {
         console.error('Failed to fetch counts:', error);
     }
@@ -307,11 +310,12 @@ async function fetchAnalysisCounts() {
 async function incrementAnalysisCounts() {
     if (!supabaseClient) return;
     try {
-        const [{ data: totalData }, { data: dailyData }] = await Promise.all([
+        await Promise.all([
             supabaseClient.rpc('increment_analysis_counter', { counter_key: TOTAL_KEY }),
             supabaseClient.rpc('increment_analysis_counter', { counter_key: DAILY_KEY })
         ]);
-        updateCounterUI(dailyData || 0, totalData || 0);
+        // RPC 반환값 대신 DB 재조회로 UI 갱신 (RPC 실패 시 0 덮어쓰기 방지)
+        await fetchAnalysisCounts();
     } catch (error) {
         console.error('Failed to increment counts:', error);
     }
