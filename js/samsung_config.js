@@ -63,6 +63,13 @@ const samsungCoverageDetailsMap = {
         displayName: "(최초1회) 항암중입자방사선치료비"
     },
 
+    // 담보 104: 하이클래스 암 특정치료비 (비급여 수술+항암방사선+항암약물, 가입금액만큼)
+    "하이클래스 암 특정치료비": {
+        type: "passthrough-dual",
+        displayName: "하이클래스 암 특정치료비",
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+    },
+
     // 담보 97: 암 종합병원 중환자실 입원지원금(연간1회한)
     "암 종합병원 중환자실 입원지원금(연간1회한)": {
         type: "passthrough",
@@ -100,6 +107,11 @@ function findSamsungDetails(itemName) {
         return samsungCoverageDetailsMap["항암 중입자방사선 치료비"];
     }
 
+    // 4-1. 하이클래스
+    if (itemName.includes("하이클래스")) {
+        return samsungCoverageDetailsMap["하이클래스 암 특정치료비"];
+    }
+
     // 5. 중환자실 입원지원금 또는 (중환자실 + 암)
     if (itemName.includes("중환자실 입원지원금") || (itemName.includes("중환자실") && itemName.includes("암"))) {
         return samsungCoverageDetailsMap["암 종합병원 중환자실 입원지원금(연간1회한)"];
@@ -107,6 +119,13 @@ function findSamsungDetails(itemName) {
 
     return null;
 }
+
+// ── 카테고리 계층: 부모 summaryTarget → 자동 포함되는 하위 카드 키 ──
+const CATEGORY_HIERARCHY = {
+    "암수술비": ["다빈치로봇수술비"],
+    "항암방사선치료비": ["양성자방사선치료비", "중입자방사선치료비", "세기조절방사선치료비"],
+    "항암약물치료비": ["표적항암약물치료비", "면역항암약물치료비"]
+};
 
 // ── calculateHierarchicalSummarySamsung: 삼성화재 버전 계층적 요약 계산 ──
 // js/analyzer.js의 calculateHierarchicalSummary와 동일한 로직
@@ -142,10 +161,18 @@ function calculateHierarchicalSummarySamsung(results) {
             details = [{ name: details.displayName, amount: item.amount }];
         }
 
-        // Handle Passthrough-Dual (여러 summaryTargets에 동시 반영)
+        // Handle Passthrough-Dual (여러 summaryTargets에 동시 반영, 계층 하위 카드 자동 포함)
         if (details && details.type === 'passthrough-dual') {
-            details = details.summaryTargets.map(t => ({
-                name: details.displayName,
+            const displayName = details.displayName;
+            const expandedTargets = [];
+            details.summaryTargets.forEach(target => {
+                if (!expandedTargets.includes(target)) expandedTargets.push(target);
+                (CATEGORY_HIERARCHY[target] || []).forEach(child => {
+                    if (!expandedTargets.includes(child)) expandedTargets.push(child);
+                });
+            });
+            details = expandedTargets.map(t => ({
+                name: displayName,
                 amount: item.amount,
                 targetName: t
             }));
