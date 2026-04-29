@@ -119,6 +119,7 @@ async function processFile(file) {
         // Run Raw Extraction
         const insurer = detectInsurer(text);
         console.log(`[detectInsurer] → ${insurer} (textLen=${text.length})`);
+        document.body.classList.toggle('samsung-theme', insurer === 'samsung');
         const results = insurer === 'samsung'
             ? extractRawCoveragesSamsung(text)
             : extractRawCoverages(text);
@@ -178,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('insight-section').classList.add('hidden');
 
             document.getElementById('progress-section').classList.add('hidden');
+            document.body.classList.remove('samsung-theme');
             if (fileInput) fileInput.value = '';
         });
     }
