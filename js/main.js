@@ -1,16 +1,11 @@
 // ── Insurer Detection ──
 function detectInsurer(text) {
-    // 0차: 메리츠 명시 → 무조건 meritz (최우선)
-    if (/메리츠\s*화재|meritzfire\.com|meritz/i.test(text)) return 'meritz';
-    if (typeof currentFileName === 'string' && /메리츠|meritz/i.test(currentFileName)) return 'meritz';
-
-    // 1차: 삼성 회사명/URL 직접 매칭
+    // 1차: 회사명/URL 직접 매칭
     if (/삼성\s*화재|samsungfire\.com/i.test(text)) return 'samsung';
-    // 2차: 삼성 가입제안서 고유 구조 키워드
+    // 2차: Samsung 가입제안서 고유 구조 키워드 (Meritz에는 없는 패턴)
     if (/담보가입현황|보장보험료\s*합계/.test(text)) return 'samsung';
-    // 3차: 파일명 기반
+    // 3차: 파일명 기반 (브라우저 전역 변수 currentFileName 활용)
     if (typeof currentFileName === 'string' && /삼성|samsung/i.test(currentFileName)) return 'samsung';
-
     return 'meritz'; // default
 }
 
@@ -63,13 +58,6 @@ async function processFile(file) {
             if (typeof Tesseract === 'undefined') throw new Error("Tesseract.js 로드 실패");
             text = await extractTextFromPDF(file, log);
             updateProgress(100, '분석 완료!');
-            // ── DEBUG: 추출 텍스트 미리보기 ──
-            console.log('=== PDF 추출 텍스트 (앞 3000자) ===');
-            console.log(text.substring(0, 3000));
-            console.log('=== 텍스트 총 길이:', text.length, '자 ===');
-            console.log('=== 담보가입현황 포함?', text.includes('담보가입현황'));
-            console.log('=== 삼성화재 포함?', /삼성\s*화재/.test(text));
-            console.log('=== 보장보험료 합계 포함?', /보장보험료\s*합계/.test(text));
         }
 
         // ── Manager Recognition (가계약번호 OCR → managers.js 매칭) ──
@@ -128,12 +116,9 @@ async function processFile(file) {
         // Last resort: ensure we didn't capture "보험료"
         if (customerName.includes('보험료')) customerName = '고객';
 
-        // ── Apply Insurer Theme ──
+        // Run Raw Extraction
         const insurer = detectInsurer(text);
         console.log(`[detectInsurer] → ${insurer} (textLen=${text.length})`);
-        document.body.classList.toggle('samsung-theme', insurer === 'samsung');
-
-        // Run Raw Extraction
         const results = insurer === 'samsung'
             ? extractRawCoveragesSamsung(text)
             : extractRawCoverages(text);
@@ -185,8 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-            // Reset insurer theme
-            document.body.classList.remove('samsung-theme');
             document.getElementById('upload-section').style.display = '';
             document.getElementById('file-info').classList.add('hidden');
             document.getElementById('results-section').classList.add('hidden');
