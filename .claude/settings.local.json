@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__desktop-commander__read_file",
+      "mcp__desktop-commander__start_process",
+      "mcp__desktop-commander__write_file",
+      "mcp__Claude_Preview__preview_start",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "WebFetch(domain:api.counterapi.dev)",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import sys; data=sys.stdin.buffer.read\\(\\); print\\(data.decode\\('utf-8','replace'\\)\\)\")",
+      "Bash(where pdftotext *)",
+      "Bash(pdftotext -layout \"C:\\\\Users\\\\chlgn\\\\OneDrive\\\\Desktop\\\\가입제안서PJ\\\\test\\\\test20.pdf\" -)",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

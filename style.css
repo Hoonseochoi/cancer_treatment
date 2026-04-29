@@ -173,6 +173,98 @@ body {
     font-weight: 800;
 }
 
+/* ══════════════════════════════════════════════
+   ── Samsung Fire Insurance Theme Override ──
+   body.samsung-theme → 레드 → 네이비 블루
+   ══════════════════════════════════════════════ */
+body.samsung-theme {
+    /* Samsung Fire navy palette */
+    --primary-dark:   #002E7A;
+    --primary-bright: #1251CC;
+    --primary-color:  #1251CC;
+
+    /* Subtle background tint (Meritz: warm red → Samsung: cool blue) */
+    --bg-light: #EAECF4;
+}
+
+/* Background glow: red radial → blue radial */
+body.samsung-theme .bg-subtle-glow {
+    background: radial-gradient(circle at 10% 20%, rgba(18, 81, 204, 0.04) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 46, 122, 0.04) 0%, transparent 40%);
+}
+
+/* Upload zone dashed border */
+body.samsung-theme .upload-zone {
+    border-color: rgba(0, 46, 122, 0.2);
+}
+body.samsung-theme .upload-zone:hover,
+body.samsung-theme .upload-zone.dragover {
+    background: rgba(18, 81, 204, 0.02);
+}
+
+/* Card hover accent */
+body.samsung-theme .premium-card:hover {
+    box-shadow: 0 12px 30px rgba(18, 81, 204, 0.08);
+    border-color: rgba(18, 81, 204, 0.15);
+}
+
+/* Title accent gradient */
+body.samsung-theme .title-accent {
+    color: var(--primary-bright);
+    text-shadow: 0 4px 15px rgba(18, 81, 204, 0.12);
+    background: linear-gradient(to right, #002E7A, #1251CC);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Tailwind red → navy overrides */
+body.samsung-theme .text-red-600,
+body.samsung-theme .text-red-500 { color: #1251CC !important; }
+body.samsung-theme .bg-red-600   { background-color: #1251CC !important; }
+body.samsung-theme .bg-red-50    { background-color: #EFF4FF !important; }
+body.samsung-theme .bg-red-100   { background-color: #DBEAFE !important; }
+body.samsung-theme .border-red-600 { border-color: #1251CC !important; }
+body.samsung-theme .border-red-100 { border-color: #BFDBFE !important; }
+body.samsung-theme .border-red-200 { border-color: #93C5FD !important; }
+body.samsung-theme .border-red-300 { border-color: #60A5FA !important; }
+body.samsung-theme .ring-red-200  { --tw-ring-color: #BFDBFE !important; }
+body.samsung-theme .focus\:border-red-300:focus { border-color: #60A5FA !important; }
+body.samsung-theme .focus\:ring-red-200:focus   { --tw-ring-color: #BFDBFE !important; }
+body.samsung-theme .hover\:bg-red-100:hover { background-color: #DBEAFE !important; }
+body.samsung-theme .hover\:bg-red-700:hover { background-color: #002E7A !important; }
+body.samsung-theme .file\:bg-red-50    { background-color: #EFF4FF !important; }
+body.samsung-theme .file\:text-red-600 { color: #1251CC !important; }
+
+/* Badge border (hardcoded rgba red in index.html inline style) */
+body.samsung-theme #manager-badge-container > div {
+    border-color: rgba(0, 46, 122, 0.6) !important;
+}
+body.samsung-theme .welcome-code {
+    color: #1251CC !important;
+    background: rgba(18, 81, 204, 0.06) !important;
+}
+body.samsung-theme .welcome-name::after {
+    background: #1251CC !important;
+}
+
+/* animate-ping dot in badge */
+body.samsung-theme .bg-red-400 { background-color: #60A5FA !important; }
+body.samsung-theme .bg-red-600 { background-color: #1251CC !important; }
+
+/* Error island keep red (it's UI feedback, not brand) */
+body.samsung-theme #error-report-island { /* intentionally unchanged */ }
+
+/* Hardcoded rgba(230,0,0,...) inline styles → samsung blue */
+body.samsung-theme [style*="rgba(230,0,0"] {
+    background: rgba(18, 81, 204, 0.06) !important;
+    border-color: rgba(18, 81, 204, 0.15) !important;
+}
+body.samsung-theme [style*="rgba(166,0,0"] {
+    background: rgba(0, 46, 122, 0.06) !important;
+    border-color: rgba(0, 46, 122, 0.15) !important;
+}
+
 /* ── Capture specific overrides ── */
 /* 한글 폰트를 앞에 배치하여 자간 계산 오류 방지 */
 .html2canvas-container {

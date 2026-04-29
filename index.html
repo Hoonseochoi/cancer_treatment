@@ -501,7 +501,7 @@
                     <svg width="14" height="14" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <path d="M9 12l2 2 4-4" />
                         <circle cx="12" cy="12" r="10" />
-                    </svg> 메리츠화재 "비공식" 매니저 분석지원
+                    </svg> 암 치료비 분석지원 시스템
                 </div>
 
                 <h1 id="main-title"
@@ -525,6 +525,14 @@
 
             <!-- Upload Zone -->
             <section id="upload-section" class="stagger-in" style="animation-delay:100ms;" aria-label="파일 업로드">
+
+                <!-- 지원 회사 CI 로고 -->
+                <div class="flex items-center justify-end gap-3 mb-3 px-1">
+                    <span class="text-xs font-semibold text-gray-400 tracking-wide mr-1">지원 회사</span>
+                    <img src="mci2.png" alt="메리츠화재" class="h-8 object-contain opacity-80 hover:opacity-100 transition-opacity" style="max-width:108px;">
+                    <img src="sci2.svg" alt="삼성화재" class="h-9 object-contain opacity-80 hover:opacity-100 transition-opacity" style="max-width:117px;">
+                </div>
+
                 <div id="upload-zone"
                     class="upload-zone premium-card rounded-3xl p-10 sm:p-14 text-center cursor-pointer"
                     onclick="document.getElementById('file-input').click()">
@@ -594,12 +602,14 @@
 
             <!-- Summary -->
             <div id="summary-section" class="hidden mt-10">
+              <div class="relative">
+                <!-- 메인 흰 카드 (풀 사이즈 유지) -->
                 <div class="premium-card rounded-3xl p-8 border-none bg-white shadow-xl">
                     <div class="flex items-center gap-3 mb-8">
                         <div class="w-1.5 h-6 bg-red-600 rounded-full"></div>
                         <h2 id="result-header" class="text-2xl font-black text-gray-800">보장 내역 한눈에 보기</h2>
                     </div>
-                    <div id="summary-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-6"></div>
+                    <div id="summary-grid"></div>
                     <p class="text-[10px] text-gray-400 font-medium text-right mt-8">
                         * 가입제안서를 기반으로 작성한 내용이며, 실제 값과 상이할 수 있습니다. 가입제안서를 확인해주세요
                     </p>
@@ -672,7 +682,10 @@
                         </div>
                     </div>
                 </div>
-            </div>
+                <!-- 기타 담보 패널: 흰 카드 오른쪽에 절대 위치 -->
+                <div id="other-panel-container" class="hidden absolute top-0 w-60" style="left: calc(100% + 20px);"></div>
+              </div><!-- /relative outer -->
+            </div><!-- /summary-section -->
 
             <!-- Results -->
             <section id="results-section" class="hidden mt-8 space-y-4" aria-label="분석 결과">
@@ -730,6 +743,8 @@
 
     <!-- Modularized App Scripts -->
     <script src="js/config.js"></script>
+    <script src="js/samsung_config.js"></script>
+    <script src="js/samsung_analyzer.js"></script>
     <script src="js/supabase.js"></script>
     <script src="js/pdf_extractor.js"></script>
     <script src="js/analyzer.js"></script>

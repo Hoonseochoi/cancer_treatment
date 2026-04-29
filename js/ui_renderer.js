@@ -15,7 +15,7 @@ function showToast(msg, isError = true) {
 // ── Coverage Detail Dictionary ──
 
 // Raw List Renderer (Updated for Hierarchical Summary and Insight Card)
-function renderResults(results, customerName = '고객') {
+function renderResults(results, customerName = '고객', insurer = 'meritz') {
     const listEl = document.getElementById('results-list');
     const summaryGrid = document.getElementById('summary-grid');
     const resultsSection = document.getElementById('results-section');
@@ -35,7 +35,9 @@ function renderResults(results, customerName = '고객') {
     summarySection.classList.remove('hidden');
 
     // 1. Calculate Hierarchical Summary
-    const summaryMap = calculateHierarchicalSummary(results);
+    const summaryMap = insurer === 'samsung'
+        ? calculateHierarchicalSummarySamsung(results)
+        : calculateHierarchicalSummary(results);
     // Calculate Grand Total Range
     let grandTotalMin = 0;
     let grandTotalMax = 0;
@@ -64,6 +66,9 @@ function renderResults(results, customerName = '고객') {
         } else if (currentFileName && currentFileName.startsWith("325001957")) {
             expertName = "예원";
             expertImgBase64 = YEWON_B64; // Use global Base64 string
+        } else if (insurer === 'samsung') {
+            expertName = "바다";
+            expertImgBase64 = SBADA_B64;
         }
 
         insightSection.innerHTML = `
@@ -107,10 +112,24 @@ function renderResults(results, customerName = '고객') {
     // 2. Render Summary Grid
     if (summaryMap.size > 0) {
         summaryGrid.innerHTML = '';
-        summaryGrid.className = "grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12";
+        summaryGrid.className = "mb-12";
+
+        // ── 메인 카드 9종 고정 키 ──
+        const MAIN_CARD_KEYS = [
+            "항암방사선치료비",
+            "항암약물치료비",
+            "암수술비",
+            "표적항암약물치료비",
+            "면역항암약물치료비",
+            "중입자방사선치료비",
+            "양성자방사선치료비",
+            "다빈치로봇수술비",
+            "세기조절방사선치료비"
+        ];
+
         // Header Title
         const header = document.createElement('div');
-        header.className = "col-span-1 sm:col-span-3 text-lg font-black mb-2 flex items-center justify-between";
+        header.className = "text-lg font-black mb-4 flex items-center justify-between";
         header.style.color = "var(--primary-color)";
         let headerAmountStr = formatKoAmount(grandTotalMin);
         if (grandTotalMin !== grandTotalMax) {
@@ -118,8 +137,9 @@ function renderResults(results, customerName = '고객') {
         }
         header.innerHTML = `🛡️ 집계된 암 치료 보장금액 합계 <span style="font-size:1.1em; color:var(--primary-dark); margin-left:12px; font-family:'Outfit';">${headerAmountStr}</span>`;
         summaryGrid.appendChild(header);
+
         // Convert Map to Array and Sort
-        const sortedItems = Array.from(summaryMap.entries()).sort((a, b) => {
+        const allItems = Array.from(summaryMap.entries()).sort((a, b) => {
             const priorities = ["표적", "면역", "양성자"];
             const getPriority = (n) => {
                 for (let i = 0; i < priorities.length; i++) {
@@ -129,12 +149,51 @@ function renderResults(results, customerName = '고객') {
             };
             return getPriority(a[0]) - getPriority(b[0]);
         });
+
+        // 메인 9장 vs 기타 분리
+        const mainItems = allItems.filter(([name]) => MAIN_CARD_KEYS.includes(name));
+        const otherItems = allItems.filter(([name]) => !MAIN_CARD_KEYS.includes(name));
+
+        // 메인 카드 그리드 (summaryGrid는 wrapper, 카드는 inner div에)
+        const mainGrid = document.createElement('div');
+        mainGrid.className = "grid grid-cols-1 sm:grid-cols-3 gap-6";
+        summaryGrid.appendChild(mainGrid);
+
+        // 우측 기타 패널: HTML의 other-panel-container에 렌더링
+        const otherContainer = document.getElementById('other-panel-container');
+        if (otherContainer) {
+            otherContainer.innerHTML = '';
+            if (otherItems.length > 0) {
+                otherContainer.classList.remove('hidden');
+                otherContainer.innerHTML = `
+                    <div class="premium-card rounded-3xl p-5 flex flex-col gap-3" style="border: 1.5px dashed rgba(229,62,62,0.25);">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">✨</span>
+                            <h4 class="text-sm font-black text-gray-700">이런 담보들도 있어요!</h4>
+                        </div>
+                        <p class="text-[10px] text-gray-400 font-medium -mt-1">메인 집계 외 추가 보장 항목입니다.</p>
+                        <div id="other-items-list" class="flex flex-col gap-1"></div>
+                    </div>`;
+            } else {
+                otherContainer.classList.add('hidden');
+            }
+        }
+
+        // 메인 9장 렌더링
+        const sortedItems = mainItems;
         sortedItems.forEach(([name, data]) => {
             const card = document.createElement('div');
             card.className = "premium-card p-5 rounded-3xl flex flex-col justify-start gap-4 transition-all duration-300 group";
-            // Generate Sub-items HTML
+            // Generate Sub-items HTML (name+amount 기준 중복 제거)
+            const seenSubKeys = new Set();
+            const dedupedItems = data.items.filter(sub => {
+                const key = sub.name + '|' + sub.amount;
+                if (seenSubKeys.has(key)) return false;
+                seenSubKeys.add(key);
+                return true;
+            });
             let subItemsHtml = '';
-            data.items.forEach(sub => {
+            dedupedItems.forEach(sub => {
                 let truncatedSource = sub.source;
                 if (truncatedSource.length > 28) {
                     truncatedSource = truncatedSource.substring(0, 28) + "...";
@@ -234,8 +293,34 @@ function renderResults(results, customerName = '고객') {
                     <div class="sub-items-container">${subItemsHtml}</div>
                 </div>
             </div>`;
-            summaryGrid.appendChild(card);
+            mainGrid.appendChild(card);
         });
+
+        // ── 기타 담보 패널 렌더링 ──
+        if (otherContainer && otherItems.length > 0) {
+            const listEl = document.getElementById('other-items-list');
+            otherItems.forEach(([name, data]) => {
+                let totalDisplay = formatKoAmount(data.totalMin);
+                if (data.totalMin !== data.totalMax) {
+                    totalDisplay = `${formatKoAmount(data.totalMin)}~${formatKoAmount(data.totalMax)}`;
+                }
+                const row = document.createElement('div');
+                row.className = "flex items-start justify-between gap-2 py-2.5 border-b border-gray-100 last:border-0";
+                row.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[11px] font-bold text-gray-700 leading-snug truncate" title="${name}">${name}</p>
+                        <div class="mt-0.5 space-y-0.5">
+                            ${data.items.map(sub => `
+                                <p class="text-[10px] text-gray-400 font-medium truncate">ㄴ ${sub.name}</p>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="flex-shrink-0 text-right">
+                        <span class="text-[13px] font-black text-red-500 font-outfit">${totalDisplay}</span>
+                    </div>`;
+                listEl.appendChild(row);
+            });
+        }
     }
     // 3. Render Detail List
     listEl.innerHTML = '';

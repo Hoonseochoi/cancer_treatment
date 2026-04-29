@@ -268,40 +268,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 /**
- * ── 분석 횟수 카운터 API (오늘 / 전체) ──
- * api.counterapi.dev를 사용해 분석 실행 횟수 추적
+ * ── 분석 횟수 카운터 (Supabase analysis_counters 테이블) ──
+ * counterapi.dev → Supabase로 전환 (브라우저 CORS 차단 이슈로 인해)
  */
-const COUNTER_NAMESPACE = "meritz_analyzer";
 
-// 한국 시간(KST) 기준 오늘 날짜 키: meritz_daily_YYYYMMDD
+// KST 기준 오늘 날짜 키: daily_YYYYMMDD
 function getTodayKey() {
-    const now = new Date();
-    // KST(UTC+9)로 변환
-    const kst = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
     const yyyy = kst.getUTCFullYear();
     const mm = String(kst.getUTCMonth() + 1).padStart(2, '0');
     const dd = String(kst.getUTCDate()).padStart(2, '0');
-    return `meritz_daily_${yyyy}${mm}${dd}`;
+    return `daily_${yyyy}${mm}${dd}`;
 }
 
-const TOTAL_KEY = "meritz_total_analysis";  // 전체 누적 횟수
-const DAILY_KEY = getTodayKey();            // 오늘 날짜별 횟수
-
-const API_BASE = "https://api.counterapi.dev/v1";
+const TOTAL_KEY = "total";
+const DAILY_KEY = getTodayKey();
 
 /** 오늘/전체 분석 횟수 조회 후 UI 갱신 */
 async function fetchAnalysisCounts() {
+    if (!supabaseClient) return;
     try {
-        // 전체·오늘 횟수를 동시에 조회
-        const [totalRes, dailyRes] = await Promise.all([
-            fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${TOTAL_KEY}`),
-            fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${DAILY_KEY}`)
-        ]);
+        const { data, error } = await supabaseClient
+            .from('analysis_counters')
+            .select('key, count')
+            .in('key', [TOTAL_KEY, DAILY_KEY]);
 
-        const totalData = await totalRes.json();
-        const dailyData = await dailyRes.json();
+        if (error) throw error;
 
-        updateCounterUI(dailyData.count || 0, totalData.count || 0);
+        const totalRow = (data || []).find(r => r.key === TOTAL_KEY);
+        const dailyRow = (data || []).find(r => r.key === DAILY_KEY);
+        updateCounterUI(dailyRow?.count || 0, totalRow?.count || 0);
     } catch (error) {
         console.error('Failed to fetch counts:', error);
     }
@@ -309,17 +305,13 @@ async function fetchAnalysisCounts() {
 
 /** 분석 실행 시 오늘/전체 횟수 1씩 증가 */
 async function incrementAnalysisCounts() {
+    if (!supabaseClient) return;
     try {
-        // 전체·오늘 횟수를 동시에 1 증가
-        const [totalRes, dailyRes] = await Promise.all([
-            fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${TOTAL_KEY}/up`),
-            fetch(`${API_BASE}/${COUNTER_NAMESPACE}/${DAILY_KEY}/up`)
+        const [{ data: totalData }, { data: dailyData }] = await Promise.all([
+            supabaseClient.rpc('increment_analysis_counter', { counter_key: TOTAL_KEY }),
+            supabaseClient.rpc('increment_analysis_counter', { counter_key: DAILY_KEY })
         ]);
-
-        const totalData = await totalRes.json();
-        const dailyData = await dailyRes.json();
-
-        updateCounterUI(dailyData.count, totalData.count);
+        updateCounterUI(dailyData || 0, totalData || 0);
     } catch (error) {
         console.error('Failed to increment counts:', error);
     }
