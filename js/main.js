@@ -1,11 +1,16 @@
 // ── Insurer Detection ──
 function detectInsurer(text) {
-    // 1차: 회사명/URL 직접 매칭
+    // 0차: 메리츠 명시 → 무조건 meritz (최우선)
+    if (/메리츠\s*화재|meritzfire\.com|메리츠/i.test(text)) return 'meritz';
+    if (typeof currentFileName === 'string' && /메리츠|meritz/i.test(currentFileName)) return 'meritz';
+
+    // 1차: 삼성 회사명/URL 직접 매칭
     if (/삼성\s*화재|samsungfire\.com/i.test(text)) return 'samsung';
-    // 2차: Samsung 가입제안서 고유 구조 키워드 (Meritz에는 없는 패턴)
-    if (/담보가입현황|보장보험료\s*합계/.test(text)) return 'samsung';
-    // 3차: 파일명 기반 (브라우저 전역 변수 currentFileName 활용)
+    // 2차: 삼성 가입제안서 고유 구조 키워드
+    if (/담보가입현황/.test(text)) return 'samsung';
+    // 3차: 파일명 기반
     if (typeof currentFileName === 'string' && /삼성|samsung/i.test(currentFileName)) return 'samsung';
+
     return 'meritz'; // default
 }
 
