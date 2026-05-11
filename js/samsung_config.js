@@ -236,8 +236,10 @@ function calculateHierarchicalSummarySamsung(results) {
                 // 2. 그 외의 경우 키워드 매칭
                 else if (groupingSource.includes("표적")) {
                     normalizedName = "표적항암약물치료비";
-                } else if (groupingSource.includes("면역") || groupingSource.includes("호르몬")) {
+                } else if (groupingSource.includes("면역")) {
                     normalizedName = "면역항암약물치료비";
+                } else if (groupingSource.includes("호르몬")) {
+                    normalizedName = "항암호르몬약물치료비"; // 면역항암과 별개 → 사이드바로 분류
                 } else if (groupingSource.includes("양성자")) {
                     normalizedName = "양성자방사선치료비";
                 } else if (groupingSource.includes("중입자")) {
