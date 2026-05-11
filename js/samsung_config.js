@@ -35,14 +35,32 @@ const samsungCoverageDetailsMap = {
     "종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)": {
         type: "passthrough-dual",
         displayName: "암 특정치료비Ⅲ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        expandHierarchy: false  // 이 담보는 표적/면역/양성자 등 하위 치료 미포함
     },
 
     // 담보 87: 종합병원 유사암Ⅱ 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)
     "종합병원 유사암Ⅱ 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)": {
         type: "passthrough-dual",
         displayName: "유사암Ⅱ 특정치료비Ⅲ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        expandHierarchy: false
+    },
+
+    // 담보 134: 상급종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ(수술 입통원1회당)
+    "상급종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ": {
+        type: "passthrough-dual",
+        displayName: "상급종합병원 암 특정치료비Ⅲ(수술·항암방사선·항암약물)",
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        expandHierarchy: false
+    },
+
+    // 담보 135: 상급종합병원 유사암Ⅱ 특정치료비Ⅲ(수술 입통원1회당)
+    "상급종합병원 유사암Ⅱ 특정치료비Ⅲ": {
+        type: "passthrough-dual",
+        displayName: "상급종합병원 유사암Ⅱ 특정치료비Ⅲ(수술·항암방사선·항암약물)",
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        expandHierarchy: false
     },
 
     // 담보 53: 종합병원 특정항암호르몬약물허가 치료비Ⅱ(연간1회한)(암(유사암Ⅱ제외))
@@ -67,13 +85,26 @@ const samsungCoverageDetailsMap = {
     "하이클래스 암 특정치료비": {
         type: "passthrough-dual",
         displayName: "하이클래스 암 특정치료비",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        expandHierarchy: false
     },
 
     // 담보 97: 암 종합병원 중환자실 입원지원금(연간1회한)
     "암 종합병원 중환자실 입원지원금(연간1회한)": {
         type: "passthrough",
         displayName: "(연1회) 암 중환자실 입원지원금"
+    },
+
+    // 담보 200: 암(특정암 제외) 다빈치로봇 수술비 [갱신형]
+    "암(특정암 제외) 다빈치로봇 수술비": {
+        type: "passthrough",
+        displayName: "(최초1회) 다빈치로봇수술비(암, 특정암 제외)"
+    },
+
+    // 담보 201: 특정암 다빈치로봇 수술비 [갱신형]
+    "특정암 다빈치로봇 수술비": {
+        type: "passthrough",
+        displayName: "(최초1회) 다빈치로봇수술비(특정암)"
     }
 };
 
@@ -84,13 +115,26 @@ function findSamsungDetails(itemName) {
         return samsungCoverageDetailsMap["종합병원 암 전액본인부담(비급여포함) 통합치료비"];
     }
 
-    // 2. 특정치료비Ⅲ / 특정치료비III
+    // 2. 특정치료비Ⅲ / 특정치료비III (상급종합병원 / 종합병원 구분)
     if (itemName.includes("특정치료비") && (itemName.includes("Ⅲ") || itemName.includes("III"))) {
+        const isHighLevel = itemName.includes("상급종합병원");
         if (itemName.includes("유사암")) {
-            return samsungCoverageDetailsMap["종합병원 유사암Ⅱ 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)"];
+            return isHighLevel
+                ? samsungCoverageDetailsMap["상급종합병원 유사암Ⅱ 특정치료비Ⅲ"]
+                : samsungCoverageDetailsMap["종합병원 유사암Ⅱ 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)"];
         } else {
-            return samsungCoverageDetailsMap["종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)"];
+            return isHighLevel
+                ? samsungCoverageDetailsMap["상급종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ"]
+                : samsungCoverageDetailsMap["종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)"];
         }
+    }
+
+    // 2-1. 다빈치로봇 수술비 단독 담보 (통합치료비 외 별도 담보)
+    if (itemName.includes("다빈치") && !itemName.includes("통합치료비")) {
+        if (itemName.includes("특정암")) {
+            return samsungCoverageDetailsMap["특정암 다빈치로봇 수술비"];
+        }
+        return samsungCoverageDetailsMap["암(특정암 제외) 다빈치로봇 수술비"];
     }
 
     // 3. 항암호르몬약물허가 / 호르몬약물
@@ -161,15 +205,19 @@ function calculateHierarchicalSummarySamsung(results) {
             details = [{ name: details.displayName, amount: item.amount }];
         }
 
-        // Handle Passthrough-Dual (여러 summaryTargets에 동시 반영, 계층 하위 카드 자동 포함)
+        // Handle Passthrough-Dual (여러 summaryTargets에 동시 반영)
+        // expandHierarchy: false 이면 하위 카테고리 자동 포함 억제 (특정치료비Ⅲ 등)
         if (details && details.type === 'passthrough-dual') {
             const displayName = details.displayName;
+            const shouldExpand = details.expandHierarchy !== false;
             const expandedTargets = [];
             details.summaryTargets.forEach(target => {
                 if (!expandedTargets.includes(target)) expandedTargets.push(target);
-                (CATEGORY_HIERARCHY[target] || []).forEach(child => {
-                    if (!expandedTargets.includes(child)) expandedTargets.push(child);
-                });
+                if (shouldExpand) {
+                    (CATEGORY_HIERARCHY[target] || []).forEach(child => {
+                        if (!expandedTargets.includes(child)) expandedTargets.push(child);
+                    });
+                }
             });
             details = expandedTargets.map(t => ({
                 name: displayName,
