@@ -8,25 +8,25 @@ const samsungCoverageDetailsMap = {
     "종합병원 암 전액본인부담(비급여포함) 통합치료비": {
         type: "variant",
         data: {
-            "10000": [ // 표준형 1억원
-                { name: "(수술 회당) 암 수술비", amount: "1,000만" },
-                { name: "(연1회) 항암방사선치료비", amount: "1,000만" },
-                { name: "(연1회) 항암약물치료비", amount: "1,000만" },
-                { name: "(연1회) 다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만" },
-                { name: "(연1회) 다빈치로봇수술비(특정암)", amount: "500만" },
-                { name: "(연1회) 항암양성자방사선치료비", amount: "3,000만" },
-                { name: "(연1회) 표적항암약물허가치료비", amount: "3,000만" },
-                { name: "(연1회) 면역항암약물허가치료비", amount: "3,000만" }
+            "10000": [ // 표준형 1억원 — 전항목 비급여(전액본인부담) 보장
+                { name: "(수술 회당) 암 수술비", amount: "1,000만", 비급여: true },
+                { name: "(연1회) 항암방사선치료비", amount: "1,000만", 비급여: true },
+                { name: "(연1회) 항암약물치료비", amount: "1,000만", 비급여: true },
+                { name: "(연1회) 다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true },
+                { name: "(연1회) 다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
+                { name: "(연1회) 항암양성자방사선치료비", amount: "3,000만", 비급여: true },
+                { name: "(연1회) 표적항암약물허가치료비", amount: "3,000만", 비급여: true },
+                { name: "(연1회) 면역항암약물허가치료비", amount: "3,000만", 비급여: true }
             ],
-            "5000": [ // 실속형 5천만원
-                { name: "(수술 회당) 암 수술비", amount: "1,000만" },
-                { name: "(연1회) 항암방사선치료비", amount: "1,000만" },
-                { name: "(연1회) 항암약물치료비", amount: "1,000만" },
-                { name: "(연1회) 다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만" },
-                { name: "(연1회) 다빈치로봇수술비(특정암)", amount: "500만" },
-                { name: "(연1회) 항암양성자방사선치료비", amount: "1,000만" },
-                { name: "(연1회) 표적항암약물허가치료비", amount: "1,000만" },
-                { name: "(연1회) 면역항암약물허가치료비", amount: "1,000만" }
+            "5000": [ // 실속형 5천만원 — 전항목 비급여(전액본인부담) 보장
+                { name: "(수술 회당) 암 수술비", amount: "1,000만", 비급여: true },
+                { name: "(연1회) 항암방사선치료비", amount: "1,000만", 비급여: true },
+                { name: "(연1회) 항암약물치료비", amount: "1,000만", 비급여: true },
+                { name: "(연1회) 다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true },
+                { name: "(연1회) 다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
+                { name: "(연1회) 항암양성자방사선치료비", amount: "1,000만", 비급여: true },
+                { name: "(연1회) 표적항암약물허가치료비", amount: "1,000만", 비급여: true },
+                { name: "(연1회) 면역항암약물허가치료비", amount: "1,000만", 비급여: true }
             ]
         }
     },
@@ -36,28 +36,32 @@ const samsungCoverageDetailsMap = {
     "종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)": {
         type: "passthrough-dual",
         displayName: "암 특정치료비Ⅲ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        비급여: true
     },
 
     // 담보 87: 종합병원 유사암Ⅱ 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)
     "종합병원 유사암Ⅱ 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)": {
         type: "passthrough-dual",
         displayName: "유사암Ⅱ 특정치료비Ⅲ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        비급여: true
     },
 
     // 담보 134: 상급종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ(수술 입통원1회당)
     "상급종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ": {
         type: "passthrough-dual",
         displayName: "상급종합병원 암 특정치료비Ⅲ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        비급여: true
     },
 
     // 담보 135: 상급종합병원 유사암Ⅱ 특정치료비Ⅲ(수술 입통원1회당)
     "상급종합병원 유사암Ⅱ 특정치료비Ⅲ": {
         type: "passthrough-dual",
         displayName: "상급종합병원 유사암Ⅱ 특정치료비Ⅲ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        비급여: true
     },
 
     // 담보 53: 종합병원 특정항암호르몬약물허가 치료비Ⅱ(연간1회한)(암(유사암Ⅱ제외))
@@ -82,7 +86,8 @@ const samsungCoverageDetailsMap = {
     "하이클래스 암 특정치료비": {
         type: "passthrough-dual",
         displayName: "하이클래스 암 특정치료비",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        비급여: true
     },
 
     // 담보 97: 암 종합병원 중환자실 입원지원금(연간1회한)
@@ -164,7 +169,8 @@ function findSamsungDetails(itemName) {
 const CATEGORY_HIERARCHY = {
     "암수술비": ["다빈치로봇수술비"],
     "항암방사선치료비": ["양성자방사선치료비", "중입자방사선치료비", "세기조절방사선치료비"],
-    "항암약물치료비": ["표적항암약물치료비", "면역항암약물치료비"]
+    "항암약물치료비": ["표적항암약물치료비", "면역항암약물치료비"],
+    "표적항암약물치료비": ["면역항암약물치료비"]  // 면역항암은 표적항암을 포함 (면역7천=면역3+표적3+비급여약물1)
 };
 
 // ── calculateHierarchicalSummarySamsung: 삼성화재 버전 계층적 요약 계산 ──
@@ -206,8 +212,10 @@ function calculateHierarchicalSummarySamsung(results) {
         if (details && details.type === 'passthrough-dual') {
             const displayName = details.displayName;
             const shouldExpand = details.expandHierarchy !== false;
+            const isBigugeom = details.비급여 || false;
+            const directTargets = details.summaryTargets; // 명시적 대상 (확장 아님)
             const expandedTargets = [];
-            details.summaryTargets.forEach(target => {
+            directTargets.forEach(target => {
                 if (!expandedTargets.includes(target)) expandedTargets.push(target);
                 if (shouldExpand) {
                     (CATEGORY_HIERARCHY[target] || []).forEach(child => {
@@ -218,7 +226,9 @@ function calculateHierarchicalSummarySamsung(results) {
             details = expandedTargets.map(t => ({
                 name: displayName,
                 amount: item.amount,
-                targetName: t
+                targetName: t,
+                비급여: isBigugeom,
+                _expansion: !directTargets.includes(t) // true = 확장항목, post-processing propagation에서 중복 방지용
             }));
         }
 
@@ -265,6 +275,8 @@ function calculateHierarchicalSummarySamsung(results) {
                         displayName: normalizedName,
                         totalMin: 0,
                         totalMax: 0,
+                        isolatedMin: 0, // passthrough-dual 확장 제외한 직접 금액
+                        isolatedMax: 0,
                         items: []
                     });
                 }
@@ -272,18 +284,36 @@ function calculateHierarchicalSummarySamsung(results) {
                 // Amount Parsing (Support Range)
                 const valMin = parseKoAmount(det.amount);
                 const valMax = det.maxAmount ? parseKoAmount(det.maxAmount) : valMin;
-                group.totalMin += valMin;
-                group.totalMax += valMax;
+                // 유사암/특정암 전용 담보는 합산금액에서 제외 (일반암 기준 표기)
+                const sourceText = (item.name || '') + '|' + (det.name || '');
+                const isYusamOnly = sourceText.includes("유사암") &&
+                                    !sourceText.includes("유사암Ⅱ 제외") &&
+                                    !sourceText.includes("유사암Ⅱ제외") &&
+                                    !sourceText.includes("유사암 제외") &&
+                                    !sourceText.includes("유사암제외");
+                const isSpecificAmOnly = sourceText.includes("특정암") &&
+                                         !sourceText.includes("특정암 제외") &&
+                                         !sourceText.includes("특정암제외");
+                if (!isYusamOnly && !isSpecificAmOnly) {
+                    group.totalMin += valMin;
+                    group.totalMax += valMax;
+                    if (!det._expansion) {
+                        group.isolatedMin += valMin;
+                        group.isolatedMax += valMax;
+                    }
+                }
                 group.items.push({
                     name: det.name,
                     amount: det.amount,
                     maxAmount: det.maxAmount,
                     source: item.name,
                     hiddenInDetail: det.hiddenInDetail,
-                    sub: det.sub
+                    sub: det.sub,
+                    비급여: det.비급여 || false,
+                    _expansion: det._expansion || false
                 });
-                // Update display name (pick longest readable name)
-                if (det.name.length > group.displayName.length || group.displayName === normalizedName) {
+                // Update display name from direct (non-expansion) items only
+                if (!det._expansion && (det.name.length > group.displayName.length || group.displayName === normalizedName)) {
                     let cleanName = det.name.replace(/\([^)]*\)/g, '').trim();
                     if (cleanName.length > 0) {
                         group.displayName = cleanName;
@@ -291,6 +321,35 @@ function calculateHierarchicalSummarySamsung(results) {
                 }
             });
         }
+    });
+
+    // ── 상위→하위 카테고리 금액 누적 (포함관계 표현) ──
+    // isolatedMin 기반 snapshot 사용: passthrough-dual 확장과의 이중계산 방지
+    // 예: 항암약물(1천)→표적(3천→4천), 항암약물(1천)+표적(3천)→면역(3천→7천)
+    const hierSnap = new Map();
+    summaryMap.forEach((v, k) => hierSnap.set(k, {
+        isolatedMin: v.isolatedMin,
+        isolatedMax: v.isolatedMax,
+        items: v.items.filter(i => !i._expansion) // 직접 항목만 전파
+    }));
+    // totalMin/Max를 isolatedMin/Max로 리셋 후 계층 누적으로 재계산
+    summaryMap.forEach(v => { v.totalMin = v.isolatedMin; v.totalMax = v.isolatedMax; });
+    Object.entries(CATEGORY_HIERARCHY).forEach(([parent, children]) => {
+        const snap = hierSnap.get(parent);
+        if (!snap || snap.isolatedMin === 0) return;
+        children.forEach(child => {
+            if (!summaryMap.has(child)) {
+                summaryMap.set(child, { displayName: child, totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0, items: [] });
+            }
+            const childGroup = summaryMap.get(child);
+            childGroup.totalMin += snap.isolatedMin;
+            childGroup.totalMax += snap.isolatedMax;
+            // 부모 항목도 하위 카드에 추가 (포함관계 출처 표시용)
+            snap.items.forEach(pItem => {
+                const isDup = childGroup.items.some(ci => ci.name === pItem.name && ci.source === pItem.source);
+                if (!isDup) childGroup.items.push({ ...pItem, fromParent: true });
+            });
+        });
     });
 
     return summaryMap;

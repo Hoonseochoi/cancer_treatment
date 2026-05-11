@@ -4,9 +4,12 @@ function isYusamOrSpecificAmOnly(sub) {
     const text = (sub.source || '') + '|' + (sub.name || '');
     const isYusaAm = text.includes("유사암") &&
                      !text.includes("유사암Ⅱ 제외") &&
-                     !text.includes("유사암 제외");
+                     !text.includes("유사암Ⅱ제외") &&
+                     !text.includes("유사암 제외") &&
+                     !text.includes("유사암제외");
     const isSpecificAm = text.includes("특정암") &&
-                         !text.includes("특정암 제외");
+                         !text.includes("특정암 제외") &&
+                         !text.includes("특정암제외");
     return isYusaAm || isSpecificAm;
 }
 
@@ -234,9 +237,10 @@ function renderResults(results, customerName = '고객', insurer = 'meritz') {
                     if (sub.maxAmount && sub.maxAmount !== sub.amount && !amtDisplay.includes('(')) {
                         amtDisplay = `${formatDisplayAmount(sub.amount)}(${formatDisplayAmount(sub.maxAmount)})`;
                     }
+                    const bigugeumTag = sub.비급여 ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(비급여)</span> ' : '';
                     innerTreeHtml = `
                         <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
-                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${sub.name}</span>
+                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${sub.name}</span>
                             <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
                         </div>`;
                 }
@@ -323,9 +327,10 @@ function renderResults(results, customerName = '고객', insurer = 'meritz') {
                     <div class="flex-1 min-w-0">
                         <p class="text-[11px] font-bold text-gray-700 leading-snug truncate" title="${name}">${name}</p>
                         <div class="mt-0.5 space-y-0.5">
-                            ${data.items.filter(sub => !isYusamOrSpecificAmOnly(sub)).map(sub => `
-                                <p class="text-[10px] text-gray-400 font-medium truncate">ㄴ ${sub.name}</p>
-                            `).join('')}
+                            ${data.items.filter(sub => !isYusamOrSpecificAmOnly(sub)).map(sub => {
+                                const btag = sub.비급여 ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(비급여)</span> ' : '';
+                                return `<p class="text-[10px] text-gray-400 font-medium truncate">ㄴ ${btag}${sub.name}</p>`;
+                            }).join('')}
                         </div>
                     </div>
                     <div class="flex-shrink-0 text-right">
