@@ -32,35 +32,32 @@ const samsungCoverageDetailsMap = {
     },
 
     // 담보 86: 종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)
+    // 비급여 수술·항암방사선·항암약물 포괄 → 표적/면역/양성자 등 하위 포함
     "종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)": {
         type: "passthrough-dual",
         displayName: "암 특정치료비Ⅲ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
-        expandHierarchy: false  // 이 담보는 표적/면역/양성자 등 하위 치료 미포함
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
     },
 
     // 담보 87: 종합병원 유사암Ⅱ 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)
     "종합병원 유사암Ⅱ 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)": {
         type: "passthrough-dual",
         displayName: "유사암Ⅱ 특정치료비Ⅲ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
-        expandHierarchy: false
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
     },
 
     // 담보 134: 상급종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ(수술 입통원1회당)
     "상급종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ": {
         type: "passthrough-dual",
         displayName: "상급종합병원 암 특정치료비Ⅲ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
-        expandHierarchy: false
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
     },
 
     // 담보 135: 상급종합병원 유사암Ⅱ 특정치료비Ⅲ(수술 입통원1회당)
     "상급종합병원 유사암Ⅱ 특정치료비Ⅲ": {
         type: "passthrough-dual",
         displayName: "상급종합병원 유사암Ⅱ 특정치료비Ⅲ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
-        expandHierarchy: false
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
     },
 
     // 담보 53: 종합병원 특정항암호르몬약물허가 치료비Ⅱ(연간1회한)(암(유사암Ⅱ제외))
@@ -85,8 +82,7 @@ const samsungCoverageDetailsMap = {
     "하이클래스 암 특정치료비": {
         type: "passthrough-dual",
         displayName: "하이클래스 암 특정치료비",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
-        expandHierarchy: false
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
     },
 
     // 담보 97: 암 종합병원 중환자실 입원지원금(연간1회한)
