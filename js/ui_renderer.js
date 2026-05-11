@@ -1,3 +1,15 @@
+// ── 유사암/특정암 전용 서브아이템 판별 (일반암 기준 표기용) ──
+// "유사암 제외", "특정암 제외" 는 일반암이므로 표시 유지
+function isYusamOrSpecificAmOnly(sub) {
+    const text = (sub.source || '') + '|' + (sub.name || '');
+    const isYusaAm = text.includes("유사암") &&
+                     !text.includes("유사암Ⅱ 제외") &&
+                     !text.includes("유사암 제외");
+    const isSpecificAm = text.includes("특정암") &&
+                         !text.includes("특정암 제외");
+    return isYusaAm || isSpecificAm;
+}
+
 // ── UI Helpers ──
 function updateProgress(pct, text) {
     const bar = document.getElementById('progress-bar');
@@ -187,6 +199,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz') {
             // Generate Sub-items HTML (name+amount 기준 중복 제거)
             const seenSubKeys = new Set();
             const dedupedItems = data.items.filter(sub => {
+                if (isYusamOrSpecificAmOnly(sub)) return false;
                 const key = sub.name + '|' + sub.amount;
                 if (seenSubKeys.has(key)) return false;
                 seenSubKeys.add(key);
@@ -310,7 +323,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz') {
                     <div class="flex-1 min-w-0">
                         <p class="text-[11px] font-bold text-gray-700 leading-snug truncate" title="${name}">${name}</p>
                         <div class="mt-0.5 space-y-0.5">
-                            ${data.items.map(sub => `
+                            ${data.items.filter(sub => !isYusamOrSpecificAmOnly(sub)).map(sub => `
                                 <p class="text-[10px] text-gray-400 font-medium truncate">ㄴ ${sub.name}</p>
                             `).join('')}
                         </div>
