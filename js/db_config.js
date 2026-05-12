@@ -147,8 +147,24 @@ function findDBDetails(itemName) {
         };
     }
 
+    // ── 비급여암주요치료비(전액본인부담포함) → variant ──
+    // 세부 지급: 다빈치로봇수술 회당 1천만 + 표적항암 연간 3천만 + 양성자 연간 3천만
+    // 면역항암 3천만은 CATEGORY_HIERARCHY(표적→면역) 자동전파로 처리 (이중계산 방지)
+    if (n.includes('비급여') && n.includes('암주요치료비')) {
+        return {
+            type: 'variant',
+            data: {
+                "8000": [
+                    { name: "(회당) 다빈치로봇암수술비", amount: "1,000만", targetName: "다빈치로봇수술비", 비급여: true },
+                    { name: "(연1회) 표적항암약물허가치료비", amount: "3,000만", targetName: "표적항암약물치료비", 비급여: true },
+                    { name: "(연1회) 양성자방사선치료비", amount: "3,000만", targetName: "양성자방사선치료비", 비급여: true }
+                ]
+            }
+        };
+    }
+
     // 암진단비, 통합유사암진단비, 갑상선암호르몬, 특정항암호르몬,
-    // 비급여암주요치료비, 보험료납입 등 → null (집계 대상 아님)
+    // 보험료납입 등 → null (집계 대상 아님)
     return null;
 }
 
@@ -162,8 +178,22 @@ function calculateHierarchicalSummaryDB(results) {
         if (!details) details = findDBDetails(item.name);
         if (!details) return;
 
+        // Variant → amount-based sub-item selection
+        if (details.type === 'variant') {
+            const amountVal = parseKoAmount(item.amount);
+            let variantData = details.data[amountVal.toString()];
+            if (!variantData) {
+                if (amountVal > 6000) variantData = details.data["10000"] || details.data["8000"];
+                else if (amountVal > 3000) variantData = details.data["5000"] || details.data["4000"];
+                else if (amountVal > 1000) variantData = details.data["2000"] || details.data["1000"];
+                if (!variantData && details.data["8000"]) variantData = details.data["8000"];
+                if (!variantData && details.data["10000"]) variantData = details.data["10000"];
+            }
+            details = variantData;
+        }
+
         // Passthrough → single array entry
-        if (details.type === 'passthrough') {
+        if (details && details.type === 'passthrough') {
             const tgt = details.summaryTarget || null;
             details = [{
                 name: details.displayName,
