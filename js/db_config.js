@@ -14,6 +14,15 @@ function findDBDetails(itemName) {
         .replace(/\(자유설계\([^)]*\)\)/g, '')
         .trim();
 
+    // ── 항암방사선약물치료비 (방사선+약물 통합형, 예: 항암방사선약물치료비Ⅱ(유사암포함)) ──
+    if (/항암방사선약물치료비/.test(n)) {
+        return {
+            type: 'passthrough-dual',
+            displayName: '항암방사선약물치료비',
+            summaryTargets: ['항암방사선치료비', '항암약물치료비']
+        };
+    }
+
     // ── 항암방사선치료비 (단독, 약물 미포함) ──
     if (/항암방사선치료비/.test(n) && !n.includes('약물')) {
         return {
