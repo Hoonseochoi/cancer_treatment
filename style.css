@@ -265,6 +265,83 @@ body.samsung-theme [style*="rgba(166,0,0"] {
     border-color: rgba(0, 46, 122, 0.15) !important;
 }
 
+/* ══════════════════════════════════════════════
+   ── DB Insurance Theme Override ──
+   body.db-theme → 레드 → DB그린
+   ══════════════════════════════════════════════ */
+body.db-theme {
+    --primary-dark:   #00703C;
+    --primary-bright: #00A04B;
+    --primary-color:  #00A04B;
+    --bg-light: #E8F5EE;
+}
+
+body.db-theme .bg-subtle-glow {
+    background: radial-gradient(circle at 10% 20%, rgba(0, 160, 75, 0.04) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 112, 60, 0.04) 0%, transparent 40%);
+}
+
+body.db-theme .upload-zone {
+    border-color: rgba(0, 112, 60, 0.2);
+}
+body.db-theme .upload-zone:hover,
+body.db-theme .upload-zone.dragover {
+    background: rgba(0, 160, 75, 0.02);
+}
+
+body.db-theme .premium-card:hover {
+    box-shadow: 0 12px 30px rgba(0, 160, 75, 0.08);
+    border-color: rgba(0, 160, 75, 0.15);
+}
+
+body.db-theme .title-accent {
+    color: var(--primary-bright);
+    text-shadow: 0 4px 15px rgba(0, 160, 75, 0.12);
+    background: linear-gradient(to right, #00703C, #00A04B);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.db-theme .text-red-600,
+body.db-theme .text-red-500 { color: #00A04B !important; }
+body.db-theme .bg-red-600   { background-color: #00A04B !important; }
+body.db-theme .bg-red-50    { background-color: #ECFDF5 !important; }
+body.db-theme .bg-red-100   { background-color: #D1FAE5 !important; }
+body.db-theme .border-red-600 { border-color: #00A04B !important; }
+body.db-theme .border-red-100 { border-color: #A7F3D0 !important; }
+body.db-theme .border-red-200 { border-color: #6EE7B7 !important; }
+body.db-theme .border-red-300 { border-color: #34D399 !important; }
+body.db-theme .ring-red-200  { --tw-ring-color: #A7F3D0 !important; }
+body.db-theme .focus\:border-red-300:focus { border-color: #34D399 !important; }
+body.db-theme .focus\:ring-red-200:focus   { --tw-ring-color: #A7F3D0 !important; }
+body.db-theme .hover\:bg-red-100:hover { background-color: #D1FAE5 !important; }
+body.db-theme .hover\:bg-red-700:hover { background-color: #00703C !important; }
+body.db-theme .file\:bg-red-50    { background-color: #ECFDF5 !important; }
+body.db-theme .file\:text-red-600 { color: #00A04B !important; }
+
+body.db-theme #manager-badge-container > div {
+    border-color: rgba(0, 112, 60, 0.6) !important;
+}
+body.db-theme .welcome-code {
+    color: #00A04B !important;
+    background: rgba(0, 160, 75, 0.06) !important;
+}
+body.db-theme .welcome-name::after {
+    background: #00A04B !important;
+}
+
+body.db-theme .bg-red-400 { background-color: #34D399 !important; }
+
+body.db-theme [style*="rgba(230,0,0"] {
+    background: rgba(0, 160, 75, 0.06) !important;
+    border-color: rgba(0, 160, 75, 0.15) !important;
+}
+body.db-theme [style*="rgba(166,0,0"] {
+    background: rgba(0, 112, 60, 0.06) !important;
+    border-color: rgba(0, 112, 60, 0.15) !important;
+}
+
 /* ── Capture specific overrides ── */
 /* 한글 폰트를 앞에 배치하여 자간 계산 오류 방지 */
 .html2canvas-container {

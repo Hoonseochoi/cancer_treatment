@@ -52,7 +52,9 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
     // 1. Calculate Hierarchical Summary
     const summaryMap = insurer === 'samsung'
         ? calculateHierarchicalSummarySamsung(results)
-        : calculateHierarchicalSummary(results);
+        : insurer === 'db'
+            ? calculateHierarchicalSummaryDB(results)
+            : calculateHierarchicalSummary(results);
     // Calculate Grand Total Range
     let grandTotalMin = 0;
     let grandTotalMax = 0;
@@ -61,9 +63,8 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         grandTotalMax += d.totalMax;
     });
 
-    // ── 커버리지 스냅샷 저장 (삼성 전용) ──
-    console.log('[snapshot-debug] insurer:', insurer, '| typeof logCoverageSnapshot:', typeof logCoverageSnapshot, '| meta:', JSON.stringify(meta));
-    if (insurer === 'samsung' && typeof logCoverageSnapshot === 'function') {
+    // ── 커버리지 스냅샷 저장 ──
+    if ((insurer === 'samsung' || insurer === 'db') && typeof logCoverageSnapshot === 'function') {
         logCoverageSnapshot(meta.fileName, insurer, meta, grandTotalMin, grandTotalMax, summaryMap);
     }
 
