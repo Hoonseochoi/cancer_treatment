@@ -150,7 +150,9 @@ function findSamsungDetails(itemName) {
     }
 
     // 2. 특정치료비Ⅲ / 특정치료비III (상급종합병원 / 종합병원 구분)
+    // 뇌졸중/급성심근경색증 특정치료비Ⅲ는 암 집계 대상 아님 → 무시
     if (itemName.includes("특정치료비") && (itemName.includes("Ⅲ") || itemName.includes("III"))) {
+        if (itemName.includes("뇌졸중") || itemName.includes("급성심근경색") || itemName.includes("심근경색")) return null;
         const isHighLevel = itemName.includes("상급종합병원");
         if (itemName.includes("유사암")) {
             return isHighLevel
