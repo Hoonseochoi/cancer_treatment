@@ -58,12 +58,6 @@ function extractRawCoveragesDB(text) {
         return SKIP.some(p => p.test(line));
     }
 
-    // Amount line: starts with a digit AND contains 만원/억원
-    // (prevents continuation+amount merged lines from being treated as pure amounts)
-    function isAmount(line) {
-        return /^\d/.test(line) && /만원|억원/.test(line);
-    }
-
     // Premium line: just digits with commas (e.g. "45,800")
     function isPremium(line) {
         return /^\d{1,3}(,\d{3})*$/.test(line);
@@ -74,63 +68,50 @@ function extractRawCoveragesDB(text) {
         return /\d+년.*\//.test(line);
     }
 
-    // ── 3. State machine: parse 4-line blocks ──
+    // Korean amount pattern: e.g. 2천만원, 6백만원, 30만원, 5억원
+    const AMT_PAT = /(\d+[천백]?만원|\d+억원)/;
+
+    // ── 3. Unified state machine (handles both pdfjs single-line and pdftotext multi-line) ──
+    // Strategy: accumulate rawText for each numbered item until it contains an amount,
+    // then split name / amount from rawText directly.
     let i = 0;
     while (i < sectionLines.length) {
         const line = sectionLines[i];
 
         if (shouldSkip(line)) { i++; continue; }
 
-        // Coverage item starts with: "16. 암진단비Ⅱ..."
+        // Coverage item starts with: "20. (맞춤_간편고지Ⅱ)..."
         const itemMatch = line.match(/^(\d{1,3})\.\s+(.+)/);
         if (!itemMatch) { i++; continue; }
 
-        let name = itemMatch[2].trim();
-        let embeddedAmount = '';
+        // rawText accumulates name + possibly embedded amount (pdfjs single-line or merged)
+        let rawText = itemMatch[2].trim();
         i++;
 
-        // Collect continuation lines (OCR / pdfjs may wrap long names across lines)
-        while (i < sectionLines.length) {
+        // Append continuation lines until rawText contains a Korean amount
+        // Stop also at next numbered item, premium-only line, or period line
+        while (i < sectionLines.length && !AMT_PAT.test(rawText)) {
             const next = sectionLines[i];
             if (shouldSkip(next)) { i++; continue; }
-            // Stop if this is a pure structured line
-            if (isAmount(next) || /^\d{1,3}\.\s/.test(next) || isPremium(next) || isPeriod(next)) break;
-
-            // Browser pdfjs often merges continuation fragment + amount onto one line
-            // e.g., "사암제외)(매회지급)  2천만원  20,080  20년/100세"
-            // Detect: contains 만원/억원 but does NOT start with a digit
-            if (/만원|억원/.test(next) && !/^\d/.test(next)) {
-                const amtIdx = next.search(/\d+[천백]?만원|\d+억원/);
-                if (amtIdx > 0) {
-                    name += next.substring(0, amtIdx).replace(/\s+$/, '');
-                    embeddedAmount = next.substring(amtIdx);
-                    i++;
-                    break;
-                }
-            }
-
-            // Regular continuation fragment — append directly (no space, mid-word wrap)
-            name += next;
+            if (/^\d{1,3}\.\s/.test(next) || isPremium(next) || isPeriod(next)) break;
+            rawText += next;
             i++;
         }
 
-        // Find amount line (use embeddedAmount if already extracted above)
-        let amount = embeddedAmount;
-        while (i < sectionLines.length && !amount) {
-            const next = sectionLines[i];
-            if (shouldSkip(next)) { i++; continue; }
-            if (isAmount(next)) { amount = next; i++; break; }
-            // Unexpected line — skip it
-            if (!isPremium(next) && !isPeriod(next) && !/^\d{1,3}\.\s/.test(next)) { i++; continue; }
-            break;
-        }
+        // Extract amount from rawText
+        const amountMatch = rawText.match(AMT_PAT);
+        if (!amountMatch) continue;
 
-        if (!amount) continue;
+        const amount = amountMatch[1];
+        const amountIdx = rawText.indexOf(amountMatch[0]);
+        const name = rawText.substring(0, amountIdx).replace(/\s+$/, '').trim();
 
-        results.push({ name: name.trim(), amount: amount.trim() });
-        console.log(`[DB] 추출: ${name.trim()} | ${amount.trim()}`);
+        if (!name) continue;
 
-        // Skip premium + period (2 lines)
+        results.push({ name, amount });
+        console.log(`[DB] 추출: ${name} | ${amount}`);
+
+        // Skip following premium / period lines (pdftotext format has them as separate lines)
         let skipped = 0;
         while (i < sectionLines.length && skipped < 2) {
             const next = sectionLines[i];
