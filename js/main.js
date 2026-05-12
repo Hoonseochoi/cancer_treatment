@@ -125,13 +125,44 @@ async function processFile(file) {
         const insurer = detectInsurer(text);
         console.log(`[detectInsurer] → ${insurer} (textLen=${text.length})`);
         document.body.classList.toggle('samsung-theme', insurer === 'samsung');
+
+        // ── 삼성 메타 추출: 상품명 / 연령 / 보험료 ──
+        const samsungMeta = { fileName: file.name };
+        if (insurer === 'samsung') {
+            const pm = text.match(/보험상품명(무배당[\s\S]+?)(?=보험계약자)/);
+            if (pm) samsungMeta.productName = pm[1].replace(/\s+/g, '').trim();
+
+            const am = text.match(/나이\s*(\d{1,3})\s*세/);
+            if (am) samsungMeta.age = parseInt(am[1], 10);
+
+            const prm = text.match(/1회\s*보험료\s*([\d,]+)\s*원/) ||
+                        text.match(/보험료\s*([\d,]+)\s*원\s*\(매월\)/);
+            if (prm) samsungMeta.premium = parseInt(prm[1].replace(/,/g, ''), 10);
+
+            console.log('[meta]', samsungMeta);
+        }
+
         const results = insurer === 'samsung'
             ? extractRawCoveragesSamsung(text)
             : extractRawCoverages(text);
         console.log(`[extraction] ${results.length}건 추출 (insurer=${insurer})`);
+
+        // 미인식 담보 추적
+        if (insurer === 'samsung' && typeof findSamsungDetails === 'function') {
+            const unmatchedNames = results
+                .filter(item => !findSamsungDetails(item.name))
+                .map(item => item.name);
+            if (unmatchedNames.length > 0) {
+                console.warn('[미인식 담보]', unmatchedNames);
+                if (typeof logUnmatchedCoverages === 'function') {
+                    logUnmatchedCoverages(file.name, insurer, unmatchedNames);
+                }
+            }
+        }
+
         await new Promise(r => setTimeout(r, 500));
         document.getElementById('progress-section').classList.add('hidden');
-        renderResults(results, customerName, insurer);
+        renderResults(results, customerName, insurer, samsungMeta);
         if (results.length > 0) {
             showToast(`${results.length}개의 항목을 추출했습니다.`, false);
             // Increment remote counters (Today & Total)

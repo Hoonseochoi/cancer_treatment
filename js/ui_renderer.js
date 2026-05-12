@@ -30,7 +30,7 @@ function showToast(msg, isError = true) {
 // ── Coverage Detail Dictionary ──
 
 // Raw List Renderer (Updated for Hierarchical Summary and Insight Card)
-function renderResults(results, customerName = '고객', insurer = 'meritz') {
+function renderResults(results, customerName = '고객', insurer = 'meritz', meta = {}) {
     const listEl = document.getElementById('results-list');
     const summaryGrid = document.getElementById('summary-grid');
     const resultsSection = document.getElementById('results-section');
@@ -60,6 +60,12 @@ function renderResults(results, customerName = '고객', insurer = 'meritz') {
         grandTotalMin += d.totalMin;
         grandTotalMax += d.totalMax;
     });
+
+    // ── 커버리지 스냅샷 저장 (삼성 전용) ──
+    console.log('[snapshot-debug] insurer:', insurer, '| typeof logCoverageSnapshot:', typeof logCoverageSnapshot, '| meta:', JSON.stringify(meta));
+    if (insurer === 'samsung' && typeof logCoverageSnapshot === 'function') {
+        logCoverageSnapshot(meta.fileName, insurer, meta, grandTotalMin, grandTotalMax, summaryMap);
+    }
 
     // ── Render 5-Year Insight Card ──
     if (insightSection) {

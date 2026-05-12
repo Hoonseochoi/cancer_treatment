@@ -115,6 +115,69 @@ async function logUnrecognizedUpload(fileName) {
     }
 }
 
+/**
+ * ── 미인식 담보 추적 ──
+ * findSamsungDetails()에서 null을 반환한 담보명을 unmatched_coverages 테이블에 기록
+ */
+async function logUnmatchedCoverages(fileName, insurer, coverageNames) {
+    if (!supabaseClient || !coverageNames.length) return;
+    try {
+        const rows = coverageNames.map(name => ({
+            file_name: fileName,
+            insurer: insurer,
+            coverage_name: name,
+            created_at: new Date().toISOString()
+        }));
+        const { error } = await supabaseClient
+            .from('unmatched_coverages')
+            .insert(rows);
+        if (error) throw error;
+        console.log(`[unmatched] ${coverageNames.length}건 로깅:`, coverageNames);
+    } catch (err) {
+        console.error("Failed to log unmatched coverages:", err);
+    }
+}
+window.logUnmatchedCoverages = logUnmatchedCoverages;
+
+/**
+ * ── 커버리지 스냅샷 로깅 ──
+ * PDF 분석 완료 시 9개 카드 값 + 메타정보를 coverage_snapshots 테이블에 저장
+ */
+const SNAPSHOT_CARD_KEYS = [
+    "항암방사선치료비", "항암약물치료비", "암수술비",
+    "표적항암약물치료비", "면역항암약물치료비", "중입자방사선치료비",
+    "양성자방사선치료비", "다빈치로봇수술비", "세기조절방사선치료비"
+];
+
+async function logCoverageSnapshot(fileName, insurer, meta, grandTotalMin, grandTotalMax, summaryMap) {
+    if (!supabaseClient) return;
+    try {
+        const cards = {};
+        SNAPSHOT_CARD_KEYS.forEach(key => {
+            const data = summaryMap.get(key);
+            cards[key] = data ? { min: data.totalMin, max: data.totalMax } : { min: 0, max: 0 };
+        });
+
+        const { error } = await supabaseClient
+            .from('coverage_snapshots')
+            .insert([{
+                file_name: fileName || null,
+                insurer: insurer,
+                age: meta.age || null,
+                product_name: meta.productName || null,
+                premium: meta.premium || null,
+                grand_total_min: grandTotalMin,
+                grand_total_max: grandTotalMax,
+                cards: cards
+            }]);
+        if (error) throw error;
+        console.log('[snapshot] 커버리지 스냅샷 저장 완료', cards);
+    } catch (err) {
+        console.error('Failed to log coverage snapshot:', err);
+    }
+}
+window.logCoverageSnapshot = logCoverageSnapshot;
+
 /** 실행 횟수로 레벨 계산 (LEVEL_THRESHOLDS 기준) */
 function calculateLevelFromCount(count) {
     let level = 1;
