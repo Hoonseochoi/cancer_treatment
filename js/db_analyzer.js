@@ -58,9 +58,10 @@ function extractRawCoveragesDB(text) {
         return SKIP.some(p => p.test(line));
     }
 
-    // Amount line: contains 만원 or 억원 (Korean amount notation)
+    // Amount line: starts with a digit AND contains 만원/억원
+    // (prevents continuation+amount merged lines from being treated as pure amounts)
     function isAmount(line) {
-        return /만원|억원/.test(line);
+        return /^\d/.test(line) && /만원|억원/.test(line);
     }
 
     // Premium line: just digits with commas (e.g. "45,800")
@@ -85,21 +86,36 @@ function extractRawCoveragesDB(text) {
         if (!itemMatch) { i++; continue; }
 
         let name = itemMatch[2].trim();
+        let embeddedAmount = '';
         i++;
 
-        // Collect continuation lines (OCR may wrap long names)
+        // Collect continuation lines (OCR / pdfjs may wrap long names across lines)
         while (i < sectionLines.length) {
             const next = sectionLines[i];
             if (shouldSkip(next)) { i++; continue; }
-            // Stop if this is a structured line
+            // Stop if this is a pure structured line
             if (isAmount(next) || /^\d{1,3}\.\s/.test(next) || isPremium(next) || isPeriod(next)) break;
-            // It's a continuation fragment — append directly (no space, mid-word wrap)
+
+            // Browser pdfjs often merges continuation fragment + amount onto one line
+            // e.g., "사암제외)(매회지급)  2천만원  20,080  20년/100세"
+            // Detect: contains 만원/억원 but does NOT start with a digit
+            if (/만원|억원/.test(next) && !/^\d/.test(next)) {
+                const amtIdx = next.search(/\d+[천백]?만원|\d+억원/);
+                if (amtIdx > 0) {
+                    name += next.substring(0, amtIdx).replace(/\s+$/, '');
+                    embeddedAmount = next.substring(amtIdx);
+                    i++;
+                    break;
+                }
+            }
+
+            // Regular continuation fragment — append directly (no space, mid-word wrap)
             name += next;
             i++;
         }
 
-        // Find amount line (skip any boilerplate in between)
-        let amount = '';
+        // Find amount line (use embeddedAmount if already extracted above)
+        let amount = embeddedAmount;
         while (i < sectionLines.length && !amount) {
             const next = sectionLines[i];
             if (shouldSkip(next)) { i++; continue; }
