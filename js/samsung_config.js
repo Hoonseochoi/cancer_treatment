@@ -99,13 +99,46 @@ const samsungCoverageDetailsMap = {
     // 담보 200: 암(특정암 제외) 다빈치로봇 수술비 [갱신형]
     "암(특정암 제외) 다빈치로봇 수술비": {
         type: "passthrough",
+        summaryTarget: "다빈치로봇수술비",
         displayName: "(최초1회) 다빈치로봇수술비(암, 특정암 제외)"
     },
 
     // 담보 201: 특정암 다빈치로봇 수술비 [갱신형]
     "특정암 다빈치로봇 수술비": {
         type: "passthrough",
+        summaryTarget: "다빈치로봇수술비",
         displayName: "(최초1회) 다빈치로봇수술비(특정암)"
+    },
+
+    // 담보 184: 항암 방사선 치료비 단독 (갱신형, 급여)
+    "항암 방사선 치료비(기타피부암및갑상선암이외의암)": {
+        type: "passthrough",
+        summaryTarget: "항암방사선치료비",
+        displayName: "(회당) 항암방사선치료비"
+    },
+
+    // 담보 186: 항암방사선·약물 치료비Ⅲ (갱신형, 일반암, 비급여) — 수술비 미포함
+    "암(유사암Ⅱ 제외) 항암방사선·약물 치료비Ⅲ": {
+        type: "passthrough-dual",
+        displayName: "암 항암방사선·약물치료비Ⅲ(방사선·약물)",
+        summaryTargets: ["항암방사선치료비", "항암약물치료비"],
+        expandHierarchy: false, // 표적/면역/양성자 자동확장 금지
+        비급여: true
+    },
+
+    // 담보 196: 표적항암약물허가 치료비 (갱신형, 급여)
+    "표적항암약물허가 치료비(연간1회한)(암(유사암Ⅱ 제외))": {
+        type: "passthrough",
+        summaryTarget: "표적항암약물치료비",
+        displayName: "(연1회) 표적항암약물허가치료비"
+    },
+
+    // 담보 197: 전액본인부담(비급여포함) 표적항암약물허가 치료비 (갱신형, 비급여)
+    "전액본인부담(비급여포함)표적항암약물허가 치료비": {
+        type: "passthrough",
+        summaryTarget: "표적항암약물치료비",
+        displayName: "(비급여)(연1회) 표적항암약물허가치료비",
+        비급여: true
     }
 };
 
@@ -136,6 +169,26 @@ function findSamsungDetails(itemName) {
             return samsungCoverageDetailsMap["특정암 다빈치로봇 수술비"];
         }
         return samsungCoverageDetailsMap["암(특정암 제외) 다빈치로봇 수술비"];
+    }
+
+    // 2-2. 항암방사선·약물 치료비Ⅲ (수술 제외, 방사선+약물만) — 특정치료비Ⅲ와 구분 필수
+    if (itemName.includes("항암방사선") && itemName.includes("약물") && (itemName.includes("Ⅲ") || itemName.includes("III")) && !itemName.includes("특정치료비")) {
+        return samsungCoverageDetailsMap["암(유사암Ⅱ 제외) 항암방사선·약물 치료비Ⅲ"];
+    }
+
+    // 2-3. 비급여 표적항암약물허가 치료비 (전액본인부담 버전)
+    if (itemName.includes("전액본인부담") && itemName.includes("표적항암약물허가")) {
+        return samsungCoverageDetailsMap["전액본인부담(비급여포함)표적항암약물허가 치료비"];
+    }
+
+    // 2-4. 표적항암약물허가 치료비 (급여 단독)
+    if (itemName.includes("표적항암약물허가") && !itemName.includes("전액본인부담") && !itemName.includes("호르몬")) {
+        return samsungCoverageDetailsMap["표적항암약물허가 치료비(연간1회한)(암(유사암Ⅱ 제외))"];
+    }
+
+    // 2-5. 항암방사선치료비 단독 (약물 미포함, 특정치료비 아님)
+    if ((itemName.includes("항암 방사선 치료비") || itemName.includes("항암방사선치료비")) && !itemName.includes("약물") && !itemName.includes("특정치료비")) {
+        return samsungCoverageDetailsMap["항암 방사선 치료비(기타피부암및갑상선암이외의암)"];
     }
 
     // 3. 항암호르몬약물허가 / 호르몬약물
@@ -204,7 +257,9 @@ function calculateHierarchicalSummarySamsung(results) {
 
         // Handle Passthrough Type (자기 금액 그대로 사용)
         if (details && details.type === 'passthrough') {
-            details = [{ name: details.displayName, amount: item.amount }];
+            const isBigugeom = details.비급여 || false;
+            const tgt = details.summaryTarget || null;
+            details = [{ name: details.displayName, amount: item.amount, 비급여: isBigugeom, ...(tgt ? { targetName: tgt } : {}) }];
         }
 
         // Handle Passthrough-Dual (여러 summaryTargets에 동시 반영)
