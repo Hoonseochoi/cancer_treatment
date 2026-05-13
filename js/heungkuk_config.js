@@ -11,8 +11,10 @@ function findHeungkukDetails(itemName) {
     // ── SKIP: 진단비 (암진단비, 유사암진단비 등) ──
     if (n.includes('암진단비') || n.includes('진단비')) return null;
 
-    // ── SKIP: 플래티넘 리셋월렛 (오집계 방지 - 복합담보, 금액 너무 큼) ──
-    if (n.includes('리셋월렛') || n.includes('플래티넘')) return null;
+    // ── 플래티넘 리셋월렛 → wallet 타입 반환 (하드코딩 세부항목 분배) ──
+    if (n.includes('리셋월렛') || n.includes('플래티넘')) {
+        return { type: 'wallet' };
+    }
 
     // ── SKIP: 납입면제, 납입지원 ──
     if (n.includes('납입면제') || n.includes('납입지원')) return null;
@@ -203,14 +205,69 @@ function findHeungkukDetails(itemName) {
     return null;
 }
 
+// ── 월렛 하드코딩 데이터 ──
+// 9카드 합산 대상 (fromWallet: true → 핑크 태그 표시)
+const WALLET_CARD_ITEMS = [
+    { summaryTarget: '암수술비',        name: '비급여 암수술',          amount: '1,000만원', fromWallet: true },
+    { summaryTarget: '항암방사선치료비', name: '비급여 항암방사선치료',   amount: '5,000만원', fromWallet: true },
+    { summaryTarget: '항암약물치료비',   name: '비급여 항암약물(1~3기)', amount: '5,000만원', fromWallet: true },
+    { summaryTarget: '항암약물치료비',   name: '비급여 항암약물(4기)',   amount: '1억원',     fromWallet: true },
+];
+// 기타 사이드바 대상 (9카드 미해당)
+const WALLET_OTHER_ITEMS = [
+    { name: '암 종합중환자실 치료',      amount: '1,000만원' },
+    { name: '2대질병 중환자실 치료',     amount: '1,000만원', note: '★감액없음' },
+    { name: '비급여 2대질병 수술',       amount: '1,000만원' },
+    { name: '상급종합병원 질병수술비',   amount: '50만원' },
+    { name: '특정순환계질환 수술비',     amount: '500만원' },
+    { name: '질병 동반입원비Ⅲ (최대)',  amount: '500만원' },
+    { name: '상해사망',                 amount: '잔고 30%' },
+];
+
 // ── calculateHierarchicalSummaryHeungkuk ──
 // 흥국화재 전용 계층적 요약 계산 (db_config.js의 calculateHierarchicalSummaryDB와 동일 구조)
 function calculateHierarchicalSummaryHeungkuk(results) {
     const summaryMap = new Map();
+    let walletDetected = false;
 
     results.forEach(item => {
         let details = findHeungkukDetails(item.name);
         if (!details) return;
+
+        // ── wallet 타입: 하드코딩 항목 분배 ──
+        if (details.type === 'wallet') {
+            if (walletDetected) return; // 중복 방지
+            walletDetected = true;
+
+            // 9카드 합산 대상 주입
+            WALLET_CARD_ITEMS.forEach(wi => {
+                const target = wi.summaryTarget;
+                if (!summaryMap.has(target)) {
+                    summaryMap.set(target, {
+                        displayName: target,
+                        totalMin: 0, totalMax: 0,
+                        isolatedMin: 0, isolatedMax: 0,
+                        items: []
+                    });
+                }
+                const group = summaryMap.get(target);
+                const val = parseKoAmount(wi.amount);
+                group.totalMin += val;
+                group.totalMax += val;
+                group.isolatedMin += val;
+                group.isolatedMax += val;
+                group.items.push({
+                    name: wi.name,
+                    amount: wi.amount,
+                    source: '플래티넘 건강 리셋 월렛',
+                    fromWallet: true,
+                });
+            });
+
+            // 기타 항목 → 전역 저장 (ui_renderer에서 사용)
+            window._heungkukWalletOthers = WALLET_OTHER_ITEMS;
+            return;
+        }
 
         // Passthrough → single array entry
         if (details.type === 'passthrough') {

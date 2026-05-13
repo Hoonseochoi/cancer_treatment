@@ -190,25 +190,9 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         mainGrid.className = "grid grid-cols-1 sm:grid-cols-3 gap-6";
         summaryGrid.appendChild(mainGrid);
 
-        // 우측 기타 패널: HTML의 other-panel-container에 렌더링
+        // 우측 기타 패널: HTML의 other-panel-container에 렌더링 (하단 블록에서 처리)
         const otherContainer = document.getElementById('other-panel-container');
-        if (otherContainer) {
-            otherContainer.innerHTML = '';
-            if (otherItems.length > 0) {
-                otherContainer.classList.remove('hidden');
-                otherContainer.innerHTML = `
-                    <div class="premium-card rounded-3xl p-5 flex flex-col gap-3" style="border: 1.5px dashed rgba(229,62,62,0.25);">
-                        <div class="flex items-center gap-2">
-                            <span class="text-base">✨</span>
-                            <h4 class="text-sm font-black text-gray-700">이런 담보들도 있어요!</h4>
-                        </div>
-                        <p class="text-[10px] text-gray-400 font-medium -mt-1">메인 집계 외 추가 보장 항목입니다.</p>
-                        <div id="other-items-list" class="flex flex-col gap-1"></div>
-                    </div>`;
-            } else {
-                otherContainer.classList.add('hidden');
-            }
-        }
+        if (otherContainer) otherContainer.innerHTML = '';
 
         // 메인 9장 렌더링
         const sortedItems = mainItems;
@@ -254,9 +238,10 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         amtDisplay = `${formatDisplayAmount(sub.amount)}(${formatDisplayAmount(sub.maxAmount)})`;
                     }
                     const bigugeumTag = sub.비급여 ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(비급여)</span> ' : '';
+                    const walletTag = sub.fromWallet ? '<span style="color:#DB2777;font-weight:800;font-size:0.65rem">(10억월렛)</span> ' : '';
                     innerTreeHtml = `
                         <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
-                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${sub.name}</span>
+                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${sub.name}</span>
                             <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
                         </div>`;
                 }
@@ -330,30 +315,79 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         });
 
         // ── 기타 담보 패널 렌더링 ──
-        if (otherContainer && otherItems.length > 0) {
-            const listEl = document.getElementById('other-items-list');
-            otherItems.forEach(([name, data]) => {
-                let totalDisplay = formatKoAmount(data.totalMin);
-                if (data.totalMin !== data.totalMax) {
-                    totalDisplay = `${formatKoAmount(data.totalMin)}~${formatKoAmount(data.totalMax)}`;
-                }
-                const row = document.createElement('div');
-                row.className = "flex items-start justify-between gap-2 py-2.5 border-b border-gray-100 last:border-0";
-                row.innerHTML = `
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[11px] font-bold text-gray-700 leading-snug truncate" title="${name}">${name}</p>
-                        <div class="mt-0.5 space-y-0.5">
-                            ${data.items.filter(sub => !isYusamOrSpecificAmOnly(sub)).map(sub => {
-                                const btag = sub.비급여 ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(비급여)</span> ' : '';
-                                return `<p class="text-[10px] text-gray-400 font-medium truncate">ㄴ ${btag}${sub.name}</p>`;
-                            }).join('')}
-                        </div>
+        const walletOthers = (insurer === 'heungkuk') ? (window._heungkukWalletOthers || null) : null;
+        const hasOtherItems = otherItems.length > 0;
+        const hasWalletOthers = walletOthers && walletOthers.length > 0;
+
+        if (otherContainer && (hasOtherItems || hasWalletOthers)) {
+            otherContainer.classList.remove('hidden');
+
+            // ── 월렛 기타담보 섹션 (흥국 전용, 최상단) ──
+            if (hasWalletOthers) {
+                const walletPanel = document.createElement('div');
+                walletPanel.className = "premium-card rounded-3xl p-5 flex flex-col gap-3 mb-4";
+                walletPanel.style.border = "1.5px dashed rgba(219,39,119,0.35)";
+                walletPanel.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">💊</span>
+                        <h4 class="text-sm font-black" style="color:#9D174D;">10억월렛 기타담보</h4>
                     </div>
-                    <div class="flex-shrink-0 text-right">
-                        <span class="text-[13px] font-black text-red-500 font-outfit">${totalDisplay}</span>
-                    </div>`;
-                listEl.appendChild(row);
-            });
+                    <p class="text-[10px] text-gray-400 font-medium -mt-1">월렛에 포함된 추가 보장 항목 (암 치료비 집계 외)</p>
+                    <div id="wallet-other-list" class="flex flex-col gap-0"></div>`;
+                otherContainer.appendChild(walletPanel);
+
+                const wList = walletPanel.querySelector('#wallet-other-list');
+                walletOthers.forEach(wi => {
+                    const noteHtml = wi.note ? `<span style="color:#DB2777;font-weight:800;font-size:0.65rem"> ${wi.note}</span>` : '';
+                    const row = document.createElement('div');
+                    row.className = "flex items-center justify-between gap-2 py-2 border-b border-pink-50 last:border-0";
+                    row.innerHTML = `
+                        <p class="text-[11px] font-bold text-gray-700 leading-snug flex-1">${wi.name}${noteHtml}</p>
+                        <span class="text-[13px] font-black font-outfit flex-shrink-0" style="color:#DB2777;">${wi.amount}</span>`;
+                    wList.appendChild(row);
+                });
+            }
+
+            // ── 일반 기타담보 섹션 ──
+            if (hasOtherItems) {
+                const otherPanel = document.createElement('div');
+                otherPanel.className = "premium-card rounded-3xl p-5 flex flex-col gap-3";
+                otherPanel.style.border = "1.5px dashed rgba(229,62,62,0.25)";
+                otherPanel.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">✨</span>
+                        <h4 class="text-sm font-black text-gray-700">이런 담보들도 있어요!</h4>
+                    </div>
+                    <p class="text-[10px] text-gray-400 font-medium -mt-1">메인 집계 외 추가 보장 항목입니다.</p>
+                    <div id="other-items-list" class="flex flex-col gap-1"></div>`;
+                otherContainer.appendChild(otherPanel);
+
+                const listEl = otherPanel.querySelector('#other-items-list');
+                otherItems.forEach(([name, data]) => {
+                    let totalDisplay = formatKoAmount(data.totalMin);
+                    if (data.totalMin !== data.totalMax) {
+                        totalDisplay = `${formatKoAmount(data.totalMin)}~${formatKoAmount(data.totalMax)}`;
+                    }
+                    const row = document.createElement('div');
+                    row.className = "flex items-start justify-between gap-2 py-2.5 border-b border-gray-100 last:border-0";
+                    row.innerHTML = `
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[11px] font-bold text-gray-700 leading-snug truncate" title="${name}">${name}</p>
+                            <div class="mt-0.5 space-y-0.5">
+                                ${data.items.filter(sub => !isYusamOrSpecificAmOnly(sub)).map(sub => {
+                                    const btag = sub.비급여 ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(비급여)</span> ' : '';
+                                    return `<p class="text-[10px] text-gray-400 font-medium truncate">ㄴ ${btag}${sub.name}</p>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 text-right">
+                            <span class="text-[13px] font-black text-red-500 font-outfit">${totalDisplay}</span>
+                        </div>`;
+                    listEl.appendChild(row);
+                });
+            }
+        } else if (otherContainer) {
+            otherContainer.classList.add('hidden');
         }
     }
     // 3. Render Detail List
