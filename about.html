@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — GA 암보장 분석기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <style>
+    :root {
+      --navy:      #071440;
+      --navy-mid:  #1A3A8F;
+      --navy-soft: #2B4DB5;
+      --bg:        #ffffff;
+      --bg-subtle: #F4F6FB;
+      --border:    #D6DCF0;
+      --text:      #0E1629;
+      --muted:     #5A607A;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1.5px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px;
+    }
+    .nav-logo {
+      font-size: 1.1rem; font-weight: 800; color: var(--navy);
+      text-decoration: none; letter-spacing: -0.5px;
+    }
+    .nav-logo span { color: var(--navy-mid); }
+    .nav-links { display: flex; gap: 8px; }
+    .nav-link {
+      font-size: 0.85rem; font-weight: 600; color: var(--muted);
+      text-decoration: none; padding: 6px 14px; border-radius: 99px;
+      transition: all 0.2s;
+    }
+    .nav-link:hover { background: var(--bg-subtle); color: var(--navy); }
+    .nav-link.active { background: var(--navy); color: #fff; }
+
+    /* ── SECTIONS ── */
+    .section { max-width: 1100px; margin: 0 auto; padding: 80px 24px; }
+    .section-sm { max-width: 1100px; margin: 0 auto; padding: 60px 24px; }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #3560D0 100%);
+      overflow: hidden; position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 70% 50%, rgba(255,255,255,0.07) 0%, transparent 70%);
+    }
+    .hero-inner {
+      max-width: 1100px; margin: 0 auto; padding: 100px 24px 90px;
+      position: relative; z-index: 1;
+    }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.9); font-size: 0.78rem; font-weight: 600;
+      padding: 5px 14px; border-radius: 99px; margin-bottom: 24px;
+      letter-spacing: 0.5px;
+    }
+    .hero-title {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 900; color: #fff;
+      line-height: 1.15; letter-spacing: -1px;
+      margin: 0 0 20px;
+    }
+    .hero-title em { font-style: normal; color: #7EB3FF; }
+    .hero-sub {
+      font-size: 1.05rem; color: rgba(255,255,255,0.72);
+      max-width: 520px; line-height: 1.7; margin: 0 0 36px;
+      font-weight: 400;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #fff; color: var(--navy);
+      font-size: 0.95rem; font-weight: 700;
+      padding: 14px 28px; border-radius: 12px;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+    .hero-insurer-badges {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-top: 40px;
+    }
+    .insurer-badge {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.8); font-size: 0.78rem; font-weight: 600;
+      padding: 5px 12px; border-radius: 8px;
+    }
+
+    /* ── VALUE CARDS ── */
+    .value-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px; margin-top: 48px;
+    }
+    .value-card {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      transition: all 0.25s cubic-bezier(0.22,1,0.36,1);
+      position: relative; overflow: hidden;
+    }
+    .value-card::after {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--navy-mid), var(--navy-soft));
+      opacity: 0; transition: opacity 0.25s;
+    }
+    .value-card:hover { transform: translateY(-6px); border-color: var(--navy-mid); box-shadow: 0 16px 40px rgba(26,58,143,0.12); }
+    .value-card:hover::after { opacity: 1; }
+    .value-icon { font-size: 2.2rem; margin-bottom: 16px; display: block; }
+    .value-title { font-size: 1.1rem; font-weight: 800; color: var(--navy); margin: 0 0 8px; }
+    .value-desc { font-size: 0.88rem; color: var(--muted); line-height: 1.65; margin: 0; }
+
+    /* ── SECTION LABEL ── */
+    .section-eyebrow {
+      display: inline-block;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--navy-mid);
+      background: #EEF2FF; border-radius: 6px; padding: 4px 10px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.5rem, 3vw, 2.1rem);
+      font-weight: 800; color: var(--navy);
+      margin: 0 0 8px; letter-spacing: -0.5px;
+    }
+    .section-sub {
+      font-size: 0.95rem; color: var(--muted); margin: 0;
+      line-height: 1.7;
+    }
+
+    /* ── STEPS ── */
+    .steps { display: flex; flex-direction: column; gap: 0; margin-top: 48px; }
+    .step {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 48px; align-items: center;
+      padding: 48px 0;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .step:last-child { border-bottom: none; }
+    .step.reverse { direction: rtl; }
+    .step.reverse > * { direction: ltr; }
+    .step-num {
+      font-size: 0.72rem; font-weight: 800; letter-spacing: 2px;
+      color: var(--navy-mid); text-transform: uppercase;
+      background: #EEF2FF; display: inline-block;
+      padding: 4px 10px; border-radius: 6px; margin-bottom: 12px;
+    }
+    .step-title { font-size: 1.4rem; font-weight: 800; color: var(--navy); margin: 0 0 12px; }
+    .step-desc { font-size: 0.92rem; color: var(--muted); line-height: 1.75; margin: 0; }
+    .step-img {
+      border-radius: 16px; overflow: hidden;
+      border: 2px solid var(--border);
+      box-shadow: 0 8px 32px rgba(26,58,143,0.08);
+    }
+    .step-img img { width: 100%; display: block; }
+    .step-imgs-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .step-imgs-grid .step-img { border-radius: 12px; }
+
+    /* ── INSURER TABLE ── */
+    .insurer-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-top: 40px;
+    }
+    .insurer-card {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 16px; padding: 24px 20px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: all 0.2s;
+    }
+    .insurer-card:hover { border-color: var(--navy-mid); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(26,58,143,0.1); }
+    .insurer-name { font-size: 1rem; font-weight: 800; color: var(--navy); }
+    .insurer-badge-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.72rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 99px;
+    }
+    .badge-live { background: #DCFCE7; color: #15803D; }
+    .badge-beta { background: #FEF3C7; color: #92400E; }
+    .insurer-point { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── FEATURE CARDS ── */
+    .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+    .feature-card {
+      background: var(--bg-subtle);
+      border: 2px solid var(--border);
+      border-radius: 20px; overflow: hidden;
+      transition: all 0.25s;
+    }
+    .feature-card:hover { border-color: var(--navy-mid); box-shadow: 0 12px 32px rgba(26,58,143,0.09); transform: translateY(-4px); }
+    .feature-img img { width: 100%; display: block; }
+    .feature-body { padding: 24px; }
+    .feature-icon { font-size: 1.6rem; margin-bottom: 10px; display: block; }
+    .feature-title { font-size: 1rem; font-weight: 800; color: var(--navy); margin: 0 0 6px; }
+    .feature-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.7; margin: 0; }
+
+    /* ── LEVEL SECTION ── */
+    .level-section {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      overflow: hidden; position: relative;
+    }
+    .level-section::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 30% 50%, rgba(255,255,255,0.05) 0%, transparent 70%);
+    }
+    .level-section .section { position: relative; z-index: 1; }
+    .level-section .section-eyebrow { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); }
+    .level-section .section-title { color: #fff; }
+    .level-section .section-sub { color: rgba(255,255,255,0.65); }
+    .level-chars {
+      display: flex; align-items: flex-end; gap: 20px;
+      margin-top: 48px; justify-content: center; flex-wrap: wrap;
+    }
+    .level-char {
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      transition: transform 0.25s;
+    }
+    .level-char:hover { transform: translateY(-8px); }
+    .level-char img {
+      width: 90px; height: 90px; object-fit: contain;
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,0.3));
+    }
+    .level-char.lv10 img { width: 120px; height: 120px; }
+    .level-char-label {
+      font-size: 0.75rem; font-weight: 700;
+      color: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.1);
+      padding: 3px 10px; border-radius: 99px;
+    }
+    .level-arrow {
+      font-size: 1.4rem; color: rgba(255,255,255,0.3);
+      padding-bottom: 45px;
+    }
+    .club-banner {
+      margin-top: 40px;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 16px; padding: 24px 28px;
+      display: flex; align-items: center; gap: 20px;
+    }
+    .club-banner img { width: 64px; height: 64px; object-fit: contain; }
+    .club-text h3 { font-size: 1rem; font-weight: 800; color: #fff; margin: 0 0 4px; }
+    .club-text p { font-size: 0.85rem; color: rgba(255,255,255,0.65); margin: 0; line-height: 1.6; }
+
+    /* ── CTA ── */
+    .cta-section {
+      background: var(--bg-subtle);
+      border-top: 2px solid var(--border);
+    }
+    .cta-inner {
+      max-width: 1100px; margin: 0 auto;
+      padding: 80px 24px; text-align: center;
+    }
+    .cta-title { font-size: 2rem; font-weight: 900; color: var(--navy); margin: 0 0 12px; letter-spacing: -0.5px; }
+    .cta-sub { font-size: 1rem; color: var(--muted); margin: 0 0 36px; }
+    .cta-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--navy);
+      color: #fff; font-size: 1rem; font-weight: 700;
+      padding: 16px 36px; border-radius: 14px; text-decoration: none;
+      transition: all 0.2s; box-shadow: 0 4px 20px rgba(7,20,64,0.25);
+    }
+    .cta-btn:hover { background: var(--navy-mid); transform: translateY(-2px); box-shadow: 0 10px 32px rgba(26,58,143,0.3); }
+    .cta-disclaimer {
+      font-size: 0.75rem; color: var(--muted); margin-top: 20px;
+      max-width: 540px; margin-left: auto; margin-right: auto; line-height: 1.7;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1.5px solid var(--border);
+      padding: 24px; text-align: center;
+      font-size: 0.78rem; color: var(--muted);
+    }
+
+    /* ── DIVIDER ── */
+    .divider { border: none; border-top: 1.5px solid var(--border); margin: 0; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .step { grid-template-columns: 1fr; gap: 24px; }
+      .step.reverse { direction: ltr; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .step-imgs-grid { grid-template-columns: 1fr; }
+      .level-chars { gap: 10px; }
+      .level-char img { width: 64px; height: 64px; }
+      .level-char.lv10 img { width: 80px; height: 80px; }
+    }
+
+    /* ── FADE IN ── */
+    .fade-up {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1);
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">GA<span>암보장</span>분석기</a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">분석기</a>
+      <a href="about.html" class="nav-link active">About</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-pill">🔍 보험 매니저를 위한 분석 도구</div>
+    <h1 class="hero-title">
+      가입제안서 <em>한 장</em>으로<br>암 치료비를 한눈에
+    </h1>
+    <p class="hero-sub">
+      PDF를 업로드하면 암 치료비 담보만 자동으로 추출해 정리합니다.<br>
+      직접 계산하거나 PDF를 처음부터 읽을 필요가 없어요.
+    </p>
+    <a href="index.html" class="hero-cta">
+      지금 바로 분석해보기 →
+    </a>
+    <div class="hero-insurer-badges">
+      <span class="insurer-badge">메리츠화재</span>
+      <span class="insurer-badge">삼성화재</span>
+      <span class="insurer-badge">DB손해보험</span>
+      <span class="insurer-badge">흥국화재</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── VALUE PROPS ── -->
+<section style="background: var(--bg-subtle); border-bottom: 2px solid var(--border);">
+  <div class="section-sm">
+    <div style="text-align:center; margin-bottom: 0;">
+      <span class="section-eyebrow">Why this tool</span>
+      <h2 class="section-title" style="margin-top:8px;">핵심만, 빠르게, 바로</h2>
+      <p class="section-sub">고객 상담 전, 담보 파악에 쓰는 시간을 줄여드립니다</p>
+    </div>
+    <div class="value-grid">
+      <div class="value-card fade-up" style="transition-delay:0s">
+        <span class="value-icon">⚡</span>
+        <p class="value-title">즉시 분석</p>
+        <p class="value-desc">PDF 업로드 후 수초 내 암 치료비 담보 자동 추출. 5년 최대 보장금액까지 한 화면에.</p>
+      </div>
+      <div class="value-card fade-up" style="transition-delay:0.08s">
+        <span class="value-icon">🏢</span>
+        <p class="value-title">4사 지원</p>
+        <p class="value-desc">메리츠 · 삼성화재 · DB손해보험 · 흥국화재. 각사 제안서 포맷을 자동으로 인식합니다.</p>
+      </div>
+      <div class="value-card fade-up" style="transition-delay:0.16s">
+        <span class="value-icon">📸</span>
+        <p class="value-title">이미지 저장</p>
+        <p class="value-desc">분석 결과를 PNG 한 장으로 저장. 카카오톡으로 고객에게 바로 공유하세요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── HOW IT WORKS ── -->
+<section class="section">
+  <span class="section-eyebrow fade-up">How it works</span>
+  <h2 class="section-title fade-up" style="margin-top:8px;">3단계면 끝</h2>
+  <p class="section-sub fade-up">복잡한 설정 없이, 파일 하나만 있으면 됩니다</p>
+
+  <div class="steps">
+
+    <!-- Step 1 -->
+    <div class="step fade-up">
+      <div>
+        <span class="step-num">Step 01</span>
+        <h3 class="step-title">제안서 PDF 업로드</h3>
+        <p class="step-desc">
+          가입제안서 PDF 파일을 업로드 존에 드래그하거나 클릭해서 선택하세요.<br><br>
+          메리츠화재 · 삼성화재 · DB손해보험 · 흥국화재 제안서를 자동 인식합니다.
+        </p>
+      </div>
+      <div class="step-img">
+        <img src="ABOUT/landing.png" alt="업로드 화면">
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step reverse fade-up">
+      <div>
+        <span class="step-num">Step 02</span>
+        <h3 class="step-title">암 치료비 자동 분석</h3>
+        <p class="step-desc">
+          업로드된 PDF에서 암 관련 담보만 자동으로 추출합니다.<br><br>
+          항암방사선 · 항암약물 · 암수술비 등 9개 카드로 분류하고,
+          5년간 받을 수 있는 최대 보장금액을 한눈에 확인하세요.
+        </p>
+      </div>
+      <div class="step-imgs-grid">
+        <div class="step-img"><img src="ABOUT/ss.png" alt="삼성화재 분석 결과"></div>
+        <div class="step-img"><img src="ABOUT/meri.png" alt="메리츠 분석 결과"></div>
+        <div class="step-img"><img src="ABOUT/db.png" alt="DB 분석 결과"></div>
+        <div class="step-img"><img src="ABOUT/hk.png" alt="흥국화재 분석 결과"></div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step fade-up">
+      <div>
+        <span class="step-num">Step 03</span>
+        <h3 class="step-title">결과 저장 & 공유</h3>
+        <p class="step-desc">
+          분석이 완료되면 <strong>이미지 저장</strong> 버튼으로 결과를 PNG 파일로 저장할 수 있습니다.<br><br>
+          고객 상담 시 바로 활용하거나 카카오톡으로 전달하세요.
+        </p>
+      </div>
+      <div class="step-img">
+        <img src="ABOUT/snapshot.png" alt="이미지 저장">
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── INSURER SUPPORT ── -->
+<section style="background: var(--bg-subtle);">
+  <div class="section-sm">
+    <span class="section-eyebrow fade-up">지원 보험사</span>
+    <h2 class="section-title fade-up" style="margin-top:8px;">현재 지원하는 보험사</h2>
+    <p class="section-sub fade-up">각사 PDF 포맷을 자동 인식합니다</p>
+    <div class="insurer-grid" style="margin-top:36px;">
+      <div class="insurer-card fade-up" style="transition-delay:0s">
+        <div class="insurer-name">메리츠화재</div>
+        <span class="insurer-badge-status badge-live">✓ 정식 지원</span>
+        <p class="insurer-point">레벨링 서비스 연동<br>매니저 코드 자동 인식</p>
+      </div>
+      <div class="insurer-card fade-up" style="transition-delay:0.07s">
+        <div class="insurer-name">삼성화재</div>
+        <span class="insurer-badge-status badge-live">✓ 정식 지원</span>
+        <p class="insurer-point">담보가입현황 기반<br>정밀 추출</p>
+      </div>
+      <div class="insurer-card fade-up" style="transition-delay:0.14s">
+        <div class="insurer-name">DB손해보험</div>
+        <span class="insurer-badge-status badge-beta">◆ BETA</span>
+        <p class="insurer-point">프로미라이프 시리즈 지원<br>일부 담보 누락 가능</p>
+      </div>
+      <div class="insurer-card fade-up" style="transition-delay:0.21s">
+        <div class="insurer-name">흥국화재</div>
+        <span class="insurer-badge-status badge-beta">◆ BETA</span>
+        <p class="insurer-point">흥Good 시리즈 지원<br>일부 담보 누락 가능</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ── FEATURES ── -->
+<section class="section">
+  <span class="section-eyebrow fade-up">주요 기능</span>
+  <h2 class="section-title fade-up" style="margin-top:8px;">분석 그 이상</h2>
+  <div class="feature-grid">
+    <div class="feature-card fade-up" style="transition-delay:0s">
+      <div class="feature-img"><img src="ABOUT/snapshot.png" alt="이미지 저장"></div>
+      <div class="feature-body">
+        <span class="feature-icon">🖼️</span>
+        <p class="feature-title">이미지 저장</p>
+        <p class="feature-desc">분석된 암 치료비 보장 내역을 이미지 한 장으로 저장합니다. 고객 미팅 전 빠르게 준비하거나 상담 후 증빙 자료로 활용하세요.</p>
+      </div>
+    </div>
+    <div class="feature-card fade-up" style="transition-delay:0.1s">
+      <div class="feature-img"><img src="ABOUT/issue.png" alt="오류 제보"></div>
+      <div class="feature-body">
+        <span class="feature-icon">🔔</span>
+        <p class="feature-title">오류 제보</p>
+        <p class="feature-desc">분석 결과가 실제 제안서와 다를 경우 오류 제보 버튼으로 알려주세요. 빠르게 확인 후 다음 업데이트에 반영합니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LEVELING ── -->
+<section class="level-section">
+  <div class="section">
+    <span class="section-eyebrow fade-up">메리츠 전용</span>
+    <h2 class="section-title fade-up" style="margin-top:8px;">분석할수록 레벨이 오릅니다</h2>
+    <p class="section-sub fade-up" style="max-width:480px;">메리츠화재 제안서를 분석할 때 매니저 코드를 자동 인식합니다. 분석 횟수가 쌓이면 레벨이 오르고, 고유 캐릭터가 부여됩니다.</p>
+
+    <div class="level-chars">
+      <div class="level-char fade-up" style="transition-delay:0s">
+        <img src="level/lv1.png" alt="Lv.1">
+        <span class="level-char-label">Lv.1</span>
+      </div>
+      <div class="level-arrow">→</div>
+      <div class="level-char fade-up" style="transition-delay:0.1s">
+        <img src="level/lv3.png" alt="Lv.3">
+        <span class="level-char-label">Lv.3</span>
+      </div>
+      <div class="level-arrow">→</div>
+      <div class="level-char fade-up" style="transition-delay:0.2s">
+        <img src="level/lv5.png" alt="Lv.5">
+        <span class="level-char-label">Lv.5</span>
+      </div>
+      <div class="level-arrow">→</div>
+      <div class="level-char fade-up" style="transition-delay:0.3s">
+        <img src="level/lv7.png" alt="Lv.7">
+        <span class="level-char-label">Lv.7</span>
+      </div>
+      <div class="level-arrow">→</div>
+      <div class="level-char lv10 fade-up" style="transition-delay:0.4s">
+        <img src="level/lv10.png" alt="Lv.10">
+        <span class="level-char-label">Lv.10 ✨</span>
+      </div>
+    </div>
+
+    <div class="club-banner fade-up" style="max-width:560px; margin-top:40px;">
+      <img src="level/2xclub.png" alt="2X Club">
+      <div class="club-text">
+        <h3>2X Club</h3>
+        <p>특별 달성 기준을 충족한 매니저에게 부여되는 뱃지입니다. 꾸준히 분석하면 도달할 수 있어요.</p>
+      </div>
+    </div>
+
+    <p style="font-size:0.78rem; color:rgba(255,255,255,0.4); margin-top:24px;">
+      ※ 현재 메리츠화재만 지원 — 삼성화재·DB·흥국화재 레벨링은 향후 업데이트 예정
+    </p>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <h2 class="cta-title fade-up">지금 바로 분석해보세요</h2>
+    <p class="cta-sub fade-up">PDF 하나면 충분합니다</p>
+    <a href="index.html" class="cta-btn fade-up">
+      가입제안서 업로드하기 →
+    </a>
+    <p class="cta-disclaimer">
+      * 이 서비스는 가입제안서를 기반으로 암 치료비를 한눈에 보기 쉽게 재구성한 참고용 도구입니다.<br>
+      실제 보상금액과 조건은 가입제안서 및 약관을 반드시 확인하세요.
+    </p>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  GA 암보장 분석기 · 보험 매니저를 위한 도구 · 문의: chlgnstj1@gmail.com
+</footer>
+
+<script>
+  // Intersection Observer for fade-up animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
