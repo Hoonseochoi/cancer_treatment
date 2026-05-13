@@ -464,6 +464,9 @@ body.heungkuk-theme .welcome-greet {
     color: #fff !important;
     opacity: 0.85;
 }
+body.heungkuk-theme .welcome-name {
+    color: #fff !important;
+}
 
 body.heungkuk-theme .text-red-600,
 body.heungkuk-theme .text-red-500 { color: #DB2777 !important; }
