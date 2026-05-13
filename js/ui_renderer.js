@@ -67,7 +67,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
     });
 
     // ── 커버리지 스냅샷 저장 ──
-    if (['samsung', 'db', 'heungkuk'].includes(insurer) && typeof logCoverageSnapshot === 'function') {
+    if (['samsung', 'db', 'heungkuk', 'meritz'].includes(insurer) && typeof logCoverageSnapshot === 'function') {
         logCoverageSnapshot(meta.fileName, insurer, meta, grandTotalMin, grandTotalMax, summaryMap);
     }
 
