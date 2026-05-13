@@ -203,10 +203,9 @@ async function processFile(file) {
 
             console.log('[db meta]', samsungMeta);
         } else if (insurer === 'heungkuk') {
-            // 상품명: "보험상품 무배당 흥Good..." (같은 줄) 또는 다음 줄 형태
-            const pm = text.match(/보험상품\s+(무배당[^\n\r]{0,80})/) ||
-                       text.match(/보험상품\s*[\r\n]+([^\r\n]+)/) ||
-                       text.match(/(무배당\s*흥Good[^\n\r]{0,80})/);
+            // 상품명: "무배당 흥Good..." 직접 매칭 우선 (레이아웃 무관하게 가장 안정적)
+            const pm = text.match(/(무배당\s*흥Good[^\n\r]{0,80})/) ||
+                       text.match(/보험상품\s+(무배당[^\n\r]{0,80})/);
             if (pm) samsungMeta.productName = pm[1].trim();
 
             // 연령: "나이:41세" 형태 (피보험자 사항 라인)
@@ -233,21 +232,29 @@ async function processFile(file) {
             if (customerName !== '고객') console.log('[흥국] 고객이름:', customerName);
             console.log('[heungkuk meta]', samsungMeta);
         } else if (insurer === 'meritz') {
-            // 상품명: "(무) 메리츠..." 형태 (PDF 헤더에 반복)
-            const pm = text.match(/\(무\)\s*([^\n\r]+)/) ||
+            // 상품명: "(무) 메리츠..." 헤더 직접 매칭
+            // PDF.js는 (무) 뒤 텍스트를 같은 줄 또는 근접하게 출력
+            const pm = text.match(/\(무\)\s*(메리츠[^\n\r]{0,100})/) ||
+                       text.match(/\(무\)\s*([^\n\r(]{0,100})/) ||
                        text.match(/보험상품명\s*(무배당[^\n\r]+)/);
             if (pm) samsungMeta.productName = pm[1].trim();
 
-            // 연령: "피보험자 | 연령 이름 ... | XX세" 형태
-            const am = text.match(/\|\s*(\d{1,3})\s*세\s*(?:주피보험자|본인)/) ||
-                       text.match(/연령\s+[^|]+\|\s*(\d{1,3})\s*세/) ||
-                       text.match(/나이\s*[:：]?\s*(\d{2,3})\s*세/);
-            if (am) samsungMeta.age = parseInt(am[1], 10);
+            // 연령: ① "| XX세" 형태(표) ② "(여, 1967. 02. 23)" 생년월일 계산 ③ "XX세" 단독
+            const amPipe = text.match(/\|\s*(\d{1,3})\s*세\s*(?:주피보험자|본인)/);
+            const amDob  = text.match(/(?:여|남),\s*((?:19|20)\d{2})\.\s*\d{2}\.\s*\d{2}/);
+            const amSe   = text.match(/피보험자[^\n]{0,80}(\d{2,3})\s*세\s*(?:주피보험자|본인)/);
+            if (amPipe) {
+                samsungMeta.age = parseInt(amPipe[1], 10);
+            } else if (amDob) {
+                samsungMeta.age = new Date().getFullYear() - parseInt(amDob[1], 10);
+            } else if (amSe) {
+                samsungMeta.age = parseInt(amSe[1], 10);
+            }
 
-            // 보험료: "1회차보험료(할인후) XXX원" 또는 "보험료 XXX원(매월)"
-            const prm = text.match(/1회차보험료[^\n\r\d]*([\d,]+)\s*원/) ||
+            // 보험료: "1회차보험료(할인후) XXX원" / "보험료 XXX원(매월)" / "보험료 XXX원"
+            const prm = text.match(/1회차\s*보험료[^\n\r\d]*([\d,]+)\s*원/) ||
                         text.match(/보험료\s*([\d,]+)\s*원\s*\(매월\)/) ||
-                        text.match(/1회\s*보험료\s*([\d,]+)\s*원/);
+                        text.match(/보험료\s+([\d,]+)\s*원(?!\s*\()/) ;
             if (prm) samsungMeta.premium = parseInt(prm[1].replace(/,/g, ''), 10);
 
             console.log('[meritz meta]', samsungMeta);
