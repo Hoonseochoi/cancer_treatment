@@ -62,13 +62,16 @@ body {
     transition: all 0.3s ease;
     border: 2px dashed rgba(26, 58, 143, 0.28);
     background: var(--white);
+    outline: none;
 }
 
 .upload-zone:hover,
+.upload-zone:focus,
 .upload-zone.dragover {
-    border-color: var(--primary-color);
+    border-color: #1A3A8F !important;
     background: rgba(26, 58, 143, 0.04);
     transform: scale(1.005);
+    outline: none;
 }
 
 /* Progress bar - Meritz Red Shimmer */
@@ -158,8 +161,8 @@ body {
 .title-accent {
     color: var(--primary-bright);
     letter-spacing: -0.04em;
-    text-shadow: 0 4px 20px rgba(26, 58, 143, 0.18);
-    background: linear-gradient(to right, #071440, #1A3A8F, #3B6FE0);
+    text-shadow: 0 2px 12px rgba(7, 20, 64, 0.15);
+    background: linear-gradient(to right, #040D2C, #1A3A8F);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
