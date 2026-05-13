@@ -453,6 +453,16 @@ body.heungkuk-theme .premium-card:hover {
 
 body.heungkuk-theme .title-accent {
     color: var(--primary-bright);
+    text-shadow: 0 4px 15px rgba(219, 39, 119, 0.18);
+    background: linear-gradient(to right, #9D174D, #DB2777, #F472B6);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.heungkuk-theme .welcome-greet {
+    color: #fff !important;
+    opacity: 0.85;
 }
 
 body.heungkuk-theme .text-red-600,
