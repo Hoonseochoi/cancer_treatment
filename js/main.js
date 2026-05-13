@@ -142,7 +142,7 @@ async function processFile(file) {
         // ── 메타 추출: 상품명 / 연령 / 보험료 ──
         const samsungMeta = { fileName: file.name };
         if (insurer === 'samsung') {
-            const pm = text.match(/보험상품명(무배당[\s\S]+?)(?=보험계약자)/);
+            const pm = text.match(/보험상품명\s*(무배당[\s\S]+?)(?=보험계약자)/);
             if (pm) samsungMeta.productName = pm[1].replace(/\s+/g, '').trim();
 
             const am = text.match(/나이\s*(\d{1,3})\s*세/);
@@ -154,16 +154,22 @@ async function processFile(file) {
 
             console.log('[samsung meta]', samsungMeta);
         } else if (insurer === 'db') {
-            // 상품명: "무배당 프로미라이프" 다음 줄
-            const pm = text.match(/프로미라이프\s*[\r\n]+([^\r\n]+)/);
-            if (pm) samsungMeta.productName = '프로미라이프 ' + pm[1].trim();
+            // 상품명: "무배당 프로미라이프 ..." 형태 (같은 줄 우선, 없으면 다음 줄)
+            const pmInline = text.match(/(무배당\s*프로미라이프[^\n\r]{0,60})/);
+            const pmNext = text.match(/프로미라이프\s*[\r\n]+([^\r\n]+)/);
+            const pm = pmInline
+                ? pmInline
+                : pmNext ? { 1: '프로미라이프 ' + pmNext[1].trim() } : null;
+            if (pm) samsungMeta.productName = pm[1].trim();
 
             // 보험료: 납입보험료 xxx원
             const prm = text.match(/납입보험료\s*([\d,]+)\s*원/);
             if (prm) samsungMeta.premium = parseInt(prm[1].replace(/,/g, ''), 10);
 
-            // 연령: (DB PDF에서 명시적 나이 표기 없는 경우 null 유지)
-            const am = text.match(/피보험자[^\n]{0,20}?(\d{1,2})\s*세/);
+            // 연령: "[피보험자/66]" 형태 우선 → fallback "XX세" 형태
+            const amBracket = text.match(/\[피보험자[^\]]*?\/\s*(\d{1,3})\]/);
+            const amSe = text.match(/피보험자[^\n]{0,50}?(\d{1,3})\s*세/);
+            const am = amBracket || amSe;
             if (am) samsungMeta.age = parseInt(am[1], 10);
 
             // ── DB 고객 이름 추출 ──
@@ -186,8 +192,9 @@ async function processFile(file) {
 
             console.log('[db meta]', samsungMeta);
         } else if (insurer === 'heungkuk') {
-            // 상품명: "보험상품\n무배당 흥Good ..." 형태
-            const pm = text.match(/보험상품\s*[\r\n]+([^\r\n]+)/);
+            // 상품명: "보험상품\n무배당 흥Good ..." 형태 or 같은 줄 fallback
+            const pm = text.match(/보험상품\s*[\r\n]+([^\r\n]+)/) ||
+                       text.match(/(무배당\s*흥Good[^\n\r]{0,60})/);
             if (pm) samsungMeta.productName = pm[1].trim();
 
             // 연령: "나이:41세" 형태 (계약사항 피보험자 라인)
@@ -211,6 +218,24 @@ async function processFile(file) {
             }
             if (customerName !== '고객') console.log('[흥국] 고객이름:', customerName);
             console.log('[heungkuk meta]', samsungMeta);
+        } else if (insurer === 'meritz') {
+            // 상품명: "보험상품명 무배당..." 또는 "상품명 : 무배당..." 형태
+            const pm = text.match(/보험상품명\s*(무배당[^\n\r]+)/) ||
+                       text.match(/상품명\s*[:：]\s*(무배당[^\n\r]+)/);
+            if (pm) samsungMeta.productName = pm[1].trim();
+
+            // 연령: "피보험자 ... XX세" 또는 "나이 XX세" 형태
+            const am = text.match(/피보험자[^\n]{0,60}?(\d{2,3})\s*세/) ||
+                       text.match(/나이\s*[:：]?\s*(\d{2,3})\s*세/);
+            if (am) samsungMeta.age = parseInt(am[1], 10);
+
+            // 보험료: "월 보험료", "1회 보험료" 또는 "보험료 XXX원"
+            const prm = text.match(/월\s*보험료\s*[:：]?\s*([\d,]+)\s*원/) ||
+                        text.match(/1회\s*보험료\s*([\d,]+)\s*원/) ||
+                        text.match(/보험료\s*([\d,]+)\s*원\s*\(매월\)/);
+            if (prm) samsungMeta.premium = parseInt(prm[1].replace(/,/g, ''), 10);
+
+            console.log('[meritz meta]', samsungMeta);
         }
 
         const results = insurer === 'samsung'
