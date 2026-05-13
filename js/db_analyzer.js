@@ -42,12 +42,6 @@ function extractRawCoveragesDB(text) {
 
     const sectionLines = lines.slice(startIdx, endIdx);
     console.log(`[DB] 섹션 범위: lines ${startIdx}~${endIdx} (${sectionLines.length}줄)`);
-    // ── DEBUG: 번호 줄만 출력 (어떤 항목이 어떤 형태로 들어오는지 확인) ──
-    sectionLines.forEach((l, idx) => {
-        if (/^\d{1,3}\./.test(l)) {
-            console.log(`[DB DEBUG] sectLine[${idx}]: "${l.substring(0, 100)}"`);
-        }
-    });
 
     // ── 2. Skip patterns (page headers/footers interspersed across pages) ──
     const SKIP = [
@@ -69,9 +63,10 @@ function extractRawCoveragesDB(text) {
         return /^\d{1,3}(,\d{3})*$/.test(line);
     }
 
-    // Period line: contains 년 with /
+    // Period line: 줄이 \d+년으로 시작해야만 매칭 (e.g. "20년/100세")
+    // 주의: 커버리지 줄 끝에 "20년/100세"가 포함되어도 줄 시작이 아니면 무시
     function isPeriod(line) {
-        return /\d+년.*\//.test(line);
+        return /^\d+년/.test(line);
     }
 
     // Korean amount pattern: e.g. 2천만원, 6백만원, 30만원, 5억원
