@@ -557,6 +557,11 @@
   }, { threshold: 0.12 });
 
   document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  // iframe 안에서 열릴 때 nav 숨기기
+  if (window !== window.top) {
+    document.querySelector('nav').style.display = 'none';
+  }
 </script>
 
 </body>
