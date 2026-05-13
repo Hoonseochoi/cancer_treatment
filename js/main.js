@@ -4,6 +4,10 @@ function detectInsurer(text) {
     if (/idbins\.com|DB손해보험|프로미라이프/.test(text)) return 'db';
     if (typeof currentFileName === 'string' && /\bDB\b|idbins/i.test(currentFileName)) return 'db';
 
+    // 0차: 흥국화재 → heungkukfire.co.kr / 흥국화재해상보험 / 흥Good
+    if (/heungkukfire\.co\.kr|흥국화재해상보험|흥Good/.test(text)) return 'heungkuk';
+    if (typeof currentFileName === 'string' && /흥국|heungkuk/i.test(currentFileName)) return 'heungkuk';
+
     // 1차: 메리츠 명시 → 무조건 meritz
     if (/메리츠\s*화재|meritzfire\.com|메리츠/i.test(text)) return 'meritz';
     if (typeof currentFileName === 'string' && /메리츠|meritz/i.test(currentFileName)) return 'meritz';
@@ -132,6 +136,7 @@ async function processFile(file) {
         console.log(`[detectInsurer] → ${insurer} (textLen=${text.length})`);
         document.body.classList.toggle('samsung-theme', insurer === 'samsung');
         document.body.classList.toggle('db-theme', insurer === 'db');
+        document.body.classList.toggle('heungkuk-theme', insurer === 'heungkuk');
 
         // ── 메타 추출: 상품명 / 연령 / 보험료 ──
         const samsungMeta = { fileName: file.name };
@@ -179,13 +184,41 @@ async function processFile(file) {
             if (customerName !== '고객') console.log('[db] 고객이름:', customerName);
 
             console.log('[db meta]', samsungMeta);
+        } else if (insurer === 'heungkuk') {
+            // 상품명: "보험상품\n무배당 흥Good ..." 형태
+            const pm = text.match(/보험상품\s*[\r\n]+([^\r\n]+)/);
+            if (pm) samsungMeta.productName = pm[1].trim();
+
+            // 연령: "나이:41세" 형태 (계약사항 피보험자 라인)
+            const am = text.match(/나이\s*[:：]\s*(\d+)\s*세/);
+            if (am) samsungMeta.age = parseInt(am[1], 10);
+
+            // 보험료: "보 험 료\n301,001원" 형태
+            const prm = text.match(/보\s*험\s*료\s*[\r\n]+([\d,]+)\s*원/) ||
+                        text.match(/보험료\s*([\d,]+)\s*원/);
+            if (prm) samsungMeta.premium = parseInt(prm[1].replace(/,/g, ''), 10);
+
+            // 고객이름: "이현우(계약자와의 관계:본인," 형태
+            if (customerName === '고객') {
+                const hkMatch = text.match(/([가-힣]{2,5})\(계약자와의\s*관계/);
+                if (hkMatch) customerName = hkMatch[1];
+            }
+            // 보조: "{이름}님" 형태
+            if (customerName === '고객') {
+                const nimMatch = text.match(/([가-힣]{2,5})님\s*(보장|안내)/);
+                if (nimMatch) customerName = nimMatch[1];
+            }
+            if (customerName !== '고객') console.log('[흥국] 고객이름:', customerName);
+            console.log('[heungkuk meta]', samsungMeta);
         }
 
         const results = insurer === 'samsung'
             ? extractRawCoveragesSamsung(text)
             : insurer === 'db'
                 ? extractRawCoveragesDB(text)
-                : extractRawCoverages(text);
+                : insurer === 'heungkuk'
+                    ? extractRawCoveragesHeungkuk(text)
+                    : extractRawCoverages(text);
         console.log(`[extraction] ${results.length}건 추출 (insurer=${insurer})`);
 
         // 미인식 담보 추적
@@ -258,6 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('progress-section').classList.add('hidden');
             document.body.classList.remove('samsung-theme');
             document.body.classList.remove('db-theme');
+            document.body.classList.remove('heungkuk-theme');
             if (fileInput) fileInput.value = '';
         });
     }

@@ -342,6 +342,75 @@ body.db-theme [style*="rgba(166,0,0"] {
     border-color: rgba(0, 112, 60, 0.15) !important;
 }
 
+/*
+   body.heungkuk-theme → 레드 → 핑크 딥로즈
+*/
+body.heungkuk-theme {
+    --primary-dark:   #9D174D;
+    --primary-bright: #DB2777;
+    --primary-color:  #DB2777;
+    --bg-light: #FDF2F8;
+}
+
+body.heungkuk-theme .bg-subtle-glow {
+    background: radial-gradient(ellipse at 60% 40%, rgba(219,39,119,0.08) 0%, transparent 70%);
+}
+
+body.heungkuk-theme .upload-zone {
+    border-color: rgba(219,39,119,0.35);
+}
+body.heungkuk-theme .upload-zone:hover,
+body.heungkuk-theme .upload-zone.dragover {
+    border-color: #DB2777;
+    background: rgba(219,39,119,0.04);
+}
+body.heungkuk-theme .premium-card:hover {
+    box-shadow: 0 20px 60px -10px rgba(219,39,119,0.18);
+}
+
+body.heungkuk-theme .title-accent {
+    color: var(--primary-bright);
+}
+
+body.heungkuk-theme .text-red-600,
+body.heungkuk-theme .text-red-500 { color: #DB2777 !important; }
+body.heungkuk-theme .bg-red-600   { background-color: #DB2777 !important; }
+body.heungkuk-theme .bg-red-50    { background-color: #FDF2F8 !important; }
+body.heungkuk-theme .bg-red-100   { background-color: #FCE7F3 !important; }
+body.heungkuk-theme .border-red-600 { border-color: #DB2777 !important; }
+body.heungkuk-theme .border-red-100 { border-color: #FBCFE8 !important; }
+body.heungkuk-theme .border-red-200 { border-color: #F9A8D4 !important; }
+body.heungkuk-theme .border-red-300 { border-color: #F472B6 !important; }
+body.heungkuk-theme .ring-red-200  { --tw-ring-color: #FBCFE8 !important; }
+body.heungkuk-theme .focus\:border-red-300:focus { border-color: #F472B6 !important; }
+body.heungkuk-theme .focus\:ring-red-200:focus   { --tw-ring-color: #FBCFE8 !important; }
+body.heungkuk-theme .hover\:bg-red-100:hover { background-color: #FCE7F3 !important; }
+body.heungkuk-theme .hover\:bg-red-700:hover { background-color: #9D174D !important; }
+body.heungkuk-theme .file\:bg-red-50    { background-color: #FDF2F8 !important; }
+body.heungkuk-theme .file\:text-red-600 { color: #DB2777 !important; }
+
+body.heungkuk-theme #manager-badge-container > div {
+    background: linear-gradient(135deg, #9D174D, #DB2777);
+}
+body.heungkuk-theme .welcome-code {
+    color: #DB2777;
+}
+body.heungkuk-theme .welcome-name::after {
+    background: linear-gradient(90deg, #9D174D, #DB2777, #9D174D);
+}
+
+body.heungkuk-theme .bg-red-400 { background-color: #F472B6 !important; }
+body.heungkuk-theme .bg-red-600 { background-color: #DB2777 !important; }
+
+body.heungkuk-theme [style*="rgba(230,0,0"] {
+    background: rgba(219, 39, 119, 0.06) !important;
+    border-color: rgba(219, 39, 119, 0.15) !important;
+}
+body.heungkuk-theme [style*="rgba(166,0,0"] {
+    background: rgba(157, 23, 77, 0.06) !important;
+    border-color: rgba(157, 23, 77, 0.15) !important;
+}
+
 /* ── Capture specific overrides ── */
 /* 한글 폰트를 앞에 배치하여 자간 계산 오류 방지 */
 .html2canvas-container {
