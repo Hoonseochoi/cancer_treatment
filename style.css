@@ -177,39 +177,84 @@ body {
    ── Global Navy Override (Default / Meritz) ──
    Tailwind red → navy (기본 테마 전역 적용)
    ══════════════════════════════════════════════ */
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .text-red-600,
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .text-red-500 { color: #2547B8 !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-600   { background-color: #2547B8 !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-50    { background-color: #EEF2FF !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-100   { background-color: #E0E7FF !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .border-red-600 { border-color: #2547B8 !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .border-red-100 { border-color: #C7D2FE !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .border-red-200 { border-color: #A5B4FC !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .border-red-300 { border-color: #818CF8 !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .ring-red-200  { --tw-ring-color: #C7D2FE !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .focus\:border-red-300:focus { border-color: #818CF8 !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .focus\:ring-red-200:focus   { --tw-ring-color: #C7D2FE !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .hover\:bg-red-100:hover { background-color: #E0E7FF !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .hover\:bg-red-700:hover { background-color: #0F2557 !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .file\:bg-red-50    { background-color: #EEF2FF !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .file\:text-red-600 { color: #2547B8 !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-400  { background-color: #818CF8 !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .decoration-red-200 { text-decoration-color: #A5B4FC !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .border-red-500\/30 { border-color: rgba(37,71,184,0.3) !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-500\/5  { background-color: rgba(37,71,184,0.05) !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-500\/10 { background-color: rgba(37,71,184,0.10) !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .shadow-red-100 { --tw-shadow-color: rgba(37,71,184,0.12) !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .ring-red-100   { --tw-ring-color: rgba(37,71,184,0.15) !important; }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .underline      { text-decoration-color: rgba(37,71,184,0.35) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .text-red-600,
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .text-red-500 { color: #2547B8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-600   { background-color: #2547B8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-50    { background-color: #EEF2FF !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-100   { background-color: #E0E7FF !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-600 { border-color: #2547B8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-100 { border-color: #C7D2FE !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-200 { border-color: #A5B4FC !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-300 { border-color: #818CF8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .ring-red-200  { --tw-ring-color: #C7D2FE !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .focus\:border-red-300:focus { border-color: #818CF8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .focus\:ring-red-200:focus   { --tw-ring-color: #C7D2FE !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .hover\:bg-red-100:hover { background-color: #E0E7FF !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .hover\:bg-red-700:hover { background-color: #0F2557 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .file\:bg-red-50    { background-color: #EEF2FF !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .file\:text-red-600 { color: #2547B8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-400  { background-color: #818CF8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .decoration-red-200 { text-decoration-color: #A5B4FC !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-500\/30 { border-color: rgba(37,71,184,0.3) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-500\/5  { background-color: rgba(37,71,184,0.05) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-500\/10 { background-color: rgba(37,71,184,0.10) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .shadow-red-100 { --tw-shadow-color: rgba(37,71,184,0.12) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .ring-red-100   { --tw-ring-color: rgba(37,71,184,0.15) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .underline      { text-decoration-color: rgba(37,71,184,0.35) !important; }
 
 /* welcome-code & badge dot */
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .welcome-code {
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .welcome-code {
     color: #2547B8 !important;
     background: rgba(37, 71, 184, 0.06) !important;
 }
-body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .welcome-name::after {
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .welcome-name::after {
     background: #2547B8 !important;
 }
+
+/* ══════════════════════════════════════════════
+   ── Meritz Theme Override ──
+   body.meritz-theme → 기존 레드 테마 복원
+   ══════════════════════════════════════════════ */
+body.meritz-theme {
+    --primary-dark:   #A60000;
+    --primary-bright: #E60000;
+    --primary-color:  #E60000;
+    --bg-light: #EBEBEB;
+    --gray-dark: #404040;
+    --gray-mid: #8C8C8C;
+}
+
+body.meritz-theme .bg-subtle-glow {
+    background: radial-gradient(circle at 10% 20%, rgba(230, 0, 0, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(166, 0, 0, 0.03) 0%, transparent 40%);
+}
+
+body.meritz-theme .upload-zone {
+    border-color: rgba(166, 0, 0, 0.2);
+}
+body.meritz-theme .upload-zone:hover,
+body.meritz-theme .upload-zone.dragover {
+    background: rgba(230, 0, 0, 0.02);
+}
+
+body.meritz-theme .premium-card:hover {
+    box-shadow: 0 12px 30px rgba(166, 0, 0, 0.08);
+    border-color: rgba(166, 0, 0, 0.15);
+}
+
+body.meritz-theme .title-accent {
+    text-shadow: 0 4px 15px rgba(230, 0, 0, 0.12);
+    background: linear-gradient(to right, #A60000, #E60000);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.meritz-theme .welcome-code {
+    color: #E60000 !important;
+    background: rgba(230, 0, 0, 0.05) !important;
+}
+body.meritz-theme .welcome-name::after { background: #E60000 !important; }
 
 /* ══════════════════════════════════════════════
    ── Samsung Fire Insurance Theme Override ──

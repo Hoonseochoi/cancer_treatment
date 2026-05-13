@@ -134,6 +134,7 @@ async function processFile(file) {
         // Run Raw Extraction
         const insurer = detectInsurer(text);
         console.log(`[detectInsurer] → ${insurer} (textLen=${text.length})`);
+        document.body.classList.toggle('meritz-theme', insurer === 'meritz');
         document.body.classList.toggle('samsung-theme', insurer === 'samsung');
         document.body.classList.toggle('db-theme', insurer === 'db');
         document.body.classList.toggle('heungkuk-theme', insurer === 'heungkuk');
@@ -299,6 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('insight-section').classList.add('hidden');
 
             document.getElementById('progress-section').classList.add('hidden');
+            document.body.classList.remove('meritz-theme');
             document.body.classList.remove('samsung-theme');
             document.body.classList.remove('db-theme');
             document.body.classList.remove('heungkuk-theme');
