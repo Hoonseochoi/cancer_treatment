@@ -256,6 +256,12 @@ async function processFile(file) {
 
 // ── Event Handlers ──
 document.addEventListener('DOMContentLoaded', () => {
+    // CI 로고 base64 주입 (expert_data.js 로드 후)
+    const dbLogo = document.getElementById('db-ci-logo');
+    const hkLogo = document.getElementById('hkfire-ci-logo');
+    if (dbLogo && typeof DB_CI_B64 !== 'undefined') dbLogo.src = DB_CI_B64;
+    if (hkLogo && typeof HKFIRE_CI_B64 !== 'undefined') hkLogo.src = HKFIRE_CI_B64;
+
     const fileInput = document.getElementById('file-input');
     const uploadZone = document.getElementById('upload-zone');
     const resetBtn = document.getElementById('reset-btn');
