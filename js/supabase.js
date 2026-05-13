@@ -392,9 +392,9 @@ async function incrementAnalysisCounts() {
 async function incrementInsurerCount(insurer) {
     if (!supabaseClient || !insurer) return;
     try {
-        const key = ;
+        const key = `insurer_${insurer}`;
         await supabaseClient.rpc('increment_analysis_counter', { counter_key: key });
-        console.log();
+        console.log(`[insurer counter] ${key} 증가`);
     } catch (error) {
         console.error('Failed to increment insurer count:', error);
     }
