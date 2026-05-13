@@ -124,6 +124,8 @@ async function processFile(file) {
         }
         // Last resort: ensure we didn't capture "보험료"
         if (customerName.includes('보험료')) customerName = '고객';
+        // Validate: Korean name must be 2–5 pure Hangul chars (reject particles like "는", "의", "에" etc.)
+        if (customerName !== '고객' && !/^[가-힣]{2,5}$/.test(customerName)) customerName = '고객';
 
         // Run Raw Extraction
         const insurer = detectInsurer(text);

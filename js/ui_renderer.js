@@ -92,6 +92,9 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         } else if (insurer === 'samsung') {
             expertName = "바다";
             expertImgBase64 = SBADA_B64;
+        } else if (insurer === 'db') {
+            expertName = "프로미";
+            expertImgBase64 = 'db/promy_top_icon.png';
         }
 
         insightSection.innerHTML = `
@@ -104,13 +107,13 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-lg shadow-red-100 border-2 border-white ring-1 ring-red-100">
                              <img src="${expertImgBase64}" alt="보험전문가 ${expertName}" class="w-full h-full object-cover object-top">
                         </div>
-                        <div class="absolute -bottom-2 -right-2 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
-                            Expert
+                        <div class="absolute -bottom-2 -right-2 ${insurer === 'db' ? 'bg-blue-600' : 'bg-red-600'} text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
+                            ${insurer === 'db' ? 'Promy' : 'Expert'}
                         </div>
                     </div>
                     <div class="text-center sm:text-left flex-1">
                         <p class="text-gray-500 text-[13px] font-bold mb-1 opacity-80">
-                            🛡️ <span class="text-gray-400">보험전문가 <b class="text-gray-600">${expertName}</b>의 insight : 전문 통계에 의하면 암치료는 5년정도 받는대요 !</span>
+                            🛡️ <span class="text-gray-400">${insurer === 'db' ? 'DB손보 마스코트' : '보험전문가'} <b class="text-gray-600">${expertName}</b>의 insight : 전문 통계에 의하면 암치료는 5년정도 받는대요 !</span>
                         </p>
                         <h3 class="text-lg sm:text-xl font-medium text-gray-800 leading-relaxed">
                             <span class="font-black text-red-600 underline decoration-red-200 underline-offset-4">${customerName}</span>님이 
