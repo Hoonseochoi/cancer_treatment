@@ -243,6 +243,10 @@ async function processFile(file) {
             if (typeof incrementAnalysisCounts === 'function') {
                 incrementAnalysisCounts();
             }
+            // Increment per-insurer counter
+            if (typeof incrementInsurerCount === 'function') {
+                incrementInsurerCount(insurer);
+            }
         } else {
             showToast('추출된 항목이 없습니다. 텍스트 인식 결과를 확인해주세요.', true);
         }

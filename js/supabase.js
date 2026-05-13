@@ -384,6 +384,23 @@ async function incrementAnalysisCounts() {
     }
 }
 
+/**
+ * ── 회사별 사용 카운터 ──
+ * analysis_counters 테이블에 insurer_xxx 키로 회사별 누적 횟수 기록
+ * e.g. insurer_meritz / insurer_samsung / insurer_db / insurer_heungkuk
+ */
+async function incrementInsurerCount(insurer) {
+    if (!supabaseClient || !insurer) return;
+    try {
+        const key = ;
+        await supabaseClient.rpc('increment_analysis_counter', { counter_key: key });
+        console.log();
+    } catch (error) {
+        console.error('Failed to increment insurer count:', error);
+    }
+}
+window.incrementInsurerCount = incrementInsurerCount;
+
 /** 카운터 UI에 오늘/전체 횟수 표시 */
 function updateCounterUI(daily, total) {
     const todayEl = document.getElementById('analysis-count-today');
