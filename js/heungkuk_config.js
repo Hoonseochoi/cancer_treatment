@@ -199,6 +199,22 @@ function findHeungkukDetails(itemName) {
                 displayName: '암주요치료비(항암약물)'
             };
         }
+        // ── 세부 구분자 없는 통합형 (유사암제외) → passthrough-dual ──
+        return {
+            type: 'passthrough-dual',
+            displayName: '암주요치료비(유사암제외)',
+            summaryTargets: ['암수술비', '항암방사선치료비', '항암약물치료비']
+        };
+    }
+
+    // ── 비급여 암주요치료비 → passthrough-dual (비급여 태그) ──
+    if (/비급여\s*암주요치료비/.test(n)) {
+        return {
+            type: 'passthrough-dual',
+            displayName: '비급여 암주요치료비',
+            summaryTargets: ['암수술비', '항암방사선치료비', '항암약물치료비'],
+            비급여: true
+        };
     }
 
     // 그 외 (암주요치료비 포함하지만 세부 분류 없는 경우) → null
@@ -288,6 +304,7 @@ function calculateHierarchicalSummaryHeungkuk(results) {
             const displayName = details.displayName;
             const shouldExpand = details.expandHierarchy !== false;
             const isYusamOnly = details.isYusamOnly || false;
+            const isBigugeumDual = details.비급여 || false;
             const directTargets = details.summaryTargets;
             const expandedTargets = [];
             directTargets.forEach(target => {
@@ -303,6 +320,7 @@ function calculateHierarchicalSummaryHeungkuk(results) {
                 amount: item.amount,
                 targetName: t,
                 isYusamOnly,
+                비급여: isBigugeumDual,
                 _expansion: !directTargets.includes(t)
             }));
         }
@@ -366,6 +384,7 @@ function calculateHierarchicalSummaryHeungkuk(results) {
                 amount: det.amount,
                 source: item.name,
                 isYusamOnly,
+                비급여: det.비급여 || false,
                 _expansion: det._expansion || false
             });
 
