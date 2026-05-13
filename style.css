@@ -1,10 +1,10 @@
 :root {
-    /* Meritz Fire Color Palette */
-    --bg-light: #EBEBEB;
-    --gray-mid: #8C8C8C;
-    --gray-dark: #404040;
-    --primary-dark: #A60000;
-    --primary-bright: #E60000;
+    /* Modern Navy Palette */
+    --bg-light: #ECEEF5;
+    --gray-mid: #7A7E8C;
+    --gray-dark: #1E2235;
+    --primary-dark: #0F2557;
+    --primary-bright: #2547B8;
     --white: #FFFFFF;
 
     /* Semantic Mappings */
@@ -39,8 +39,8 @@ body {
 
 .premium-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(166, 0, 0, 0.08);
-    border-color: rgba(166, 0, 0, 0.15);
+    box-shadow: 0 12px 30px rgba(15, 37, 87, 0.10);
+    border-color: rgba(37, 71, 184, 0.18);
 }
 
 /* Stagger animation */
@@ -60,14 +60,14 @@ body {
 /* Upload zone */
 .upload-zone {
     transition: all 0.3s ease;
-    border: 2px dashed rgba(166, 0, 0, 0.2);
+    border: 2px dashed rgba(37, 71, 184, 0.22);
     background: var(--white);
 }
 
 .upload-zone:hover,
 .upload-zone.dragover {
     border-color: var(--primary-color);
-    background: rgba(230, 0, 0, 0.02);
+    background: rgba(37, 71, 184, 0.03);
     transform: scale(1.005);
 }
 
@@ -144,8 +144,8 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle at 10% 20%, rgba(230, 0, 0, 0.03) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(166, 0, 0, 0.03) 0%, transparent 40%);
+    background: radial-gradient(circle at 10% 20%, rgba(37, 71, 184, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(15, 37, 87, 0.04) 0%, transparent 40%);
     pointer-events: none;
     z-index: -1;
 }
@@ -158,8 +158,8 @@ body {
 .title-accent {
     color: var(--primary-bright);
     letter-spacing: -0.04em;
-    text-shadow: 0 4px 15px rgba(230, 0, 0, 0.12);
-    background: linear-gradient(to right, #A60000, #E60000);
+    text-shadow: 0 4px 15px rgba(37, 71, 184, 0.15);
+    background: linear-gradient(to right, #0F2557, #2547B8, #4A78E8);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -171,6 +171,44 @@ body {
     letter-spacing: -0.03em;
     color: var(--gray-dark);
     font-weight: 800;
+}
+
+/* ══════════════════════════════════════════════
+   ── Global Navy Override (Default / Meritz) ──
+   Tailwind red → navy (기본 테마 전역 적용)
+   ══════════════════════════════════════════════ */
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .text-red-600,
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .text-red-500 { color: #2547B8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-600   { background-color: #2547B8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-50    { background-color: #EEF2FF !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-100   { background-color: #E0E7FF !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .border-red-600 { border-color: #2547B8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .border-red-100 { border-color: #C7D2FE !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .border-red-200 { border-color: #A5B4FC !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .border-red-300 { border-color: #818CF8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .ring-red-200  { --tw-ring-color: #C7D2FE !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .focus\:border-red-300:focus { border-color: #818CF8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .focus\:ring-red-200:focus   { --tw-ring-color: #C7D2FE !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .hover\:bg-red-100:hover { background-color: #E0E7FF !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .hover\:bg-red-700:hover { background-color: #0F2557 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .file\:bg-red-50    { background-color: #EEF2FF !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .file\:text-red-600 { color: #2547B8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-400  { background-color: #818CF8 !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .decoration-red-200 { text-decoration-color: #A5B4FC !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .border-red-500\/30 { border-color: rgba(37,71,184,0.3) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-500\/5  { background-color: rgba(37,71,184,0.05) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .bg-red-500\/10 { background-color: rgba(37,71,184,0.10) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .shadow-red-100 { --tw-shadow-color: rgba(37,71,184,0.12) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .ring-red-100   { --tw-ring-color: rgba(37,71,184,0.15) !important; }
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .underline      { text-decoration-color: rgba(37,71,184,0.35) !important; }
+
+/* welcome-code & badge dot */
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .welcome-code {
+    color: #2547B8 !important;
+    background: rgba(37, 71, 184, 0.06) !important;
+}
+body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme) .welcome-name::after {
+    background: #2547B8 !important;
 }
 
 /* ══════════════════════════════════════════════
