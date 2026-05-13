@@ -158,6 +158,24 @@ async function processFile(file) {
             const am = text.match(/피보험자[^\n]{0,20}?(\d{1,2})\s*세/);
             if (am) samsungMeta.age = parseInt(am[1], 10);
 
+            // ── DB 고객 이름 추출 ──
+            // 방법 1: "{이름}님 보장내용" 형태 (가입담보요약 페이지 헤더)
+            if (customerName === '고객') {
+                const nimMatch = text.match(/([가-힣]{2,5})님\s*보장내용/);
+                if (nimMatch) customerName = nimMatch[1];
+            }
+            // 방법 2: "[피보험자/66] {이름}" 또는 "/66] {이름}" 형태
+            if (customerName === '고객') {
+                const dbPiMatch = text.match(/\[피보험자[^\]]*\]\s*([가-힣]{2,5})/);
+                if (dbPiMatch) customerName = dbPiMatch[1];
+            }
+            // 방법 3: "피보험자 {이름}(주민번호)" 형태 (예: 홍길동(660710-1*))
+            if (customerName === '고객') {
+                const piNumMatch = text.match(/피보험자\s*([가-힣]{2,5})\s*\(\d{6}/);
+                if (piNumMatch) customerName = piNumMatch[1];
+            }
+            if (customerName !== '고객') console.log('[db] 고객이름:', customerName);
+
             console.log('[db meta]', samsungMeta);
         }
 

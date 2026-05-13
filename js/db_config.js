@@ -46,7 +46,8 @@ function findDBDetails(itemName) {
         return {
             type: 'passthrough',
             summaryTarget: '암수술비',
-            displayName: '하이클래스암 수술비'
+            displayName: '하이클래스암 수술비',
+            비급여: true
         };
     }
 
@@ -55,7 +56,8 @@ function findDBDetails(itemName) {
         return {
             type: 'passthrough-dual',
             displayName: '하이클래스암 항암방사선·약물치료비',
-            summaryTargets: ['항암방사선치료비', '항암약물치료비']
+            summaryTargets: ['항암방사선치료비', '항암약물치료비'],
+            비급여: true
         };
     }
 

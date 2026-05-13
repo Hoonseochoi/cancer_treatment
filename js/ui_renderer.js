@@ -429,6 +429,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             });
             detailHtml += `</div></div>`;
         }
+        const isHiclass = item.name.includes('하이클래스');
         itemCard.innerHTML = `
             <div class="flex items-center justify-between gap-4">
                 <div class="flex items-center gap-4 flex-1 min-w-0">
@@ -436,7 +437,9 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         ${icon}
                     </div>
                     <div class="min-w-0 flex-1">
-                        <h4 class="text-sm font-bold text-gray-800 truncate" title="${item.name}">${item.name}</h4>
+                        <h4 class="text-sm font-bold ${isHiclass ? 'text-red-600' : 'text-gray-800'} truncate" title="${item.name}">
+                            ${isHiclass ? '<span style="font-size:0.6rem;font-weight:800;color:#e53e3e;background:#fff1f1;padding:1px 5px;border-radius:3px;margin-right:4px;vertical-align:middle">(비급여)</span>' : ''}${item.name}
+                        </h4>
                         <div class="flex items-center gap-2 mt-0.5">
                             <p class="text-[11px] font-medium text-gray-400">${item.desc || '가입담보리스트 추출 항목'}</p>
                             ${details ? '<span class="text-[9px] font-black text-red-400 bg-red-50 px-1.5 py-0.5 rounded leading-none">세부내역 ▼</span>' : ''}
