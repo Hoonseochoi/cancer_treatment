@@ -42,6 +42,12 @@ function extractRawCoveragesDB(text) {
 
     const sectionLines = lines.slice(startIdx, endIdx);
     console.log(`[DB] 섹션 범위: lines ${startIdx}~${endIdx} (${sectionLines.length}줄)`);
+    // ── DEBUG: 번호 줄만 출력 (어떤 항목이 어떤 형태로 들어오는지 확인) ──
+    sectionLines.forEach((l, idx) => {
+        if (/^\d{1,3}\./.test(l)) {
+            console.log(`[DB DEBUG] sectLine[${idx}]: "${l.substring(0, 100)}"`);
+        }
+    });
 
     // ── 2. Skip patterns (page headers/footers interspersed across pages) ──
     const SKIP = [
