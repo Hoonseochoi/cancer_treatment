@@ -20,9 +20,9 @@ function extractRawCoveragesDB(text) {
         if (startIdx === -1 && norm === '가입담보요약') {
             startIdx = i;
         }
-        if (startIdx !== -1 && (norm.includes('보장보험료합계'))) {
+        if (startIdx !== -1 && norm.includes('보장보험료합계')) {
             endIdx = i;
-            break;
+            // break 제거: 다중 페이지 표에서 페이지마다 소계가 있으므로 마지막 합계 위치를 사용
         }
     }
 
@@ -80,8 +80,9 @@ function extractRawCoveragesDB(text) {
 
         if (shouldSkip(line)) { i++; continue; }
 
-        // Coverage item starts with: "20. (맞춤_간편고지Ⅱ)..."
-        const itemMatch = line.match(/^(\d{1,3})\.\s+(.+)/);
+        // Coverage item starts with: "20. (맞춤_간편고지Ⅱ)..." OR just "20." (번호만 있는 줄)
+        const itemMatch = line.match(/^(\d{1,3})\.\s+(.+)/) ||
+                          (line.match(/^(\d{1,3})\.\s*$/) ? ['', '', ''] : null);
         if (!itemMatch) { i++; continue; }
 
         // rawText accumulates name + possibly embedded amount (pdfjs single-line or merged)
