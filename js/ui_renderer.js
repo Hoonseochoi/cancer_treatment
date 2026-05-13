@@ -94,7 +94,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             expertImgBase64 = SBADA_B64;
         } else if (insurer === 'db') {
             expertName = "프로미";
-            expertImgBase64 = 'db/promy_top_icon.png';
+            expertImgBase64 = PROMY_B64;
         }
 
         insightSection.innerHTML = `
