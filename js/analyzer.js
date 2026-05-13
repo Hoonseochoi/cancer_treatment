@@ -205,6 +205,8 @@ function calculateHierarchicalSummary(results) {
                         displayName: normalizedName, // Temporary
                         totalMin: 0,
                         totalMax: 0,
+                        isolatedMin: 0,
+                        isolatedMax: 0,
                         items: []
                     });
                 }
@@ -214,6 +216,8 @@ function calculateHierarchicalSummary(results) {
                 const valMax = det.maxAmount ? parseKoAmount(det.maxAmount) : valMin;
                 group.totalMin += valMin;
                 group.totalMax += valMax;
+                group.isolatedMin += valMin;
+                group.isolatedMax += valMax;
                 group.items.push({
                     name: det.name,
                     amount: det.amount,

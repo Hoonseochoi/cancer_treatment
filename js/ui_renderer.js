@@ -62,8 +62,8 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
     let grandTotalMin = 0;
     let grandTotalMax = 0;
     summaryMap.forEach(d => {
-        grandTotalMin += d.isolatedMin;   // isolatedMin: 직접 보장 항목만 합산 (계층 전파 자식 이중계산 방지)
-        grandTotalMax += d.isolatedMax;
+        grandTotalMin += (d.isolatedMin ?? d.totalMin ?? 0);   // isolatedMin: 직접 보장 항목만 합산 (계층 전파 자식 이중계산 방지)
+        grandTotalMax += (d.isolatedMax ?? d.totalMax ?? 0);
     });
 
     // ── 커버리지 스냅샷 저장 ──
