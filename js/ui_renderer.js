@@ -6,7 +6,8 @@ function isYusamOrSpecificAmOnly(sub) {
                      !text.includes("유사암Ⅱ 제외") &&
                      !text.includes("유사암Ⅱ제외") &&
                      !text.includes("유사암 제외") &&
-                     !text.includes("유사암제외");
+                     !text.includes("유사암제외") &&
+                     !text.includes("유사암포함");  // 유사암포함 = 일반암도 커버하는 통합 담보, 필터 제외
     const isSpecificAm = text.includes("특정암") &&
                          !text.includes("특정암 제외") &&
                          !text.includes("특정암제외");
@@ -59,8 +60,8 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
     let grandTotalMin = 0;
     let grandTotalMax = 0;
     summaryMap.forEach(d => {
-        grandTotalMin += d.totalMin;
-        grandTotalMax += d.totalMax;
+        grandTotalMin += d.isolatedMin;   // isolatedMin: 직접 보장 항목만 합산 (계층 전파 자식 이중계산 방지)
+        grandTotalMax += d.isolatedMax;
     });
 
     // ── 커버리지 스냅샷 저장 ──
