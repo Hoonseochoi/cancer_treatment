@@ -239,9 +239,14 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                     }
                     const bigugeumTag = sub.비급여 ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(비급여)</span> ' : '';
                     const walletTag = sub.fromWallet ? '<span style="color:#DB2777;font-weight:800;font-size:0.65rem">(10억월렛)</span> ' : '';
+                    const stageTag = sub.stage === '4기'
+                        ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(4기)</span> '
+                        : sub.stage === '1~3기'
+                            ? '<span style="color:#F97316;font-weight:800;font-size:0.65rem">(1~3기)</span> '
+                            : '';
                     innerTreeHtml = `
                         <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
-                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${sub.name}</span>
+                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${sub.name}</span>
                             <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
                         </div>`;
                 }

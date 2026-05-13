@@ -208,10 +208,10 @@ function findHeungkukDetails(itemName) {
 // ── 월렛 하드코딩 데이터 ──
 // 9카드 합산 대상 (fromWallet: true → 핑크 태그 표시)
 const WALLET_CARD_ITEMS = [
-    { summaryTarget: '암수술비',        name: '비급여 암수술',          amount: '1,000만원', fromWallet: true },
-    { summaryTarget: '항암방사선치료비', name: '비급여 항암방사선치료',   amount: '5,000만원', fromWallet: true },
-    { summaryTarget: '항암약물치료비',   name: '비급여 항암약물(1~3기)', amount: '5,000만원', fromWallet: true },
-    { summaryTarget: '항암약물치료비',   name: '비급여 항암약물(4기)',   amount: '1억원',     fromWallet: true },
+    { summaryTarget: '암수술비',        name: '비급여 암수술',          amount: '1,000만원', fromWallet: true, 비급여: true },
+    { summaryTarget: '항암방사선치료비', name: '비급여 항암방사선치료',   amount: '5,000만원', fromWallet: true, 비급여: true },
+    { summaryTarget: '항암약물치료비',   name: '비급여 항암약물(1~3기)', amount: '5,000만원', fromWallet: true, 비급여: true, stage: '1~3기' },
+    { summaryTarget: '항암약물치료비',   name: '비급여 항암약물(4기)',   amount: '1억원',     fromWallet: true, 비급여: true, stage: '4기' },
 ];
 // 기타 사이드바 대상 (9카드 미해당)
 const WALLET_OTHER_ITEMS = [
@@ -261,6 +261,8 @@ function calculateHierarchicalSummaryHeungkuk(results) {
                     amount: wi.amount,
                     source: '플래티넘 건강 리셋 월렛',
                     fromWallet: true,
+                    비급여: wi.비급여 || false,
+                    stage: wi.stage || null,
                 });
             });
 
