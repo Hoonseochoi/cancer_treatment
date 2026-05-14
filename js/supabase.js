@@ -427,8 +427,13 @@ async function incrementInsurerCount(insurer) {
     if (!supabaseClient || !insurer) return;
     try {
         const key = `insurer_${insurer}`;
-        await supabaseClient.rpc('increment_analysis_counter', { counter_key: key });
-        console.log(`[insurer counter] ${key} 증가`);
+        await Promise.all([
+            // 기존 누적 카운터
+            supabaseClient.rpc('increment_analysis_counter', { counter_key: key }),
+            // 날짜별 카운터 (신규)
+            supabaseClient.rpc('increment_insurer_daily', { p_insurer: insurer })
+        ]);
+        console.log(`[insurer counter] ${key} 증가 (누적 + 일별)`);
     } catch (error) {
         console.error('Failed to increment insurer count:', error);
     }
