@@ -1,5 +1,5 @@
 // ── Heungkuk Fire Insurance (흥국화재) Coverage Config ──
-console.log('[흥국config] v20260514f 로드됨 ✅');
+console.log('[흥국config] v20260514g 로드됨 ✅');
 
 // ── findHeungkukDetails: keyword-based lookup for Heungkuk coverage names ──
 function findHeungkukDetails(itemName) {
@@ -72,65 +72,65 @@ function findHeungkukDetails(itemName) {
         };
     }
 
-    // ── 항암중입자방사선치료비 ──
+    // ── 항암중입자방사선치료비 → 항암방사선치료비에 합산 (하위 개념) ──
     if (n.includes('중입자')) {
         return {
             type: 'passthrough',
-            summaryTarget: '중입자방사선치료비',
+            summaryTarget: '항암방사선치료비',
             displayName: '항암중입자방사선치료비'
         };
     }
 
-    // ── 항암세기조절방사선치료비 ──
+    // ── 항암세기조절방사선치료비 → 항암방사선치료비에 합산 (하위 개념) ──
     if (n.includes('세기조절')) {
         return {
             type: 'passthrough',
-            summaryTarget: '세기조절방사선치료비',
+            summaryTarget: '항암방사선치료비',
             displayName: '항암세기조절방사선치료비'
         };
     }
 
-    // ── 항암양성자방사선치료비 ──
+    // ── 항암양성자방사선치료비 → 항암방사선치료비에 합산 (하위 개념) ──
     if (n.includes('양성자')) {
         return {
             type: 'passthrough',
-            summaryTarget: '양성자방사선치료비',
+            summaryTarget: '항암방사선치료비',
             displayName: '항암양성자방사선치료비'
         };
     }
 
-    // ── 특정면역항암약물허가치료비 → 면역항암약물치료비 ──
+    // ── 특정면역항암약물허가치료비 → 항암약물치료비에 합산 (하위 개념) ──
     if (n.includes('특정면역항암') || (n.includes('면역항암') && !n.includes('카티') && !n.includes('CAR'))) {
         return {
             type: 'passthrough',
-            summaryTarget: '면역항암약물치료비',
+            summaryTarget: '항암약물치료비',
             displayName: '특정면역항암약물허가치료비'
         };
     }
 
-    // ── 카티(CAR-T) 항암약물허가치료비 → 면역항암약물치료비 ──
+    // ── 카티(CAR-T) 항암약물허가치료비 → 항암약물치료비에 합산 (하위 개념) ──
     if (n.includes('카티') || n.includes('CAR-T') || n.includes('CAR T')) {
         return {
             type: 'passthrough',
-            summaryTarget: '면역항암약물치료비',
+            summaryTarget: '항암약물치료비',
             displayName: '카티(CAR-T) 항암약물허가치료비'
         };
     }
 
-    // ── 표적항암약물허가치료비 ──
+    // ── 표적항암약물허가치료비 → 항암약물치료비에 합산 (하위 개념) ──
     if (n.includes('표적항암')) {
         return {
             type: 'passthrough',
-            summaryTarget: '표적항암약물치료비',
+            summaryTarget: '항암약물치료비',
             displayName: '표적항암약물허가치료비'
         };
     }
 
-    // ── 다빈치및레보아이로봇 수술비 → 다빈치로봇수술비 ──
+    // ── 다빈치및레보아이로봇 수술비 → 암수술비에 합산 (하위 개념) ──
     if ((n.includes('다빈치') || n.includes('레보아이')) && (n.includes('수술비') || n.includes('암수술'))) {
         return {
             type: 'passthrough',
-            summaryTarget: '다빈치로봇수술비',
+            summaryTarget: '암수술비',
             displayName: '다빈치·레보아이로봇 암수술비'
         };
     }
@@ -473,7 +473,8 @@ function calculateHierarchicalSummaryHeungkuk(results) {
                 _expansion: det._expansion || false
             });
 
-            if (!det._expansion && (det.name.length > group.displayName.length || group.displayName === normalizedName)) {
+            // targetName이 있는 경우(=상위 카드에 합산되는 하위 개념)는 카드명 덮어쓰기 금지
+            if (!det._expansion && !det.targetName && (det.name.length > group.displayName.length || group.displayName === normalizedName)) {
                 const cleanName = det.name.replace(/\([^)]*\)/g, '').trim();
                 if (cleanName.length > 0) group.displayName = cleanName;
             }
