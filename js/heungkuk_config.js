@@ -217,9 +217,34 @@ function findHeungkukDetails(itemName) {
         };
     }
 
+    // ── 상급종합병원통합치료비II (비급여포함) → sanggup2 타입 (하드코딩) ──
+    if (n.includes('상급종합병원') && (n.includes('통합치료') || n.includes('통합치료비'))) {
+        return { type: 'sanggup2' };
+    }
+
     // 그 외 (암주요치료비 포함하지만 세부 분류 없는 경우) → null
     return null;
 }
+
+// ── 상급종합병원통합치료비II (비급여포함) 하드코딩 데이터 ──
+// 이미지 기준: 상급 통치 II 오른쪽 표
+const SANGGUP2_CARD_ITEMS = [
+    // ③ 상급종합병원 암주요치료비 (급여)
+    { summaryTarget: '암수술비',           name: '상급종합병원 암수술비',         amount: '500만원' },
+    { summaryTarget: '항암방사선치료비',    name: '상급종합병원 항암방사선치료비', amount: '1,000만원' },
+    { summaryTarget: '항암약물치료비',      name: '상급종합병원 항암약물치료비',   amount: '1,000만원' },
+    // ⑦ 비급여 암 주요치료
+    { summaryTarget: '암수술비',           name: '비급여 암수술비 (상급종합)',     amount: '1,000만원', 비급여: true },
+    { summaryTarget: '항암방사선치료비',    name: '비급여 항암방사선 (상급종합)',  amount: '1,000만원', 비급여: true },
+    { summaryTarget: '항암약물치료비',      name: '비급여 항암약물 (상급종합)',    amount: '1,000만원', 비급여: true },
+];
+// 기타 사이드바 (9카드 미해당)
+const SANGGUP2_OTHER_ITEMS = [
+    { name: '상급종합병원 암 중환자실치료비',          amount: '1,000만원' },
+    { name: '상급종합병원 항암호르몬치료비',            amount: '300만원' },
+    { name: '상급종합병원 질병수술비 (8대질병제외)',    amount: '50만원/회' },
+    { name: '3대질병 MRI검사지원비',                   amount: '7만원/연' },
+];
 
 // ── 월렛 하드코딩 데이터 ──
 // 9카드 합산 대상 (fromWallet: true → 핑크 태그 표시)
@@ -245,10 +270,46 @@ const WALLET_OTHER_ITEMS = [
 function calculateHierarchicalSummaryHeungkuk(results) {
     const summaryMap = new Map();
     let walletDetected = false;
+    let sanggup2Detected = false;
 
     results.forEach(item => {
         let details = findHeungkukDetails(item.name);
         if (!details) return;
+
+        // ── sanggup2 타입: 상급종합병원통합치료비II(비급여포함) 하드코딩 분배 ──
+        if (details.type === 'sanggup2') {
+            if (sanggup2Detected) return; // 중복 방지
+            sanggup2Detected = true;
+
+            SANGGUP2_CARD_ITEMS.forEach(wi => {
+                const target = wi.summaryTarget;
+                if (!summaryMap.has(target)) {
+                    summaryMap.set(target, {
+                        displayName: target,
+                        totalMin: 0, totalMax: 0,
+                        isolatedMin: 0, isolatedMax: 0,
+                        items: []
+                    });
+                }
+                const group = summaryMap.get(target);
+                const val = parseKoAmount(wi.amount);
+                group.totalMin += val;
+                group.totalMax += val;
+                group.isolatedMin += val;
+                group.isolatedMax += val;
+                group.items.push({
+                    name: wi.name,
+                    amount: wi.amount,
+                    source: '상급종합병원통합치료비II(비급여포함)',
+                    fromSanggup2: true,
+                    비급여: wi.비급여 || false,
+                });
+            });
+
+            // 기타 항목 → 사이드바 전역 저장
+            window._heungkukSanggup2Others = SANGGUP2_OTHER_ITEMS;
+            return;
+        }
 
         // ── wallet 타입: 하드코딩 항목 분배 ──
         if (details.type === 'wallet') {

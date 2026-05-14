@@ -325,11 +325,13 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         });
 
         // ── 기타 담보 패널 렌더링 ──
-        const walletOthers = (insurer === 'heungkuk') ? (window._heungkukWalletOthers || null) : null;
-        const hasOtherItems = otherItems.length > 0;
-        const hasWalletOthers = walletOthers && walletOthers.length > 0;
+        const walletOthers   = (insurer === 'heungkuk') ? (window._heungkukWalletOthers   || null) : null;
+        const sanggup2Others = (insurer === 'heungkuk') ? (window._heungkukSanggup2Others || null) : null;
+        const hasOtherItems    = otherItems.length > 0;
+        const hasWalletOthers  = walletOthers  && walletOthers.length  > 0;
+        const hasSanggup2Others = sanggup2Others && sanggup2Others.length > 0;
 
-        if (otherContainer && (hasOtherItems || hasWalletOthers)) {
+        if (otherContainer && (hasOtherItems || hasWalletOthers || hasSanggup2Others)) {
             otherContainer.classList.remove('hidden');
 
             // ── 월렛 기타담보 섹션 (흥국 전용, 최상단) ──
@@ -355,6 +357,31 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         <p class="text-[11px] font-bold text-gray-700 leading-snug flex-1">${wi.name}${noteHtml}</p>
                         <span class="text-[13px] font-black font-outfit flex-shrink-0" style="color:#DB2777;">${wi.amount}</span>`;
                     wList.appendChild(row);
+                });
+            }
+
+            // ── 상급종합병원통합치료비II 기타담보 섹션 (흥국 전용) ──
+            if (hasSanggup2Others) {
+                const sg2Panel = document.createElement('div');
+                sg2Panel.className = "premium-card rounded-3xl p-5 flex flex-col gap-3 mb-4";
+                sg2Panel.style.border = "1.5px dashed rgba(59,130,246,0.35)";
+                sg2Panel.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">🏥</span>
+                        <h4 class="text-sm font-black" style="color:#1D4ED8;">상급종합병원통합치료비II 기타담보</h4>
+                    </div>
+                    <p class="text-[10px] text-gray-400 font-medium -mt-1">암 치료비 집계 외 포함 보장 항목</p>
+                    <div id="sanggup2-other-list" class="flex flex-col gap-0"></div>`;
+                otherContainer.appendChild(sg2Panel);
+
+                const sg2List = sg2Panel.querySelector('#sanggup2-other-list');
+                sanggup2Others.forEach(wi => {
+                    const row = document.createElement('div');
+                    row.className = "flex items-center justify-between gap-2 py-2 border-b border-blue-50 last:border-0";
+                    row.innerHTML = `
+                        <p class="text-[11px] font-bold text-gray-700 leading-snug flex-1">${wi.name}</p>
+                        <span class="text-[13px] font-black font-outfit flex-shrink-0" style="color:#1D4ED8;">${wi.amount}</span>`;
+                    sg2List.appendChild(row);
                 });
             }
 
