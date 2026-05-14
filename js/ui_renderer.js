@@ -66,9 +66,14 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         grandTotalMax += (d.isolatedMax ?? d.totalMax ?? 0);
     });
 
-    // ── 커버리지 스냅샷 저장 ──
+    // ── 커버리지 스냅샷 저장 (전 보험사 공통) ──
     if (['samsung', 'db', 'heungkuk', 'meritz'].includes(insurer) && typeof logCoverageSnapshot === 'function') {
         logCoverageSnapshot(meta.fileName, insurer, meta, grandTotalMin, grandTotalMax, summaryMap);
+    }
+
+    // ── 삼성화재 상세 제안서 저장 (RC / 대리점 / 설계번호 포함) ──
+    if (insurer === 'samsung' && typeof logSamsungProposal === 'function') {
+        logSamsungProposal(meta, summaryMap);
     }
 
     // ── Render 5-Year Insight Card ──

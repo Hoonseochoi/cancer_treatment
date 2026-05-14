@@ -152,6 +152,20 @@ async function processFile(file) {
                         text.match(/보험료\s*([\d,]+)\s*원\s*\(매월\)/);
             if (prm) samsungMeta.premium = parseInt(prm[1].replace(/,/g, ''), 10);
 
+            // 설계번호
+            const dnM = text.match(/설계번호\s*[:：]?\s*([\w\-]+)/);
+            if (dnM) samsungMeta.designNo = dnM[1].trim();
+
+            // RC (소속 RC 또는 "경인0센터" 형태)
+            const rcM = text.match(/소속\s*RC\s*[:：]?\s*([^\n\r]{2,30})/) ||
+                        text.match(/RC\s*[:：]\s*([^\n\r]{2,30})/i);
+            if (rcM) samsungMeta.rc = rcM[1].trim();
+
+            // 대리점/지사명 (주식회사 ~~~~)
+            const agM = text.match(/(?:보험)?\s*대리점(?:명)?\s*[:：]?\s*([^\n\r]{2,50})/) ||
+                        text.match(/((?:주식회사|\(주\))[^\n\r\s()]{1,30})/);
+            if (agM) samsungMeta.agency = agM[1].trim();
+
             console.log('[samsung meta]', samsungMeta);
         } else if (insurer === 'db') {
             // 상품명: "무배당 프로미라이프 ..." 형태 (같은 줄 우선, 없으면 다음 줄)

@@ -178,6 +178,40 @@ async function logCoverageSnapshot(fileName, insurer, meta, grandTotalMin, grand
 }
 window.logCoverageSnapshot = logCoverageSnapshot;
 
+/**
+ * ── 삼성화재 제안서 상세 로깅 ──
+ * 삼성 PDF 분석 완료 시 상품명 / 파일명 / RC / 대리점명 / 설계번호 / 보험료 / 9카드 저장
+ * 테이블: samsung_proposals
+ */
+async function logSamsungProposal(meta, summaryMap) {
+    if (!supabaseClient) return;
+    try {
+        const cards = {};
+        SNAPSHOT_CARD_KEYS.forEach(key => {
+            const data = summaryMap.get(key);
+            cards[key] = data ? { min: data.totalMin, max: data.totalMax } : { min: 0, max: 0 };
+        });
+
+        const { error } = await supabaseClient
+            .from('samsung_proposals')
+            .insert([{
+                file_name:    meta.fileName    || null,
+                product_name: meta.productName || null,
+                design_no:    meta.designNo    || null,
+                rc:           meta.rc          || null,
+                agency:       meta.agency      || null,
+                age:          meta.age         || null,
+                premium:      meta.premium     || null,
+                cards:        cards
+            }]);
+        if (error) throw error;
+        console.log('[samsung_proposal] 저장 완료', { designNo: meta.designNo, rc: meta.rc, agency: meta.agency });
+    } catch (err) {
+        console.error('logSamsungProposal failed:', err);
+    }
+}
+window.logSamsungProposal = logSamsungProposal;
+
 /** 실행 횟수로 레벨 계산 (LEVEL_THRESHOLDS 기준) */
 function calculateLevelFromCount(count) {
     let level = 1;
