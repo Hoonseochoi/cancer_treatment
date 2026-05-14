@@ -1,5 +1,5 @@
 // ── Heungkuk Fire Insurance (흥국화재) Coverage Config ──
-console.log('[흥국config] v20260514j 로드됨 ✅');
+console.log('[흥국config] v20260515a 로드됨 ✅');
 
 // ── findHeungkukDetails: keyword-based lookup for Heungkuk coverage names ──
 function findHeungkukDetails(itemName) {
@@ -520,6 +520,10 @@ function calculateHierarchicalSummaryHeungkuk(results) {
             // 부모 직접 금액을 자식 totalMin에 추가 (자식 own은 이미 isolatedMin에 있음)
             c.totalMin += p.totalMin;
             c.totalMax += p.totalMax;
+            // 부모 세부내역(items)도 자식 카드에 복사 (_fromParent 표시)
+            p.items.filter(item => !item._expansion).forEach(item => {
+                c.items.unshift({ ...item, _fromParent: true });
+            });
         });
     });
 
