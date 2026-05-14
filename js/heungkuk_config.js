@@ -1,11 +1,24 @@
 // ── Heungkuk Fire Insurance (흥국화재) Coverage Config ──
+console.log('[흥국config] v20260514c 로드됨 ✅');
 
 // ── findHeungkukDetails: keyword-based lookup for Heungkuk coverage names ──
 function findHeungkukDetails(itemName) {
     if (!itemName) return null;
     const n = itemName.trim();
 
-    // ── SKIP: 생활비 (skip, 집계 대상 아님) ──
+    // ── 생활비: 1회당은 3카드 합산, 2~3회이상은 사이드바, 기타는 skip ──
+    if (n.includes('생활비') && (n.includes('1회당') || n.includes('1회한'))) {
+        return {
+            type: 'passthrough-dual',
+            displayName: '생활비(1회)',
+            summaryTargets: ['암수술비', '항암방사선치료비', '항암약물치료비'],
+            expandHierarchy: false,
+            비급여: n.includes('비급여')
+        };
+    }
+    if (n.includes('생활비') && (n.includes('2회') || n.includes('3회'))) {
+        return { type: 'livingcost-other' };
+    }
     if (n.includes('생활비')) return null;
 
     // ── SKIP: 진단비 (암진단비, 유사암진단비 등) ──
@@ -18,9 +31,6 @@ function findHeungkukDetails(itemName) {
 
     // ── SKIP: 납입면제, 납입지원 ──
     if (n.includes('납입면제') || n.includes('납입지원')) return null;
-
-    // ── SKIP: 암주요치료(유사암) 생활비 ──
-    if (n.includes('유사암') && n.includes('생활비')) return null;
 
     // ── 항암방사선약물치료비 (방사선+약물 통합형) ──
     if (n.includes('항암방사선약물치료비')) {
@@ -116,8 +126,8 @@ function findHeungkukDetails(itemName) {
         };
     }
 
-    // ── 다빈치및레보아이로봇 암수술비 → 다빈치로봇수술비 ──
-    if ((n.includes('다빈치') || n.includes('레보아이') || n.includes('로봇')) && n.includes('암수술')) {
+    // ── 다빈치및레보아이로봇 수술비 → 다빈치로봇수술비 ──
+    if ((n.includes('다빈치') || n.includes('레보아이')) && (n.includes('수술비') || n.includes('암수술'))) {
         return {
             type: 'passthrough',
             summaryTarget: '다빈치로봇수술비',
@@ -262,7 +272,7 @@ const WALLET_OTHER_ITEMS = [
     { name: '상급종합병원 질병수술비',   amount: '50만원' },
     { name: '특정순환계질환 수술비',     amount: '500만원' },
     { name: '질병 동반입원비Ⅲ (최대)',  amount: '500만원' },
-    { name: '상해사망',                 amount: '잔고 30%' },
+    { name: '상해사망',                 amount: '잔고 30%', note: '★선택사항' },
 ];
 
 // ── calculateHierarchicalSummaryHeungkuk ──
@@ -345,6 +355,20 @@ function calculateHierarchicalSummaryHeungkuk(results) {
 
             // 기타 항목 → 전역 저장 (ui_renderer에서 사용)
             window._heungkukWalletOthers = WALLET_OTHER_ITEMS;
+            return;
+        }
+
+        // ── livingcost-other 타입: 생활비(2회~3회이상) → 사이드바 전역 저장 ──
+        if (details.type === 'livingcost-other') {
+            if (!window._heungkukLivingCostOthers) window._heungkukLivingCostOthers = [];
+            const existing = window._heungkukLivingCostOthers.find(x => x.source === item.name);
+            if (!existing) {
+                window._heungkukLivingCostOthers.push({
+                    name: '생활비(2회~3회이상)',
+                    amount: item.amount,
+                    source: item.name
+                });
+            }
             return;
         }
 
@@ -455,33 +479,6 @@ function calculateHierarchicalSummaryHeungkuk(results) {
             }
         });
     });
-
-    // ── 상위→하위 계층 누적 (CATEGORY_HIERARCHY 전파) ──
-    if (typeof CATEGORY_HIERARCHY !== 'undefined') {
-        const hierSnap = new Map();
-        summaryMap.forEach((v, k) => hierSnap.set(k, {
-            isolatedMin: v.isolatedMin,
-            isolatedMax: v.isolatedMax,
-            items: v.items.filter(i => !i._expansion)
-        }));
-        summaryMap.forEach(v => { v.totalMin = v.isolatedMin; v.totalMax = v.isolatedMax; });
-        Object.entries(CATEGORY_HIERARCHY).forEach(([parent, children]) => {
-            const snap = hierSnap.get(parent);
-            if (!snap || snap.isolatedMin === 0) return;
-            children.forEach(child => {
-                if (!summaryMap.has(child)) {
-                    summaryMap.set(child, { displayName: child, totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0, items: [] });
-                }
-                const childGroup = summaryMap.get(child);
-                childGroup.totalMin += snap.isolatedMin;
-                childGroup.totalMax += snap.isolatedMax;
-                snap.items.forEach(pItem => {
-                    const isDup = childGroup.items.some(ci => ci.name === pItem.name && ci.source === pItem.source);
-                    if (!isDup) childGroup.items.push({ ...pItem, fromParent: true });
-                });
-            });
-        });
-    }
 
     return summaryMap;
 }

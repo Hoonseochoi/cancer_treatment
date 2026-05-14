@@ -1,3 +1,4 @@
+console.log('[ui_renderer] v20260514b 로드됨 ✅');
 // ── 유사암/특정암 전용 서브아이템 판별 (일반암 기준 표기용) ──
 // "유사암 제외", "특정암 제외" 는 일반암이므로 표시 유지
 function isYusamOrSpecificAmOnly(sub) {
@@ -32,6 +33,11 @@ function showToast(msg, isError = true) {
 
 // Raw List Renderer (Updated for Hierarchical Summary and Insight Card)
 function renderResults(results, customerName = '고객', insurer = 'meritz', meta = {}) {
+    // ── 흥국화재 전역 상태 초기화 (분석 시작마다 리셋) ──
+    window._heungkukSanggup2Others = null;
+    window._heungkukWalletOthers = null;
+    window._heungkukLivingCostOthers = null;
+
     const listEl = document.getElementById('results-list');
     const summaryGrid = document.getElementById('summary-grid');
     const resultsSection = document.getElementById('results-section');
@@ -325,13 +331,15 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         });
 
         // ── 기타 담보 패널 렌더링 ──
-        const walletOthers   = (insurer === 'heungkuk') ? (window._heungkukWalletOthers   || null) : null;
-        const sanggup2Others = (insurer === 'heungkuk') ? (window._heungkukSanggup2Others || null) : null;
-        const hasOtherItems    = otherItems.length > 0;
-        const hasWalletOthers  = walletOthers  && walletOthers.length  > 0;
-        const hasSanggup2Others = sanggup2Others && sanggup2Others.length > 0;
+        const walletOthers      = (insurer === 'heungkuk') ? (window._heungkukWalletOthers      || null) : null;
+        const sanggup2Others    = (insurer === 'heungkuk') ? (window._heungkukSanggup2Others    || null) : null;
+        const livingCostOthers  = (insurer === 'heungkuk') ? (window._heungkukLivingCostOthers  || null) : null;
+        const hasOtherItems       = otherItems.length > 0;
+        const hasWalletOthers     = walletOthers     && walletOthers.length     > 0;
+        const hasSanggup2Others   = sanggup2Others   && sanggup2Others.length   > 0;
+        const hasLivingCostOthers = livingCostOthers && livingCostOthers.length > 0;
 
-        if (otherContainer && (hasOtherItems || hasWalletOthers || hasSanggup2Others)) {
+        if (otherContainer && (hasOtherItems || hasWalletOthers || hasSanggup2Others || hasLivingCostOthers)) {
             otherContainer.classList.remove('hidden');
 
             // ── 월렛 기타담보 섹션 (흥국 전용, 최상단) ──
@@ -382,6 +390,31 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         <p class="text-[11px] font-bold text-gray-700 leading-snug flex-1">${wi.name}</p>
                         <span class="text-[13px] font-black font-outfit flex-shrink-0" style="color:#1D4ED8;">${wi.amount}</span>`;
                     sg2List.appendChild(row);
+                });
+            }
+
+            // ── 생활비(2회~3회이상) 기타담보 섹션 (흥국 전용) ──
+            if (hasLivingCostOthers) {
+                const lcPanel = document.createElement('div');
+                lcPanel.className = "premium-card rounded-3xl p-5 flex flex-col gap-3 mb-4";
+                lcPanel.style.border = "1.5px dashed rgba(22,163,74,0.35)";
+                lcPanel.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">💰</span>
+                        <h4 class="text-sm font-black" style="color:#15803D;">생활비 담보 (2회~3회이상)</h4>
+                    </div>
+                    <p class="text-[10px] text-gray-400 font-medium -mt-1">암 치료비 집계 외 추가 생활비 보장</p>
+                    <div id="livingcost-other-list" class="flex flex-col gap-0"></div>`;
+                otherContainer.appendChild(lcPanel);
+
+                const lcList = lcPanel.querySelector('#livingcost-other-list');
+                livingCostOthers.forEach(wi => {
+                    const row = document.createElement('div');
+                    row.className = "flex items-center justify-between gap-2 py-2 border-b border-green-50 last:border-0";
+                    row.innerHTML = `
+                        <p class="text-[11px] font-bold text-gray-700 leading-snug flex-1">${wi.name}</p>
+                        <span class="text-[13px] font-black font-outfit flex-shrink-0" style="color:#15803D;">${wi.amount}</span>`;
+                    lcList.appendChild(row);
                 });
             }
 
