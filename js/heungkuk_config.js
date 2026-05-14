@@ -1,5 +1,5 @@
 // ── Heungkuk Fire Insurance (흥국화재) Coverage Config ──
-console.log('[흥국config] v20260514i 로드됨 ✅');
+console.log('[흥국config] v20260514j 로드됨 ✅');
 
 // ── findHeungkukDetails: keyword-based lookup for Heungkuk coverage names ──
 function findHeungkukDetails(itemName) {
@@ -493,24 +493,34 @@ function calculateHierarchicalSummaryHeungkuk(results) {
     // ── Step 1: totalMin을 isolatedMin으로 초기화 (_expansion 아티팩트 제거) ──
     summaryMap.forEach(v => { v.totalMin = v.isolatedMin; v.totalMax = v.isolatedMax; });
 
-    // ── Step 2: 포함관계 반영 — 자식 카드 금액을 부모 카드 totalMin에 누적 ──
-    // 부모 카드: COVERAGE TOTAL에 자식 포함 금액 표시
+    // ── Step 2: 포함관계 반영 — 부모 카드 금액을 자식 카드에 하향 전파 ──
+    // 자식 카드 totalMin = 부모 isolatedMin + 자식 own isolatedMin
+    // 예) 항암방사선 6,500만 + 중입자 자체 5,000만 → 중입자 카드에 11,500만 표시
+    // 예) 항암약물 16,500만, 표적 자체 없음 → 표적 카드도 16,500만 표시 (카드 자동 생성)
     // 집계(grandTotal)는 isolatedMin 사용 → 이중계산 없음
-    const HEUNGKUK_CHILD_TO_PARENT = {
-        '중입자방사선치료비':   '항암방사선치료비',
-        '양성자방사선치료비':   '항암방사선치료비',
-        '세기조절방사선치료비': '항암방사선치료비',
-        '표적항암약물치료비':   '항암약물치료비',
-        '면역항암약물치료비':   '항암약물치료비',
-        '다빈치로봇수술비':     '암수술비',
+    const HEUNGKUK_PARENT_TO_CHILDREN = {
+        '항암방사선치료비': ['중입자방사선치료비', '양성자방사선치료비', '세기조절방사선치료비'],
+        '항암약물치료비':   ['표적항암약물치료비', '면역항암약물치료비'],
+        '암수술비':         ['다빈치로봇수술비'],
     };
-    Object.entries(HEUNGKUK_CHILD_TO_PARENT).forEach(([child, parent]) => {
-        if (summaryMap.has(child) && summaryMap.has(parent)) {
-            const p = summaryMap.get(parent);
+    Object.entries(HEUNGKUK_PARENT_TO_CHILDREN).forEach(([parent, children]) => {
+        if (!summaryMap.has(parent)) return;
+        const p = summaryMap.get(parent);
+        children.forEach(child => {
+            // 자식 카드가 없으면 빈 카드 자동 생성
+            if (!summaryMap.has(child)) {
+                summaryMap.set(child, {
+                    displayName: child,
+                    totalMin: 0, totalMax: 0,
+                    isolatedMin: 0, isolatedMax: 0,
+                    items: []
+                });
+            }
             const c = summaryMap.get(child);
-            p.totalMin += c.totalMin;
-            p.totalMax += c.totalMax;
-        }
+            // 부모 직접 금액을 자식 totalMin에 추가 (자식 own은 이미 isolatedMin에 있음)
+            c.totalMin += p.totalMin;
+            c.totalMax += p.totalMax;
+        });
     });
 
     return summaryMap;
