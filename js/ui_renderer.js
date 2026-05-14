@@ -1,4 +1,4 @@
-console.log('[ui_renderer] v20260514b 로드됨 ✅');
+console.log('[ui_renderer] v20260514d 로드됨 ✅');
 // ── 유사암/특정암 전용 서브아이템 판별 (일반암 기준 표기용) ──
 // "유사암 제외", "특정암 제외" 는 일반암이므로 표시 유지
 function isYusamOrSpecificAmOnly(sub) {
@@ -214,7 +214,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             const seenSubKeys = new Set();
             const dedupedItems = data.items.filter(sub => {
                 if (isYusamOrSpecificAmOnly(sub)) return false;
-                const key = sub.name + '|' + sub.amount;
+                const key = sub.name + '|' + sub.amount + '|' + (sub.source || '');
                 if (seenSubKeys.has(key)) return false;
                 seenSubKeys.add(key);
                 return true;

@@ -1,5 +1,5 @@
 // ── Heungkuk Fire Insurance (흥국화재) Coverage Config ──
-console.log('[흥국config] v20260514e 로드됨 ✅');
+console.log('[흥국config] v20260514f 로드됨 ✅');
 
 // ── findHeungkukDetails: keyword-based lookup for Heungkuk coverage names ──
 function findHeungkukDetails(itemName) {
@@ -384,10 +384,10 @@ function calculateHierarchicalSummaryHeungkuk(results) {
             }];
         }
 
-        // Passthrough-Dual → multiple targets (with optional CATEGORY_HIERARCHY expansion)
+        // Passthrough-Dual → multiple targets (흥국은 계층 전파 없음, 각 담보 독립 집계)
         if (details && details.type === 'passthrough-dual') {
             const displayName = details.displayName;
-            const shouldExpand = details.expandHierarchy !== false;
+            const shouldExpand = false; // 흥국: CATEGORY_HIERARCHY 전파 완전 차단
             const isYusamOnly = details.isYusamOnly || false;
             const isBigugeumDual = details.비급여 || false;
             const directTargets = details.summaryTargets;
