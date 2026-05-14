@@ -1,5 +1,5 @@
 // ── Heungkuk Fire Insurance (흥국화재) Coverage Config ──
-console.log('[흥국config] v20260514h 로드됨 ✅');
+console.log('[흥국config] v20260514i 로드됨 ✅');
 
 // ── findHeungkukDetails: keyword-based lookup for Heungkuk coverage names ──
 function findHeungkukDetails(itemName) {
@@ -490,10 +490,28 @@ function calculateHierarchicalSummaryHeungkuk(results) {
         });
     });
 
-    // ── totalMin을 isolatedMin으로 최종 정리 ──
-    // _expansion 항목은 시각적 서브아이템용이며 금액 집계에서 제외
-    // 흥국은 CATEGORY_HIERARCHY 계층전파 없이 직접 담보 금액만 합산
+    // ── Step 1: totalMin을 isolatedMin으로 초기화 (_expansion 아티팩트 제거) ──
     summaryMap.forEach(v => { v.totalMin = v.isolatedMin; v.totalMax = v.isolatedMax; });
+
+    // ── Step 2: 포함관계 반영 — 자식 카드 금액을 부모 카드 totalMin에 누적 ──
+    // 부모 카드: COVERAGE TOTAL에 자식 포함 금액 표시
+    // 집계(grandTotal)는 isolatedMin 사용 → 이중계산 없음
+    const HEUNGKUK_CHILD_TO_PARENT = {
+        '중입자방사선치료비':   '항암방사선치료비',
+        '양성자방사선치료비':   '항암방사선치료비',
+        '세기조절방사선치료비': '항암방사선치료비',
+        '표적항암약물치료비':   '항암약물치료비',
+        '면역항암약물치료비':   '항암약물치료비',
+        '다빈치로봇수술비':     '암수술비',
+    };
+    Object.entries(HEUNGKUK_CHILD_TO_PARENT).forEach(([child, parent]) => {
+        if (summaryMap.has(child) && summaryMap.has(parent)) {
+            const p = summaryMap.get(parent);
+            const c = summaryMap.get(child);
+            p.totalMin += c.totalMin;
+            p.totalMax += c.totalMax;
+        }
+    });
 
     return summaryMap;
 }
