@@ -156,15 +156,16 @@ async function processFile(file) {
             const dnM = text.match(/설계번호\s*[:：]?\s*([\w\-]+)/);
             if (dnM) samsungMeta.designNo = dnM[1].trim();
 
-            // RC (소속 RC 또는 "경인0센터" 형태)
-            const rcM = text.match(/소속\s*RC\s*[:：]?\s*([^\n\r]{2,30})/) ||
-                        text.match(/RC\s*[:：]\s*([^\n\r]{2,30})/i);
-            if (rcM) samsungMeta.rc = rcM[1].trim();
-
-            // 대리점/지사명 (주식회사 ~~~~)
-            const agM = text.match(/(?:보험)?\s*대리점(?:명)?\s*[:：]?\s*([^\n\r]{2,50})/) ||
-                        text.match(/((?:주식회사|\(주\))[^\n\r\s()]{1,30})/);
+            // 대리점명 + 설계사명: "(주)글로벌금융판매케이엘인슈주안(김진숙)" 패턴
+            // agency: (주) 또는 주식회사 부터 한글이름 괄호 직전까지
+            const agM = text.match(/((?:주식회사|\(주\)|\(유\))[^\n\r()]{2,50}?)\s*(?=\([가-힣]{2,5}\))/) ||
+                        text.match(/(?:보험)?\s*대리점(?:명)?\s*[:：]?\s*([^\n\r()]{2,50}?)\s*(?=\([가-힣]{2,5}\))/);
             if (agM) samsungMeta.agency = agM[1].trim();
+
+            // 설계사명(RC): 대리점명 바로 옆 괄호 안 한글 이름 (2~5자)
+            const rcM = text.match(/(?:주식회사|\(주\)|\(유\))[^\n\r()]{2,60}\(([가-힣]{2,5})\)/) ||
+                        text.match(/대리점[^\n\r()]{2,60}\(([가-힣]{2,5})\)/);
+            if (rcM) samsungMeta.rc = rcM[1].trim();
 
             console.log('[samsung meta]', samsungMeta);
         } else if (insurer === 'db') {
