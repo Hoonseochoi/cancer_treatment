@@ -30,7 +30,7 @@
       padding: 16px 24px;
     }
     .nav-logo { font-size: 0.95rem; font-weight: 800; color: #111; text-decoration: none; letter-spacing: -0.5px; }
-    .nav-back { font-size: 0.82rem; font-weight: 600; color: #9ca3af; text-decoration: none; transition: color 0.2s; }
+    .nav-back  { font-size: 0.82rem; font-weight: 600; color: #9ca3af; text-decoration: none; transition: color 0.2s; }
     .nav-back:hover { color: #111; }
 
     /* ── CONTENT ── */
@@ -42,16 +42,12 @@
       letter-spacing: 2px; text-transform: uppercase; color: #9ca3af; margin-bottom: 20px;
     }
     .hero-title {
-      font-size: clamp(2.4rem, 6vw, 4rem);
-      font-weight: 900; letter-spacing: -2.5px; line-height: 1.06;
-      color: #111; margin-bottom: 24px;
+      font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 900;
+      letter-spacing: -2.5px; line-height: 1.06; color: #111; margin-bottom: 24px;
     }
-    .hero-sub { font-size: 1rem; color: #6b7280; max-width: 500px; line-height: 1.8; margin-bottom: 40px; }
+    .hero-sub { font-size: 1rem; color: #6b7280; max-width: 460px; line-height: 1.8; margin-bottom: 40px; }
     .hero-badges { display: flex; gap: 8px; flex-wrap: wrap; }
-    .hero-badge { font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 10px; }
-    .badge-surgery   { background: #eff6ff; color: #1d4ed8; }
-    .badge-radiation { background: #fff7ed; color: #c2410c; }
-    .badge-drug      { background: #f0fdf4; color: #15803d; }
+    .hero-badge { font-size: 0.75rem; font-weight: 600; color: #374151; background: #f3f4f6; border-radius: 8px; padding: 5px 12px; }
 
     /* ── SECTION ── */
     .section { margin-top: 96px; }
@@ -65,142 +61,131 @@
     }
     .slead { font-size: 0.92rem; color: #6b7280; line-height: 1.8; margin-bottom: 36px; max-width: 560px; }
 
-    /* ── BIG PICTURE — 3 types ── */
-    .treatment-grid {
-      display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 32px;
+    /* ── 3-TYPE CARDS ── */
+    .vgrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+    @media(max-width:600px){ .vgrid { grid-template-columns: 1fr; } }
+    .vcard {
+      background: #fafafa; border: 1px solid #efefef; border-radius: 16px; padding: 24px 20px;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    @media(max-width:600px){ .treatment-grid { grid-template-columns: 1fr; } }
-    .treatment-card {
-      border-radius: 16px; padding: 24px 20px; border: 1px solid;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .treatment-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
-    .tc-surgery   { background: #eff6ff; border-color: #bfdbfe; }
-    .tc-radiation { background: #fff7ed; border-color: #fed7aa; }
-    .tc-drug      { background: #f0fdf4; border-color: #bbf7d0; }
-    .tc-icon  { font-size: 2rem; margin-bottom: 12px; display: block; }
-    .tc-title { font-size: 1rem; font-weight: 800; margin-bottom: 5px; color: #111; }
-    .tc-desc  { font-size: 0.78rem; color: #6b7280; line-height: 1.65; }
+    .vcard:hover { border-color: #d1d5db; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+    .vicon  { font-size: 1.7rem; margin-bottom: 12px; display: block; }
+    .vtitle { font-size: 0.9rem; font-weight: 700; color: #111; margin-bottom: 5px; }
+    .vdesc  { font-size: 0.8rem; color: #9ca3af; line-height: 1.65; }
 
-    /* ── HIERARCHY ── */
-    .hierarchy-box {
-      background: #fafafa; border: 1px solid #efefef; border-radius: 20px;
-      padding: 28px 24px; margin-top: 0;
+    /* ── HIERARCHY BOX ── */
+    .hier-box {
+      background: #fafafa; border: 1px solid #efefef; border-radius: 16px;
+      padding: 28px 24px; margin-top: 28px;
     }
-    .hier-label {
-      font-size: 0.62rem; font-weight: 700; letter-spacing: 1.8px;
-      text-transform: uppercase; color: #bbb; margin-bottom: 20px; display: block;
-    }
-    .hier-group { margin-bottom: 18px; }
-    .hier-group:last-child { margin-bottom: 0; }
+    .hier-row { margin-bottom: 16px; }
+    .hier-row:last-child { margin-bottom: 0; }
     .hier-parent {
       display: inline-flex; align-items: center; gap: 6px;
-      background: #111; color: #fff;
-      font-size: 0.8rem; font-weight: 700;
-      padding: 5px 14px; border-radius: 99px; margin-bottom: 10px;
+      background: #111; color: #fff; font-size: 0.78rem; font-weight: 700;
+      padding: 5px 13px; border-radius: 99px; margin-bottom: 8px;
     }
-    .hier-children { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 20px; }
+    .hier-children { display: flex; flex-wrap: wrap; gap: 7px; padding-left: 18px; }
     .hier-child {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: #fff; color: #374151; font-size: 0.74rem; font-weight: 600;
-      padding: 4px 12px; border-radius: 99px; border: 1px solid #e5e7eb;
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #fff; color: #374151; font-size: 0.73rem; font-weight: 600;
+      padding: 3px 11px; border-radius: 99px; border: 1px solid #e5e7eb;
     }
-    .hier-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-    .hier-note { font-size: 0.75rem; color: #9ca3af; margin-top: 16px; line-height: 1.7; }
+    .hier-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .hier-note { font-size: 0.76rem; color: #9ca3af; margin-top: 14px; line-height: 1.7; }
 
-    /* ── COVERAGE CARDS ── */
-    .coverage-card {
-      border-radius: 20px; padding: 30px 26px;
-      border: 1px solid #efefef;
-      margin-bottom: 14px;
-      transition: box-shadow 0.25s;
-      position: relative; overflow: hidden;
-      background: #fff;
+    /* ── COVERAGE SECTION HEADER (h2) ── */
+    .coverage-section { margin-top: 80px; }
+    .coverage-section-header {
+      display: flex; align-items: center; gap: 14px;
+      padding-bottom: 20px; border-bottom: 1.5px solid #111; margin-bottom: 0;
     }
-    .coverage-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.07); }
-    .cc-accent {
-      position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      border-radius: 20px 20px 0 0;
-    }
-    .cc-header {
-      display: flex; align-items: flex-start;
-      justify-content: space-between; gap: 16px; margin-bottom: 18px;
-    }
-    .cc-left { flex: 1; }
-    .cc-emoji { font-size: 2rem; display: block; margin-bottom: 8px; line-height: 1; }
-    .cc-cat {
-      display: inline-block; font-size: 0.58rem; font-weight: 700;
-      letter-spacing: 1.6px; text-transform: uppercase;
-      padding: 3px 9px; border-radius: 99px; margin-bottom: 8px;
-    }
-    .cat-surgery   { background: #eff6ff; color: #1d4ed8; }
-    .cat-radiation { background: #fff7ed; color: #c2410c; }
-    .cat-drug      { background: #f0fdf4; color: #15803d; }
-    .cc-name    { font-size: 1.12rem; font-weight: 800; color: #111; letter-spacing: -0.4px; margin-bottom: 4px; }
-    .cc-oneliner { font-size: 0.82rem; color: #9ca3af; }
-    .cc-badge {
-      font-size: 0.62rem; font-weight: 700; padding: 4px 10px;
-      border-radius: 99px; background: #f3f4f6; color: #9ca3af;
-      white-space: nowrap; flex-shrink: 0; height: fit-content; margin-top: 4px;
-    }
-    .cc-badge.is-parent { background: #111; color: #fff; }
+    .cs-icon { font-size: 1.4rem; }
+    .cs-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; color: #111; }
+    .cs-count { font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #9ca3af; }
+    .cs-lead { font-size: 0.88rem; color: #6b7280; line-height: 1.8; margin-top: 16px; }
 
-    .cc-body {
-      font-size: 0.88rem; color: #374151; line-height: 1.88;
-      margin-bottom: 18px;
+    /* ── COVERAGE ENTRY (h3) ── */
+    .coverage-entry {
+      padding: 40px 0 36px; border-bottom: 1px solid #f3f4f6;
     }
-    .cc-body strong { font-weight: 700; color: #111; }
+    .coverage-entry:last-child { border-bottom: none; }
+    .ce-meta {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+    }
+    .ce-num {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: #c4c4c4;
+    }
+    .ce-cat {
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase; padding: 3px 9px; border-radius: 99px;
+    }
+    .cat-s { background: #eff6ff; color: #1d4ed8; }
+    .cat-r { background: #fff7ed; color: #c2410c; }
+    .cat-d { background: #f0fdf4; color: #15803d; }
+    .ce-badge {
+      font-size: 0.6rem; font-weight: 700; padding: 3px 9px;
+      border-radius: 99px; margin-left: auto;
+    }
+    .ce-badge.parent { background: #111; color: #fff; }
+    .ce-badge.child  { background: #f3f4f6; color: #9ca3af; }
+
+    h3.ce-title {
+      font-size: 1.15rem; font-weight: 800; letter-spacing: -0.4px;
+      color: #111; margin-bottom: 4px;
+    }
+    .ce-oneliner { font-size: 0.85rem; color: #9ca3af; margin-bottom: 20px; }
+    .ce-body { font-size: 0.88rem; color: #374151; line-height: 1.9; }
+    .ce-body strong { font-weight: 700; color: #111; }
+    .ce-body + .ce-callout { margin-top: 18px; }
 
     /* ── CALLOUT BOXES ── */
-    .cc-callout {
-      border-radius: 12px; padding: 14px 16px; margin-bottom: 12px;
+    .ce-callout {
+      border-radius: 12px; padding: 14px 16px; margin-top: 14px;
     }
-    .cc-callout.price   { background: #fafafa; border: 1px solid #efefef; }
-    .cc-callout.warning { background: #fffbeb; border: 1px solid #fde68a; }
-    .cc-callout.info    { background: #f0f9ff; border: 1px solid #bae6fd; }
-    .callout-label {
-      font-size: 0.62rem; font-weight: 700; letter-spacing: 1px;
+    .ce-callout.price   { background: #fafafa; border: 1px solid #efefef; }
+    .ce-callout.warning { background: #fffbeb; border: 1px solid #fde68a; }
+    .ce-callout.info    { background: #f0f9ff; border: 1px solid #bae6fd; }
+    .cl-label {
+      font-size: 0.6rem; font-weight: 700; letter-spacing: 1.2px;
       text-transform: uppercase; color: #9ca3af; margin-bottom: 8px; display: block;
     }
-    .callout-body { font-size: 0.82rem; color: #374151; line-height: 1.75; }
-    .callout-body strong { color: #111; font-weight: 700; }
-
-    /* Price rows */
+    .cl-body { font-size: 0.82rem; color: #374151; line-height: 1.75; }
+    .cl-body strong { color: #111; font-weight: 700; }
     .price-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 6px 0; border-bottom: 1px dashed #e9e9e9;
+      padding: 5px 0; border-bottom: 1px dashed #e9e9e9;
     }
-    .price-row:last-child { border-bottom: none; padding-bottom: 0; }
-    .price-drug { font-size: 0.8rem; font-weight: 500; color: #374151; }
-    .price-val  { font-size: 0.88rem; font-weight: 800; color: #e91e8c; font-family: 'Outfit', sans-serif; }
+    .price-row:last-child { border-bottom: none; }
+    .price-drug { font-size: 0.8rem; color: #374151; }
+    .price-val  { font-size: 0.88rem; font-weight: 800; color: #e91e8c; }
 
-    /* Detail pills */
-    .cc-details { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
-    .cc-detail {
+    /* ── DETAIL PILLS ── */
+    .ce-details { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
+    .ce-pill {
       font-size: 0.7rem; color: #6b7280;
       background: #f9fafb; border: 1px solid #f0f0f0;
       border-radius: 8px; padding: 4px 10px;
     }
-    .cc-detail strong { color: #374151; font-weight: 600; }
+    .ce-pill strong { color: #374151; font-weight: 600; }
 
     /* ── COMPARE TABLE ── */
     .compare-wrap { overflow-x: auto; margin-top: 28px; }
-    .compare-table { width: 100%; border-collapse: collapse; min-width: 540px; }
+    .compare-table { width: 100%; border-collapse: collapse; min-width: 520px; }
     .compare-table th {
-      font-size: 0.65rem; font-weight: 700; letter-spacing: 1.2px;
-      text-transform: uppercase; color: #9ca3af;
-      padding: 0 16px 12px; text-align: left; border-bottom: 1.5px solid #111;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+      color: #9ca3af; padding: 0 16px 12px; text-align: left; border-bottom: 1.5px solid #111;
     }
     .compare-table td {
-      font-size: 0.82rem; color: #374151;
-      padding: 13px 16px; border-bottom: 1px solid #f3f4f6;
-      vertical-align: middle; line-height: 1.55;
+      font-size: 0.82rem; color: #374151; padding: 13px 16px;
+      border-bottom: 1px solid #f3f4f6; vertical-align: middle; line-height: 1.55;
     }
     .compare-table tr:last-child td { border-bottom: none; }
     .compare-table tr:hover td { background: #fafafa; }
     .ct-name { font-weight: 700; color: #111; }
-    .ct-parent { font-size: 0.62rem; background: #111; color: #fff; padding: 2px 7px; border-radius: 99px; font-weight: 600; vertical-align: middle; margin-left: 5px; }
-    .ct-child  { font-size: 0.62rem; background: #f3f4f6; color: #6b7280; padding: 2px 7px; border-radius: 99px; font-weight: 600; vertical-align: middle; margin-left: 5px; }
+    .ct-p { font-size: 0.6rem; background: #111; color: #fff; padding: 2px 6px; border-radius: 99px; font-weight: 600; margin-left: 5px; vertical-align: middle; }
+    .ct-c { font-size: 0.6rem; background: #f3f4f6; color: #6b7280; padding: 2px 6px; border-radius: 99px; font-weight: 600; margin-left: 5px; vertical-align: middle; }
 
     /* ── CTA ── */
     .cta-wrap { text-align: center; padding: 80px 0 0; }
@@ -208,8 +193,7 @@
     .cta-sub { font-size: 0.9rem; color: #b0b0b0; margin-bottom: 28px; }
     .cta-btn {
       display: inline-flex; align-items: center; gap: 8px;
-      background: #111; color: #fff;
-      font-size: 0.95rem; font-weight: 700;
+      background: #111; color: #fff; font-size: 0.95rem; font-weight: 700;
       padding: 14px 32px; border-radius: 14px; text-decoration: none;
       transition: background 0.2s, transform 0.2s;
     }
@@ -220,8 +204,92 @@
     footer { border-top: 1px solid #f5f5f5; padding: 28px; text-align: center; font-size: 0.72rem; color: #c4c4c4; }
 
     /* ── FADE UP ── */
-    .fu { opacity: 0; transform: translateY(20px); transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1); }
+    .fu { opacity: 0; transform: translateY(22px); transition: opacity 0.65s cubic-bezier(0.22,1,0.36,1), transform 0.65s cubic-bezier(0.22,1,0.36,1); }
     .fu.vis { opacity: 1; transform: translateY(0); }
+
+    /* ════════════════════════════════
+       DYNAMIC ISLAND TOC
+       ════════════════════════════════ */
+    #di-backdrop {
+      position: fixed; inset: 0; z-index: 9998;
+      background: rgba(0,0,0,0.16);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.45s cubic-bezier(0.22,1,0.36,1);
+    }
+    #di-backdrop.show { opacity: 1; pointer-events: all; }
+
+    #di-wrap {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%); z-index: 9999;
+      animation: diEntrance 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes diEntrance {
+      from { opacity: 0; transform: translateX(-50%) translateY(48px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    #di-pill {
+      position: relative; overflow: hidden;
+      background: #0e0e0e; color: #fff;
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow: 0 20px 56px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.18);
+      cursor: pointer;
+      width: 272px; height: 50px; border-radius: 25px;
+      transition: width .5s cubic-bezier(0.22,1,0.36,1), height .5s cubic-bezier(0.22,1,0.36,1), border-radius .5s cubic-bezier(0.22,1,0.36,1);
+    }
+    #di-pill.open { width: 320px; height: 420px; border-radius: 24px; cursor: default; }
+
+    #di-closed {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; gap: 12px; padding: 0 16px;
+      transition: opacity 0.2s ease, filter 0.2s ease;
+    }
+    #di-pill.open #di-closed { opacity: 0; filter: blur(4px); pointer-events: none; }
+    .di-dot { width: 7px; height: 7px; background: #fff; border-radius: 50%; flex-shrink: 0; }
+    #di-section-label {
+      flex: 1; overflow: hidden;
+      font-size: 0.8rem; font-weight: 600; white-space: nowrap; text-overflow: ellipsis;
+      transition: opacity 0.25s;
+    }
+    #di-svg { flex-shrink: 0; transform: rotate(-90deg); overflow: visible; }
+    #di-circ-bg { stroke: rgba(255,255,255,0.12); }
+    #di-circ-fg { stroke: #fff; stroke-linecap: round; transition: stroke-dashoffset 0.15s ease; }
+
+    #di-expanded {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s ease 0s;
+    }
+    #di-pill.open #di-expanded { opacity: 1; pointer-events: all; transition-delay: 0.18s; }
+    .di-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 18px 10px; flex-shrink: 0;
+    }
+    .di-header-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: rgba(255,255,255,0.35); }
+    #di-x {
+      background: rgba(255,255,255,0.1); border: none; border-radius: 99px;
+      width: 24px; height: 24px; cursor: pointer;
+      color: rgba(255,255,255,0.5); font-size: 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    #di-x:hover { background: rgba(255,255,255,0.18); }
+    #di-list { flex: 1; overflow-y: auto; padding: 0 8px 14px; scrollbar-width: none; }
+    #di-list::-webkit-scrollbar { display: none; }
+
+    .di-item {
+      display: flex; align-items: center; width: 100%;
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.35); font-size: 0.79rem; font-weight: 500; font-family: inherit;
+      border-radius: 10px; text-align: left;
+      transition: background 0.18s, color 0.18s; gap: 8px;
+    }
+    .di-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.75); }
+    .di-item.on { background: rgba(255,255,255,0.1); color: #fff; font-weight: 700; }
+    .di-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .di-item-dot { width: 5px; height: 5px; background: #fff; border-radius: 50%; flex-shrink: 0; opacity: 0; transition: opacity 0.2s; }
+    .di-item.on .di-item-dot { opacity: 1; }
   </style>
 </head>
 <body>
@@ -235,7 +303,7 @@
 
 <div id="insight-content">
 
-  <!-- ── HERO ── -->
+  <!-- HERO -->
   <section class="fu" style="padding-top:16px;">
     <span class="hero-tag">INSIGHT — 담보 완전 해설</span>
     <h1 class="hero-title">9개 담보,<br>제대로 알고 가세요</h1>
@@ -244,44 +312,44 @@
       9개 암 치료비 담보를 쉽고 정확하게 정리했습니다.
     </p>
     <div class="hero-badges">
-      <span class="hero-badge badge-surgery">🔪 수술 계열 2종</span>
-      <span class="hero-badge badge-radiation">⚡ 방사선 계열 4종</span>
-      <span class="hero-badge badge-drug">💊 약물 계열 3종</span>
+      <span class="hero-badge">🔪 수술 계열 2종</span>
+      <span class="hero-badge">⚡ 방사선 계열 4종</span>
+      <span class="hero-badge">💊 약물 계열 3종</span>
     </div>
   </section>
 
-  <!-- ── BIG PICTURE ── -->
+  <!-- BIG PICTURE -->
   <section class="section fu" id="s-bigpicture">
     <span class="eyebrow">BIG PICTURE</span>
     <h2 class="stitle">암 치료는 딱 3가지예요</h2>
-    <p class="slead">9개 담보를 이해하려면, 먼저 이 3가지를 알아야 해요.</p>
-    <div class="treatment-grid">
-      <div class="treatment-card tc-surgery fu">
-        <span class="tc-icon">🔪</span>
-        <p class="tc-title">수술</p>
-        <p class="tc-desc">암 덩어리를 직접 잘라내는 것.<br>가장 고전적이고 확실한 방법이에요.</p>
+    <p class="slead">9개 담보를 이해하려면, 먼저 이 3가지를 알면 돼요.</p>
+    <div class="vgrid">
+      <div class="vcard fu">
+        <span class="vicon">🔪</span>
+        <p class="vtitle">수술</p>
+        <p class="vdesc">암 덩어리를 직접 잘라내는 것.<br>가장 고전적이고 확실한 방법이에요.</p>
       </div>
-      <div class="treatment-card tc-radiation fu" style="transition-delay:.07s">
-        <span class="tc-icon">⚡</span>
-        <p class="tc-title">방사선</p>
-        <p class="tc-desc">방사선으로 암세포 DNA를 파괴해요.<br>수술이 어려운 부위에도 쓸 수 있어요.</p>
+      <div class="vcard fu" style="transition-delay:.07s">
+        <span class="vicon">⚡</span>
+        <p class="vtitle">방사선</p>
+        <p class="vdesc">방사선으로 암세포 DNA를 파괴해요.<br>수술이 어려운 부위에도 쓸 수 있어요.</p>
       </div>
-      <div class="treatment-card tc-drug fu" style="transition-delay:.14s">
-        <span class="tc-icon">💊</span>
-        <p class="tc-title">약물</p>
-        <p class="tc-desc">항암제로 전신의 암세포를 공격해요.<br>세포독성·표적·면역 세 세대가 있어요.</p>
+      <div class="vcard fu" style="transition-delay:.14s">
+        <span class="vicon">💊</span>
+        <p class="vtitle">약물</p>
+        <p class="vdesc">항암제로 전신의 암세포를 공격해요.<br>세포독성·표적·면역 세 세대가 있어요.</p>
       </div>
     </div>
 
-    <div class="hierarchy-box fu" style="transition-delay:.1s">
-      <span class="hier-label">포함 관계 — 큰 우산과 특수 치료</span>
-      <div class="hier-group">
+    <div class="hier-box fu" style="transition-delay:.1s">
+      <span class="eyebrow" style="margin-bottom:16px;">포함 관계 — 큰 우산과 특수 치료</span>
+      <div class="hier-row">
         <div class="hier-parent">🔪 암수술비</div>
         <div class="hier-children">
           <span class="hier-child"><span class="hier-dot" style="background:#3b82f6"></span>다빈치로봇수술비</span>
         </div>
       </div>
-      <div class="hier-group">
+      <div class="hier-row">
         <div class="hier-parent">⚡ 항암방사선치료비</div>
         <div class="hier-children">
           <span class="hier-child"><span class="hier-dot" style="background:#f59e0b"></span>중입자방사선치료비</span>
@@ -289,129 +357,239 @@
           <span class="hier-child"><span class="hier-dot" style="background:#f59e0b"></span>세기조절방사선치료비</span>
         </div>
       </div>
-      <div class="hier-group">
+      <div class="hier-row">
         <div class="hier-parent">💊 항암약물치료비</div>
         <div class="hier-children">
           <span class="hier-child"><span class="hier-dot" style="background:#10b981"></span>표적항암약물치료비</span>
           <span class="hier-child"><span class="hier-dot" style="background:#10b981"></span>면역항암약물치료비</span>
         </div>
       </div>
-      <p class="hier-note">💡 부모 담보가 있으면 자식 담보도 그 금액을 기본으로 받아요. 자식 담보가 추가로 있으면 그만큼 더 받는 구조입니다.</p>
+      <p class="hier-note">💡 부모 담보가 있으면 자식 담보도 그 금액을 기본으로 받아요. 자식 담보가 추가되면 그만큼 더 받는 구조입니다.</p>
     </div>
   </section>
 
-  <!-- ── 9 COVERAGES ── -->
-  <section class="section" id="s-coverages">
-    <span class="eyebrow fu">9 COVERAGES</span>
-    <h2 class="stitle fu">담보 하나하나, 제대로 알기</h2>
-    <p class="slead fu">아는 만큼 보여요. 담보를 이해하면 제안서가 다르게 보입니다.</p>
+  <!-- ════════════════ 수술 계열 ════════════════ -->
+  <section class="coverage-section fu" id="s-surgery">
+    <div class="coverage-section-header">
+      <span class="cs-icon">🔪</span>
+      <span class="cs-title">수술 계열</span>
+      <span class="cs-count">2종</span>
+    </div>
+    <p class="cs-lead">암 덩어리를 직접 제거하는 가장 확실한 치료법. 일반 수술부터 로봇 정밀 수술까지 커버합니다.</p>
 
-    <!-- ❶ 암수술비 -->
-    <div class="coverage-card fu" id="cc-1">
-      <div class="cc-accent" style="background:#1d4ed8;"></div>
-      <div class="cc-header">
-        <div class="cc-left">
-          <span class="cc-emoji">🔪</span>
-          <span class="cc-cat cat-surgery">수술</span>
-          <p class="cc-name">암수술비</p>
-          <p class="cc-oneliner">암을 잘라낼 때 나오는 기본 수술비</p>
-        </div>
-        <span class="cc-badge is-parent">부모 담보</span>
+    <!-- 암수술비 -->
+    <div class="coverage-entry fu" id="ce-surgery-1">
+      <div class="ce-meta">
+        <span class="ce-num">01</span>
+        <span class="ce-cat cat-s">수술</span>
+        <span class="ce-badge parent">부모 담보</span>
       </div>
-      <p class="cc-body">
-        <strong>아세요?</strong> 암 치료의 출발점은 대부분 '수술'이에요.<br>
-        암 덩어리를 직접 꺼내는 게 가장 확실한 방법이거든요.<br><br>
-        복강경·관혈 수술은 물론이고 <strong>로봇 수술, 비혈 수술</strong>까지 폭넓게 인정된답니다!
+      <h3 class="ce-title">암수술비</h3>
+      <p class="ce-oneliner">암을 잘라낼 때 나오는 기본 수술비</p>
+      <p class="ce-body">
+        <strong>아세요?</strong> 암 치료의 출발점은 대부분 수술이에요. 암 덩어리를 직접 꺼내는 게 가장 확실한 방법이거든요.<br><br>
+        복강경·관혈 수술은 물론이고 <strong>로봇 수술, 비혈 수술</strong>까지 폭넓게 인정된답니다. 담보에 <strong>비급여 항목이 포함</strong>되어 있는지가 핵심이에요. 비급여포함 담보가 있어야 고가 시술도 커버됩니다.
       </p>
-      <div class="cc-callout warning">
-        <span class="callout-label">⚠️ 이건 알고 가세요</span>
-        <p class="callout-body">담보에 <strong>비급여 항목이 포함</strong>되어 있는지가 핵심이에요. 비급여포함 담보가 있어야 로봇 수술 같은 고가 시술도 제대로 커버됩니다.</p>
-      </div>
-      <div class="cc-details">
-        <span class="cc-detail"><strong>보장 조건</strong> 암 확진 후 치료 목적 수술</span>
-        <span class="cc-detail"><strong>포함 치료</strong> 복강경·관혈·비혈·로봇</span>
-        <span class="cc-detail"><strong>하위 담보</strong> 다빈치로봇수술비</span>
+      <div class="ce-details">
+        <span class="ce-pill"><strong>보장 조건</strong> 암 확진 후 치료 목적 수술</span>
+        <span class="ce-pill"><strong>포함 치료</strong> 복강경·관혈·비혈·로봇 수술</span>
+        <span class="ce-pill"><strong>하위 담보</strong> 다빈치로봇수술비</span>
       </div>
     </div>
 
-    <!-- ❷ 항암방사선치료비 -->
-    <div class="coverage-card fu" id="cc-2">
-      <div class="cc-accent" style="background:#ea580c;"></div>
-      <div class="cc-header">
-        <div class="cc-left">
-          <span class="cc-emoji">⚡</span>
-          <span class="cc-cat cat-radiation">방사선</span>
-          <p class="cc-name">항암방사선치료비</p>
-          <p class="cc-oneliner">방사선으로 암을 공격할 때 나오는 돈</p>
-        </div>
-        <span class="cc-badge is-parent">부모 담보</span>
+    <!-- 다빈치로봇수술비 -->
+    <div class="coverage-entry fu" id="ce-surgery-2">
+      <div class="ce-meta">
+        <span class="ce-num">02</span>
+        <span class="ce-cat cat-s">수술 — 로봇</span>
+        <span class="ce-badge child">자식 담보</span>
       </div>
-      <p class="cc-body">
-        <strong>아세요?</strong> 방사선 치료가 X-ray 찍는 거랑은 완전 달라요.<br>
-        암세포에 집중적으로 방사선을 쏴서 <strong>DNA를 파괴</strong>하는 치료법이에요.<br><br>
-        수술이 어려운 부위의 암, 수술 후 재발 방지, 통증 완화까지—<br>암 치료 전 과정에서 쓰이는 핵심 방법이랍니다.<br><br>
-        이 담보가 기본 중의 기본! <strong>양성자·중입자·세기조절</strong> 같은 최신 방사선 치료도 여기서 출발해요.
+      <h3 class="ce-title">다빈치로봇수술비</h3>
+      <p class="ce-oneliner">의사가 로봇 팔을 조종하는 초정밀 수술 비용</p>
+      <p class="ce-body">
+        <strong>아세요?</strong> 다빈치 로봇 수술이 왜 비싼지? 의사가 직접 칼을 대는 게 아니라 <strong>로봇 팔에 달린 카메라와 기구</strong>로 수술해요. 10배 확대 화면과 손 떨림 방지 기능 덕분에 훨씬 정밀하게 수술할 수 있답니다.<br><br>
+        절개 부위가 작아서 <strong>회복이 빠르고 합병증도 적어요.</strong> 전립선암·자궁암·대장암·갑상선암에 많이 쓰여요.
       </p>
-      <div class="cc-callout warning">
-        <span class="callout-label">⚠️ 이건 알고 가세요</span>
-        <p class="callout-body"><strong>방사선 리간드 치료(루테튬)</strong>는 '방사선치료'가 아닌 '항암약물치료'로 분류돼요. 방사선이란 이름이 붙어도 약으로 보거든요!</p>
+      <div class="ce-callout price">
+        <span class="cl-label">💰 비급여 비용 — 보험 없으면 전액 본인 부담</span>
+        <div class="cl-body">
+          <div class="price-row">
+            <span class="price-drug">다빈치·레보아이 로봇 수술</span>
+            <span class="price-val">700 ~ 1,500만원</span>
+          </div>
+        </div>
       </div>
-      <div class="cc-details">
-        <span class="cc-detail"><strong>포함 치료</strong> 일반·세기조절·양성자·중입자</span>
-        <span class="cc-detail"><strong>하위 담보</strong> 중입자·양성자·세기조절방사선</span>
+      <div class="ce-callout warning">
+        <span class="cl-label">⚠️ 이건 알고 가세요</span>
+        <p class="cl-body"><strong>갑상선암·전립선암</strong>은 '일반암' 기준 담보에서 제외되는 경우가 있어요. 담보 세부 조건을 꼭 확인하세요.</p>
+      </div>
+      <div class="ce-details">
+        <span class="ce-pill"><strong>부모 담보</strong> 암수술비</span>
+        <span class="ce-pill"><strong>적용 암종</strong> 전립선·자궁·대장·갑상선암 등</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ 방사선 계열 ════════════════ -->
+  <section class="coverage-section fu" id="s-radiation">
+    <div class="coverage-section-header">
+      <span class="cs-icon">⚡</span>
+      <span class="cs-title">방사선 계열</span>
+      <span class="cs-count">4종</span>
+    </div>
+    <p class="cs-lead">방사선으로 암세포 DNA를 파괴하는 치료법. 기본 방사선부터 탄소 이온·양성자 빔까지 4단계로 보장됩니다.</p>
+
+    <!-- 항암방사선치료비 -->
+    <div class="coverage-entry fu" id="ce-radiation-1">
+      <div class="ce-meta">
+        <span class="ce-num">03</span>
+        <span class="ce-cat cat-r">방사선</span>
+        <span class="ce-badge parent">부모 담보</span>
+      </div>
+      <h3 class="ce-title">항암방사선치료비</h3>
+      <p class="ce-oneliner">방사선으로 암을 공격할 때 나오는 돈</p>
+      <p class="ce-body">
+        <strong>아세요?</strong> 방사선 치료가 X-ray 찍는 거랑은 완전 달라요. 암세포에 집중적으로 방사선을 쏴서 <strong>DNA를 파괴</strong>하는 치료법이에요.<br><br>
+        수술이 어려운 부위의 암, 수술 후 재발 방지, 통증 완화까지— 암 치료 전 과정에서 쓰이는 핵심 방법이랍니다. <strong>양성자·중입자·세기조절</strong> 같은 최신 방사선 치료도 여기서 출발해요.
+      </p>
+      <div class="ce-callout warning">
+        <span class="cl-label">⚠️ 이건 알고 가세요</span>
+        <p class="cl-body"><strong>방사선 리간드 치료(루테튬)</strong>는 '방사선치료'가 아닌 '항암약물치료'로 분류돼요. 방사선이란 이름이 붙어도 약으로 보거든요!</p>
+      </div>
+      <div class="ce-details">
+        <span class="ce-pill"><strong>포함 치료</strong> 일반·세기조절·양성자·중입자</span>
+        <span class="ce-pill"><strong>하위 담보</strong> 중입자·양성자·세기조절방사선</span>
       </div>
     </div>
 
-    <!-- ❸ 항암약물치료비 -->
-    <div class="coverage-card fu" id="cc-3">
-      <div class="cc-accent" style="background:#15803d;"></div>
-      <div class="cc-header">
-        <div class="cc-left">
-          <span class="cc-emoji">💊</span>
-          <span class="cc-cat cat-drug">약물</span>
-          <p class="cc-name">항암약물치료비</p>
-          <p class="cc-oneliner">항암제로 치료할 때 나오는 돈, 표적·면역도 여기서 출발</p>
-        </div>
-        <span class="cc-badge is-parent">부모 담보</span>
+    <!-- 중입자방사선치료비 -->
+    <div class="coverage-entry fu" id="ce-radiation-2">
+      <div class="ce-meta">
+        <span class="ce-num">04</span>
+        <span class="ce-cat cat-r">방사선 — 최첨단</span>
+        <span class="ce-badge child">자식 담보</span>
       </div>
-      <p class="cc-body">
-        <strong>아세요?</strong> 항암제가 이제 세 가지나 된다는 거?<br>
-        옛날엔 독한 항암제 하나뿐이었는데, 지금은 <strong>세포독성·표적·면역</strong> 세 종류로 나뉘어요.<br><br>
-        이 담보는 가장 기본인 '세포독성 항암제'를 메인으로 보장하고,<br>
-        표적·면역 담보가 별도로 추가될수록 보장이 탄탄해지는 구조예요.
+      <h3 class="ce-title">중입자방사선치료비</h3>
+      <p class="ce-oneliner">탄소 입자로 암을 정밀 폭격하는 차세대 방사선</p>
+      <p class="ce-body">
+        <strong>아세요?</strong> 방사선 치료 중에 가장 정밀한 게 중입자 치료예요. 일반 방사선이 X선이라면, 중입자는 <strong>탄소 이온</strong>을 쏘는 방식이에요.<br><br>
+        암세포 바로 앞에서 에너지를 최대로 방출하고 멈추는 특성 덕분에 <strong>정상 세포 손상이 최소화</strong>되고, 방사선 저항성 암도 잡을 수 있어요.
       </p>
-      <div class="cc-callout info">
-        <span class="callout-label">💡 핵심 포인트</span>
-        <p class="callout-body">표적항암·면역항암 담보가 따로 없다면, 이 담보 하나로 어느 정도 커버는 돼요. 하지만 고가 표적치료제는 <strong>별도 담보가 있어야 제대로 받을 수 있답니다!</strong></p>
+      <div class="ce-callout price">
+        <span class="cl-label">💰 비용 현황</span>
+        <div class="cl-body">
+          <div class="price-row">
+            <span class="price-drug">국내 치료 기준 (1코스)</span>
+            <span class="price-val">수천만원대</span>
+          </div>
+          <div class="price-row">
+            <span class="price-drug">일본 원정 치료</span>
+            <span class="price-val">더 고가</span>
+          </div>
+        </div>
       </div>
-      <div class="cc-details">
-        <span class="cc-detail"><strong>포함 치료</strong> 세포독성 항암제 (1세대 기본)</span>
-        <span class="cc-detail"><strong>하위 담보</strong> 표적항암·면역항암약물치료비</span>
+      <div class="ce-callout info">
+        <span class="cl-label">🏥 국내 가능 기관</span>
+        <p class="cl-body">세브란스병원, 연세암병원 등 — 해외에선 일본이 가장 활성화되어 있어요.</p>
+      </div>
+      <div class="ce-details">
+        <span class="ce-pill"><strong>부모 담보</strong> 항암방사선치료비</span>
+        <span class="ce-pill"><strong>특징</strong> 방사선 저항성 암에도 효과</span>
       </div>
     </div>
 
-    <!-- ❹ 표적항암약물치료비 -->
-    <div class="coverage-card fu" id="cc-4">
-      <div class="cc-accent" style="background:#7c3aed;"></div>
-      <div class="cc-header">
-        <div class="cc-left">
-          <span class="cc-emoji">🎯</span>
-          <span class="cc-cat cat-drug">약물 — 정밀</span>
-          <p class="cc-name">표적항암약물치료비</p>
-          <p class="cc-oneliner">암세포만 정밀 타격하는 스마트 미사일</p>
-        </div>
-        <span class="cc-badge">자식 담보</span>
+    <!-- 양성자방사선치료비 -->
+    <div class="coverage-entry fu" id="ce-radiation-3">
+      <div class="ce-meta">
+        <span class="ce-num">05</span>
+        <span class="ce-cat cat-r">방사선 — 정밀</span>
+        <span class="ce-badge child">자식 담보</span>
       </div>
-      <p class="cc-body">
-        <strong>아세요?</strong> 표적치료는 <strong>'스마트 미사일'</strong>에 비유할 수 있어요.<br>
-        기존 항암제가 정상세포까지 공격했다면,<br>
-        표적치료는 <strong>암세포의 특정 단백질만 골라서 공격</strong>하는 방식이에요.<br><br>
-        부작용이 훨씬 적고 특정 암 타입엔 효과도 탁월해요.<br>
-        단, 내 암의 유전자 변이와 딱 맞는 약이 있어야 쓸 수 있답니다.
+      <h3 class="ce-title">양성자방사선치료비</h3>
+      <p class="ce-oneliner">양성자 빔으로 암만 정밀 타격, 소아암·뇌종양에 특히 효과적</p>
+      <p class="ce-body">
+        <strong>아세요?</strong> 중입자처럼 양성자도 입자를 쏘는 치료예요. 중입자보다 조금 덜 강하지만, <strong>어린이나 민감한 부위 암</strong> 치료엔 양성자가 더 적합한 경우도 많아요.<br><br>
+        두뇌, 척수 근처, 눈 주변처럼 <strong>방사선에 예민한 부위</strong>에 특히 많이 쓰인답니다.
       </p>
-      <div class="cc-callout price">
-        <span class="callout-label">💰 실제 약값 — 이 담보가 없으면 본인 부담</span>
-        <div class="callout-body">
+      <div class="ce-callout info">
+        <span class="cl-label">🏥 국내 가능 기관</span>
+        <p class="cl-body">국립암센터, 삼성서울병원 등</p>
+      </div>
+      <div class="ce-details">
+        <span class="ce-pill"><strong>부모 담보</strong> 항암방사선치료비</span>
+        <span class="ce-pill"><strong>특화 대상</strong> 소아암·뇌종양·민감 부위</span>
+      </div>
+    </div>
+
+    <!-- 세기조절방사선치료비 -->
+    <div class="coverage-entry fu" id="ce-radiation-4">
+      <div class="ce-meta">
+        <span class="ce-num">06</span>
+        <span class="ce-cat cat-r">방사선 — 표준</span>
+        <span class="ce-badge child">자식 담보</span>
+      </div>
+      <h3 class="ce-title">세기조절방사선치료비</h3>
+      <p class="ce-oneliner">방사선 세기를 정밀 조절해 암만 집중 공격 (IMRT)</p>
+      <p class="ce-body">
+        <strong>아세요?</strong> 일반 방사선은 넓게 쏘는 반면, 세기조절방사선(IMRT)은 <strong>방향과 세기를 수십 개로 나눠서</strong> 쏴요.<br><br>
+        암 덩어리 모양에 딱 맞게 집중되니까 주변 정상 조직은 훨씬 덜 다치고, 암에는 더 강한 방사선을 쓸 수 있어요. 요즘 <strong>대부분의 방사선 치료가 이 방식을 기본</strong>으로 쓸 정도로 표준화된 치료법이랍니다.
+      </p>
+      <div class="ce-details">
+        <span class="ce-pill"><strong>부모 담보</strong> 항암방사선치료비</span>
+        <span class="ce-pill"><strong>특징</strong> 현재 방사선 치료의 표준 방식</span>
+        <span class="ce-pill"><strong>영문명</strong> IMRT</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════ 약물 계열 ════════════════ -->
+  <section class="coverage-section fu" id="s-drug">
+    <div class="coverage-section-header">
+      <span class="cs-icon">💊</span>
+      <span class="cs-title">약물 계열</span>
+      <span class="cs-count">3종</span>
+    </div>
+    <p class="cs-lead">항암제는 이제 세 세대로 나뉩니다. 세포독성·표적·면역— 각각 다른 방식으로 암과 싸워요.</p>
+
+    <!-- 항암약물치료비 -->
+    <div class="coverage-entry fu" id="ce-drug-1">
+      <div class="ce-meta">
+        <span class="ce-num">07</span>
+        <span class="ce-cat cat-d">약물</span>
+        <span class="ce-badge parent">부모 담보</span>
+      </div>
+      <h3 class="ce-title">항암약물치료비</h3>
+      <p class="ce-oneliner">항암제로 치료할 때 나오는 돈, 표적·면역도 여기서 출발</p>
+      <p class="ce-body">
+        <strong>아세요?</strong> 항암제가 이제 세 가지나 된다는 거? 옛날엔 독한 항암제 하나뿐이었는데, 지금은 <strong>세포독성·표적·면역</strong> 세 종류로 나뉘어요.<br><br>
+        이 담보는 가장 기본인 '세포독성 항암제'를 메인으로 보장하고, 표적·면역 담보가 별도로 추가될수록 보장이 탄탄해지는 구조예요.
+      </p>
+      <div class="ce-callout info">
+        <span class="cl-label">💡 핵심 포인트</span>
+        <p class="cl-body">표적항암·면역항암 담보가 따로 없다면, 이 담보 하나로 어느 정도 커버는 돼요. 하지만 고가 표적치료제는 <strong>별도 담보가 있어야 제대로 받을 수 있답니다!</strong></p>
+      </div>
+      <div class="ce-details">
+        <span class="ce-pill"><strong>포함 치료</strong> 세포독성 항암제 (1세대)</span>
+        <span class="ce-pill"><strong>하위 담보</strong> 표적항암·면역항암약물치료비</span>
+      </div>
+    </div>
+
+    <!-- 표적항암약물치료비 -->
+    <div class="coverage-entry fu" id="ce-drug-2">
+      <div class="ce-meta">
+        <span class="ce-num">08</span>
+        <span class="ce-cat cat-d">약물 — 정밀</span>
+        <span class="ce-badge child">자식 담보</span>
+      </div>
+      <h3 class="ce-title">표적항암약물치료비</h3>
+      <p class="ce-oneliner">암세포만 정밀 타격하는 스마트 미사일</p>
+      <p class="ce-body">
+        <strong>아세요?</strong> 표적치료는 <strong>'스마트 미사일'</strong>에 비유할 수 있어요. 기존 항암제가 정상세포까지 공격했다면, 표적치료는 <strong>암세포의 특정 단백질만 골라서 공격</strong>하는 방식이에요.<br><br>
+        부작용이 훨씬 적고 특정 암 타입엔 효과도 탁월해요. 단, 내 암의 유전자 변이와 딱 맞는 약이 있어야 쓸 수 있답니다.
+      </p>
+      <div class="ce-callout price">
+        <span class="cl-label">💰 실제 약값 — 이 담보가 없으면 전액 본인 부담</span>
+        <div class="cl-body">
           <div class="price-row">
             <span class="price-drug">타그리소 · 폐암 EGFR 변이</span>
             <span class="price-val">10~19만원 / 일</span>
@@ -426,39 +604,32 @@
           </div>
         </div>
       </div>
-      <div class="cc-callout warning">
-        <span class="callout-label">⚠️ 이건 알고 가세요</span>
-        <p class="callout-body">식약처 <strong>허가</strong>를 받은 표적치료제만 보장돼요. 비급여로 쓰는 경우엔 '전액본인부담 표적항암약물허가치료비' 담보를 별도 확인하세요.</p>
+      <div class="ce-callout warning">
+        <span class="cl-label">⚠️ 이건 알고 가세요</span>
+        <p class="cl-body">식약처 <strong>허가</strong>를 받은 표적치료제만 보장돼요. 비급여로 쓰는 경우엔 '전액본인부담 표적항암약물허가치료비' 담보를 별도 확인하세요.</p>
       </div>
-      <div class="cc-details">
-        <span class="cc-detail"><strong>부모 담보</strong> 항암약물치료비</span>
-        <span class="cc-detail"><strong>대표 약제</strong> 타그리소·허셉틴·넥사바·아바스틴</span>
+      <div class="ce-details">
+        <span class="ce-pill"><strong>부모 담보</strong> 항암약물치료비</span>
+        <span class="ce-pill"><strong>대표 약제</strong> 타그리소·허셉틴·넥사바·아바스틴</span>
       </div>
     </div>
 
-    <!-- ❺ 면역항암약물치료비 -->
-    <div class="coverage-card fu" id="cc-5">
-      <div class="cc-accent" style="background:#0891b2;"></div>
-      <div class="cc-header">
-        <div class="cc-left">
-          <span class="cc-emoji">🛡️</span>
-          <span class="cc-cat cat-drug">약물 — 면역</span>
-          <p class="cc-name">면역항암약물치료비</p>
-          <p class="cc-oneliner">내 면역세포가 암을 공격하게 만드는 치료비</p>
-        </div>
-        <span class="cc-badge">자식 담보</span>
+    <!-- 면역항암약물치료비 -->
+    <div class="coverage-entry fu" id="ce-drug-3">
+      <div class="ce-meta">
+        <span class="ce-num">09</span>
+        <span class="ce-cat cat-d">약물 — 면역</span>
+        <span class="ce-badge child">자식 담보</span>
       </div>
-      <p class="cc-body">
-        <strong>아세요?</strong> 면역항암치료가 왜 요즘 핫한지?<br>
-        암세포는 교묘하게 면역세포의 눈을 피해요.<br>
-        면역항암제는 그 <strong>숨바꼭질 트릭을 차단</strong>해서 면역세포가 다시 암을 공격하게 만들어요.<br><br>
-        그중에서도 <strong>카티(CAR-T) 치료</strong>는 내 면역세포를 꺼내서<br>
-        암 공격 능력을 강화한 뒤 다시 몸에 넣는 방식이에요.<br>
-        현재 국내 2개 센터에서만 가능합니다.
+      <h3 class="ce-title">면역항암약물치료비</h3>
+      <p class="ce-oneliner">내 면역세포가 암을 공격하게 만드는 치료비</p>
+      <p class="ce-body">
+        <strong>아세요?</strong> 면역항암치료가 왜 요즘 핫한지? 암세포는 교묘하게 면역세포의 눈을 피해요. 면역항암제는 그 <strong>숨바꼭질 트릭을 차단</strong>해서 면역세포가 다시 암을 공격하게 만들어요.<br><br>
+        그중에서도 <strong>카티(CAR-T) 치료</strong>는 내 면역세포를 꺼내서 암 공격 능력을 강화한 뒤 다시 몸에 넣는 방식이에요. 현재 국내 2개 센터에서만 가능합니다.
       </p>
-      <div class="cc-callout price">
-        <span class="callout-label">💰 대표 약제 비용</span>
-        <div class="callout-body">
+      <div class="ce-callout price">
+        <span class="cl-label">💰 대표 약제 비용</span>
+        <div class="cl-body">
           <div class="price-row">
             <span class="price-drug">키트루다 (pembrolizumab)</span>
             <span class="price-val">약 210만원 / 회</span>
@@ -469,151 +640,18 @@
           </div>
         </div>
       </div>
-      <div class="cc-callout info">
-        <span class="callout-label">💡 표적 vs 면역, 차이가 뭐예요?</span>
-        <p class="callout-body"><strong>표적</strong>은 약이 암세포를 직접 공격,<br><strong>면역</strong>은 내 몸의 면역을 깨워 스스로 싸우게 만드는 것!</p>
+      <div class="ce-callout info">
+        <span class="cl-label">💡 표적 vs 면역 차이</span>
+        <p class="cl-body"><strong>표적</strong>은 약이 암세포를 직접 공격,<br><strong>면역</strong>은 내 몸의 면역을 깨워 스스로 싸우게 만드는 것!</p>
       </div>
-      <div class="cc-details">
-        <span class="cc-detail"><strong>부모 담보</strong> 항암약물치료비</span>
-        <span class="cc-detail"><strong>포함 치료</strong> PD-1/PD-L1 억제제·CAR-T</span>
-      </div>
-    </div>
-
-    <!-- ❻ 중입자방사선치료비 -->
-    <div class="coverage-card fu" id="cc-6">
-      <div class="cc-accent" style="background:#1e40af;"></div>
-      <div class="cc-header">
-        <div class="cc-left">
-          <span class="cc-emoji">💥</span>
-          <span class="cc-cat cat-radiation">방사선 — 최첨단</span>
-          <p class="cc-name">중입자방사선치료비</p>
-          <p class="cc-oneliner">탄소 입자로 암을 정밀 폭격하는 차세대 방사선</p>
-        </div>
-        <span class="cc-badge">자식 담보</span>
-      </div>
-      <p class="cc-body">
-        <strong>아세요?</strong> 방사선 치료 중에 가장 정밀한 게 중입자 치료예요.<br>
-        일반 방사선이 X선이라면, 중입자는 <strong>탄소 이온</strong>을 쏘는 방식이에요.<br><br>
-        암세포 바로 앞에서 에너지를 최대로 방출하고 멈추는 특성 덕분에<br>
-        <strong>정상 세포 손상이 최소화</strong>되고, 방사선 저항성 암도 잡을 수 있어요.
-      </p>
-      <div class="cc-callout price">
-        <span class="callout-label">💰 비용 현황</span>
-        <div class="callout-body">
-          <div class="price-row">
-            <span class="price-drug">국내 치료 기준 (1코스)</span>
-            <span class="price-val">수천만원대</span>
-          </div>
-          <div class="price-row">
-            <span class="price-drug">일본 원정 치료</span>
-            <span class="price-val">더 고가</span>
-          </div>
-        </div>
-      </div>
-      <div class="cc-callout info">
-        <span class="callout-label">🏥 국내 가능 기관</span>
-        <p class="callout-body">세브란스병원, 연세암병원 등 — 해외에선 일본이 가장 활성화되어 있어요.</p>
-      </div>
-      <div class="cc-details">
-        <span class="cc-detail"><strong>부모 담보</strong> 항암방사선치료비</span>
-        <span class="cc-detail"><strong>특징</strong> 방사선 저항성 암에도 효과</span>
+      <div class="ce-details">
+        <span class="ce-pill"><strong>부모 담보</strong> 항암약물치료비</span>
+        <span class="ce-pill"><strong>포함 치료</strong> PD-1/PD-L1 억제제·CAR-T</span>
       </div>
     </div>
-
-    <!-- ❼ 양성자방사선치료비 -->
-    <div class="coverage-card fu" id="cc-7">
-      <div class="cc-accent" style="background:#0284c7;"></div>
-      <div class="cc-header">
-        <div class="cc-left">
-          <span class="cc-emoji">🔵</span>
-          <span class="cc-cat cat-radiation">방사선 — 정밀</span>
-          <p class="cc-name">양성자방사선치료비</p>
-          <p class="cc-oneliner">양성자 빔으로 암만 정밀 타격, 소아암·뇌종양에 특히 효과적</p>
-        </div>
-        <span class="cc-badge">자식 담보</span>
-      </div>
-      <p class="cc-body">
-        <strong>아세요?</strong> 중입자처럼 양성자도 입자를 쏘는 치료예요.<br>
-        중입자보다 조금 덜 강하지만, <strong>어린이나 민감한 부위 암</strong> 치료엔<br>
-        양성자가 더 적합한 경우도 많아요.<br><br>
-        두뇌, 척수 근처, 눈 주변처럼 <strong>방사선에 예민한 부위</strong>에 특히 많이 쓰인답니다.
-      </p>
-      <div class="cc-callout info">
-        <span class="callout-label">🏥 국내 가능 기관</span>
-        <p class="callout-body">국립암센터, 삼성서울병원 등</p>
-      </div>
-      <div class="cc-details">
-        <span class="cc-detail"><strong>부모 담보</strong> 항암방사선치료비</span>
-        <span class="cc-detail"><strong>특화 대상</strong> 소아암·뇌종양·민감 부위 암</span>
-      </div>
-    </div>
-
-    <!-- ❽ 세기조절방사선치료비 -->
-    <div class="coverage-card fu" id="cc-8">
-      <div class="cc-accent" style="background:#d97706;"></div>
-      <div class="cc-header">
-        <div class="cc-left">
-          <span class="cc-emoji">🎛️</span>
-          <span class="cc-cat cat-radiation">방사선 — 표준 정밀</span>
-          <p class="cc-name">세기조절방사선치료비</p>
-          <p class="cc-oneliner">방사선 세기를 정밀 조절해 암만 집중 공격 (IMRT)</p>
-        </div>
-        <span class="cc-badge">자식 담보</span>
-      </div>
-      <p class="cc-body">
-        <strong>아세요?</strong> 일반 방사선은 넓게 쏘는 반면,<br>
-        세기조절방사선(IMRT)은 <strong>방향과 세기를 수십 개로 나눠서</strong> 쏴요.<br><br>
-        암 덩어리 모양에 딱 맞게 집중되니까 주변 정상 조직은 훨씬 덜 다치고,<br>암에는 더 강한 방사선을 쓸 수 있어요.<br><br>
-        요즘 <strong>대부분의 방사선 치료가 이 방식을 기본</strong>으로 쓸 정도로 표준화된 치료법이랍니다!
-      </p>
-      <div class="cc-details">
-        <span class="cc-detail"><strong>부모 담보</strong> 항암방사선치료비</span>
-        <span class="cc-detail"><strong>특징</strong> 현재 방사선 치료의 표준 방식</span>
-        <span class="cc-detail"><strong>영문명</strong> IMRT</span>
-      </div>
-    </div>
-
-    <!-- ❾ 다빈치로봇수술비 -->
-    <div class="coverage-card fu" id="cc-9">
-      <div class="cc-accent" style="background:#be185d;"></div>
-      <div class="cc-header">
-        <div class="cc-left">
-          <span class="cc-emoji">🤖</span>
-          <span class="cc-cat cat-surgery">수술 — 로봇</span>
-          <p class="cc-name">다빈치로봇수술비</p>
-          <p class="cc-oneliner">의사가 로봇 팔을 조종하는 초정밀 수술 비용</p>
-        </div>
-        <span class="cc-badge">자식 담보</span>
-      </div>
-      <p class="cc-body">
-        <strong>아세요?</strong> 다빈치 로봇 수술이 왜 비싼지?<br>
-        의사가 직접 칼을 대는 게 아니라, <strong>로봇 팔에 달린 카메라와 기구</strong>로 수술해요.<br>
-        10배 확대 화면과 손 떨림 방지 기능 덕분에 훨씬 정밀하게 수술할 수 있답니다.<br><br>
-        절개 부위가 작아서 <strong>회복이 빠르고 합병증도 적어요.</strong><br>
-        전립선암·자궁암·대장암·갑상선암 등에 많이 쓰여요.
-      </p>
-      <div class="cc-callout price">
-        <span class="callout-label">💰 비급여 비용 — 보험 없으면 전액 본인 부담</span>
-        <div class="callout-body">
-          <div class="price-row">
-            <span class="price-drug">다빈치·레보아이 로봇 수술</span>
-            <span class="price-val">700 ~ 1,500만원</span>
-          </div>
-        </div>
-      </div>
-      <div class="cc-callout warning">
-        <span class="callout-label">⚠️ 이건 알고 가세요</span>
-        <p class="callout-body"><strong>갑상선암·전립선암</strong>은 '일반암' 기준 담보에서 제외되는 경우가 있어요. 담보 세부 조건을 꼭 확인하세요!</p>
-      </div>
-      <div class="cc-details">
-        <span class="cc-detail"><strong>부모 담보</strong> 암수술비</span>
-        <span class="cc-detail"><strong>적용 암종</strong> 전립선·자궁·대장·갑상선암 등</span>
-      </div>
-    </div>
-
   </section>
 
-  <!-- ── COMPARE TABLE ── -->
+  <!-- COMPARE TABLE -->
   <section class="section fu" id="s-compare">
     <span class="eyebrow">COMPARE</span>
     <h2 class="stitle">9개 담보 한눈에 비교</h2>
@@ -621,63 +659,27 @@
       <table class="compare-table">
         <thead>
           <tr>
-            <th style="width:34%">담보</th>
+            <th style="width:35%">담보</th>
             <th style="width:22%">치료 유형</th>
             <th>핵심 한 줄</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><span class="ct-name">암수술비</span><span class="ct-parent">부모</span></td>
-            <td>수술</td>
-            <td>암을 잘라낼 때 나오는 기본 수술비</td>
-          </tr>
-          <tr>
-            <td><span class="ct-name">항암방사선치료비</span><span class="ct-parent">부모</span></td>
-            <td>방사선</td>
-            <td>방사선으로 암세포 DNA 파괴</td>
-          </tr>
-          <tr>
-            <td><span class="ct-name">항암약물치료비</span><span class="ct-parent">부모</span></td>
-            <td>약물</td>
-            <td>세포독성 항암제 기본 보장</td>
-          </tr>
-          <tr>
-            <td><span class="ct-name">표적항암약물치료비</span><span class="ct-child">자식</span></td>
-            <td>약물 — 정밀</td>
-            <td>암세포만 골라 공격하는 스마트 미사일</td>
-          </tr>
-          <tr>
-            <td><span class="ct-name">면역항암약물치료비</span><span class="ct-child">자식</span></td>
-            <td>약물 — 면역</td>
-            <td>내 면역력을 깨워 암과 싸우게 만들기</td>
-          </tr>
-          <tr>
-            <td><span class="ct-name">중입자방사선치료비</span><span class="ct-child">자식</span></td>
-            <td>방사선 — 최첨단</td>
-            <td>탄소 이온으로 암 정밀 폭격, 수천만원대</td>
-          </tr>
-          <tr>
-            <td><span class="ct-name">양성자방사선치료비</span><span class="ct-child">자식</span></td>
-            <td>방사선 — 정밀</td>
-            <td>소아암·뇌종양에 특히 적합한 입자 치료</td>
-          </tr>
-          <tr>
-            <td><span class="ct-name">세기조절방사선치료비</span><span class="ct-child">자식</span></td>
-            <td>방사선 — 표준</td>
-            <td>현재 방사선 치료의 기본 방식 (IMRT)</td>
-          </tr>
-          <tr>
-            <td><span class="ct-name">다빈치로봇수술비</span><span class="ct-child">자식</span></td>
-            <td>수술 — 로봇</td>
-            <td>700~1,500만원 비급여 로봇 수술 비용 커버</td>
-          </tr>
+          <tr><td><span class="ct-name">암수술비</span><span class="ct-p">부모</span></td><td>수술</td><td>암을 잘라낼 때 나오는 기본 수술비</td></tr>
+          <tr><td><span class="ct-name">다빈치로봇수술비</span><span class="ct-c">자식</span></td><td>수술 — 로봇</td><td>700~1,500만원 비급여 로봇 수술 비용 커버</td></tr>
+          <tr><td><span class="ct-name">항암방사선치료비</span><span class="ct-p">부모</span></td><td>방사선</td><td>방사선으로 암세포 DNA 파괴</td></tr>
+          <tr><td><span class="ct-name">중입자방사선치료비</span><span class="ct-c">자식</span></td><td>방사선 — 최첨단</td><td>탄소 이온으로 암 정밀 폭격, 수천만원대</td></tr>
+          <tr><td><span class="ct-name">양성자방사선치료비</span><span class="ct-c">자식</span></td><td>방사선 — 정밀</td><td>소아암·뇌종양에 특히 적합한 입자 치료</td></tr>
+          <tr><td><span class="ct-name">세기조절방사선치료비</span><span class="ct-c">자식</span></td><td>방사선 — 표준</td><td>현재 방사선 치료의 기본 방식 (IMRT)</td></tr>
+          <tr><td><span class="ct-name">항암약물치료비</span><span class="ct-p">부모</span></td><td>약물</td><td>세포독성 항암제 기본 보장</td></tr>
+          <tr><td><span class="ct-name">표적항암약물치료비</span><span class="ct-c">자식</span></td><td>약물 — 정밀</td><td>암세포만 골라 공격하는 스마트 미사일</td></tr>
+          <tr><td><span class="ct-name">면역항암약물치료비</span><span class="ct-c">자식</span></td><td>약물 — 면역</td><td>내 면역력을 깨워 암과 싸우게 만들기</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <!-- ── CTA ── -->
+  <!-- CTA -->
   <div class="cta-wrap fu">
     <h2 class="cta-title">이제 직접 확인해보세요</h2>
     <p class="cta-sub">내 가입제안서엔 이 9개 담보가 어떻게 들어있을까요?</p>
@@ -694,17 +696,142 @@
   GA 암보장 분석기 · INSIGHT 담보 해설 · 참고: 삼성화재 치료비 IN-SIGHT
 </footer>
 
+<!-- ════ DYNAMIC ISLAND TOC ════ -->
+<div id="di-backdrop"></div>
+<div id="di-wrap">
+  <div id="di-pill">
+    <!-- CLOSED PILL -->
+    <div id="di-closed">
+      <div class="di-dot"></div>
+      <span id="di-section-label">INSIGHT</span>
+      <svg id="di-svg" width="22" height="22" viewBox="0 0 22 22">
+        <circle id="di-circ-bg" cx="11" cy="11" r="9.5" fill="none" stroke-width="2.2"/>
+        <circle id="di-circ-fg" cx="11" cy="11" r="9.5" fill="none" stroke-width="2.2"
+                stroke-dasharray="59.69" stroke-dashoffset="59.69"/>
+      </svg>
+    </div>
+    <!-- EXPANDED -->
+    <div id="di-expanded">
+      <div class="di-header">
+        <span class="di-header-label">Table of Contents</span>
+        <button id="di-x">✕</button>
+      </div>
+      <div id="di-list"></div>
+    </div>
+  </div>
+</div>
+
 <script>
-  // Fade-up on scroll
+  // ── Fade-up ──
   const fuObs = new IntersectionObserver(es => {
     es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('vis'); fuObs.unobserve(e.target); } });
   }, { threshold: 0.06 });
   document.querySelectorAll('.fu').forEach(el => fuObs.observe(el));
 
-  // iframe mode → hide nav
+  // ── iframe mode → hide nav + TOC ──
   if (window !== window.top) {
     document.getElementById('insight-nav').style.display = 'none';
+    document.getElementById('di-backdrop').style.display = 'none';
+    document.getElementById('di-wrap').style.display = 'none';
   }
+
+  // ════ Dynamic Island TOC — Auto-scan headings ════
+  // Mirrors DynamicIslandTOC.tsx logic in vanilla JS
+
+  const CIRC = 59.69;
+  const pill      = document.getElementById('di-pill');
+  const backdrop  = document.getElementById('di-backdrop');
+  const diX       = document.getElementById('di-x');
+  const labelEl   = document.getElementById('di-section-label');
+  const list      = document.getElementById('di-list');
+  const circFg    = document.getElementById('di-circ-fg');
+
+  let isOpen = false, activeId = null;
+
+  // Auto-scan h2.stitle + h3.ce-title from content
+  const SECTIONS = [];
+
+  // Wait for DOM then scan
+  setTimeout(() => {
+    // Section-level: h2 (eyebrow + stitle combos via parent sections)
+    const sectionEls = [
+      { id: 's-bigpicture', label: '암 치료 큰 그림',  level: 1 },
+      { id: 's-surgery',    label: '수술 계열',         level: 1 },
+      { id: 'ce-surgery-1', label: '암수술비',           level: 2 },
+      { id: 'ce-surgery-2', label: '다빈치로봇수술비',   level: 2 },
+      { id: 's-radiation',  label: '방사선 계열',        level: 1 },
+      { id: 'ce-radiation-1', label: '항암방사선치료비', level: 2 },
+      { id: 'ce-radiation-2', label: '중입자방사선치료비', level: 2 },
+      { id: 'ce-radiation-3', label: '양성자방사선치료비', level: 2 },
+      { id: 'ce-radiation-4', label: '세기조절방사선치료비', level: 2 },
+      { id: 's-drug',       label: '약물 계열',          level: 1 },
+      { id: 'ce-drug-1',    label: '항암약물치료비',      level: 2 },
+      { id: 'ce-drug-2',    label: '표적항암약물치료비',  level: 2 },
+      { id: 'ce-drug-3',    label: '면역항암약물치료비',  level: 2 },
+      { id: 's-compare',    label: '한눈에 비교',         level: 1 },
+    ];
+
+    const minLevel = 1;
+
+    sectionEls.forEach(s => {
+      const el = document.getElementById(s.id);
+      if (!el) return;
+      SECTIONS.push({ ...s, element: el });
+
+      const indentLevel = Math.max(0, s.level - minLevel);
+      const paddingLeft = indentLevel * 14 + 12;
+
+      const btn = document.createElement('button');
+      btn.className = 'di-item';
+      btn.dataset.sid = s.id;
+      btn.style.paddingLeft = paddingLeft + 'px';
+      btn.style.paddingRight = '10px';
+      btn.style.paddingTop = '8px';
+      btn.style.paddingBottom = '8px';
+      btn.innerHTML = `<span>${s.label}</span><div class="di-item-dot"></div>`;
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const target = document.getElementById(s.id);
+        if (target) {
+          const y = target.getBoundingClientRect().top + window.scrollY - 80;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+        close();
+      });
+      list.appendChild(btn);
+    });
+  }, 100);
+
+  function open()  { isOpen = true;  pill.classList.add('open');    backdrop.classList.add('show');    document.body.style.overflow = 'hidden'; }
+  function close() { isOpen = false; pill.classList.remove('open'); backdrop.classList.remove('show'); document.body.style.overflow = ''; }
+
+  pill.addEventListener('click', () => { if (!isOpen) open(); });
+  diX.addEventListener('click',  e => { e.stopPropagation(); close(); });
+  backdrop.addEventListener('click', close);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+  // Scroll spy + progress
+  function onScroll() {
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    const pct   = total > 0 ? Math.min(100, Math.max(0, window.scrollY / total * 100)) : 0;
+    circFg.style.strokeDashoffset = CIRC * (1 - pct / 100);
+
+    let cur = null;
+    SECTIONS.forEach(s => {
+      const el = document.getElementById(s.id);
+      if (el && el.getBoundingClientRect().top <= 120) cur = s.id;
+    });
+
+    if (cur !== activeId) {
+      activeId = cur;
+      const found = SECTIONS.find(s => s.id === cur);
+      labelEl.textContent = found ? found.label : 'INSIGHT';
+      document.querySelectorAll('.di-item').forEach(b => b.classList.toggle('on', b.dataset.sid === cur));
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 </script>
 
 </body>
