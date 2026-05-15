@@ -19,7 +19,7 @@
     <meta property="og:title" content="GA 암보장 분석기">
     <meta property="og:description" content="GA 암보장 분석기로 당신의 보장을 확인하세요.">
     <meta property="og:image" content="level/metadata.png">
-    <meta property="og:url" content="https://surinsur.com">
+    <meta property="og:url" content="https://hoonseochoi.com">
     <meta property="og:type" content="website">
     
     <meta name="twitter:card" content="summary_large_image">
@@ -385,14 +385,18 @@
         <main class="relative z-10 w-full max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8" role="main">
             <!-- Header with Logo -->
             <header class="flex flex-col items-center mb-10 stagger-in" style="animation-delay:0ms;">
-                <div class="w-full flex justify-between items-start mb-8">
+                <div class="w-full flex justify-between items-center mb-8">
+                    <!-- LEFT: 슈인슈 로고 -->
+                    <div style="display:flex;align-items:center;">
+                        <img src="level/surinsur.png" alt="슈인슈" style="height:30px;object-fit:contain;opacity:0.9;">
+                    </div><!-- end left-group -->
+                    <!-- RIGHT: TUTORIAL + INSIGHT + Manager Badge -->
                     <div style="display:flex;align-items:center;gap:18px;">
                         <style>
                           @keyframes aboutFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
                         </style>
-                        <button onclick="openAboutModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;color:#1A3A8F;letter-spacing:-0.2px;line-height:1;display:inline-block;animation:aboutFloat 3s ease-in-out infinite;padding:0;font-family:inherit;margin-left:10px;">TUTORIAL</button>
-                        <button onclick="openInsightModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;color:#e91e8c;letter-spacing:-0.2px;line-height:1;display:inline-block;animation:aboutFloat 3.4s ease-in-out infinite;animation-delay:0.4s;padding:0;font-family:inherit;margin-left:14px;">INSIGHT</button>
-                    </div><!-- end left-group -->
+                        <button onclick="openAboutModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;color:#1A3A8F;letter-spacing:-0.2px;line-height:1;display:inline-block;animation:aboutFloat 3s ease-in-out infinite;padding:0;font-family:inherit;">TUTORIAL</button>
+                        <button onclick="openInsightModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;color:#e91e8c;letter-spacing:-0.2px;line-height:1;display:inline-block;animation:aboutFloat 3.4s ease-in-out infinite;animation-delay:0.4s;padding:0;font-family:inherit;">INSIGHT</button>
                     <!-- Floating Manager Welcome Badge & Expandable Level Panel -->
                     <div id="manager-badge-container"
                         class="manager-welcome-float hidden scale-90 opacity-0 transition-all duration-700 flex flex-col items-center">
@@ -460,7 +464,8 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                    </div><!-- end right-group -->
+                </div><!-- end justify-between -->
 
                 <!-- Level Up Notification (Dynamic Drop-down) -->
                 <div id="level-up-notification"
@@ -534,14 +539,14 @@
                 <!-- 지원 회사 CI 로고 -->
                 <div class="flex items-center justify-end gap-3 mb-3 px-1 flex-wrap">
                     <span class="text-xs font-semibold text-gray-400 tracking-wide mr-1">지원 회사</span>
-                    <img src="mci2.png" alt="메리츠화재" class="h-8 object-contain opacity-80 hover:opacity-100 transition-opacity" style="max-width:108px;">
-                    <img src="sci2.svg" alt="삼성화재" class="h-9 object-contain opacity-80 hover:opacity-100 transition-opacity" style="max-width:117px;">
+                    <img src="mci2.png" alt="메리츠화재" class="object-contain opacity-80 hover:opacity-100 transition-opacity" style="height:22px;max-width:76px;">
+                    <img src="sci2.svg" alt="삼성화재" class="object-contain opacity-80 hover:opacity-100 transition-opacity" style="height:25px;max-width:82px;">
                     <div class="relative inline-flex items-center">
-                        <img id="db-ci-logo" alt="DB손해보험" class="h-9 object-contain opacity-80 hover:opacity-100 transition-opacity" style="max-width:140px;">
+                        <img id="db-ci-logo" alt="DB손해보험" class="object-contain opacity-80 hover:opacity-100 transition-opacity" style="height:25px;max-width:98px;">
                         <span class="absolute -top-2 -right-1 text-[9px] font-bold px-1 py-0.5 rounded-full text-white leading-none shadow-sm animate-bounce" style="background:#3B7FF5;">BETA</span>
                     </div>
                     <div class="relative inline-flex items-center">
-                        <img id="hkfire-ci-logo" alt="흥국화재" class="h-9 object-contain opacity-80 hover:opacity-100 transition-opacity" style="max-width:140px;">
+                        <img id="hkfire-ci-logo" alt="흥국화재" class="object-contain opacity-80 hover:opacity-100 transition-opacity" style="height:25px;max-width:98px;">
                         <span class="absolute -top-4 -right-1 text-[9px] font-bold px-1 py-0.5 rounded-full text-white leading-none shadow-sm animate-bounce" style="background:#3B7FF5;">BETA</span>
                     </div>
                 </div>
