@@ -386,17 +386,17 @@
             <!-- Header with Logo -->
             <header class="flex flex-col items-center mb-10 stagger-in" style="animation-delay:0ms;">
                 <div class="w-full flex justify-between items-center mb-8">
-                    <!-- LEFT: 슈인슈 로고 -->
-                    <div style="display:flex;align-items:center;">
+                    <!-- LEFT: 슈인슈 로고 + TUTORIAL + INSIGHT -->
+                    <div style="display:flex;align-items:center;gap:20px;">
                         <img src="surinsur.png" alt="슈인슈" style="height:90px;object-fit:contain;opacity:0.9;">
-                    </div><!-- end left-group -->
-                    <!-- RIGHT: TUTORIAL + INSIGHT + Manager Badge -->
-                    <div style="display:flex;align-items:center;gap:18px;">
                         <style>
                           @keyframes aboutFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
                         </style>
                         <button onclick="openAboutModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;color:#1A3A8F;letter-spacing:-0.2px;line-height:1;display:inline-block;animation:aboutFloat 3s ease-in-out infinite;padding:0;font-family:inherit;">TUTORIAL</button>
                         <button onclick="openInsightModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;color:#e91e8c;letter-spacing:-0.2px;line-height:1;display:inline-block;animation:aboutFloat 3.4s ease-in-out infinite;animation-delay:0.4s;padding:0;font-family:inherit;">INSIGHT</button>
+                    </div><!-- end left-group -->
+                    <!-- RIGHT: Manager Badge -->
+                    <div style="display:flex;align-items:center;gap:18px;">
                     <!-- Floating Manager Welcome Badge & Expandable Level Panel -->
                     <div id="manager-badge-container"
                         class="manager-welcome-float hidden scale-90 opacity-0 transition-all duration-700 flex flex-col items-center">
@@ -511,7 +511,7 @@
                     <svg width="14" height="14" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <path d="M9 12l2 2 4-4" />
                         <circle cx="12" cy="12" r="10" />
-                    </svg> 암 치료비 분석지원 시스템
+                    </svg> 슈린슈 암 치료비 분석 지원 시스템
                 </div>
 
                 <h1 id="main-title"
@@ -529,7 +529,7 @@
                     </span>
                 </h1>
                 <p id="subtitle" class="text-base sm:text-lg max-w-2xl text-gray-500 font-medium text-center">
-                    가입제안서 PDF를 업로드하면,<br>보장내역 중 암 치료비 파트만 추출 합니다
+                    가입제안서 PDF를 업로드하면, 슈린슈가 보장내역에서 암 치료비만 깔끔하게 정리해드릴게요 !
                 </p>
             </header>
 
