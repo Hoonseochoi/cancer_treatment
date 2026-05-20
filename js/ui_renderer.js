@@ -266,9 +266,10 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         : sub.stage === '1~3기'
                             ? '<span style="color:#F97316;font-weight:800;font-size:0.65rem">(1~3기)</span> '
                             : '';
+                    const onceTag = data.onceOnly ? '<span style="color:#7C3AED;font-weight:800;font-size:0.6rem;background:#F5F3FF;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle">(최초1회)</span>' : '';
                     innerTreeHtml = `
                         <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
-                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${sub.name}</span>
+                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${sub.name}${onceTag}</span>
                             <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
                         </div>`;
                 }
@@ -334,9 +335,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                     </div>
                     <div class="h-px w-full bg-gray-50 border-t border-dashed border-gray-100"></div>
                 <div class="flex-1">
-                    <h4 class="text-sm font-black text-gray-800 mb-1 leading-tight">
-                        ${name}${data.onceOnly ? ' <span style="font-size:0.6rem;font-weight:800;color:#7C3AED;background:#F5F3FF;padding:1px 5px;border-radius:3px;vertical-align:middle;letter-spacing:0">(최초1회)</span>' : ''}
-                    </h4>
+                    <h4 class="text-sm font-black text-gray-800 mb-1 leading-tight">${name}</h4>
                     <div class="sub-items-container">${subItemsHtml}</div>
                 </div>
             </div>`;
