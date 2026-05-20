@@ -217,6 +217,8 @@ function calculateHierarchicalSummary(results) {
                         totalMax: 0,
                         isolatedMin: 0,
                         isolatedMax: 0,
+                        isolatedOnceMin: 0, // 최초1회·각각1회 전용 합계 (5년 계산 시 ×1)
+                        isolatedOnceMax: 0,
                         items: [],
                         onceOnly: ONCE_ONLY_KEYS.has(normalizedName)
                     });
@@ -229,13 +231,27 @@ function calculateHierarchicalSummary(results) {
                 group.totalMax += valMax;
                 group.isolatedMin += valMin;
                 group.isolatedMax += valMax;
+                // ── payFreq 결정 ──
+                const srcIs26Jong  = /26종/.test(item.name) || /26종/.test(det.name || '');
+                const srcIsBundle  = /암진단|통합치료비/.test(item.name);
+                let payFreq = '';
+                if (srcIs26Jong) {
+                    payFreq = 'once-each';
+                } else if (ONCE_ONLY_KEYS.has(normalizedName)) {
+                    payFreq = srcIsBundle ? 'annual' : 'once';
+                }
+                if (payFreq === 'once' || payFreq === 'once-each') {
+                    group.isolatedOnceMin += valMin;
+                    group.isolatedOnceMax += valMax;
+                }
                 group.items.push({
                     name: det.name,
                     amount: det.amount,
                     maxAmount: det.maxAmount,
                     source: item.name,
                     hiddenInDetail: det.hiddenInDetail,
-                    sub: det.sub // 전달용 sub 항목 추가
+                    sub: det.sub, // 전달용 sub 항목 추가
+                    payFreq: payFreq
                 });
                 // Update display name (pick longest readable name)
                 const is26JongItem = det.name.includes("26종");

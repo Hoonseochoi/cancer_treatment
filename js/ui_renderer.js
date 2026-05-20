@@ -64,20 +64,19 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             : insurer === 'heungkuk'
                 ? calculateHierarchicalSummaryHeungkuk(results)
                 : calculateHierarchicalSummary(results);
-    // Calculate Grand Total Range (최초1회 담보 분리)
+    // Calculate Grand Total Range (최초1회·각각1회 담보 분리)
     let grandTotalMin = 0;
     let grandTotalMax = 0;
-    let onceOnlyTotalMin = 0;  // 최초 1회 담보 합계 (5년 계산 시 ×1)
+    let onceOnlyTotalMin = 0;  // 최초1회·각각1회 합계 (5년 계산 시 ×1)
     let onceOnlyTotalMax = 0;
     summaryMap.forEach(d => {
         const min = d.isolatedMin ?? d.totalMin ?? 0;   // isolatedMin: 직접 보장 항목만 합산 (계층 전파 자식 이중계산 방지)
         const max = d.isolatedMax ?? d.totalMax ?? 0;
         grandTotalMin += min;
         grandTotalMax += max;
-        if (d.onceOnly) {
-            onceOnlyTotalMin += min;
-            onceOnlyTotalMax += max;
-        }
+        // isolatedOnceMin: 항목별 payFreq 기준으로 정확히 추적된 값
+        onceOnlyTotalMin += (d.isolatedOnceMin || 0);
+        onceOnlyTotalMax += (d.isolatedOnceMax || 0);
     });
 
     // ── 커버리지 스냅샷 저장 (전 보험사 공통) ──
@@ -266,10 +265,15 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         : sub.stage === '1~3기'
                             ? '<span style="color:#F97316;font-weight:800;font-size:0.65rem">(1~3기)</span> '
                             : '';
-                    const onceTag = data.onceOnly ? '<span style="color:#7C3AED;font-weight:800;font-size:0.6rem;background:#F5F3FF;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle">(최초1회)</span>' : '';
+                    const PAY_TAG_MAP = {
+                        'once':      '<span style="color:#7C3AED;font-weight:800;font-size:0.6rem;background:#F5F3FF;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle">(최초1회)</span>',
+                        'once-each': '<span style="color:#B45309;font-weight:800;font-size:0.6rem;background:#FFFBEB;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle">(각각1회)</span>',
+                        'annual':    '<span style="color:#059669;font-weight:800;font-size:0.6rem;background:#ECFDF5;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle">(연간1회)</span>'
+                    };
+                    const payTag = PAY_TAG_MAP[sub.payFreq] || '';
                     innerTreeHtml = `
                         <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
-                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${sub.name}${onceTag}</span>
+                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${sub.name}${payTag}</span>
                             <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
                         </div>`;
                 }

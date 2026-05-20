@@ -334,6 +334,8 @@ function calculateHierarchicalSummarySamsung(results) {
                         totalMax: 0,
                         isolatedMin: 0, // passthrough-dual 확장 제외한 직접 금액
                         isolatedMax: 0,
+                        isolatedOnceMin: 0,
+                        isolatedOnceMax: 0,
                         items: [],
                         onceOnly: ONCE_ONLY_KEYS.has(normalizedName)
                     });
@@ -360,6 +362,19 @@ function calculateHierarchicalSummarySamsung(results) {
                         group.isolatedMax += valMax;
                     }
                 }
+                // ── payFreq 결정 ──
+                const srcIs26Jong_s  = /26종/.test(item.name) || /26종/.test(det.name || '');
+                const srcIsBundle_s  = /암진단|통합치료비/.test(item.name);
+                let payFreq_s = '';
+                if (srcIs26Jong_s) {
+                    payFreq_s = 'once-each';
+                } else if (ONCE_ONLY_KEYS.has(normalizedName)) {
+                    payFreq_s = srcIsBundle_s ? 'annual' : 'once';
+                }
+                if (!det._expansion && (payFreq_s === 'once' || payFreq_s === 'once-each')) {
+                    group.isolatedOnceMin += valMin;
+                    group.isolatedOnceMax += valMax;
+                }
                 group.items.push({
                     name: det.name,
                     amount: det.amount,
@@ -368,7 +383,8 @@ function calculateHierarchicalSummarySamsung(results) {
                     hiddenInDetail: det.hiddenInDetail,
                     sub: det.sub,
                     비급여: det.비급여 || false,
-                    _expansion: det._expansion || false
+                    _expansion: det._expansion || false,
+                    payFreq: payFreq_s
                 });
                 // Update display name from direct (non-expansion) items only
                 if (!det._expansion && (det.name.length > group.displayName.length || group.displayName === normalizedName)) {

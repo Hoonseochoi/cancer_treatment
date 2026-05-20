@@ -455,6 +455,7 @@ function calculateHierarchicalSummaryHeungkuk(results) {
                     displayName: normalizedName,
                     totalMin: 0, totalMax: 0,
                     isolatedMin: 0, isolatedMax: 0,
+                    isolatedOnceMin: 0, isolatedOnceMax: 0,
                     items: [],
                     onceOnly: ONCE_ONLY_KEYS.has(normalizedName)
                 });
@@ -474,13 +475,28 @@ function calculateHierarchicalSummaryHeungkuk(results) {
                 }
             }
 
+            // ── payFreq 결정 ──
+            const srcIs26Jong_h = /26종/.test(item.name) || /26종/.test(det.name || '');
+            const srcIsBundle_h = /암진단|통합치료비/.test(item.name);
+            let payFreq_h = '';
+            if (srcIs26Jong_h) {
+                payFreq_h = 'once-each';
+            } else if (ONCE_ONLY_KEYS.has(normalizedName)) {
+                payFreq_h = srcIsBundle_h ? 'annual' : 'once';
+            }
+            if (!det._expansion && !isYusamOnly && (payFreq_h === 'once' || payFreq_h === 'once-each')) {
+                group.isolatedOnceMin += valMin;
+                group.isolatedOnceMax += valMax;
+            }
+
             group.items.push({
                 name: det.name,
                 amount: det.amount,
                 source: item.name,
                 isYusamOnly,
                 비급여: det.비급여 || false,
-                _expansion: det._expansion || false
+                _expansion: det._expansion || false,
+                payFreq: payFreq_h
             });
 
             // targetName이 있는 경우(=상위 카드에 합산되는 하위 개념)는 카드명 덮어쓰기 금지
