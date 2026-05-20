@@ -275,7 +275,8 @@ function calculateHierarchicalSummaryDB(results) {
                     displayName: normalizedName,
                     totalMin: 0, totalMax: 0,
                     isolatedMin: 0, isolatedMax: 0,
-                    items: []
+                    items: [],
+                    onceOnly: ONCE_ONLY_KEYS.has(normalizedName)
                 });
             }
 
@@ -324,7 +325,7 @@ function calculateHierarchicalSummaryDB(results) {
             if (!snap || snap.isolatedMin === 0) return;
             children.forEach(child => {
                 if (!summaryMap.has(child)) {
-                    summaryMap.set(child, { displayName: child, totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0, items: [] });
+                    summaryMap.set(child, { displayName: child, totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0, items: [], onceOnly: ONCE_ONLY_KEYS.has(child) });
                 }
                 const childGroup = summaryMap.get(child);
                 childGroup.totalMin += snap.isolatedMin;

@@ -75,6 +75,16 @@ function formatDisplayAmount(str) {
     if (val === 0) return str; // 파싱 실패 시 원본 유지
     return formatKoAmount(val);
 }
+// ── 최초 1회 담보 키 (5년 합산 시 ×1만 적용) ──
+const ONCE_ONLY_KEYS = new Set([
+    "표적항암약물치료비",
+    "면역항암약물치료비",
+    "중입자방사선치료비",
+    "다빈치로봇수술비",
+    "양성자방사선치료비",
+    "세기조절방사선치료비"
+]);
+
 // ── Aggregate Hierarchical Summary Logic ──
 function calculateHierarchicalSummary(results) {
     const summaryMap = new Map();
@@ -207,7 +217,8 @@ function calculateHierarchicalSummary(results) {
                         totalMax: 0,
                         isolatedMin: 0,
                         isolatedMax: 0,
-                        items: []
+                        items: [],
+                        onceOnly: ONCE_ONLY_KEYS.has(normalizedName)
                     });
                 }
                 const group = summaryMap.get(normalizedName);

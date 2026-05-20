@@ -455,7 +455,8 @@ function calculateHierarchicalSummaryHeungkuk(results) {
                     displayName: normalizedName,
                     totalMin: 0, totalMax: 0,
                     isolatedMin: 0, isolatedMax: 0,
-                    items: []
+                    items: [],
+                    onceOnly: ONCE_ONLY_KEYS.has(normalizedName)
                 });
             }
 
@@ -513,7 +514,8 @@ function calculateHierarchicalSummaryHeungkuk(results) {
                     displayName: child,
                     totalMin: 0, totalMax: 0,
                     isolatedMin: 0, isolatedMax: 0,
-                    items: []
+                    items: [],
+                    onceOnly: ONCE_ONLY_KEYS.has(child)
                 });
             }
             const c = summaryMap.get(child);

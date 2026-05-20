@@ -64,12 +64,20 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             : insurer === 'heungkuk'
                 ? calculateHierarchicalSummaryHeungkuk(results)
                 : calculateHierarchicalSummary(results);
-    // Calculate Grand Total Range
+    // Calculate Grand Total Range (최초1회 담보 분리)
     let grandTotalMin = 0;
     let grandTotalMax = 0;
+    let onceOnlyTotalMin = 0;  // 최초 1회 담보 합계 (5년 계산 시 ×1)
+    let onceOnlyTotalMax = 0;
     summaryMap.forEach(d => {
-        grandTotalMin += (d.isolatedMin ?? d.totalMin ?? 0);   // isolatedMin: 직접 보장 항목만 합산 (계층 전파 자식 이중계산 방지)
-        grandTotalMax += (d.isolatedMax ?? d.totalMax ?? 0);
+        const min = d.isolatedMin ?? d.totalMin ?? 0;   // isolatedMin: 직접 보장 항목만 합산 (계층 전파 자식 이중계산 방지)
+        const max = d.isolatedMax ?? d.totalMax ?? 0;
+        grandTotalMin += min;
+        grandTotalMax += max;
+        if (d.onceOnly) {
+            onceOnlyTotalMin += min;
+            onceOnlyTotalMax += max;
+        }
     });
 
     // ── 커버리지 스냅샷 저장 (전 보험사 공통) ──
@@ -85,8 +93,11 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
     // ── Render 5-Year Insight Card ──
     if (insightSection) {
         insightSection.innerHTML = '';
-        const total5Min = grandTotalMin * 5;
-        const total5Max = grandTotalMax * 5;
+        // 최초 1회 담보: ×1, 반복 보장 담보: ×5
+        const repeatableMin = grandTotalMin - onceOnlyTotalMin;
+        const repeatableMax = grandTotalMax - onceOnlyTotalMax;
+        const total5Min = repeatableMin * 5 + onceOnlyTotalMin;
+        const total5Max = repeatableMax * 5 + onceOnlyTotalMax;
 
         let total5Display = formatKoAmount(total5Min);
         if (total5Min !== total5Max) {
@@ -143,7 +154,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                             <span class="text-gray-400 text-xs font-bold ml-1">입니다.</span>
                         </div>
                         <p class="text-[10px] text-gray-400 mt-3 font-medium tracking-tight leading-tight">
-                            * 위 금액은 아래과정에서 산출된 암 치료비 합산의 단순히 5배를 곱한 값입니다. 실제 보장금액과 상이합니다.
+                            * 반복보장 담보 ×5 + 최초1회 담보 ×1로 산출한 참고값입니다. 실제 보장금액과 상이합니다.
                         </p>
                     </div>
                 </div>
@@ -323,7 +334,9 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                     </div>
                     <div class="h-px w-full bg-gray-50 border-t border-dashed border-gray-100"></div>
                 <div class="flex-1">
-                    <h4 class="text-sm font-black text-gray-800 mb-1 leading-tight">${name}</h4>
+                    <h4 class="text-sm font-black text-gray-800 mb-1 leading-tight">
+                        ${name}${data.onceOnly ? ' <span style="font-size:0.6rem;font-weight:800;color:#7C3AED;background:#F5F3FF;padding:1px 5px;border-radius:3px;vertical-align:middle;letter-spacing:0">(최초1회)</span>' : ''}
+                    </h4>
                     <div class="sub-items-container">${subItemsHtml}</div>
                 </div>
             </div>`;

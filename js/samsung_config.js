@@ -334,7 +334,8 @@ function calculateHierarchicalSummarySamsung(results) {
                         totalMax: 0,
                         isolatedMin: 0, // passthrough-dual 확장 제외한 직접 금액
                         isolatedMax: 0,
-                        items: []
+                        items: [],
+                        onceOnly: ONCE_ONLY_KEYS.has(normalizedName)
                     });
                 }
                 const group = summaryMap.get(normalizedName);
@@ -396,7 +397,7 @@ function calculateHierarchicalSummarySamsung(results) {
         if (!snap || snap.isolatedMin === 0) return;
         children.forEach(child => {
             if (!summaryMap.has(child)) {
-                summaryMap.set(child, { displayName: child, totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0, items: [] });
+                summaryMap.set(child, { displayName: child, totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0, items: [], onceOnly: ONCE_ONLY_KEYS.has(child) });
             }
             const childGroup = summaryMap.get(child);
             childGroup.totalMin += snap.isolatedMin;
