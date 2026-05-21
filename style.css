@@ -551,4 +551,10 @@ strong {
         right: 8px !important;
         top: 80px !important;
     }
+
+    /* Counter badges */
+    #counter-badge > div {
+        padding: 6px 10px !important;
+        font-size: 10px !important;
+    }
 }
