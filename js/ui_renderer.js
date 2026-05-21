@@ -63,7 +63,9 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             ? calculateHierarchicalSummaryDB(results)
             : insurer === 'heungkuk'
                 ? calculateHierarchicalSummaryHeungkuk(results)
-                : calculateHierarchicalSummary(results);
+                : insurer === 'mirae'
+                    ? calculateHierarchicalSummaryMirae(results)
+                    : calculateHierarchicalSummary(results);
     // Calculate Grand Total Range (최초1회·각각1회 담보 분리)
     let grandTotalMin = 0;
     let grandTotalMax = 0;
@@ -80,7 +82,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
     });
 
     // ── 커버리지 스냅샷 저장 (전 보험사 공통) ──
-    if (['samsung', 'db', 'heungkuk', 'meritz'].includes(insurer) && typeof logCoverageSnapshot === 'function') {
+    if (['samsung', 'db', 'heungkuk', 'meritz', 'mirae'].includes(insurer) && typeof logCoverageSnapshot === 'function') {
         logCoverageSnapshot(meta.fileName, insurer, meta, grandTotalMin, grandTotalMax, summaryMap);
     }
 
@@ -121,6 +123,9 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         } else if (insurer === 'heungkuk') {
             expertName = "루루";
             expertImgBase64 = RURU_B64;
+        } else if (insurer === 'mirae') {
+            expertName = "미래봇";
+            expertImgBase64 = MIRAE_B64;
         }
 
         insightSection.innerHTML = `
@@ -133,13 +138,13 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-lg shadow-red-100 border-2 border-white ring-1 ring-red-100">
                              <img src="${expertImgBase64}" alt="보험전문가 ${expertName}" class="w-full h-full object-cover object-top">
                         </div>
-                        <div class="absolute -bottom-2 -right-2 ${insurer === 'db' ? 'bg-blue-600' : insurer === 'heungkuk' ? 'bg-pink-600' : 'bg-red-600'} text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
-                            ${insurer === 'db' ? 'Promy' : insurer === 'heungkuk' ? 'Ruru' : 'Expert'}
+                        <div class="absolute -bottom-2 -right-2 ${insurer === 'db' ? 'bg-blue-600' : insurer === 'heungkuk' ? 'bg-pink-600' : insurer === 'mirae' ? 'bg-orange-500' : 'bg-red-600'} text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
+                            ${insurer === 'db' ? 'Promy' : insurer === 'heungkuk' ? 'Ruru' : insurer === 'mirae' ? 'Mirae' : 'Expert'}
                         </div>
                     </div>
                     <div class="text-center sm:text-left flex-1">
                         <p class="text-gray-500 text-[13px] font-bold mb-1 opacity-80">
-                            🛡️ <span class="text-gray-400">${insurer === 'db' ? 'DB손보 마스코트' : insurer === 'heungkuk' ? '흥국화재 마스코트' : '보험전문가'} <b class="text-gray-600">${expertName}</b>의 insight : 전문 통계에 의하면 암치료는 5년정도 받는대요 !</span>
+                            🛡️ <span class="text-gray-400">${insurer === 'db' ? 'DB손보 마스코트' : insurer === 'heungkuk' ? '흥국화재 마스코트' : insurer === 'mirae' ? '미래에셋생명 AI' : '보험전문가'} <b class="text-gray-600">${expertName}</b>의 insight : 전문 통계에 의하면 암치료는 5년정도 받는대요 !</span>
                         </p>
                         <h3 class="text-sm sm:text-xl font-medium text-gray-800 leading-relaxed">
                             <span class="font-black text-red-600 underline decoration-red-200 underline-offset-4">${customerName}</span>님이 

@@ -8,6 +8,10 @@ function detectInsurer(text) {
     if (/heungkukfire\.co\.kr|흥국화재해상보험|흥Good/.test(text)) return 'heungkuk';
     if (typeof currentFileName === 'string' && /흥국|heungkuk/i.test(currentFileName)) return 'heungkuk';
 
+    // 0차: 미래에셋생명 → 텍스트 내 상품명/URL / 파일명 내 M-케어 패턴
+    if (/미래에셋생명|M-케어\s*건강|miraelife\.co\.kr|간편고지고당|간편고지형\(\d+\),갱신형/.test(text)) return 'mirae';
+    if (typeof currentFileName === 'string' && /미래에셋|M-케어|케어건강|mirae/i.test(currentFileName)) return 'mirae';
+
     // 1차: 메리츠 명시 → 무조건 meritz
     if (/메리츠\s*화재|meritzfire\.com|메리츠/i.test(text)) return 'meritz';
     if (typeof currentFileName === 'string' && /메리츠|meritz/i.test(currentFileName)) return 'meritz';
@@ -138,6 +142,7 @@ async function processFile(file) {
         document.body.classList.toggle('samsung-theme', insurer === 'samsung');
         document.body.classList.toggle('db-theme', insurer === 'db');
         document.body.classList.toggle('heungkuk-theme', insurer === 'heungkuk');
+        document.body.classList.toggle('mirae-theme', insurer === 'mirae');
 
         // ── 메타 추출: 상품명 / 연령 / 보험료 ──
         const samsungMeta = { fileName: file.name };
@@ -273,6 +278,30 @@ async function processFile(file) {
             if (prm) samsungMeta.premium = parseInt(prm[1].replace(/,/g, ''), 10);
 
             console.log('[meritz meta]', samsungMeta);
+        } else if (insurer === 'mirae') {
+            // 상품명: "M-케어 건강보험 (간편고지형...)" 패턴
+            const pm = text.match(/M-케어\s*건강보험[^\n\r]{0,60}/) ||
+                       text.match(/미래에셋생명[^\n\r]{0,60}/);
+            if (pm) samsungMeta.productName = pm[0].replace(/\s+/g, ' ').trim();
+
+            // 연령: "XX세" 패턴 (주피보험자 나이)
+            const am = text.match(/보험계약의\s*개요[\s\S]{0,400}?(\d{2})\s*(?=갱신계약|보험기간)/) ||
+                       text.match(/피보험자[^\n]{0,40}(\d{2})\s*세/);
+            if (am) samsungMeta.age = parseInt(am[1], 10);
+
+            // 보험료: "합계 NNN,NNN" (전체 보험료 합계)
+            const prm = text.match(/합계\s+([\d,]+)/) ||
+                        text.match(/실납입보험료\s*([\d,]+)\s*원/) ||
+                        text.match(/월납\s+([\d,]+)\s*$/) ;
+            if (prm) samsungMeta.premium = parseInt(prm[1].replace(/,/g, ''), 10);
+
+            // 고객이름 보조 추출 (미래에셋: 피보험자명이 담보 테이블에 있음)
+            if (customerName === '고객') {
+                const hkMatch = text.match(/피보험자\s*([가-힣]{2,5})/);
+                if (hkMatch) customerName = hkMatch[1];
+            }
+
+            console.log('[mirae meta]', samsungMeta);
         }
 
         const results = insurer === 'samsung'
@@ -281,7 +310,9 @@ async function processFile(file) {
                 ? extractRawCoveragesDB(text)
                 : insurer === 'heungkuk'
                     ? extractRawCoveragesHeungkuk(text)
-                    : extractRawCoverages(text);
+                    : insurer === 'mirae'
+                        ? extractRawCoveragesMirae(text)
+                        : extractRawCoverages(text);
         console.log(`[extraction] ${results.length}건 추출 (insurer=${insurer})`);
 
         // 미인식 담보 추적

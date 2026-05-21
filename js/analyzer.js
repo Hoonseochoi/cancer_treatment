@@ -82,7 +82,8 @@ const ONCE_ONLY_KEYS = new Set([
     "중입자방사선치료비",
     "다빈치로봇수술비",
     "양성자방사선치료비",
-    "세기조절방사선치료비"
+    "세기조절방사선치료비",
+    "정위방사선치료비"   // 미래에셋생명 항암정위방사선치료특약 (SBRT)
 ]);
 
 // ── Aggregate Hierarchical Summary Logic ──

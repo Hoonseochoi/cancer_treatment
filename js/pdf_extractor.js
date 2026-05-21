@@ -6,10 +6,14 @@ async function extractTextFromPDF(file, log = console.log) {
     log(`PDF 로드 완료. 총 ${pdf.numPages}페이지`);
     let fullText = '';
     // 메리츠: 1, 3~6페이지에 담보리스트 (최적화)
+    // 미래에셋생명: 3~7페이지에 담보리스트 (최적화, 파일명으로 조기 감지)
     // 삼성화재 등 대용량 PDF(8페이지 초과): 전체 페이지 스캔
-    const pagesToProcess = pdf.numPages > 8
-        ? Array.from({ length: pdf.numPages }, (_, i) => i + 1)
-        : [1, 3, 4, 5, 6].filter(p => p <= pdf.numPages);
+    const isMiraePDF = typeof currentFileName === 'string' && /M-케어|케어건강|미래에셋/i.test(currentFileName);
+    const pagesToProcess = isMiraePDF
+        ? [1, 2, 3, 4, 5, 6, 7, 8].filter(p => p <= pdf.numPages)
+        : pdf.numPages > 8
+            ? Array.from({ length: pdf.numPages }, (_, i) => i + 1)
+            : [1, 3, 4, 5, 6].filter(p => p <= pdf.numPages);
     const totalPagesToProcess = pagesToProcess.length;
     log(`처리할 페이지: [${pagesToProcess.join(', ')}]`);
     showToast(`총 ${totalPagesToProcess}페이지 정밀 분석을 시작합니다.`, false);
