@@ -132,7 +132,6 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             <div class="premium-card rounded-3xl p-4 sm:p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
                 <!-- Background Decoration -->
                 <div class="absolute -right-4 -top-4 w-32 h-32 bg-red-500/5 rounded-full blur-3xl group-hover:bg-red-500/10 transition-colors"></div>
-                
                 <div class="flex flex-col sm:flex-row items-center gap-6 relative z-10">
                     <div class="relative shrink-0">
                         <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-lg shadow-red-100 border-2 border-white ring-1 ring-red-100">
