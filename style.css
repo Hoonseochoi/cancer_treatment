@@ -568,6 +568,13 @@ strong {
         left: auto !important;
     }
 
+    /* Insurer logos: 50% size on mobile */
+    /* !important needed: logos have inline style="height:..." which beats stylesheet without it */
+    .insurer-logo {
+        height: 12px !important;
+        max-width: 48px !important;
+    }
+
     /* Other panel: reduce padding on mobile */
     #other-panel-container > div {
         padding: 16px !important;
