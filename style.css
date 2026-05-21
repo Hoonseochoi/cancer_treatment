@@ -557,4 +557,23 @@ strong {
         padding: 6px 10px !important;
         font-size: 10px !important;
     }
+
+    /* Error report island: fix to bottom-right on mobile so it doesn't overlap content */
+    /* !important needed: element has inline style="" attribute and JS (expandErrorReport/closeErrorReport)
+       sets position-related styles directly — both win over stylesheet rules without !important */
+    #error-report-island {
+        position: fixed !important;
+        bottom: 16px !important;
+        right: 16px !important;
+        left: auto !important;
+    }
+
+    /* Other panel: reduce padding on mobile */
+    #other-panel-container > div {
+        padding: 16px !important;
+    }
+
+    /* Reset button: icon-only on mobile to save space */
+    #reset-btn span { display: none; }
+    #reset-btn::after { content: '↺'; font-size: 14px; }
 }

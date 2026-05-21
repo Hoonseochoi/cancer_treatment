@@ -124,7 +124,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         }
 
         insightSection.innerHTML = `
-            <div class="premium-card rounded-3xl p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
+            <div class="premium-card rounded-3xl p-4 sm:p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
                 <!-- Background Decoration -->
                 <div class="absolute -right-4 -top-4 w-32 h-32 bg-red-500/5 rounded-full blur-3xl group-hover:bg-red-500/10 transition-colors"></div>
                 
@@ -141,18 +141,18 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         <p class="text-gray-500 text-[13px] font-bold mb-1 opacity-80">
                             🛡️ <span class="text-gray-400">${insurer === 'db' ? 'DB손보 마스코트' : insurer === 'heungkuk' ? '흥국화재 마스코트' : '보험전문가'} <b class="text-gray-600">${expertName}</b>의 insight : 전문 통계에 의하면 암치료는 5년정도 받는대요 !</span>
                         </p>
-                        <h3 class="text-lg sm:text-xl font-medium text-gray-800 leading-relaxed">
+                        <h3 class="text-sm sm:text-xl font-medium text-gray-800 leading-relaxed">
                             <span class="font-black text-red-600 underline decoration-red-200 underline-offset-4">${customerName}</span>님이 
                             <span class="font-bold text-gray-900 mx-1">5년간</span> 보장받을 수 있는 
                             <span class="font-black text-gray-900 border-b-2 border-red-500/30">암 치료비</span>는 최대
                         </h3>
                         <div class="mt-2 flex items-baseline gap-2 justify-center sm:justify-start">
-                            <span class="text-3xl sm:text-4xl font-black text-red-600 tracking-tight font-outfit">
+                            <span class="text-2xl sm:text-4xl font-black text-red-600 tracking-tight font-outfit">
                                 ${total5Display}
                             </span>
                             <span class="text-gray-400 text-xs font-bold ml-1">입니다.</span>
                         </div>
-                        <p class="text-[10px] text-gray-400 mt-3 font-medium tracking-tight leading-tight">
+                        <p class="text-[10px] text-gray-400 mt-3 font-medium tracking-tight leading-tight break-keep">
                             * 반복보장 담보 ×5 + 최초1회 담보 ×1로 산출한 참고값입니다. 실제 보장금액과 상이합니다.
                         </p>
                     </div>
@@ -208,7 +208,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
 
         // 메인 카드 그리드 (summaryGrid는 wrapper, 카드는 inner div에)
         const mainGrid = document.createElement('div');
-        mainGrid.className = "grid grid-cols-1 sm:grid-cols-3 gap-6";
+        mainGrid.className = "grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6";
         summaryGrid.appendChild(mainGrid);
 
         // 우측 기타 패널: HTML의 other-panel-container에 렌더링 (하단 블록에서 처리)
@@ -219,7 +219,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         const sortedItems = mainItems;
         sortedItems.forEach(([name, data]) => {
             const card = document.createElement('div');
-            card.className = "premium-card p-5 rounded-3xl flex flex-col justify-start gap-4 transition-all duration-300 group";
+            card.className = "premium-card p-3 sm:p-5 rounded-3xl flex flex-col justify-start gap-3 sm:gap-4 transition-all duration-300 group";
             // Generate Sub-items HTML (name+amount 기준 중복 제거)
             const seenSubKeys = new Set();
             const dedupedItems = data.items.filter(sub => {
@@ -313,15 +313,15 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 const [min, max] = totalDisplay.split('~');
                 totalHtml = `
                         <div class="flex flex-col items-end leading-tight">
-                            <span class="text-2xl font-black text-red-600 font-outfit pr-8" style="color:var(--primary-bright);">${min}~</span>
-                            <span class="text-2xl font-black text-red-600 font-outfit" style="color:var(--primary-bright);">${max}</span>
+                            <span class="text-xl sm:text-2xl font-black text-red-600 font-outfit pr-8" style="color:var(--primary-bright);">${min}~</span>
+                            <span class="text-xl sm:text-2xl font-black text-red-600 font-outfit" style="color:var(--primary-bright);">${max}</span>
                         </div>`;
             } else {
-                totalHtml = `<p class="text-2xl font-black text-red-600 font-outfit leading-tight break-keep" style="color:var(--primary-bright);">${totalDisplay}</p>`;
+                totalHtml = `<p class="text-xl sm:text-2xl font-black text-red-600 font-outfit leading-tight break-keep" style="color:var(--primary-bright);">${totalDisplay}</p>`;
             }
 
             card.innerHTML = `
-                <div class="flex flex-col gap-4">
+                <div class="flex flex-col gap-3 sm:gap-4">
                     <div class="flex items-start justify-between min-h-[64px]">
                         <div class="w-20 h-20 flex-shrink-0 -mt-2 -ml-2">
                             ${(() => {
@@ -513,7 +513,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             details = [{ name: details.detailName, amount: item.amount }];
         }
         const itemCard = document.createElement('div');
-        itemCard.className = "premium-card rounded-2xl p-4 flex flex-col gap-4 stagger-in cursor-pointer hover:border-red-500/30 transition-all";
+        itemCard.className = "premium-card rounded-2xl p-3 sm:p-4 flex flex-col gap-3 sm:gap-4 stagger-in cursor-pointer hover:border-red-500/30 transition-all";
         itemCard.style.animationDelay = `${idx * 40} ms`;
         const icon = getCoverageIcon(item.name);
         let detailHtml = '';
@@ -575,7 +575,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                     </div>
                 </div>
                 <div class="text-right flex-shrink-0">
-                    <span class="text-lg font-black text-red-600 font-outfit">${formatDisplayAmount(item.amount)}</span>
+                    <span class="text-base sm:text-lg font-black text-red-600 font-outfit whitespace-nowrap">${formatDisplayAmount(item.amount)}</span>
                 </div>
             </div>
             ${detailHtml}
