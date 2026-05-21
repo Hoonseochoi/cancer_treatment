@@ -637,6 +637,20 @@ window.exportAsImage = async function () {
     // 폰트 대기 (Google Font 로딩 보장)
     await document.fonts.ready;
 
+    // ── QR 코드 사전 생성 (surinsur.com) ──
+    let qrBase64 = '';
+    try {
+        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https%3A%2F%2Fwww.surinsur.com&bgcolor=FFFFFF&color=1A3A8F&margin=2';
+        const qrBlob = await fetch(qrUrl).then(r => r.blob());
+        qrBase64 = await new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(qrBlob);
+        });
+    } catch (e) {
+        console.warn('QR 코드 생성 실패, 생략합니다:', e);
+    }
+
     const options = {
         scale: 3,
         useCORS: true,
@@ -702,6 +716,37 @@ window.exportAsImage = async function () {
             }
             `;
             clonedDoc.head.appendChild(style);
+
+            // ── 오류 제보 아일랜드 & 기타 패널 숨김 (캡처 불필요) ──
+            const errorIsland = clonedDoc.getElementById('error-report-island');
+            if (errorIsland) errorIsland.style.display = 'none';
+            const otherPanel = clonedDoc.getElementById('other-panel-container');
+            if (otherPanel) otherPanel.style.display = 'none';
+
+            // ── 상단 브랜드 헤더 주입 ──
+            const brandHeader = clonedDoc.createElement('div');
+            brandHeader.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#ffffff;border-radius:16px;margin-bottom:16px;border:1px solid #e5e7eb;">
+                    <div>
+                        <div style="font-size:10px;color:#9ca3af;font-weight:700;letter-spacing:0.08em;margin-bottom:3px;text-transform:uppercase;">암 치료비 보장 분석 리포트</div>
+                        <div style="font-size:22px;font-weight:900;color:#1A3A8F;font-family:'Outfit',sans-serif;letter-spacing:-0.02em;">surinsur.com</div>
+                    </div>
+                    ${qrBase64 ? `
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                        <img src="${qrBase64}" style="width:58px;height:58px;border-radius:6px;border:1px solid #e5e7eb;">
+                        <span style="font-size:8px;color:#9ca3af;font-weight:700;letter-spacing:0.03em;">QR 스캔</span>
+                    </div>` : ''}
+                </div>`;
+            cloneMain.insertBefore(brandHeader, cloneMain.firstChild);
+
+            // ── 하단 브랜드 푸터 주입 ──
+            const brandFooter = clonedDoc.createElement('div');
+            brandFooter.innerHTML = `
+                <div style="text-align:center;padding:16px 20px;margin-top:16px;background:#1A3A8F;border-radius:16px;">
+                    <div style="font-size:14px;font-weight:900;color:#ffffff;letter-spacing:-0.01em;">🛡️ 무료 암 보장분석 툴은 surinsur.com 에서 !</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:5px;font-weight:500;">www.surinsur.com · 슈린슈</div>
+                </div>`;
+            cloneMain.appendChild(brandFooter);
         }
     };
 
