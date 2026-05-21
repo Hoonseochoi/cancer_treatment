@@ -534,17 +534,19 @@ strong {
    ════════════════════════════════ */
 
 /* Header logo */
-.mobile-logo { height: 90px; }
+.header-logo { height: 90px; }
 
 /* Header left group gap + button font */
 .header-left-group { gap: 20px; }
 
 @media (max-width: 640px) {
-    .mobile-logo { height: 54px; }
+    .header-logo { height: 54px; }
     .header-left-group { gap: 10px; }
     .header-left-group button { font-size: 1rem !important; }
 
     /* Level-up notification position */
+    /* !important needed: element uses Tailwind arbitrary-value classes (top-[100px] right-[30px])
+       which cannot be overridden by external stylesheet without !important */
     #level-up-notification {
         right: 8px !important;
         top: 80px !important;
