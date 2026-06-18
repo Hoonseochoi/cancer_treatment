@@ -212,8 +212,8 @@ function findSamsungDetails(itemName) {
         return samsungCoverageDetailsMap["하이클래스 암 특정치료비"];
     }
 
-    // 5. 중환자실 입원지원금 또는 (중환자실 + 암)
-    if (itemName.includes("중환자실 입원지원금") || (itemName.includes("중환자실") && itemName.includes("암"))) {
+    // 5. 암 중환자실 입원지원금 — 반드시 "암"이 포함된 경우만 매핑 (뇌혈관/허혈성심장/희귀질환 등 비암성 중환자실 담보 차단)
+    if (itemName.includes("암") && itemName.includes("중환자실")) {
         return samsungCoverageDetailsMap["암 종합병원 중환자실 입원지원금(연간1회한)"];
     }
 
