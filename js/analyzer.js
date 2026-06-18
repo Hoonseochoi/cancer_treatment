@@ -234,7 +234,7 @@ function calculateHierarchicalSummary(results) {
                 group.isolatedMax += valMax;
                 // ── payFreq 결정 ──
                 const srcIs26Jong  = /26종/.test(item.name) || /26종/.test(det.name || '');
-                const srcIsBundle  = /암진단|통합치료비/.test(item.name);
+                const srcIsBundle  = /암진단|통합치료비|계속받는/.test(item.name);
                 let payFreq = '';
                 if (srcIs26Jong) {
                     payFreq = 'once-each';
