@@ -64,6 +64,28 @@ const samsungCoverageDetailsMap = {
         비급여: true
     },
 
+    // 담보 79: 종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅱ — 급여+비급여 모두, 수술·항암방사선·항암약물
+    "종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅱ": {
+        type: "passthrough-dual",
+        displayName: "암 특정치료비Ⅱ(수술·항암방사선·항암약물)",
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+    },
+
+    // 담보 80: 종합병원 유사암Ⅱ 특정치료비Ⅱ — 급여+비급여 모두
+    "종합병원 유사암Ⅱ 특정치료비Ⅱ": {
+        type: "passthrough-dual",
+        displayName: "유사암Ⅱ 특정치료비Ⅱ(수술·항암방사선·항암약물)",
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+    },
+
+    // 담보 83: 종합병원 암(기타피부암 및 갑상선암 포함) 전액본인부담(비급여포함) 특정치료비Ⅱ — 비급여만
+    "종합병원 암(기타피부암 및 갑상선암 포함) 전액본인부담(비급여포함) 특정치료비Ⅱ": {
+        type: "passthrough-dual",
+        displayName: "암 전액본인부담 특정치료비Ⅱ(수술·항암방사선·항암약물)",
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        비급여: true
+    },
+
     // 담보 53: 종합병원 특정항암호르몬약물허가 치료비Ⅱ(연간1회한)(암(유사암Ⅱ제외))
     "종합병원 특정항암호르몬약물허가 치료비Ⅱ(연간1회한)(암(유사암Ⅱ제외))": {
         type: "passthrough",
@@ -163,6 +185,19 @@ function findSamsungDetails(itemName) {
                 ? samsungCoverageDetailsMap["상급종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ"]
                 : samsungCoverageDetailsMap["종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)"];
         }
+    }
+
+    // 2a. 특정치료비Ⅱ / 특정치료비II (Ⅲ과 구분, 전액본인부담·유사암 여부로 세분화)
+    // 담보명에 "암/유사암"이 없으면 비암성 질환 담보 → 제외
+    if ((itemName.includes("특정치료비Ⅱ") || itemName.includes("특정치료비II")) && !itemName.includes("Ⅲ") && !itemName.includes("III")) {
+        if (!itemName.includes("암")) return null;
+        if (itemName.includes("전액본인부담")) {
+            return samsungCoverageDetailsMap["종합병원 암(기타피부암 및 갑상선암 포함) 전액본인부담(비급여포함) 특정치료비Ⅱ"];
+        }
+        if (itemName.includes("유사암")) {
+            return samsungCoverageDetailsMap["종합병원 유사암Ⅱ 특정치료비Ⅱ"];
+        }
+        return samsungCoverageDetailsMap["종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅱ"];
     }
 
     // 2-1. 다빈치로봇 수술비 단독 담보 (통합치료비 외 별도 담보)
