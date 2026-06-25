@@ -145,3 +145,45 @@ function classifyHistories(histories, todayStr) {
 if (typeof module !== 'undefined') {
   module.exports.classifyHistories = classifyHistories;
 }
+
+if (typeof document !== 'undefined') {
+  let histories = [];
+
+  function renderAll() {
+    // Task 6/7에서 병력표/결과 렌더링 함수가 여기서 호출된다.
+  }
+
+  document.getElementById('parse-btn').addEventListener('click', () => {
+    const text = document.getElementById('history-input').value;
+    const parsed = parseHistoryText(text);
+    if (parsed.length === 0) {
+      showToast('인식된 병력이 없습니다. 직접 행을 추가해주세요');
+      histories.push(emptyHistoryRow());
+    } else {
+      histories = histories.concat(parsed);
+    }
+    renderAll();
+  });
+
+  function emptyHistoryRow() {
+    return {
+      진단명: '', 진단코드: '', 최초진단일: null, 최근진료일: null,
+      입원여부: false, 입원일수: null, 수술여부: false, 수술명: null,
+      계속치료일수: null, 계속투약일수: null, 재검사여부: false, 상시복용여부: false,
+      현재상태: '', 비고: '', 원본: '',
+    };
+  }
+
+  function showToast(message) {
+    let toast = document.getElementById('al-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'al-toast';
+      toast.className = 'toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+}

@@ -33,6 +33,17 @@
         <p>자동분류 결과는 항상 "초안"입니다. 최종 청약서 기재 전 직접 확인이 필수입니다.</p>
       </div>
     </section>
+
+    <section class="section" id="step1">
+      <span class="eyebrow">STEP 1 · 병력 입력</span>
+      <h2 class="stitle">병력을 자유롭게 적어주세요</h2>
+      <p class="slead">예시 형식: 🔴진단명/코드 줄 다음 입원/수술/치료·현상태를 적어주세요.</p>
+      <textarea id="history-input" class="history-textarea" placeholder="🔴고혈압/I10
+입원: 없음
+수술: 없음
+치료/현상태: 24.01.05 진단, 현재 약물치료중"></textarea>
+      <button id="parse-btn" class="btn-primary">표로 변환</button>
+    </section>
   </main>
 
   <script src="data.js"></script>

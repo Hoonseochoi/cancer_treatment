@@ -66,3 +66,26 @@ h2.stitle {
   #al-content { padding: 48px 16px 120px; }
   .hero-badges { gap: 6px; }
 }
+
+.history-textarea {
+  width: 100%; min-height: 180px; padding: 16px;
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: 16px; font-family: inherit; font-size: 0.9rem; color: var(--text);
+  resize: vertical; margin-bottom: 16px;
+}
+.history-textarea:focus { outline: none; border-color: var(--navy); }
+
+.btn-primary {
+  background: var(--navy); color: #fff; font-weight: 700; font-size: 0.85rem;
+  border: none; border-radius: 99px; padding: 10px 24px; cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--navy-dark); }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 100px);
+  background: var(--navy-dark); color: #fff; padding: 12px 20px; border-radius: 12px;
+  font-size: 0.85rem; opacity: 0; transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 100;
+}
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
