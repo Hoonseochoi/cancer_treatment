@@ -1,3 +1,5 @@
+let nextHistoryId = 1;
+
 function parseHistoryText(text) {
   if (!text || !text.trim()) return [];
 
@@ -13,6 +15,7 @@ function parseHistoryText(text) {
     const [namePart, codePart] = headerBody.split('/').map(s => (s || '').trim());
 
     const entry = {
+      id: nextHistoryId++,
       진단명: namePart || '',
       진단코드: codePart || '',
       최초진단일: null,
@@ -277,12 +280,11 @@ if (typeof document !== 'undefined') {
       }
 
       [...included.map(h => ({ h, cat: 's' })), ...review.map(h => ({ h, cat: 'r' }))].forEach(({ h, cat }) => {
-        const idx = histories.indexOf(h);
         const row = document.createElement('label');
         row.className = 'q-item-row';
         const cb = document.createElement('input');
         cb.type = 'checkbox';
-        const key = `${q.id}::${idx}`;
+        const key = `${q.id}::${h.id}`;
         cb.checked = checkedKeys.has(key);
         cb.addEventListener('change', () => {
           if (cb.checked) checkedKeys.add(key); else checkedKeys.delete(key);
@@ -308,13 +310,14 @@ if (typeof document !== 'undefined') {
       Q_DEFS.forEach(q => {
         const items = [];
         [...result[q.id].included, ...result[q.id].review].forEach(h => {
-          const idx = histories.indexOf(h);
-          if (checkedKeys.has(`${q.id}::${idx}`)) items.push(h.진단명 || '(이름없음)');
+          if (checkedKeys.has(`${q.id}::${h.id}`)) items.push(h.진단명 || '(이름없음)');
         });
         if (items.length > 0) lines.push(`${q.id}: ${items.join(', ')}`);
       });
       const text = lines.length > 0 ? lines.join('\n') : '체크된 항목이 없습니다.';
-      navigator.clipboard.writeText(text).then(() => showToast('결과가 복사되었습니다'));
+      navigator.clipboard.writeText(text)
+        .then(() => showToast('결과가 복사되었습니다'))
+        .catch(() => showToast('복사에 실패했습니다. 직접 선택해 복사해주세요'));
     });
   }
 
@@ -346,6 +349,7 @@ if (typeof document !== 'undefined') {
 
   function emptyHistoryRow() {
     return {
+      id: nextHistoryId++,
       진단명: '', 진단코드: '', 최초진단일: null, 최근진료일: null,
       입원여부: false, 입원일수: null, 수술여부: false, 수술명: null,
       계속치료일수: null, 계속투약일수: null, 재검사여부: false, 상시복용여부: false,
