@@ -8,8 +8,9 @@ const dataModule = { exports: {} };
 new Function('module', 'exports', dataSrc)(dataModule, dataModule.exports);
 global.Q_DEFS = dataModule.exports.Q_DEFS;
 global.DISEASE_11 = dataModule.exports.DISEASE_11;
+global.DISCLOSURE_EXCEPTIONS = dataModule.exports.DISCLOSURE_EXCEPTIONS;
 
-const { classifyHistories } = require('../app.js');
+const { classifyHistories, isExceptionDisease } = require('../app.js');
 
 const TODAY = '2026-06-25'; // 고정 기준일 (테스트 결정론 확보용, classifyHistories 두번째 인자)
 
@@ -83,6 +84,44 @@ const TODAY = '2026-06-25'; // 고정 기준일 (테스트 결정론 확보용, 
   const result = classifyHistories(histories, TODAY);
   assert.strictEqual(result.Q4.included.length, 1, '7일 이상 입원은 Q4 포함');
   console.log('PASS: Q4 7일 이상 입원 포함');
+}
+
+// Q6: 5년 초과~10년 이내(6-10년) 입원/수술은 Q6 포함, 5년 이내는 Q6 미포함
+{
+  const histories = [{
+    진단명: '추간판탈출증', 진단코드: 'M51',
+    최초진단일: '2018-06-01', 최근진료일: '2018-06-01', // 약 8년 전
+    입원여부: true, 입원일수: 5, 수술여부: false, 수술명: null,
+    계속치료일수: null, 계속투약일수: null, 재검사여부: false, 상시복용여부: false,
+    현재상태: '', 비고: '', 원본: '',
+  }];
+  const result = classifyHistories(histories, TODAY);
+  assert.strictEqual(result.Q6.included.length, 1, '6-10년 이내 입원은 Q6 포함');
+  assert.strictEqual(result.Q4.included.length, 0, '5년을 넘었으므로 Q4에는 포함되면 안 됨');
+  console.log('PASS: Q6 6-10년 입원 포함, Q4 미포함');
+}
+
+// Q6: 11년 전 입원은 6-10년 범위를 벗어나므로 Q6 미포함
+{
+  const histories = [{
+    진단명: '늑골골절', 진단코드: 'S22',
+    최초진단일: '2014-01-01', 최근진료일: '2014-01-01', // 약 12년 전
+    입원여부: true, 입원일수: 3, 수술여부: false, 수술명: null,
+    계속치료일수: null, 계속투약일수: null, 재검사여부: false, 상시복용여부: false,
+    현재상태: '', 비고: '', 원본: '',
+  }];
+  const result = classifyHistories(histories, TODAY);
+  assert.strictEqual(result.Q6.included.length, 0, '10년을 넘은 입원은 Q6 미포함');
+  console.log('PASS: Q6 10년 초과 입원 미포함');
+}
+
+// isExceptionDisease: 예외질환 키워드가 진단명에 포함되면 true
+{
+  assert.strictEqual(isExceptionDisease('급성충수염'), true, '충수염 키워드 포함 시 예외질환으로 판단');
+  assert.strictEqual(isExceptionDisease('급성위장염'), true, '위장염 키워드 포함 시 예외질환으로 판단');
+  assert.strictEqual(isExceptionDisease('추간판탈출증'), false, '예외질환 키워드가 없으면 false');
+  assert.strictEqual(isExceptionDisease(null), false, '진단명이 없으면 false');
+  console.log('PASS: isExceptionDisease 키워드 매칭');
 }
 
 console.log('전체 통과: classify.test.js');

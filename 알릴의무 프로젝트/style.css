@@ -113,6 +113,7 @@ h2.stitle {
 .cat-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; }
 .cat-s { background: #eff6ff; color: #1d4ed8; }
 .cat-r { background: #fff7ed; color: #c2410c; }
+.cat-e { background: #f0fdf4; color: #15803d; }
 .copy-sticky { position: sticky; bottom: 16px; display: block; margin: 0 auto; }
 
 @media (max-width: 640px) {

@@ -93,6 +93,18 @@ function withinMonths(dateStr, todayStr, months) {
   return days <= months * 30.44 && days >= 0;
 }
 
+// minMonths 초과 ~ maxMonths 이내 (예: 5년 초과~10년 이내인 "6-10년" 구간)
+function withinRangeMonths(dateStr, todayStr, minMonths, maxMonths) {
+  const days = daysBetween(dateStr, todayStr);
+  if (days === null) return null; // 정보 불충분
+  return days > minMonths * 30.44 && days <= maxMonths * 30.44;
+}
+
+function isExceptionDisease(name) {
+  if (!name) return false;
+  return DISCLOSURE_EXCEPTIONS.some(keyword => name.includes(keyword));
+}
+
 function classifyHistories(histories, todayStr) {
   const result = {};
   for (const q of Q_DEFS) {
@@ -140,6 +152,13 @@ function classifyHistories(histories, todayStr) {
       if (within === null) result.Q5.review.push(h);
       else if (within) result.Q5.included.push(h);
     }
+
+    // Q6: 고지건강체 전용 - 5년 초과~10년 이내(6-10년) 입원/수술. 표준알릴의무 Q1~Q5와 별개 제도.
+    if (h.입원여부 || h.수술여부) {
+      const within = withinRangeMonths(h.최근진료일, todayStr, 60, 120);
+      if (within === null) result.Q6.review.push(h);
+      else if (within) result.Q6.included.push(h);
+    }
   }
 
   return result;
@@ -147,6 +166,7 @@ function classifyHistories(histories, todayStr) {
 
 if (typeof module !== 'undefined') {
   module.exports.classifyHistories = classifyHistories;
+  module.exports.isExceptionDisease = isExceptionDisease;
 }
 
 if (typeof document !== 'undefined') {
@@ -287,7 +307,10 @@ if (typeof document !== 'undefined') {
         block.appendChild(empty);
       }
 
-      [...included.map(h => ({ h, cat: 's' })), ...review.map(h => ({ h, cat: 'r' }))].forEach(({ h, cat }) => {
+      [...included.map(h => ({ h, cat: 's' })), ...review.map(h => ({ h, cat: 'r' }))].forEach(({ h, cat: baseCat }) => {
+        // Q6는 예외질환 키워드 매칭 시 분류완료/확인필요와 무관하게 "예외질환" 배지를 우선 노출
+        // (부가조건은 사람이 직접 확인해야 하므로 자동으로 빼지 않음)
+        const cat = q.id === 'Q6' && isExceptionDisease(h.진단명) ? 'e' : baseCat;
         const row = document.createElement('label');
         row.className = 'q-item-row';
         const cb = document.createElement('input');
@@ -300,7 +323,7 @@ if (typeof document !== 'undefined') {
         row.appendChild(cb);
         const badge = document.createElement('span');
         badge.className = `cat-badge cat-${cat}`;
-        badge.textContent = cat === 'r' ? '확인필요' : '분류완료';
+        badge.textContent = cat === 'e' ? '예외질환(확인필요)' : (cat === 'r' ? '확인필요' : '분류완료');
         row.appendChild(badge);
         row.appendChild(document.createTextNode(h.진단명 || '(이름없음)'));
         block.appendChild(row);
@@ -318,7 +341,9 @@ if (typeof document !== 'undefined') {
       Q_DEFS.forEach(q => {
         const items = [];
         [...result[q.id].included, ...result[q.id].review].forEach(h => {
-          if (checkedKeys.has(`${q.id}::${h.id}`)) items.push(h.진단명 || '(이름없음)');
+          if (!checkedKeys.has(`${q.id}::${h.id}`)) return;
+          const name = h.진단명 || '(이름없음)';
+          items.push(q.id === 'Q6' && isExceptionDisease(h.진단명) ? `${name}(예외질환)` : name);
         });
         if (items.length > 0) lines.push(`${q.id}: ${items.join(', ')}`);
       });
