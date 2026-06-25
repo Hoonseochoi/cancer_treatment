@@ -150,7 +150,14 @@ if (typeof module !== 'undefined') {
 }
 
 if (typeof document !== 'undefined') {
+  const STORAGE_KEY = 'alil_histories_v1';
   let histories = [];
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (Array.isArray(saved)) histories = saved;
+  } catch (e) {
+    histories = [];
+  }
 
   const HISTORY_FIELDS = [
     { key: '진단명', label: '진단명', type: 'text' },
@@ -244,6 +251,7 @@ if (typeof document !== 'undefined') {
   function renderAll() {
     renderHistoryList();
     renderClassifyResult();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(histories));
   }
 
   const TODAY_ISO = new Date().toISOString().slice(0, 10);
@@ -369,5 +377,19 @@ if (typeof document !== 'undefined') {
     toast.textContent = message;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  renderAll();
+
+  const resetAllBtn = document.getElementById('reset-all-btn');
+  if (resetAllBtn) {
+    resetAllBtn.addEventListener('click', () => {
+      if (!confirm('입력한 모든 병력과 분류결과를 초기화합니다. 계속할까요?')) return;
+      histories = [];
+      checkedKeys.clear();
+      localStorage.removeItem(STORAGE_KEY);
+      renderAll();
+      showToast('전체 초기화되었습니다');
+    });
   }
 }
