@@ -240,6 +240,82 @@ if (typeof document !== 'undefined') {
 
   function renderAll() {
     renderHistoryList();
+    renderClassifyResult();
+  }
+
+  const TODAY_ISO = new Date().toISOString().slice(0, 10);
+  const checkedKeys = new Set(); // `${qId}::${historyIndex}` 형태로 체크 상태 저장
+
+  function renderClassifyResult() {
+    const container = document.getElementById('classify-result');
+    if (!container) return;
+    container.innerHTML = '';
+    const result = classifyHistories(histories, TODAY_ISO);
+
+    Q_DEFS.forEach(q => {
+      const block = document.createElement('div');
+      block.className = 'q-block';
+
+      const title = document.createElement('div');
+      title.className = 'q-title';
+      title.textContent = q.title;
+      block.appendChild(title);
+
+      const oneliner = document.createElement('div');
+      oneliner.className = 'q-oneliner';
+      oneliner.textContent = q.trigger;
+      block.appendChild(oneliner);
+
+      const included = result[q.id].included;
+      const review = result[q.id].review;
+
+      if (included.length === 0 && review.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'q-empty';
+        empty.textContent = '해당 항목 없음';
+        block.appendChild(empty);
+      }
+
+      [...included.map(h => ({ h, cat: 's' })), ...review.map(h => ({ h, cat: 'r' }))].forEach(({ h, cat }) => {
+        const idx = histories.indexOf(h);
+        const row = document.createElement('label');
+        row.className = 'q-item-row';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        const key = `${q.id}::${idx}`;
+        cb.checked = checkedKeys.has(key);
+        cb.addEventListener('change', () => {
+          if (cb.checked) checkedKeys.add(key); else checkedKeys.delete(key);
+        });
+        row.appendChild(cb);
+        const badge = document.createElement('span');
+        badge.className = `cat-badge cat-${cat}`;
+        badge.textContent = cat === 'r' ? '확인필요' : '분류완료';
+        row.appendChild(badge);
+        row.appendChild(document.createTextNode(h.진단명 || '(이름없음)'));
+        block.appendChild(row);
+      });
+
+      container.appendChild(block);
+    });
+  }
+
+  const copyBtn = document.getElementById('copy-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const result = classifyHistories(histories, TODAY_ISO);
+      const lines = [];
+      Q_DEFS.forEach(q => {
+        const items = [];
+        [...result[q.id].included, ...result[q.id].review].forEach(h => {
+          const idx = histories.indexOf(h);
+          if (checkedKeys.has(`${q.id}::${idx}`)) items.push(h.진단명 || '(이름없음)');
+        });
+        if (items.length > 0) lines.push(`${q.id}: ${items.join(', ')}`);
+      });
+      const text = lines.length > 0 ? lines.join('\n') : '체크된 항목이 없습니다.';
+      navigator.clipboard.writeText(text).then(() => showToast('결과가 복사되었습니다'));
+    });
   }
 
   const addRowBtn = document.getElementById('add-row-btn');
