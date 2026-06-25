@@ -153,17 +153,23 @@ if (typeof document !== 'undefined') {
     // Task 6/7에서 병력표/결과 렌더링 함수가 여기서 호출된다.
   }
 
-  document.getElementById('parse-btn').addEventListener('click', () => {
-    const text = document.getElementById('history-input').value;
-    const parsed = parseHistoryText(text);
-    if (parsed.length === 0) {
-      showToast('인식된 병력이 없습니다. 직접 행을 추가해주세요');
-      histories.push(emptyHistoryRow());
-    } else {
-      histories = histories.concat(parsed);
-    }
-    renderAll();
-  });
+  const parseBtn = document.getElementById('parse-btn');
+  const historyInput = document.getElementById('history-input');
+  if (!parseBtn || !historyInput) {
+    console.error('필수 DOM 요소를 찾을 수 없습니다: parse-btn 또는 history-input');
+  } else {
+    parseBtn.addEventListener('click', () => {
+      const text = historyInput.value;
+      const parsed = parseHistoryText(text);
+      if (parsed.length === 0) {
+        showToast('인식된 병력이 없습니다. 빈 행을 추가했습니다');
+        histories.push(emptyHistoryRow());
+      } else {
+        histories = histories.concat(parsed);
+      }
+      renderAll();
+    });
+  }
 
   function emptyHistoryRow() {
     return {
@@ -180,6 +186,7 @@ if (typeof document !== 'undefined') {
       toast = document.createElement('div');
       toast.id = 'al-toast';
       toast.className = 'toast';
+      toast.setAttribute('aria-live', 'polite');
       document.body.appendChild(toast);
     }
     toast.textContent = message;

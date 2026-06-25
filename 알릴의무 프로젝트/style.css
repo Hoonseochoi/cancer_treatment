@@ -89,3 +89,8 @@ h2.stitle {
   box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 100;
 }
 .toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap;
+}
