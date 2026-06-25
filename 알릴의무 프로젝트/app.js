@@ -68,3 +68,80 @@ function parseHistoryText(text) {
 if (typeof module !== 'undefined') {
   module.exports = { parseHistoryText };
 }
+
+function daysBetween(dateStr, todayStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  const today = new Date(todayStr);
+  return Math.floor((today - d) / (1000 * 60 * 60 * 24));
+}
+
+function matchesDisease11(code) {
+  if (!code) return false;
+  for (const prefixes of Object.values(DISEASE_11)) {
+    if (prefixes.some(p => code.startsWith(p))) return true;
+  }
+  return false;
+}
+
+function withinMonths(dateStr, todayStr, months) {
+  const days = daysBetween(dateStr, todayStr);
+  if (days === null) return null; // 정보 불충분
+  return days <= months * 30.44 && days >= 0;
+}
+
+function classifyHistories(histories, todayStr) {
+  const result = {};
+  for (const q of Q_DEFS) {
+    result[q.id] = { included: [], review: [] };
+  }
+
+  for (const h of histories) {
+    // Q1: 최근 3개월 진찰/검사
+    {
+      const within = withinMonths(h.최근진료일, todayStr, 3);
+      if (within === null) result.Q1.review.push(h);
+      else if (within) result.Q1.included.push(h);
+    }
+
+    // Q2: 상시복용 - 날짜 계산보다 체크 여부 신뢰 (README 6장)
+    if (h.상시복용여부) {
+      result.Q2.included.push(h);
+    }
+
+    // Q3: 최근 1년 재검사 - 체크 여부로만 판단(원문 자동추출은 1차 범위 제외)
+    if (h.재검사여부) {
+      const within = withinMonths(h.최근진료일, todayStr, 12);
+      if (within === null) result.Q3.review.push(h);
+      else if (within) result.Q3.included.push(h);
+    }
+
+    // Q4: 5년 이내 입원/수술/계속 7일↑치료/계속 30일↑투약, 질병종류 무관
+    {
+      const within = withinMonths(h.최근진료일, todayStr, 60);
+      const hasQ4Trigger =
+        h.입원여부 ||
+        h.수술여부 ||
+        (h.계속치료일수 !== null && h.계속치료일수 >= 7) ||
+        (h.계속투약일수 !== null && h.계속투약일수 >= 30) ||
+        (h.입원일수 !== null && h.입원일수 >= 7);
+      if (hasQ4Trigger) {
+        if (within === null) result.Q4.review.push(h);
+        else if (within) result.Q4.included.push(h);
+      }
+    }
+
+    // Q5: 11대 질병이면 계속성 조건 없이 5년 이내 단발 진료도 포함
+    if (matchesDisease11(h.진단코드)) {
+      const within = withinMonths(h.최근진료일, todayStr, 60);
+      if (within === null) result.Q5.review.push(h);
+      else if (within) result.Q5.included.push(h);
+    }
+  }
+
+  return result;
+}
+
+if (typeof module !== 'undefined') {
+  module.exports.classifyHistories = classifyHistories;
+}
