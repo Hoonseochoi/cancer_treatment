@@ -104,6 +104,7 @@ h2.stitle {
 .review-badge { font-size: 0.6rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: #fff7ed; color: #c2410c; text-transform: uppercase; letter-spacing: 1px; }
 .history-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .history-fields label { display: flex; flex-direction: column; font-size: 0.72rem; color: var(--text-faint); gap: 4px; }
+.history-fields label.checkbox-label { flex-direction: row; align-items: center; gap: 6px; }
 .history-fields input, .history-fields select { font-size: 0.85rem; padding: 6px 8px; border: 1px solid var(--card-border); border-radius: 8px; font-family: inherit; }
 .history-card-actions { margin-top: 10px; text-align: right; }
 .btn-link-danger { background: none; border: none; color: #c2410c; font-size: 0.78rem; cursor: pointer; }

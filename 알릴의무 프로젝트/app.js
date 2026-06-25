@@ -161,6 +161,13 @@ if (typeof document !== 'undefined') {
     { key: '비고', label: '비고', type: 'text' },
   ];
 
+  const CHECKBOX_FIELDS = [
+    { key: '입원여부', label: '입원' },
+    { key: '수술여부', label: '수술' },
+    { key: '재검사여부', label: '재검사' },
+    { key: '상시복용여부', label: '상시복용' },
+  ];
+
   function isReviewNeeded(h) {
     return !h.최근진료일;
   }
@@ -206,17 +213,15 @@ if (typeof document !== 'undefined') {
       });
       card.appendChild(fields);
 
-      ['입원여부', '수술여부', '재검사여부', '상시복용여부'].forEach(key => {
+      CHECKBOX_FIELDS.forEach(({ key, label: labelText }) => {
         const label = document.createElement('label');
-        label.style.flexDirection = 'row';
-        label.style.alignItems = 'center';
-        label.style.gap = '6px';
+        label.className = 'checkbox-label';
         const cb = document.createElement('input');
         cb.type = 'checkbox';
         cb.checked = !!h[key];
         cb.addEventListener('change', () => { h[key] = cb.checked; renderAll(); });
         label.appendChild(cb);
-        label.appendChild(document.createTextNode(key));
+        label.appendChild(document.createTextNode(labelText));
         fields.appendChild(label);
       });
 
