@@ -149,8 +149,100 @@ if (typeof module !== 'undefined') {
 if (typeof document !== 'undefined') {
   let histories = [];
 
+  const HISTORY_FIELDS = [
+    { key: '진단명', label: '진단명', type: 'text' },
+    { key: '진단코드', label: '진단코드', type: 'text' },
+    { key: '최초진단일', label: '최초진단일', type: 'date' },
+    { key: '최근진료일', label: '최근진료일', type: 'date' },
+    { key: '입원일수', label: '입원일수', type: 'number' },
+    { key: '수술명', label: '수술명', type: 'text' },
+    { key: '계속치료일수', label: '계속치료일수', type: 'number' },
+    { key: '계속투약일수', label: '계속투약일수', type: 'number' },
+    { key: '비고', label: '비고', type: 'text' },
+  ];
+
+  function isReviewNeeded(h) {
+    return !h.최근진료일;
+  }
+
+  function renderHistoryList() {
+    const container = document.getElementById('history-list');
+    if (!container) return;
+    container.innerHTML = '';
+    histories.forEach((h, idx) => {
+      const card = document.createElement('div');
+      card.className = 'history-card';
+
+      const head = document.createElement('div');
+      head.className = 'history-card-head';
+      const title = document.createElement('span');
+      title.className = 'history-card-title';
+      title.textContent = h.진단명 || `병력 ${idx + 1}`;
+      head.appendChild(title);
+      if (isReviewNeeded(h)) {
+        const badge = document.createElement('span');
+        badge.className = 'review-badge';
+        badge.textContent = '확인필요';
+        head.appendChild(badge);
+      }
+      card.appendChild(head);
+
+      const fields = document.createElement('div');
+      fields.className = 'history-fields';
+      HISTORY_FIELDS.forEach(f => {
+        const label = document.createElement('label');
+        label.textContent = f.label;
+        const input = document.createElement('input');
+        input.type = f.type;
+        input.value = h[f.key] === null || h[f.key] === undefined ? '' : h[f.key];
+        input.addEventListener('change', () => {
+          h[f.key] = f.type === 'number'
+            ? (input.value === '' ? null : Number(input.value))
+            : (input.value === '' ? (f.type === 'date' ? null : '') : input.value);
+          renderAll();
+        });
+        label.appendChild(input);
+        fields.appendChild(label);
+      });
+      card.appendChild(fields);
+
+      ['입원여부', '수술여부', '재검사여부', '상시복용여부'].forEach(key => {
+        const label = document.createElement('label');
+        label.style.flexDirection = 'row';
+        label.style.alignItems = 'center';
+        label.style.gap = '6px';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!h[key];
+        cb.addEventListener('change', () => { h[key] = cb.checked; renderAll(); });
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(key));
+        fields.appendChild(label);
+      });
+
+      const actions = document.createElement('div');
+      actions.className = 'history-card-actions';
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-link-danger';
+      delBtn.textContent = '삭제';
+      delBtn.addEventListener('click', () => { histories.splice(idx, 1); renderAll(); });
+      actions.appendChild(delBtn);
+      card.appendChild(actions);
+
+      container.appendChild(card);
+    });
+  }
+
   function renderAll() {
-    // Task 6/7에서 병력표/결과 렌더링 함수가 여기서 호출된다.
+    renderHistoryList();
+  }
+
+  const addRowBtn = document.getElementById('add-row-btn');
+  if (addRowBtn) {
+    addRowBtn.addEventListener('click', () => {
+      histories.push(emptyHistoryRow());
+      renderAll();
+    });
   }
 
   const parseBtn = document.getElementById('parse-btn');
