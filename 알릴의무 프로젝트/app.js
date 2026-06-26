@@ -416,7 +416,7 @@ if (typeof document !== 'undefined') {
           histories.push(emptyHistoryRow());
         } finally {
           parseBtn.disabled = false;
-          parseBtn.textContent = '표로 변환';
+          parseBtn.textContent = 'AI로 고지 미리 확인하기';
         }
         renderAll();
         return;
