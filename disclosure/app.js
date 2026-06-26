@@ -413,12 +413,21 @@ if (typeof document !== 'undefined') {
         }
 
         // 입원/수술 등 최근진료일 기준으로 몇 년 지났는지 — 간편보험 3·5년 고지에도 재사용 가능
-        const elapsed = yearsElapsed(h.최근진료일, TODAY_ISO);
-        if (elapsed !== null) {
-          const elapsedBadge = document.createElement('span');
-          elapsedBadge.className = 'cat-badge cat-elapsed';
-          elapsedBadge.textContent = `${elapsed}년경과`;
-          row.appendChild(elapsedBadge);
+        // 계속 투약 중인 건은 "몇 년 지났는지"가 의미가 없으므로 N년경과 대신 계속투약중 태그로 표시
+        const isOngoingMedication = h.상시복용여부 || (h.계속투약일수 !== null && h.계속투약일수 > 0);
+        if (isOngoingMedication) {
+          const ongoingBadge = document.createElement('span');
+          ongoingBadge.className = 'cat-badge cat-elapsed';
+          ongoingBadge.textContent = '계속투약중';
+          row.appendChild(ongoingBadge);
+        } else {
+          const elapsed = yearsElapsed(h.최근진료일, TODAY_ISO);
+          if (elapsed !== null) {
+            const elapsedBadge = document.createElement('span');
+            elapsedBadge.className = 'cat-badge cat-elapsed';
+            elapsedBadge.textContent = `${elapsed}년경과`;
+            row.appendChild(elapsedBadge);
+          }
         }
 
         wrap.appendChild(row);
