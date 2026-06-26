@@ -2,7 +2,7 @@
 // 변환하는 Gemini 전처리기. parseHistoryText 자체는 건드리지 않고, 그 앞단에서
 // "우리 포맷이 아닌 것 같은 텍스트"를 우리 포맷으로 바꿔주는 역할만 한다.
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 function buildConversionPrompt(rawText) {
   return `너는 보험 알릴의무 작성 보조 도구의 입력 전처리기다.
