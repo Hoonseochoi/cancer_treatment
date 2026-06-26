@@ -1,0 +1,49 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: disclosure/config.js 생성 (Secret에서 키 주입)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          cat > disclosure/config.js << EOF
+          // 이 파일은 배포 시 GitHub Actions가 Secret(GEMINI_API_KEY)으로부터
+          // 자동 생성합니다. 저장소에는 커밋되지 않습니다 (.gitignore 처리).
+          const GEMINI_API_KEY = '${GEMINI_API_KEY}';
+
+          if (typeof module !== 'undefined') {
+            module.exports = { GEMINI_API_KEY };
+          }
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
