@@ -26,6 +26,7 @@ function parseHistoryText(text) {
       수술명: null,
       계속치료일수: null,
       계속투약일수: null,
+      통원횟수: null,
       재검사여부: false,
       상시복용여부: false,
       현재상태: '',
@@ -47,6 +48,20 @@ function parseHistoryText(text) {
           entry.수술여부 = true;
           entry.수술명 = v;
         }
+      } else if (line.startsWith('통원:')) {
+        const v = line.replace('통원:', '').trim();
+        if (v && v !== '없음') {
+          const m = v.match(/(\d+)\s*회/);
+          if (m) entry.통원횟수 = parseInt(m[1], 10);
+        }
+      } else if (line.startsWith('투약:')) {
+        const v = line.replace('투약:', '').trim();
+        if (v && v !== '없음') {
+          const m = v.match(/(\d+)\s*일/);
+          if (m) entry.계속투약일수 = parseInt(m[1], 10);
+        }
+      } else if (line.startsWith('비고:')) {
+        entry.비고 = line.replace('비고:', '').trim();
       } else if (line.startsWith('치료/현상태:')) {
         const v = line.replace('치료/현상태:', '').trim();
         entry.현재상태 = v;
@@ -139,7 +154,8 @@ function classifyHistories(histories, todayStr) {
         h.수술여부 ||
         (h.계속치료일수 !== null && h.계속치료일수 >= 7) ||
         (h.계속투약일수 !== null && h.계속투약일수 >= 30) ||
-        (h.입원일수 !== null && h.입원일수 >= 7);
+        (h.입원일수 !== null && h.입원일수 >= 7) ||
+        (h.통원횟수 !== null && h.통원횟수 >= 7); // 같은 질병 7회 이상 통원 (현장 알릴의무 관행 - "계속 치료" 대체 지표)
       if (hasQ4Trigger) {
         if (within === null) result.Q4.review.push(h);
         else if (within) result.Q4.included.push(h);
@@ -188,6 +204,7 @@ if (typeof document !== 'undefined') {
     { key: '수술명', label: '수술명', type: 'text' },
     { key: '계속치료일수', label: '계속치료일수', type: 'number' },
     { key: '계속투약일수', label: '계속투약일수', type: 'number' },
+    { key: '통원횟수', label: '통원횟수', type: 'number' },
     { key: '비고', label: '비고', type: 'text' },
   ];
 
@@ -416,7 +433,7 @@ if (typeof document !== 'undefined') {
       id: nextHistoryId++,
       진단명: '', 진단코드: '', 최초진단일: null, 최근진료일: null,
       입원여부: false, 입원일수: null, 수술여부: false, 수술명: null,
-      계속치료일수: null, 계속투약일수: null, 재검사여부: false, 상시복용여부: false,
+      계속치료일수: null, 계속투약일수: null, 통원횟수: null, 재검사여부: false, 상시복용여부: false,
       현재상태: '', 비고: '', 원본: '',
     };
   }

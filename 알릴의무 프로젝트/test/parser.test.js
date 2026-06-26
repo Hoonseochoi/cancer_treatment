@@ -65,4 +65,34 @@ const { parseHistoryText } = require('../app.js');
   console.log('PASS: 빈 입력 처리');
 }
 
+// 통원/투약/비고 줄 추출 (Gemini 변환 출력에서 사용)
+{
+  const input = `🔴기타 급성 기관지염/J209
+입원: 없음
+수술: 없음
+통원: 7회
+투약: 30일
+비고: 23.06.08~25.08.26 사이 반복 통원, 현상태 이상없음
+치료/현상태: 25.08.26 통원, 이상없음`;
+  const result = parseHistoryText(input);
+  assert.strictEqual(result[0].통원횟수, 7, '통원: 줄에서 횟수 추출');
+  assert.strictEqual(result[0].계속투약일수, 30, '투약: 줄에서 일수 추출');
+  assert.strictEqual(result[0].비고, '23.06.08~25.08.26 사이 반복 통원, 현상태 이상없음', '비고: 줄 그대로 추출');
+  console.log('PASS: 통원/투약/비고 줄 추출');
+}
+
+// 통원/투약 줄이 "없음"이면 null 유지
+{
+  const input = `🔴감기/J00
+입원: 없음
+수술: 없음
+통원: 없음
+투약: 없음
+치료/현상태: 25.01.01 통원, 완치`;
+  const result = parseHistoryText(input);
+  assert.strictEqual(result[0].통원횟수, null);
+  assert.strictEqual(result[0].계속투약일수, null);
+  console.log('PASS: 통원/투약 "없음" 처리');
+}
+
 console.log('전체 통과: parser.test.js');

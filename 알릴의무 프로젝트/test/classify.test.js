@@ -86,6 +86,32 @@ const TODAY = '2026-06-25'; // 고정 기준일 (테스트 결정론 확보용, 
   console.log('PASS: Q4 7일 이상 입원 포함');
 }
 
+// Q4: 같은 질병 7회 이상 통원도 트리거(입원/수술 없어도), 7회 미만은 미포함
+{
+  const histories = [{
+    진단명: '기타 급성 기관지염', 진단코드: 'J209',
+    최초진단일: '2023-06-08', 최근진료일: '2025-08-26',
+    입원여부: false, 입원일수: null, 수술여부: false, 수술명: null,
+    계속치료일수: null, 계속투약일수: null, 통원횟수: 7, 재검사여부: false, 상시복용여부: false,
+    현재상태: '', 비고: '', 원본: '',
+  }];
+  const result = classifyHistories(histories, TODAY);
+  assert.strictEqual(result.Q4.included.length, 1, '같은 질병 7회 이상 통원은 Q4 포함');
+  console.log('PASS: Q4 통원 7회 이상 포함');
+}
+{
+  const histories = [{
+    진단명: '단순 감기', 진단코드: 'J00',
+    최초진단일: '2025-01-01', 최근진료일: '2025-01-01',
+    입원여부: false, 입원일수: null, 수술여부: false, 수술명: null,
+    계속치료일수: null, 계속투약일수: null, 통원횟수: 3, 재검사여부: false, 상시복용여부: false,
+    현재상태: '', 비고: '', 원본: '',
+  }];
+  const result = classifyHistories(histories, TODAY);
+  assert.strictEqual(result.Q4.included.length, 0, '통원 7회 미만은 Q4 미포함');
+  console.log('PASS: Q4 통원 7회 미만 미포함');
+}
+
 // Q6: 5년 초과~10년 이내(6-10년) 입원/수술은 Q6 포함, 5년 이내는 Q6 미포함
 {
   const histories = [{
