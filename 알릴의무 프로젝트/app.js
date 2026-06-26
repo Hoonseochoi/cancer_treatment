@@ -367,15 +367,46 @@ if (typeof document !== 'undefined') {
   if (!parseBtn || !historyInput) {
     console.error('필수 DOM 요소를 찾을 수 없습니다: parse-btn 또는 history-input');
   } else {
-    parseBtn.addEventListener('click', () => {
+    parseBtn.addEventListener('click', async () => {
       const text = historyInput.value;
       const parsed = parseHistoryText(text);
-      if (parsed.length === 0) {
-        showToast('인식된 병력이 없습니다. 빈 행을 추가했습니다');
-        histories.push(emptyHistoryRow());
-      } else {
+
+      if (parsed.length > 0) {
         histories = histories.concat(parsed);
+        renderAll();
+        return;
       }
+
+      // 우리 포맷(🔴...)으로 바로 안 읽히면, 텍스트가 비어있지 않은 경우에만
+      // Gemini에게 우리 포맷으로 변환을 맡긴다 (config.js에 키가 있을 때만).
+      const hasApiKey = typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY;
+      if (text.trim() && hasApiKey && typeof convertFreeTextWithGemini === 'function') {
+        parseBtn.disabled = true;
+        parseBtn.textContent = 'AI가 변환 중...';
+        try {
+          const converted = await convertFreeTextWithGemini(text, GEMINI_API_KEY);
+          const aiParsed = parseHistoryText(converted);
+          if (aiParsed.length > 0) {
+            histories = histories.concat(aiParsed);
+            showToast('AI가 자유양식 병력을 우리 포맷으로 변환했습니다. 결과를 꼭 확인해주세요');
+          } else {
+            showToast('AI 변환 결과도 인식하지 못했습니다. 빈 행을 추가했습니다');
+            histories.push(emptyHistoryRow());
+          }
+        } catch (e) {
+          console.error('Gemini 변환 실패:', e);
+          showToast('AI 변환에 실패했습니다. 빈 행을 추가했습니다');
+          histories.push(emptyHistoryRow());
+        } finally {
+          parseBtn.disabled = false;
+          parseBtn.textContent = '표로 변환';
+        }
+        renderAll();
+        return;
+      }
+
+      showToast('인식된 병력이 없습니다. 빈 행을 추가했습니다');
+      histories.push(emptyHistoryRow());
       renderAll();
     });
   }

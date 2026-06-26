@@ -15,3 +15,6 @@ analyzer-next/
 
 # Claude worktrees
 .claude/worktrees/
+
+# 알릴의무 도구 - Gemini API 키 (절대 커밋 금지)
+알릴의무 프로젝트/config.js
