@@ -98,6 +98,18 @@ function daysBetween(dateStr, todayStr) {
   return Math.floor((today - d) / (1000 * 60 * 60 * 24));
 }
 
+// 날짜로부터 만으로 몇 년이 지났는지(달/일까지 고려한 만 나이 방식) 계산.
+// 정보 부족(날짜 없음)이면 null — 간편보험 3·5년 고지 등에도 재사용 가능.
+function yearsElapsed(dateStr, todayStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  const today = new Date(todayStr);
+  let years = today.getFullYear() - d.getFullYear();
+  const monthDiff = today.getMonth() - d.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < d.getDate())) years--;
+  return years < 0 ? null : years;
+}
+
 function matchesDisease11(code) {
   if (!code) return false;
   for (const prefixes of Object.values(DISEASE_11)) {
@@ -187,6 +199,7 @@ function classifyHistories(histories, todayStr) {
 if (typeof module !== 'undefined') {
   module.exports.classifyHistories = classifyHistories;
   module.exports.isExceptionDisease = isExceptionDisease;
+  module.exports.yearsElapsed = yearsElapsed;
 }
 
 if (typeof document !== 'undefined') {
@@ -358,6 +371,15 @@ if (typeof document !== 'undefined') {
         nameBtn.className = 'q-item-name';
         nameBtn.textContent = h.진단명 || '(이름없음)';
         row.appendChild(nameBtn);
+
+        // 입원/수술 등 최근진료일 기준으로 몇 년 지났는지 — 간편보험 3·5년 고지에도 재사용 가능
+        const elapsed = yearsElapsed(h.최근진료일, TODAY_ISO);
+        if (elapsed !== null) {
+          const elapsedBadge = document.createElement('span');
+          elapsedBadge.className = 'cat-badge cat-elapsed';
+          elapsedBadge.textContent = `${elapsed}년경과`;
+          row.appendChild(elapsedBadge);
+        }
 
         wrap.appendChild(row);
 

@@ -10,7 +10,7 @@ global.Q_DEFS = dataModule.exports.Q_DEFS;
 global.DISEASE_11 = dataModule.exports.DISEASE_11;
 global.DISCLOSURE_EXCEPTIONS = dataModule.exports.DISCLOSURE_EXCEPTIONS;
 
-const { classifyHistories, isExceptionDisease } = require('../app.js');
+const { classifyHistories, isExceptionDisease, yearsElapsed } = require('../app.js');
 
 const TODAY = '2026-06-25'; // 고정 기준일 (테스트 결정론 확보용, classifyHistories 두번째 인자)
 
@@ -162,6 +162,14 @@ const TODAY = '2026-06-25'; // 고정 기준일 (테스트 결정론 확보용, 
   const result = classifyHistories(histories, TODAY);
   assert.strictEqual(result.Q5.included.length, 1, '직장/항문관련질환(K60)도 11대질병으로 Q5 포함');
   console.log('PASS: Q5 직장/항문관련질환 포함');
+}
+
+// yearsElapsed: 23년 2월 → 26년 6월(TODAY)이면 3년 4개월 지났으므로 만 3년경과
+{
+  assert.strictEqual(yearsElapsed('2023-02-15', TODAY), 3, '23년 2월 → 26년 6월(TODAY)은 3년경과');
+  assert.strictEqual(yearsElapsed('2026-06-25', TODAY), 0, '하루 전 날짜는 0년경과');
+  assert.strictEqual(yearsElapsed(null, TODAY), null, '날짜 없으면 null');
+  console.log('PASS: yearsElapsed 만년수 계산');
 }
 
 console.log('전체 통과: classify.test.js');

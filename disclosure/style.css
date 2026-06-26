@@ -130,6 +130,7 @@ h2.stitle {
 .cat-s { background: #eff6ff; color: #1d4ed8; }
 .cat-r { background: #fff7ed; color: #c2410c; }
 .cat-e { background: #f0fdf4; color: #15803d; }
+.cat-elapsed { background: #eff6ff; color: #1d4ed8; margin-left: auto; }
 .copy-sticky { position: sticky; bottom: 16px; display: block; margin: 0 auto; }
 
 @media (max-width: 640px) {
