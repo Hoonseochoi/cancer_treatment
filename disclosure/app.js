@@ -290,7 +290,11 @@ if (typeof document !== 'undefined') {
   }
 
   const TODAY_ISO = new Date().toISOString().slice(0, 10);
-  const checkedKeys = new Set(); // `${qId}::${historyIndex}` 형태로 체크 상태 저장
+  // `${qId}::${historyId}` 형태로 "명시적으로 체크 해제한" 항목만 저장한다.
+  // 기본값은 체크됨(분류된 항목은 기본적으로 고지 대상으로 간주) — 사용자가
+  // 직접 체크를 해제한 것만 이 Set에 들어가므로, 다른 필드를 수정해 화면이
+  // 다시 그려져도 사용자가 해제한 상태가 의도치 않게 되돌아가지 않는다.
+  const uncheckedKeys = new Set();
 
   function renderClassifyResult() {
     const container = document.getElementById('classify-result');
@@ -338,9 +342,9 @@ if (typeof document !== 'undefined') {
         const cb = document.createElement('input');
         cb.type = 'checkbox';
         const key = `${q.id}::${h.id}`;
-        cb.checked = checkedKeys.has(key);
+        cb.checked = !uncheckedKeys.has(key);
         cb.addEventListener('change', () => {
-          if (cb.checked) checkedKeys.add(key); else checkedKeys.delete(key);
+          if (cb.checked) uncheckedKeys.delete(key); else uncheckedKeys.add(key);
         });
         checkLabel.appendChild(cb);
         const badge = document.createElement('span');
@@ -404,7 +408,7 @@ if (typeof document !== 'undefined') {
     Q_DEFS.forEach(q => {
       lines.push(q.title);
       const checkedItems = [...result[q.id].included, ...result[q.id].review]
-        .filter(h => checkedKeys.has(`${q.id}::${h.id}`));
+        .filter(h => !uncheckedKeys.has(`${q.id}::${h.id}`));
 
       if (checkedItems.length === 0) {
         lines.push('- 해당사항 없음');
@@ -490,7 +494,7 @@ if (typeof document !== 'undefined') {
         // 새로 변환한 결과로 교체한다 — 이전에 표로 변환했던 병력은 비운다.
         // (병력을 계속 추가하고 싶으면 "+ 병력 추가" 버튼을 쓴다.)
         histories = parsed;
-        checkedKeys.clear();
+        uncheckedKeys.clear();
         renderAll();
         return;
       }
@@ -507,7 +511,7 @@ if (typeof document !== 'undefined') {
           if (aiParsed.length > 0) {
             // 새로 변환한 결과로 교체한다 — 이전 결과는 비운다.
             histories = aiParsed;
-            checkedKeys.clear();
+            uncheckedKeys.clear();
             showToast('AI가 자유양식 병력을 우리 포맷으로 변환했습니다. 결과를 꼭 확인해주세요');
           } else {
             showToast('AI 변환 결과도 인식하지 못했습니다. 빈 행을 추가했습니다');
@@ -562,7 +566,7 @@ if (typeof document !== 'undefined') {
     resetAllBtn.addEventListener('click', () => {
       if (!confirm('입력한 모든 병력과 분류결과를 초기화합니다. 계속할까요?')) return;
       histories = [];
-      checkedKeys.clear();
+      uncheckedKeys.clear();
       renderAll();
       showToast('전체 초기화되었습니다');
     });

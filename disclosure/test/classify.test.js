@@ -150,4 +150,18 @@ const TODAY = '2026-06-25'; // 고정 기준일 (테스트 결정론 확보용, 
   console.log('PASS: isExceptionDisease 키워드 매칭');
 }
 
+// Q5: 직장 또는 항문관련질환(K60)도 11대질병에 포함되어 단발 진료라도 Q5 해당
+{
+  const histories = [{
+    진단명: '항문열창', 진단코드: 'K60',
+    최초진단일: '2024-01-01', 최근진료일: '2024-01-01',
+    입원여부: false, 입원일수: null, 수술여부: false, 수술명: null,
+    계속치료일수: null, 계속투약일수: null, 재검사여부: false, 상시복용여부: false,
+    현재상태: '', 비고: '', 원본: '',
+  }];
+  const result = classifyHistories(histories, TODAY);
+  assert.strictEqual(result.Q5.included.length, 1, '직장/항문관련질환(K60)도 11대질병으로 Q5 포함');
+  console.log('PASS: Q5 직장/항문관련질환 포함');
+}
+
 console.log('전체 통과: classify.test.js');
