@@ -11,7 +11,7 @@ global.DISEASE_11 = dataModule.exports.DISEASE_11;
 global.DISCLOSURE_EXCEPTIONS = dataModule.exports.DISCLOSURE_EXCEPTIONS;
 global.LIGHT_INSURANCE_EXCEPTIONS = dataModule.exports.LIGHT_INSURANCE_EXCEPTIONS;
 
-const { classifyHistories, isExceptionDisease, yearsElapsed, isLightInsuranceException } = require('../app.js');
+const { classifyHistories, isExceptionDisease, yearsElapsed, isLightInsuranceException, getTreatmentTypeLabel } = require('../app.js');
 
 const TODAY = '2026-06-25'; // 고정 기준일 (테스트 결정론 확보용, classifyHistories 두번째 인자)
 
@@ -179,6 +179,18 @@ const TODAY = '2026-06-25'; // 고정 기준일 (테스트 결정론 확보용, 
   assert.strictEqual(isLightInsuranceException('급성심근경색'), false, '경증상병 키워드가 없으면 false');
   assert.strictEqual(isLightInsuranceException(null), false, '진단명이 없으면 false');
   console.log('PASS: isLightInsuranceException 키워드 매칭');
+}
+
+// getTreatmentTypeLabel: 입원/수술/통원 조합에 따른 치료유형 라벨
+{
+  const base = { 입원여부: false, 수술여부: false, 통원횟수: null };
+  assert.strictEqual(getTreatmentTypeLabel({ ...base, 입원여부: true }), '입원');
+  assert.strictEqual(getTreatmentTypeLabel({ ...base, 수술여부: true }), '수술');
+  assert.strictEqual(getTreatmentTypeLabel({ ...base, 통원횟수: 3 }), '통원');
+  assert.strictEqual(getTreatmentTypeLabel({ ...base, 입원여부: true, 수술여부: true }), '입원 및 수술');
+  assert.strictEqual(getTreatmentTypeLabel({ ...base, 수술여부: true, 통원횟수: 2 }), '통원 및 수술');
+  assert.strictEqual(getTreatmentTypeLabel(base), null, '정보가 전혀 없으면 태그 생략');
+  console.log('PASS: getTreatmentTypeLabel 치료유형 라벨');
 }
 
 console.log('전체 통과: classify.test.js');

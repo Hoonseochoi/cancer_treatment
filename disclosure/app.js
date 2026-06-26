@@ -110,6 +110,20 @@ function yearsElapsed(dateStr, todayStr) {
   return years < 0 ? null : years;
 }
 
+// 입원/수술/통원 여부로 치료유형 라벨을 만든다. 정보가 전혀 없으면 null(태그 생략).
+function getTreatmentTypeLabel(h) {
+  const hasAdmission = !!h.입원여부;
+  const hasSurgery = !!h.수술여부;
+  const hasOutpatient = h.통원횟수 !== null && h.통원횟수 !== undefined && h.통원횟수 > 0;
+
+  if (hasAdmission && hasSurgery) return '입원 및 수술';
+  if (hasAdmission) return '입원';
+  if (hasSurgery && hasOutpatient) return '통원 및 수술';
+  if (hasSurgery) return '수술';
+  if (hasOutpatient) return '통원';
+  return null;
+}
+
 function matchesDisease11(code) {
   if (!code) return false;
   for (const prefixes of Object.values(DISEASE_11)) {
@@ -206,6 +220,7 @@ if (typeof module !== 'undefined') {
   module.exports.classifyHistories = classifyHistories;
   module.exports.isExceptionDisease = isExceptionDisease;
   module.exports.yearsElapsed = yearsElapsed;
+  module.exports.getTreatmentTypeLabel = getTreatmentTypeLabel;
   module.exports.isLightInsuranceException = isLightInsuranceException;
 }
 
@@ -387,6 +402,15 @@ if (typeof document !== 'undefined') {
         nameBtn.className = 'q-item-name';
         nameBtn.textContent = h.진단명 || '(이름없음)';
         row.appendChild(nameBtn);
+
+        // 입원/수술/통원 여부를 진단명 바로 옆에 태그로 표시
+        const treatmentType = getTreatmentTypeLabel(h);
+        if (treatmentType) {
+          const typeBadge = document.createElement('span');
+          typeBadge.className = 'cat-badge cat-type';
+          typeBadge.textContent = treatmentType;
+          row.appendChild(typeBadge);
+        }
 
         // 입원/수술 등 최근진료일 기준으로 몇 년 지났는지 — 간편보험 3·5년 고지에도 재사용 가능
         const elapsed = yearsElapsed(h.최근진료일, TODAY_ISO);
