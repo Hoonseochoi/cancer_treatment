@@ -110,6 +110,20 @@ h2.stitle {
 .q-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 4px; }
 .q-oneliner { font-size: 0.8rem; color: var(--text-faint); margin-bottom: 14px; }
 .q-item-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 0.85rem; }
+.q-item-check { display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; }
+.q-item-name {
+  background: none; border: none; padding: 0; margin: 0; cursor: pointer;
+  font: inherit; color: var(--text); text-align: left;
+  text-decoration: underline; text-decoration-color: transparent;
+  transition: text-decoration-color 0.2s;
+}
+.q-item-name:hover { text-decoration-color: var(--text-faint); }
+.q-item-detail {
+  display: none; margin: 0 0 10px 0; padding: 10px 14px;
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px;
+}
+.q-item-detail.open { display: block; }
+.q-item-detail-line { font-size: 0.8rem; color: var(--text-muted); line-height: 1.7; }
 .q-empty { font-size: 0.82rem; color: var(--text-faint); padding: 6px 0; }
 .cat-badge { font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; text-transform: uppercase; }
 .cat-s { background: #eff6ff; color: #1d4ed8; }

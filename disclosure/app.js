@@ -27,6 +27,7 @@ function parseHistoryText(text) {
       계속치료일수: null,
       계속투약일수: null,
       통원횟수: null,
+      약물명: null,
       재검사여부: false,
       상시복용여부: false,
       현재상태: '',
@@ -60,6 +61,9 @@ function parseHistoryText(text) {
           const m = v.match(/(\d+)\s*일/);
           if (m) entry.계속투약일수 = parseInt(m[1], 10);
         }
+      } else if (line.startsWith('약물:')) {
+        const v = line.replace('약물:', '').trim();
+        if (v && v !== '없음') entry.약물명 = v;
       } else if (line.startsWith('비고:')) {
         entry.비고 = line.replace('비고:', '').trim();
       } else if (line.startsWith('치료/현상태:')) {
@@ -199,6 +203,7 @@ if (typeof document !== 'undefined') {
     { key: '계속치료일수', label: '계속치료일수', type: 'number' },
     { key: '계속투약일수', label: '계속투약일수', type: 'number' },
     { key: '통원횟수', label: '통원횟수', type: 'number' },
+    { key: '약물명', label: '약물명(상시복용)', type: 'text' },
     { key: '비고', label: '비고', type: 'text' },
   ];
 
@@ -321,8 +326,15 @@ if (typeof document !== 'undefined') {
         // Q6는 예외질환 키워드 매칭 시 분류완료/확인필요와 무관하게 "예외질환" 배지를 우선 노출
         // (부가조건은 사람이 직접 확인해야 하므로 자동으로 빼지 않음)
         const cat = q.id === 'Q6' && isExceptionDisease(h.진단명) ? 'e' : baseCat;
-        const row = document.createElement('label');
+
+        const wrap = document.createElement('div');
+        wrap.className = 'q-item-wrap';
+
+        const row = document.createElement('div');
         row.className = 'q-item-row';
+
+        const checkLabel = document.createElement('label');
+        checkLabel.className = 'q-item-check';
         const cb = document.createElement('input');
         cb.type = 'checkbox';
         const key = `${q.id}::${h.id}`;
@@ -330,13 +342,56 @@ if (typeof document !== 'undefined') {
         cb.addEventListener('change', () => {
           if (cb.checked) checkedKeys.add(key); else checkedKeys.delete(key);
         });
-        row.appendChild(cb);
+        checkLabel.appendChild(cb);
         const badge = document.createElement('span');
         badge.className = `cat-badge cat-${cat}`;
         badge.textContent = cat === 'e' ? '예외질환(확인필요)' : (cat === 'r' ? '확인필요' : '분류완료');
-        row.appendChild(badge);
-        row.appendChild(document.createTextNode(h.진단명 || '(이름없음)'));
-        block.appendChild(row);
+        checkLabel.appendChild(badge);
+        row.appendChild(checkLabel);
+
+        const nameBtn = document.createElement('button');
+        nameBtn.type = 'button';
+        nameBtn.className = 'q-item-name';
+        nameBtn.textContent = h.진단명 || '(이름없음)';
+        row.appendChild(nameBtn);
+
+        wrap.appendChild(row);
+
+        const detail = document.createElement('div');
+        detail.className = 'q-item-detail';
+        const detailFields = [
+          ['진단명', h.진단명],
+          ['진단코드', h.진단코드],
+          ['최초진단일', h.최초진단일],
+          ['최근진료일', h.최근진료일],
+          ['입원일수', h.입원일수 !== null ? `${h.입원일수}일` : null],
+          ['수술명', h.수술명],
+          ['계속치료일수', h.계속치료일수 !== null ? `${h.계속치료일수}일` : null],
+          ['계속투약일수', h.계속투약일수 !== null ? `${h.계속투약일수}일` : null],
+          ['통원횟수', h.통원횟수 !== null ? `${h.통원횟수}회` : null],
+          ['약물명(상시복용)', h.약물명],
+          ['비고', h.비고],
+        ];
+        detailFields.forEach(([label, value]) => {
+          if (!value) return;
+          const line = document.createElement('div');
+          line.className = 'q-item-detail-line';
+          line.textContent = `- ${label}: ${value}`;
+          detail.appendChild(line);
+        });
+        if (!detail.children.length) {
+          const empty = document.createElement('div');
+          empty.className = 'q-item-detail-line';
+          empty.textContent = '추가 정보 없음';
+          detail.appendChild(empty);
+        }
+        wrap.appendChild(detail);
+
+        nameBtn.addEventListener('click', () => {
+          detail.classList.toggle('open');
+        });
+
+        block.appendChild(wrap);
       });
 
       container.appendChild(block);
@@ -431,7 +486,7 @@ if (typeof document !== 'undefined') {
       id: nextHistoryId++,
       진단명: '', 진단코드: '', 최초진단일: null, 최근진료일: null,
       입원여부: false, 입원일수: null, 수술여부: false, 수술명: null,
-      계속치료일수: null, 계속투약일수: null, 통원횟수: null, 재검사여부: false, 상시복용여부: false,
+      계속치료일수: null, 계속투약일수: null, 통원횟수: null, 약물명: null, 재검사여부: false, 상시복용여부: false,
       현재상태: '', 비고: '', 원본: '',
     };
   }
