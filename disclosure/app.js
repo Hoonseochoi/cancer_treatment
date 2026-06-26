@@ -261,8 +261,8 @@ if (typeof document !== 'undefined') {
         cb.type = 'checkbox';
         cb.checked = !!h[key];
         cb.addEventListener('change', () => { h[key] = cb.checked; renderAll(); });
-        label.appendChild(cb);
         label.appendChild(document.createTextNode(labelText));
+        label.appendChild(cb);
         fields.appendChild(label);
       });
 
