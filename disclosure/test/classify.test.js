@@ -9,8 +9,9 @@ new Function('module', 'exports', dataSrc)(dataModule, dataModule.exports);
 global.Q_DEFS = dataModule.exports.Q_DEFS;
 global.DISEASE_11 = dataModule.exports.DISEASE_11;
 global.DISCLOSURE_EXCEPTIONS = dataModule.exports.DISCLOSURE_EXCEPTIONS;
+global.LIGHT_INSURANCE_EXCEPTIONS = dataModule.exports.LIGHT_INSURANCE_EXCEPTIONS;
 
-const { classifyHistories, isExceptionDisease, yearsElapsed } = require('../app.js');
+const { classifyHistories, isExceptionDisease, yearsElapsed, isLightInsuranceException } = require('../app.js');
 
 const TODAY = '2026-06-25'; // 고정 기준일 (테스트 결정론 확보용, classifyHistories 두번째 인자)
 
@@ -170,6 +171,14 @@ const TODAY = '2026-06-25'; // 고정 기준일 (테스트 결정론 확보용, 
   assert.strictEqual(yearsElapsed('2026-06-25', TODAY), 0, '하루 전 날짜는 0년경과');
   assert.strictEqual(yearsElapsed(null, TODAY), null, '날짜 없으면 null');
   console.log('PASS: yearsElapsed 만년수 계산');
+}
+
+// isLightInsuranceException: 간편보험 경증상병 예외인수 키워드 매칭
+{
+  assert.strictEqual(isLightInsuranceException('추간판탈출증'), true, '간편보험 경증상병 키워드 포함 시 true');
+  assert.strictEqual(isLightInsuranceException('급성심근경색'), false, '경증상병 키워드가 없으면 false');
+  assert.strictEqual(isLightInsuranceException(null), false, '진단명이 없으면 false');
+  console.log('PASS: isLightInsuranceException 키워드 매칭');
 }
 
 console.log('전체 통과: classify.test.js');

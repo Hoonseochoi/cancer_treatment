@@ -136,6 +136,12 @@ function isExceptionDisease(name) {
   return DISCLOSURE_EXCEPTIONS.some(keyword => name.includes(keyword));
 }
 
+// 간편보험 경증상병 예외인수 키워드 매칭 — Q1/Q4 전용 "경증프리패스" 힌트 태그에 사용
+function isLightInsuranceException(name) {
+  if (!name) return false;
+  return LIGHT_INSURANCE_EXCEPTIONS.some(keyword => name.includes(keyword));
+}
+
 function classifyHistories(histories, todayStr) {
   const result = {};
   for (const q of Q_DEFS) {
@@ -200,6 +206,7 @@ if (typeof module !== 'undefined') {
   module.exports.classifyHistories = classifyHistories;
   module.exports.isExceptionDisease = isExceptionDisease;
   module.exports.yearsElapsed = yearsElapsed;
+  module.exports.isLightInsuranceException = isLightInsuranceException;
 }
 
 if (typeof document !== 'undefined') {
@@ -364,6 +371,15 @@ if (typeof document !== 'undefined') {
         badge.className = `cat-badge cat-${cat}`;
         badge.textContent = cat === 'e' ? '예외질환(확인필요)' : (cat === 'r' ? '확인필요' : '분류완료');
         checkLabel.appendChild(badge);
+
+        // Q1·Q4에서 간편보험 경증상병 예외인수 키워드와 매칭되면 빨간 "경증프리패스" 힌트 태그 추가
+        if ((q.id === 'Q1' || q.id === 'Q4') && isLightInsuranceException(h.진단명)) {
+          const lightBadge = document.createElement('span');
+          lightBadge.className = 'cat-badge cat-light';
+          lightBadge.textContent = '경증프리패스';
+          checkLabel.appendChild(lightBadge);
+        }
+
         row.appendChild(checkLabel);
 
         const nameBtn = document.createElement('button');
