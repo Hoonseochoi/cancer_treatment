@@ -389,7 +389,10 @@ if (typeof document !== 'undefined') {
       const parsed = parseHistoryText(text);
 
       if (parsed.length > 0) {
-        histories = histories.concat(parsed);
+        // 새로 변환한 결과로 교체한다 — 이전에 표로 변환했던 병력은 비운다.
+        // (병력을 계속 추가하고 싶으면 "+ 병력 추가" 버튼을 쓴다.)
+        histories = parsed;
+        checkedKeys.clear();
         renderAll();
         return;
       }
@@ -404,7 +407,9 @@ if (typeof document !== 'undefined') {
           const converted = await convertFreeTextWithGemini(text, GEMINI_API_KEY);
           const aiParsed = parseHistoryText(converted);
           if (aiParsed.length > 0) {
-            histories = histories.concat(aiParsed);
+            // 새로 변환한 결과로 교체한다 — 이전 결과는 비운다.
+            histories = aiParsed;
+            checkedKeys.clear();
             showToast('AI가 자유양식 병력을 우리 포맷으로 변환했습니다. 결과를 꼭 확인해주세요');
           } else {
             showToast('AI 변환 결과도 인식하지 못했습니다. 빈 행을 추가했습니다');
