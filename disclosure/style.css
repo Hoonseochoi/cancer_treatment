@@ -101,6 +101,7 @@ h2.stitle {
 .history-fields label { display: flex; flex-direction: column; font-size: 0.72rem; color: var(--text-faint); gap: 4px; min-width: 0; }
 .history-fields label.checkbox-label { flex-direction: row; align-items: center; justify-content: flex-start; gap: 6px; white-space: nowrap; cursor: pointer; }
 .history-fields label.checkbox-label input[type="checkbox"] { margin: 0; flex-shrink: 0; }
+.history-fields label.checkbox-label.checked { font-size: 0.82rem; font-weight: 700; color: var(--text); }
 .history-fields input, .history-fields select { font-size: 0.85rem; padding: 6px 8px; border: 1px solid var(--card-border); border-radius: 8px; font-family: inherit; width: 100%; }
 .history-card-actions { margin-top: 10px; text-align: right; }
 .btn-link-danger { background: none; border: none; color: #c2410c; font-size: 0.78rem; cursor: pointer; }

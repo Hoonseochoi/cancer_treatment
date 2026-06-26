@@ -300,6 +300,7 @@ if (typeof document !== 'undefined') {
         const cb = document.createElement('input');
         cb.type = 'checkbox';
         cb.checked = !!h[key];
+        label.classList.toggle('checked', cb.checked);
         cb.addEventListener('change', () => { h[key] = cb.checked; renderAll(); });
         label.appendChild(document.createTextNode(labelText));
         label.appendChild(cb);
