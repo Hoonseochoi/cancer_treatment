@@ -186,14 +186,8 @@ if (typeof module !== 'undefined') {
 }
 
 if (typeof document !== 'undefined') {
-  const STORAGE_KEY = 'alil_histories_v1';
+  // 새로고침하면 항상 빈 상태로 시작한다 — 고지 내용을 화면/저장소에 남기지 않는다.
   let histories = [];
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-    if (Array.isArray(saved)) histories = saved;
-  } catch (e) {
-    histories = [];
-  }
 
   const HISTORY_FIELDS = [
     { key: '진단명', label: '진단명', type: 'text' },
@@ -288,7 +282,6 @@ if (typeof document !== 'undefined') {
   function renderAll() {
     renderHistoryList();
     renderClassifyResult();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(histories));
   }
 
   const TODAY_ISO = new Date().toISOString().slice(0, 10);
@@ -465,7 +458,6 @@ if (typeof document !== 'undefined') {
       if (!confirm('입력한 모든 병력과 분류결과를 초기화합니다. 계속할까요?')) return;
       histories = [];
       checkedKeys.clear();
-      localStorage.removeItem(STORAGE_KEY);
       renderAll();
       showToast('전체 초기화되었습니다');
     });
