@@ -398,24 +398,74 @@ if (typeof document !== 'undefined') {
     });
   }
 
+  // 체크된 항목만 모아 Q1~Q6 문항별로 읽기 좋은 텍스트 보고서를 만든다.
+  function buildCopyText(result) {
+    const lines = ['[표준알릴의무 자동분류 결과 - 초안, 최종 기재 전 직접 확인 필수]', ''];
+    Q_DEFS.forEach(q => {
+      lines.push(q.title);
+      const checkedItems = [...result[q.id].included, ...result[q.id].review]
+        .filter(h => checkedKeys.has(`${q.id}::${h.id}`));
+
+      if (checkedItems.length === 0) {
+        lines.push('- 해당사항 없음');
+      } else {
+        checkedItems.forEach(h => {
+          const detailParts = [];
+          if (h.입원일수 !== null) detailParts.push(`입원 ${h.입원일수}일`);
+          if (h.수술명) detailParts.push(`수술: ${h.수술명}`);
+          if (h.통원횟수 !== null) detailParts.push(`통원 ${h.통원횟수}회`);
+          if (h.계속투약일수 !== null) detailParts.push(`투약 ${h.계속투약일수}일`);
+          if (h.약물명) detailParts.push(`약물: ${h.약물명}`);
+          if (q.id === 'Q6' && isExceptionDisease(h.진단명)) detailParts.push('예외질환(확인필요)');
+          const detail = detailParts.length > 0 ? ` (${detailParts.join(', ')})` : '';
+          lines.push(`- ${h.진단명 || '(이름없음)'}${detail}`);
+        });
+      }
+      lines.push('');
+    });
+    return lines.join('\n').trim();
+  }
+
+  // navigator.clipboard가 막혀있거나(포커스/권한 등) 실패하는 환경을 위한 폴백.
+  function copyTextFallback(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch (e) {
+      ok = false;
+    }
+    document.body.removeChild(textarea);
+    return ok;
+  }
+
   const copyBtn = document.getElementById('copy-btn');
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
       const result = classifyHistories(histories, TODAY_ISO);
-      const lines = [];
-      Q_DEFS.forEach(q => {
-        const items = [];
-        [...result[q.id].included, ...result[q.id].review].forEach(h => {
-          if (!checkedKeys.has(`${q.id}::${h.id}`)) return;
-          const name = h.진단명 || '(이름없음)';
-          items.push(q.id === 'Q6' && isExceptionDisease(h.진단명) ? `${name}(예외질환)` : name);
-        });
-        if (items.length > 0) lines.push(`${q.id}: ${items.join(', ')}`);
-      });
-      const text = lines.length > 0 ? lines.join('\n') : '체크된 항목이 없습니다.';
-      navigator.clipboard.writeText(text)
-        .then(() => showToast('결과가 복사되었습니다'))
-        .catch(() => showToast('복사에 실패했습니다. 직접 선택해 복사해주세요'));
+      const text = buildCopyText(result);
+
+      const handleFailure = () => {
+        if (copyTextFallback(text)) {
+          showToast('결과가 복사되었습니다');
+        } else {
+          showToast('복사에 실패했습니다. 직접 선택해 복사해주세요');
+        }
+      };
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+          .then(() => showToast('결과가 복사되었습니다'))
+          .catch(handleFailure);
+      } else {
+        handleFailure();
+      }
     });
   }
 

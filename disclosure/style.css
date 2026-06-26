@@ -30,7 +30,8 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 24px;
 }
-.nav-logo { font-size: 0.95rem; font-weight: 800; color: var(--text); text-decoration: none; letter-spacing: -0.5px; }
+.nav-logo { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 800; color: var(--text); text-decoration: none; letter-spacing: -0.5px; }
+.nav-logo-img { height: 28px; object-fit: contain; }
 .nav-back { font-size: 0.82rem; font-weight: 600; color: var(--text-faint); text-decoration: none; transition: color 0.2s; }
 .nav-back:hover { color: var(--text); }
 
