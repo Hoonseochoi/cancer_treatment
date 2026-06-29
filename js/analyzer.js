@@ -360,12 +360,6 @@ function extractRawCoverages(text) {
                 console.log(`End index found at line ${i}: ${lines[i]}`);
                 break;
             }
-            // [NEW] 시작 키워드 재등장 = 청약서/보험증권 등 새 섹션 시작 → 종료 처리 (중복 방지)
-            if (i > startIndex + 20 && line.length < 40 && startKeywords.some(k => line.includes(k))) {
-                endIndex = i;
-                console.log(`Re-start keyword at line ${i}: ${lines[i]} → treating as section end`);
-                break;
-            }
         }
     }
     if (startIndex !== -1) {
@@ -574,5 +568,16 @@ function extractRawCoverages(text) {
         }
     });
     console.log(`extractRawCoverages: ${results.length}건 추출 완료 (전체 ${targetLines.length}줄 분석)`);
-    return results;
+    // 중복 제거: 청약서/보험증권 섹션에서 동일 담보가 재등장하는 경우 제거
+    const seen = new Set();
+    const deduped = results.filter(item => {
+        const key = `${item.name}|${item.amount}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+    if (deduped.length < results.length) {
+        console.log(`extractRawCoverages: 중복 제거 후 ${deduped.length}건`);
+    }
+    return deduped;
 }
