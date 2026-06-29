@@ -501,6 +501,10 @@ const coverageDetailsMap = {
         type: "passthrough",
         displayName: "(10년갱신)(최초1회) 표적항암약물치료비"
     },
+    "갱신형 표적항암약물허가치료비(연간 약물종류 개수별)": {
+        type: "passthrough",
+        displayName: "(10년갱신) 갱신형 표적항암약물치료비"
+    },
     "항암양성자방사선치료비": {
         type: "passthrough",
         displayName: "(10년갱신)(최초1회) 양성자방사선치료비"

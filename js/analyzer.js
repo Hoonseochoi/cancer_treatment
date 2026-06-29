@@ -120,6 +120,11 @@ function calculateHierarchicalSummary(results) {
                 details = coverageDetailsMap["항암세기조절방사선치료비"];
             } else if (item.name.includes("면역항암약물") || item.name.includes("면역항암")) {
                 details = coverageDetailsMap["특정면역항암약물허가치료비"];
+            } else if (item.name.includes("표적항암약물") && item.name.includes("약물종류 개수별")) {
+                // 연간 약물종류 개수별 담보: 1종이상만 매핑, 2종/3종은 null → skip
+                if (item.name.includes("[1종이상]")) {
+                    details = coverageDetailsMap["갱신형 표적항암약물허가치료비(연간 약물종류 개수별)"];
+                }
             } else if (item.name.includes("표적항암약물") || item.name.includes("표적항암")) {
                 details = coverageDetailsMap["표적항암약물허가치료비"];
             } else if (item.name.includes("양성자방사선") || item.name.includes("양성자")) {
@@ -235,9 +240,12 @@ function calculateHierarchicalSummary(results) {
                 // ── payFreq 결정 ──
                 const srcIs26Jong  = /26종/.test(item.name) || /26종/.test(det.name || '');
                 const srcIsBundle  = /암진단|통합치료비|계속받는/.test(item.name);
+                const srcIsPerType = /약물종류 개수별/.test(item.name);
                 let payFreq = '';
                 if (srcIs26Jong) {
                     payFreq = 'once-each';
+                } else if (srcIsPerType) {
+                    payFreq = 'annual-3type';
                 } else if (ONCE_ONLY_KEYS.has(normalizedName)) {
                     payFreq = srcIsBundle ? 'annual' : 'once';
                 }
@@ -300,6 +308,10 @@ function findDetails(itemName) {
             details = coverageDetailsMap["항암세기조절방사선치료비"];
         } else if (itemName.includes("면역항암약물") || itemName.includes("면역항암")) {
             details = coverageDetailsMap["특정면역항암약물허가치료비"];
+        } else if (itemName.includes("표적항암약물") && itemName.includes("약물종류 개수별")) {
+            if (itemName.includes("[1종이상]")) {
+                details = coverageDetailsMap["갱신형 표적항암약물허가치료비(연간 약물종류 개수별)"];
+            }
         } else if (itemName.includes("표적항암약물") || itemName.includes("표적항암")) {
             details = coverageDetailsMap["표적항암약물허가치료비"];
         } else if (itemName.includes("양성자방사선") || itemName.includes("양성자")) {
@@ -346,6 +358,12 @@ function extractRawCoverages(text) {
             if (line.length < 40 && endKeywords.some(k => line.includes(k))) {
                 endIndex = i;
                 console.log(`End index found at line ${i}: ${lines[i]}`);
+                break;
+            }
+            // [NEW] 시작 키워드 재등장 = 청약서/보험증권 등 새 섹션 시작 → 종료 처리 (중복 방지)
+            if (i > startIndex + 20 && line.length < 40 && startKeywords.some(k => line.includes(k))) {
+                endIndex = i;
+                console.log(`Re-start keyword at line ${i}: ${lines[i]} → treating as section end`);
                 break;
             }
         }
