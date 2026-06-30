@@ -270,15 +270,15 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                             ? '<span style="color:#F97316;font-weight:800;font-size:0.65rem">(1~3기)</span> '
                             : '';
                     const PAY_TAG_MAP = {
-                        'once':          '<span style="color:#7C3AED;font-weight:800;font-size:0.6rem;background:#F5F3FF;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle">(최초1회)</span>',
-                        'once-each':     '<span style="color:#B45309;font-weight:800;font-size:0.6rem;background:#FFFBEB;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle">(각각1회)</span>',
-                        'annual':        '<span style="color:#059669;font-weight:800;font-size:0.6rem;background:#ECFDF5;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle">(연간1회)</span>',
-                        'annual-3type':  '<span style="color:#0369A1;font-weight:800;font-size:0.6rem;background:#E0F2FE;padding:1px 4px;border-radius:3px;margin-left:3px;vertical-align:middle">(연 3종류)</span>'
+                        'once':          '<span style="color:#7C3AED;font-weight:800;font-size:0.6rem;background:#F5F3FF;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(최초1회)</span>',
+                        'once-each':     '<span style="color:#B45309;font-weight:800;font-size:0.6rem;background:#FFFBEB;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(각각1회)</span>',
+                        'annual':        '<span style="color:#059669;font-weight:800;font-size:0.6rem;background:#ECFDF5;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(연간1회)</span>',
+                        'annual-3type':  '<span style="color:#0369A1;font-weight:800;font-size:0.6rem;background:#E0F2FE;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(연 3종류)</span>'
                     };
                     const payTag = PAY_TAG_MAP[sub.payFreq] || '';
                     innerTreeHtml = `
                         <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
-                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${sub.name}${payTag}</span>
+                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${payTag}${sub.name}</span>
                             <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
                         </div>`;
                 }
