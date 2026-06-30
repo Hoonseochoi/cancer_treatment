@@ -9,24 +9,24 @@ const samsungCoverageDetailsMap = {
         type: "variant",
         data: {
             "10000": [ // 표준형 1억원 — 전항목 비급여(전액본인부담) 보장
-                { name: "(수술 회당) 암 수술비", amount: "1,000만", 비급여: true },
-                { name: "(연1회) 항암방사선치료비", amount: "1,000만", 비급여: true },
-                { name: "(연1회) 항암약물치료비", amount: "1,000만", 비급여: true },
-                { name: "(연1회) 다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true },
-                { name: "(연1회) 다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
-                { name: "(연1회) 항암양성자방사선치료비", amount: "3,000만", 비급여: true },
-                { name: "(연1회) 표적항암약물허가치료비", amount: "3,000만", 비급여: true },
-                { name: "(연1회) 면역항암약물허가치료비", amount: "3,000만", 비급여: true }
+                { name: "암 수술비", amount: "1,000만", 비급여: true },
+                { name: "항암방사선치료비", amount: "1,000만", 비급여: true },
+                { name: "항암약물치료비", amount: "1,000만", 비급여: true },
+                { name: "다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true },
+                { name: "다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
+                { name: "항암양성자방사선치료비", amount: "3,000만", 비급여: true },
+                { name: "표적항암약물허가치료비", amount: "3,000만", 비급여: true },
+                { name: "면역항암약물허가치료비", amount: "3,000만", 비급여: true }
             ],
             "5000": [ // 실속형 5천만원 — 전항목 비급여(전액본인부담) 보장
-                { name: "(수술 회당) 암 수술비", amount: "1,000만", 비급여: true },
-                { name: "(연1회) 항암방사선치료비", amount: "1,000만", 비급여: true },
-                { name: "(연1회) 항암약물치료비", amount: "1,000만", 비급여: true },
-                { name: "(연1회) 다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true },
-                { name: "(연1회) 다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
-                { name: "(연1회) 항암양성자방사선치료비", amount: "1,000만", 비급여: true },
-                { name: "(연1회) 표적항암약물허가치료비", amount: "1,000만", 비급여: true },
-                { name: "(연1회) 면역항암약물허가치료비", amount: "1,000만", 비급여: true }
+                { name: "암 수술비", amount: "1,000만", 비급여: true },
+                { name: "항암방사선치료비", amount: "1,000만", 비급여: true },
+                { name: "항암약물치료비", amount: "1,000만", 비급여: true },
+                { name: "다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true },
+                { name: "다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
+                { name: "항암양성자방사선치료비", amount: "1,000만", 비급여: true },
+                { name: "표적항암약물허가치료비", amount: "1,000만", 비급여: true },
+                { name: "면역항암약물허가치료비", amount: "1,000만", 비급여: true }
             ]
         }
     },
@@ -89,19 +89,19 @@ const samsungCoverageDetailsMap = {
     // 담보 53: 종합병원 특정항암호르몬약물허가 치료비Ⅱ(연간1회한)(암(유사암Ⅱ제외))
     "종합병원 특정항암호르몬약물허가 치료비Ⅱ(연간1회한)(암(유사암Ⅱ제외))": {
         type: "passthrough",
-        displayName: "(연1회) 특정항암호르몬약물허가치료비Ⅱ(암)"
+        displayName: "특정항암호르몬약물허가치료비Ⅱ(암)"
     },
 
     // 담보 53 (쌍): 종합병원 특정항암호르몬약물허가 치료비Ⅱ(연간1회한)(유사암Ⅱ)
     "종합병원 특정항암호르몬약물허가 치료비Ⅱ(연간1회한)(유사암Ⅱ)": {
         type: "passthrough",
-        displayName: "(연1회) 특정항암호르몬약물허가치료비Ⅱ(유사암)"
+        displayName: "특정항암호르몬약물허가치료비Ⅱ(유사암)"
     },
 
     // 담보 110: 항암 중입자방사선 치료비
     "항암 중입자방사선 치료비": {
         type: "passthrough",
-        displayName: "(최초1회) 항암중입자방사선치료비"
+        displayName: "항암중입자방사선치료비"
     },
 
     // 담보 104: 하이클래스 암 특정치료비 (비급여 수술+항암방사선+항암약물, 가입금액만큼)
@@ -115,28 +115,28 @@ const samsungCoverageDetailsMap = {
     // 담보 97: 암 종합병원 중환자실 입원지원금(연간1회한)
     "암 종합병원 중환자실 입원지원금(연간1회한)": {
         type: "passthrough",
-        displayName: "(연1회) 암 중환자실 입원지원금"
+        displayName: "암 중환자실 입원지원금"
     },
 
     // 담보 200: 암(특정암 제외) 다빈치로봇 수술비 [갱신형]
     "암(특정암 제외) 다빈치로봇 수술비": {
         type: "passthrough",
         summaryTarget: "다빈치로봇수술비",
-        displayName: "(최초1회) 다빈치로봇수술비(암, 특정암 제외)"
+        displayName: "다빈치로봇수술비(암, 특정암 제외)"
     },
 
     // 담보 201: 특정암 다빈치로봇 수술비 [갱신형]
     "특정암 다빈치로봇 수술비": {
         type: "passthrough",
         summaryTarget: "다빈치로봇수술비",
-        displayName: "(최초1회) 다빈치로봇수술비(특정암)"
+        displayName: "다빈치로봇수술비(특정암)"
     },
 
     // 담보 184: 항암 방사선 치료비 단독 (갱신형, 급여)
     "항암 방사선 치료비(기타피부암및갑상선암이외의암)": {
         type: "passthrough",
         summaryTarget: "항암방사선치료비",
-        displayName: "(회당) 항암방사선치료비"
+        displayName: "항암방사선치료비"
     },
 
     // 담보 186: 항암방사선·약물 치료비Ⅲ (갱신형, 일반암, 비급여) — 수술비 미포함
@@ -152,15 +152,36 @@ const samsungCoverageDetailsMap = {
     "표적항암약물허가 치료비(연간1회한)(암(유사암Ⅱ 제외))": {
         type: "passthrough",
         summaryTarget: "표적항암약물치료비",
-        displayName: "(연1회) 표적항암약물허가치료비"
+        displayName: "표적항암약물허가치료비"
     },
 
     // 담보 197: 전액본인부담(비급여포함) 표적항암약물허가 치료비 (갱신형, 비급여)
     "전액본인부담(비급여포함)표적항암약물허가 치료비": {
         type: "passthrough",
         summaryTarget: "표적항암약물치료비",
-        displayName: "(비급여)(연1회) 표적항암약물허가치료비",
+        displayName: "표적항암약물허가치료비",
         비급여: true
+    },
+
+    // 갱신형 항암양성자방사선치료비 단독 담보
+    "항암양성자방사선치료비(갱신형)": {
+        type: "passthrough",
+        summaryTarget: "양성자방사선치료비",
+        displayName: "항암양성자방사선치료비"
+    },
+
+    // 갱신형 특정면역항암약물허가치료비 단독 담보 (계속받는 포함)
+    "특정면역항암약물허가치료비(갱신형)": {
+        type: "passthrough",
+        summaryTarget: "면역항암약물치료비",
+        displayName: "특정면역항암약물허가치료비"
+    },
+
+    // 갱신형 암 수술비 단독 담보 (유사암 제외)
+    "암수술비(갱신형)": {
+        type: "passthrough",
+        summaryTarget: "암수술비",
+        displayName: "암 수술비(유사암 제외)"
     }
 };
 
@@ -176,7 +197,7 @@ function findSamsungDetails(itemName) {
     if (itemName.includes("특정치료비") && (itemName.includes("Ⅲ") || itemName.includes("III"))) {
         if (!itemName.includes("암")) return null; // "암" 미포함 = 비암성 질환 담보 → 제외
         const isHighLevel = itemName.includes("상급종합병원");
-        if (itemName.includes("유사암")) {
+        if (itemName.includes("유사암") && !itemName.includes("제외")) {
             return isHighLevel
                 ? samsungCoverageDetailsMap["상급종합병원 유사암Ⅱ 특정치료비Ⅲ"]
                 : samsungCoverageDetailsMap["종합병원 유사암Ⅱ 특정치료비Ⅲ(수술(회당),항암방사선,항암약물)"];
@@ -194,7 +215,7 @@ function findSamsungDetails(itemName) {
         if (itemName.includes("전액본인부담")) {
             return samsungCoverageDetailsMap["종합병원 암(기타피부암 및 갑상선암 포함) 전액본인부담(비급여포함) 특정치료비Ⅱ"];
         }
-        if (itemName.includes("유사암")) {
+        if (itemName.includes("유사암") && !itemName.includes("제외")) {
             return samsungCoverageDetailsMap["종합병원 유사암Ⅱ 특정치료비Ⅱ"];
         }
         return samsungCoverageDetailsMap["종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅱ"];
@@ -202,7 +223,7 @@ function findSamsungDetails(itemName) {
 
     // 2-1. 다빈치로봇 수술비 단독 담보 (통합치료비 외 별도 담보)
     if (itemName.includes("다빈치") && !itemName.includes("통합치료비")) {
-        if (itemName.includes("특정암")) {
+        if (itemName.includes("특정암") && !itemName.includes("제외")) {
             return samsungCoverageDetailsMap["특정암 다빈치로봇 수술비"];
         }
         return samsungCoverageDetailsMap["암(특정암 제외) 다빈치로봇 수술비"];
@@ -210,6 +231,8 @@ function findSamsungDetails(itemName) {
 
     // 2-2. 항암방사선·약물 치료비Ⅲ (수술 제외, 방사선+약물만) — 특정치료비Ⅲ와 구분 필수
     if (itemName.includes("항암방사선") && itemName.includes("약물") && (itemName.includes("Ⅲ") || itemName.includes("III")) && !itemName.includes("특정치료비")) {
+        // 기타피부암·갑상선암 전용(이외 없음) = 유사암 담보 → 제외
+        if (itemName.includes("기타피부암") && !itemName.includes("이외")) return null;
         return samsungCoverageDetailsMap["암(유사암Ⅱ 제외) 항암방사선·약물 치료비Ⅲ"];
     }
 
@@ -218,13 +241,25 @@ function findSamsungDetails(itemName) {
         return samsungCoverageDetailsMap["전액본인부담(비급여포함)표적항암약물허가 치료비"];
     }
 
+    // 2-3b. 특정면역항암약물허가 치료비 단독 (갱신형, 계속받는 포함)
+    if (itemName.includes("특정면역항암약물허가") || (itemName.includes("면역항암약물허가") && !itemName.includes("통합치료비"))) {
+        return samsungCoverageDetailsMap["특정면역항암약물허가치료비(갱신형)"];
+    }
+
     // 2-4. 표적항암약물허가 치료비 (급여 단독)
     if (itemName.includes("표적항암약물허가") && !itemName.includes("전액본인부담") && !itemName.includes("호르몬")) {
         return samsungCoverageDetailsMap["표적항암약물허가 치료비(연간1회한)(암(유사암Ⅱ 제외))"];
     }
 
+    // 2-4b. 항암양성자방사선치료비 단독 (갱신형)
+    if (itemName.includes("양성자방사선") && !itemName.includes("통합치료비")) {
+        return samsungCoverageDetailsMap["항암양성자방사선치료비(갱신형)"];
+    }
+
     // 2-5. 항암방사선치료비 단독 (약물 미포함, 특정치료비 아님)
     if ((itemName.includes("항암 방사선 치료비") || itemName.includes("항암방사선치료비")) && !itemName.includes("약물") && !itemName.includes("특정치료비")) {
+        // 기타피부암·갑상선암 전용(이외 없음) = 유사암 담보 → 제외
+        if (itemName.includes("기타피부암") && !itemName.includes("이외")) return null;
         return samsungCoverageDetailsMap["항암 방사선 치료비(기타피부암및갑상선암이외의암)"];
     }
 
@@ -250,6 +285,11 @@ function findSamsungDetails(itemName) {
     // 5. 암 중환자실 입원지원금 — 반드시 "암"이 포함된 경우만 매핑 (뇌혈관/허혈성심장/희귀질환 등 비암성 중환자실 담보 차단)
     if (itemName.includes("암") && itemName.includes("중환자실")) {
         return samsungCoverageDetailsMap["암 종합병원 중환자실 입원지원금(연간1회한)"];
+    }
+
+    // 6. 암 수술비 단독 (갱신형, 유사암 제외)
+    if (itemName.includes("수술비") && itemName.includes("암") && !itemName.includes("다빈치") && !itemName.includes("통합치료비")) {
+        return samsungCoverageDetailsMap["암수술비(갱신형)"];
     }
 
     return null;
@@ -399,12 +439,16 @@ function calculateHierarchicalSummarySamsung(results) {
                 }
                 // ── payFreq 결정 ──
                 const srcIs26Jong_s  = /26종/.test(item.name) || /26종/.test(det.name || '');
-                const srcIsBundle_s  = /암진단|통합치료비/.test(item.name);
+                // 통합치료비/특정치료비Ⅱ/Ⅲ 소스 → ONCE_ONLY_KEYS 포함 모든 대상에서 연간1회
+                const srcIsBundle_s  = /암진단|통합치료비|특정치료비/.test(item.name);
                 let payFreq_s = '';
                 if (srcIs26Jong_s) {
                     payFreq_s = 'once-each';
                 } else if (ONCE_ONLY_KEYS.has(normalizedName)) {
                     payFreq_s = srcIsBundle_s ? 'annual' : 'once';
+                } else if (/통합치료비|특정치료비/.test(item.name)) {
+                    // 통합치료비/특정치료비 소스에서 ONCE_ONLY_KEYS 외 대상(암수술비, 항암방사선 등)도 연간1회
+                    payFreq_s = 'annual';
                 }
                 if (!det._expansion && (payFreq_s === 'once' || payFreq_s === 'once-each')) {
                     group.isolatedOnceMin += valMin;
