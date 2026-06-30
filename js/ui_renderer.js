@@ -739,8 +739,8 @@ window.exportAsImage = async function () {
                     const qrEl = clonedDoc.createElement('div');
                     qrEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;padding-left:16px;';
                     qrEl.innerHTML = `
-                        <img src="${qrBase64}" style="width:54px;height:54px;border-radius:8px;border:2px solid rgba(255,255,255,0.6);">
-                        <span style="font-size:8px;color:#64748b;font-weight:700;white-space:nowrap;letter-spacing:0.03em;">surinsur.com</span>
+                        <img src="${qrBase64}" style="width:108px;height:108px;border-radius:12px;border:2px solid rgba(255,255,255,0.6);">
+                        <span style="font-size:16px;color:#64748b;font-weight:700;white-space:nowrap;letter-spacing:0.03em;">surinsur.com</span>
                     `;
                     flexRow.appendChild(qrEl);
                 }
