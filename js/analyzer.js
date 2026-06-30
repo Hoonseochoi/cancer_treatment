@@ -245,7 +245,7 @@ function calculateHierarchicalSummary(results) {
                 if (srcIs26Jong) {
                     payFreq = 'once-each';
                 } else if (srcIsPerType) {
-                    payFreq = 'annual-3type';
+                    payFreq = 'annual';
                 } else if (ONCE_ONLY_KEYS.has(normalizedName)) {
                     payFreq = srcIsBundle ? 'annual' : 'once';
                 }
