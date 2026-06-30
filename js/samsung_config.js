@@ -231,8 +231,9 @@ function findSamsungDetails(itemName) {
 
     // 2-2. 항암방사선·약물 치료비Ⅲ (수술 제외, 방사선+약물만) — 특정치료비Ⅲ와 구분 필수
     if (itemName.includes("항암방사선") && itemName.includes("약물") && (itemName.includes("Ⅲ") || itemName.includes("III")) && !itemName.includes("특정치료비")) {
-        // 기타피부암·갑상선암 전용(이외 없음) = 유사암 담보 → 제외
-        if (itemName.includes("기타피부암") && !itemName.includes("이외")) return null;
+        // 기타피부암·갑상선암 전용("제외" 없음) = 유사암 담보 → null
+        // "기타피부암 및 갑상선암 제외" = 일반암 버전 → 정상 매핑
+        if (itemName.includes("기타피부암") && !itemName.includes("제외")) return null;
         return samsungCoverageDetailsMap["암(유사암Ⅱ 제외) 항암방사선·약물 치료비Ⅲ"];
     }
 
