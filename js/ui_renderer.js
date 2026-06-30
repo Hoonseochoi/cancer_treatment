@@ -732,17 +732,19 @@ window.exportAsImage = async function () {
             const otherPanel = clonedDoc.getElementById('other-panel-container');
             if (otherPanel) otherPanel.style.display = 'none';
 
-            // ── 상단 브랜드 헤더 주입 (컴팩트) ──
-            const brandHeader = clonedDoc.createElement('div');
-            brandHeader.innerHTML = `
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:#ffffff;border-radius:12px;margin-bottom:12px;border:1px solid #e2e8f0;">
-                    <div style="display:flex;flex-direction:column;gap:3px;">
-                        <div style="font-size:14px;font-weight:800;color:#1A3A8F;line-height:1.3;letter-spacing:-0.01em;">보험전문가 ${captureExpertName}의 인사이트</div>
-                        <div style="font-size:10px;color:#94a3b8;font-weight:500;letter-spacing:0.01em;">surinsur.com &nbsp;·&nbsp; 보험사별 암 치료비 보장, 한눈에 정리</div>
-                    </div>
-                    ${qrBase64 ? `<img src="${qrBase64}" style="width:46px;height:46px;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0;">` : ''}
-                </div>`;
-            cloneMain.insertBefore(brandHeader, cloneMain.firstChild);
+            // ── QR 코드를 insight 카드 우측에 주입 (별도 헤더 박스 없이) ──
+            if (insight && qrBase64) {
+                const flexRow = insight.querySelector('.flex');
+                if (flexRow) {
+                    const qrEl = clonedDoc.createElement('div');
+                    qrEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;padding-left:16px;';
+                    qrEl.innerHTML = `
+                        <img src="${qrBase64}" style="width:54px;height:54px;border-radius:8px;border:2px solid rgba(255,255,255,0.6);">
+                        <span style="font-size:8px;color:#64748b;font-weight:700;white-space:nowrap;letter-spacing:0.03em;">surinsur.com</span>
+                    `;
+                    flexRow.appendChild(qrEl);
+                }
+            }
         }
     };
 
