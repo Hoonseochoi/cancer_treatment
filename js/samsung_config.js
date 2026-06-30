@@ -64,11 +64,12 @@ const samsungCoverageDetailsMap = {
         비급여: true
     },
 
-    // 담보 79: 종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅱ — 급여+비급여 모두, 수술·항암방사선·항암약물
+    // 담보 79: 종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅱ — 급여 전용, 수술·항암방사선·항암약물 (다빈치/양성자/표적/면역 미포함)
     "종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅱ": {
         type: "passthrough-dual",
         displayName: "암 특정치료비Ⅱ(수술·항암방사선·항암약물)",
-        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"]
+        summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+        expandHierarchy: false // 급여 담보: 다빈치/양성자/표적/면역은 비급여 특정치료비Ⅱ에만 포함
     },
 
     // 담보 80: 종합병원 유사암Ⅱ 특정치료비Ⅱ — 급여+비급여 모두
@@ -215,7 +216,7 @@ function findSamsungDetails(itemName) {
             return samsungCoverageDetailsMap["종합병원 암(기타피부암 및 갑상선암 포함) 전액본인부담(비급여포함) 특정치료비Ⅱ"];
         }
         if (itemName.includes("유사암") && !itemName.includes("제외")) {
-            return samsungCoverageDetailsMap["종합병원 유사암Ⅱ 특정치료비Ⅱ"];
+            return null; // 유사암Ⅱ(갑상선암/기타피부암/제자리암/경계성종양) 특정치료비Ⅱ → 표시 안 함
         }
         return samsungCoverageDetailsMap["종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅱ"];
     }
