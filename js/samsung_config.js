@@ -4,11 +4,11 @@
 
 const samsungCoverageDetailsMap = {
     // 담보 57: 종합병원 암 전액본인부담(비급여포함) 통합치료비
-    // 표준형 1억 / 실속형 5천만
+    // 이름에 "전액본인부담(비급여포함)"이 명시된 경우만 → 비급여 태그 O
     "종합병원 암 전액본인부담(비급여포함) 통합치료비": {
         type: "variant",
         data: {
-            "10000": [ // 표준형 1억원 — 전항목 비급여(전액본인부담) 보장
+            "10000": [ // 표준형 1억원 — 전액본인부담(비급여포함) 전용
                 { name: "암 수술비", amount: "1,000만", 비급여: true },
                 { name: "항암방사선치료비", amount: "1,000만", 비급여: true },
                 { name: "항암약물치료비", amount: "1,000만", 비급여: true },
@@ -18,7 +18,7 @@ const samsungCoverageDetailsMap = {
                 { name: "표적항암약물허가치료비", amount: "3,000만", 비급여: true },
                 { name: "면역항암약물허가치료비", amount: "3,000만", 비급여: true }
             ],
-            "5000": [ // 실속형 5천만원 — 전항목 비급여(전액본인부담) 보장
+            "5000": [ // 실속형 5천만원 — 전액본인부담(비급여포함) 전용
                 { name: "암 수술비", amount: "1,000만", 비급여: true },
                 { name: "항암방사선치료비", amount: "1,000만", 비급여: true },
                 { name: "항암약물치료비", amount: "1,000만", 비급여: true },
@@ -27,6 +27,44 @@ const samsungCoverageDetailsMap = {
                 { name: "항암양성자방사선치료비", amount: "1,000만", 비급여: true },
                 { name: "표적항암약물허가치료비", amount: "1,000만", 비급여: true },
                 { name: "면역항암약물허가치료비", amount: "1,000만", 비급여: true }
+            ]
+        }
+    },
+
+    // 담보 57b: 종합병원 암 통합치료비 (고급형/표준형/실속형) — 이름에 "전액본인부담" 없는 포괄형
+    // 급여+비급여 모두 포함하는 통합형이므로 비급여 태그 X
+    "종합병원 암 통합치료비(종합형)": {
+        type: "variant",
+        data: {
+            "12000": [ // 고급형 1억2천만
+                { name: "암 수술비", amount: "1,000만" },
+                { name: "항암방사선치료비", amount: "1,000만" },
+                { name: "항암약물치료비", amount: "1,000만" },
+                { name: "다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만" },
+                { name: "다빈치로봇수술비(특정암)", amount: "500만" },
+                { name: "항암양성자방사선치료비", amount: "3,000만" },
+                { name: "표적항암약물허가치료비", amount: "3,000만" },
+                { name: "면역항암약물허가치료비", amount: "3,000만" }
+            ],
+            "10000": [ // 표준형 1억
+                { name: "암 수술비", amount: "1,000만" },
+                { name: "항암방사선치료비", amount: "1,000만" },
+                { name: "항암약물치료비", amount: "1,000만" },
+                { name: "다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만" },
+                { name: "다빈치로봇수술비(특정암)", amount: "500만" },
+                { name: "항암양성자방사선치료비", amount: "3,000만" },
+                { name: "표적항암약물허가치료비", amount: "3,000만" },
+                { name: "면역항암약물허가치료비", amount: "3,000만" }
+            ],
+            "5000": [ // 실속형 5천만
+                { name: "암 수술비", amount: "1,000만" },
+                { name: "항암방사선치료비", amount: "1,000만" },
+                { name: "항암약물치료비", amount: "1,000만" },
+                { name: "다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만" },
+                { name: "다빈치로봇수술비(특정암)", amount: "500만" },
+                { name: "항암양성자방사선치료비", amount: "1,000만" },
+                { name: "표적항암약물허가치료비", amount: "1,000만" },
+                { name: "면역항암약물허가치료비", amount: "1,000만" }
             ]
         }
     },
@@ -187,9 +225,14 @@ const samsungCoverageDetailsMap = {
 
 // ── findSamsungDetails: 키워드 매칭으로 담보명 → samsungCoverageDetailsMap 항목 반환 ──
 function findSamsungDetails(itemName) {
-    // 1. 통합치료비 → 종합병원 암 전액본인부담(비급여포함) 통합치료비 (variant)
+    // 1. 통합치료비 — "전액본인부담" 명시 여부로 분기
+    // 명시 있음 → 비급여 전용 variant (비급여 태그 O)
+    // 명시 없음 → 포괄형 variant (급여+비급여 통합, 비급여 태그 X)
     if (itemName.includes("통합치료비")) {
-        return samsungCoverageDetailsMap["종합병원 암 전액본인부담(비급여포함) 통합치료비"];
+        if (itemName.includes("전액본인부담")) {
+            return samsungCoverageDetailsMap["종합병원 암 전액본인부담(비급여포함) 통합치료비"];
+        }
+        return samsungCoverageDetailsMap["종합병원 암 통합치료비(종합형)"];
     }
 
     // 2. 특정치료비Ⅲ / 특정치료비III (상급종합병원 / 종합병원 구분)
