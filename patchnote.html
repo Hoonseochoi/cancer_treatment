@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PATCHNOTE — 슈린슈's Release Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+      background: #fff; color: #111;
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    #patch-nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .nav-inner {
+      max-width: 860px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px;
+    }
+    .nav-logo { font-size: 0.95rem; font-weight: 800; color: #111; text-decoration: none; letter-spacing: -0.5px; }
+    .nav-back  { font-size: 0.82rem; font-weight: 600; color: #9ca3af; text-decoration: none; transition: color 0.2s; cursor: pointer; background: none; border: none; }
+    .nav-back:hover { color: #111; }
+
+    /* ── CONTENT ── */
+    #patch-content { max-width: 860px; margin: 0 auto; padding: 72px 24px 160px; }
+
+    /* ── HERO ── */
+    .hero-eyebrow {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 2.5px;
+      text-transform: uppercase; color: #9ca3af; margin-bottom: 16px; display: block;
+    }
+    .hero-title {
+      font-size: clamp(2.6rem, 7vw, 4.4rem); font-weight: 900;
+      letter-spacing: -3px; line-height: 1.04; color: #111; margin-bottom: 20px;
+    }
+    .hero-title span {
+      background: linear-gradient(135deg, #7C3AED, #a855f7);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-sub { font-size: 0.95rem; color: #6b7280; line-height: 1.8; margin-bottom: 48px; }
+
+    /* ── VERSION JUMP PILLS (sticky) ── */
+    .jump-wrap {
+      position: sticky; top: 57px; z-index: 40;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      padding: 10px 0 10px;
+      margin-bottom: 0;
+      border-bottom: 1px solid #f5f5f5;
+      margin-left: -24px; margin-right: -24px; padding-left: 24px; padding-right: 24px;
+    }
+    .jump-inner { display: flex; gap: 6px; flex-wrap: wrap; }
+    .jump-pill {
+      font-size: 0.72rem; font-weight: 700; padding: 5px 13px;
+      border-radius: 99px; border: 1px solid #e5e7eb;
+      color: #6b7280; background: #fff; cursor: pointer;
+      transition: all 0.18s; white-space: nowrap; text-decoration: none;
+    }
+    .jump-pill:hover { border-color: #7C3AED; color: #7C3AED; }
+    .jump-pill.active { background: #7C3AED; color: #fff; border-color: #7C3AED; }
+
+    /* ── TIMELINE ── */
+    .timeline {
+      position: relative; padding-left: 32px; margin-top: 48px;
+    }
+    .timeline::before {
+      content: ''; position: absolute; left: 7px; top: 10px; bottom: 10px;
+      width: 1.5px; background: #f0f0f0;
+    }
+
+    /* ── VERSION ENTRY ── */
+    .v-entry { position: relative; margin-bottom: 40px; }
+    .v-entry:last-child { margin-bottom: 0; }
+
+    .v-dot {
+      position: absolute; left: -28px; top: 8px;
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2.5px solid #fff;
+    }
+    .v-dot.latest {
+      background: #7C3AED;
+      box-shadow: 0 0 0 4px rgba(124,58,237,0.15);
+    }
+    .v-dot.past { background: #d1d5db; }
+
+    .v-card {
+      border: 1px solid #f0f0f0; border-radius: 16px;
+      overflow: hidden; transition: border-color 0.2s;
+    }
+    .v-card:hover { border-color: #e5e7eb; }
+    .v-card.latest-card { border-color: rgba(124,58,237,0.25); }
+
+    /* card header (always visible) */
+    .v-header {
+      padding: 20px 24px 18px;
+      cursor: pointer; user-select: none;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .v-header-left { flex: 1; }
+    .v-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .v-ver {
+      font-size: 0.78rem; font-weight: 800; color: #7C3AED;
+      letter-spacing: -0.2px; font-family: 'Outfit', monospace;
+    }
+    .v-date { font-size: 0.7rem; color: #9ca3af; font-weight: 500; }
+    .v-latest-badge {
+      font-size: 0.58rem; font-weight: 800; letter-spacing: 1.5px;
+      text-transform: uppercase; padding: 2px 9px; border-radius: 99px;
+      background: #7C3AED; color: #fff;
+    }
+    .v-subtitle {
+      font-size: 1.05rem; font-weight: 800; letter-spacing: -0.4px;
+      color: #111; margin-bottom: 10px;
+    }
+    .v-summary { display: flex; flex-wrap: wrap; gap: 5px; }
+
+    /* change type tags */
+    .tag {
+      font-size: 0.6rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 4px; letter-spacing: 0.5px;
+    }
+    .tag-new  { background: #eff6ff; color: #1d4ed8; }
+    .tag-fix  { background: #fff7ed; color: #c2410c; }
+    .tag-beta { background: #f0fdf4; color: #15803d; }
+    .tag-ux   { background: #fdf4ff; color: #7C3AED; }
+
+    .v-chevron {
+      font-size: 0.75rem; color: #9ca3af; flex-shrink: 0;
+      transition: transform 0.25s; margin-top: 4px;
+    }
+    .v-entry.open .v-chevron { transform: rotate(180deg); }
+
+    /* expandable body */
+    .v-body {
+      display: none; padding: 0 24px 24px;
+      border-top: 1px solid #f5f5f5;
+    }
+    .v-entry.open .v-body { display: block; }
+
+    .change-section { margin-top: 20px; }
+    .cs-label {
+      font-size: 0.62rem; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: #c4c4c4; margin-bottom: 12px;
+      display: block;
+    }
+    .change-list { display: flex; flex-direction: column; gap: 8px; }
+    .change-item { display: flex; align-items: flex-start; gap: 8px; }
+    .change-text { font-size: 0.86rem; color: #374151; line-height: 1.7; }
+    .change-text strong { color: #111; }
+    .change-text code {
+      font-family: 'Outfit', monospace; font-size: 0.78rem;
+      background: #f3f4f6; padding: 1px 6px; border-radius: 4px; color: #374151;
+    }
+
+    .note-box {
+      background: #fdf4ff; border-left: 3px solid #7C3AED;
+      border-radius: 0 8px 8px 0; padding: 12px 16px; margin-top: 16px;
+    }
+    .note-box p { font-size: 0.83rem; color: #6b21a8; line-height: 1.7; }
+
+    /* ── FOOTER ── */
+    .patch-footer {
+      margin-top: 100px; padding-top: 32px; border-top: 1px solid #f0f0f0;
+      text-align: center;
+    }
+    .patch-footer p { font-size: 0.82rem; color: #9ca3af; }
+    .patch-footer a { color: #7C3AED; text-decoration: none; }
+    .patch-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .hero-title { letter-spacing: -2px; }
+      .v-header { padding: 16px 16px 14px; }
+      .v-body { padding: 0 16px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav id="patch-nav">
+    <div class="nav-inner">
+      <span class="nav-logo">sure, insure</span>
+      <button class="nav-back" onclick="window.parent && window.parent.closePatchnoteModal ? window.parent.closePatchnoteModal() : history.back()">← 돌아가기</button>
+    </div>
+  </nav>
+
+  <div id="patch-content">
+
+    <!-- HERO -->
+    <span class="hero-eyebrow">슈린슈's Release Notes</span>
+    <h1 class="hero-title">What's<br><span>New.</span></h1>
+    <p class="hero-sub">슈린슈가 업데이트될 때마다 여기서 먼저 확인하세요.<br>더 정확하게, 더 깔끔하게, 계속 나아가고 있습니다.</p>
+
+    <!-- JUMP PILLS -->
+    <div class="jump-wrap">
+      <div class="jump-inner">
+        <a class="jump-pill active" href="#v0630">v.0630</a>
+        <a class="jump-pill" href="#v0626">v.0626</a>
+        <a class="jump-pill" href="#v0521">v.0521</a>
+        <a class="jump-pill" href="#v0520">v.0520</a>
+        <a class="jump-pill" href="#v0514">v.0514</a>
+        <a class="jump-pill" href="#v0512">v.0512</a>
+        <a class="jump-pill" href="#v0429">v.0429</a>
+      </div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="timeline">
+
+      <!-- v.0630 -->
+      <div class="v-entry open latest-entry" id="v0630">
+        <div class="v-dot latest"></div>
+        <div class="v-card latest-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
+                <span class="v-ver">v.0630</span>
+                <span class="v-date">2026.06.30</span>
+                <span class="v-latest-badge">LATEST</span>
+              </div>
+              <div class="v-subtitle">"이제 담보가 한눈에 보여"</div>
+              <div class="v-summary">
+                <span class="tag tag-ux">UX</span>
+                <span class="tag tag-fix">FIX ×4</span>
+              </div>
+            </div>
+            <span class="v-chevron">▾</span>
+          </div>
+          <div class="v-body">
+            <div class="change-section">
+              <span class="cs-label">새로워진 것들</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-ux">UX</span>
+                  <p class="change-text"><strong>삼성화재 · 메리츠화재 — 담보 묶음 보기</strong><br>
+                  카드 안의 세부항목들이 이제 출처 담보명 기준으로 묶여서 표시됩니다. 담보 이름 한 줄 클릭하면 펼쳐서 세부항목 확인 가능. 같은 담보 이름이 4~5번 반복되던 문제가 해소됩니다.</p>
+                </div>
+              </div>
+            </div>
+            <div class="change-section">
+              <span class="cs-label">잡아낸 버그들</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><code>[간편]항암방사선·약물 치료비Ⅲ(암(기타피부암 및 갑상선암 제외))</code> 500만원이 인식되지 않던 문제 → 수정</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text">위 담보에 <code>(비급여)</code> 태그가 잘못 붙던 문제 → 제거</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><code>유사암Ⅱ 특정치료비Ⅱ</code> 항목이 일반암 카드에 함께 표시되던 문제 → 완전 제거</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><code>전액본인부담</code> 문구 없는 통합치료비(고급형)에 비급여 태그가 붙던 문제 → 수정</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0626 -->
+      <div class="v-entry" id="v0626">
+        <div class="v-dot past"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
+                <span class="v-ver">v.0626</span>
+                <span class="v-date">2026.06.26</span>
+              </div>
+              <div class="v-subtitle">"고지서도 이제 AI한테 물어보세요"</div>
+              <div class="v-summary">
+                <span class="tag tag-new">NEW</span>
+                <span class="tag tag-beta">BETA</span>
+              </div>
+            </div>
+            <span class="v-chevron">▾</span>
+          </div>
+          <div class="v-body">
+            <div class="change-section">
+              <span class="cs-label">슈린슈 고지도우미 BETA 출시</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text">진단명, 입원/수술/통원 여부, 약물명 등을 자유 형식으로 입력하면 AI가 자동 분류</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text">분류 결과에 <strong>입원 / 수술 / 통원</strong> 치료유형 태그 자동 부착</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>N년경과</strong> 배지 — 마지막 치료 시점 기준 자동 계산</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>경증프리패스</strong> 태그 — 간편보험 예외인수 가능 질환 자동 표시</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text">항목 클릭 시 세부정보(약물명, 비고 등) 펼쳐보기</p>
+                </div>
+              </div>
+              <div class="note-box">
+                <p>해당 기능은 특별한 분들께만 오픈됩니다. 나중에 만나요, 우리는! 🌙</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0521 -->
+      <div class="v-entry" id="v0521">
+        <div class="v-dot past"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
+                <span class="v-ver">v.0521</span>
+                <span class="v-date">2026.05.21</span>
+              </div>
+              <div class="v-subtitle">"미래에셋도 이제 됩니다"</div>
+              <div class="v-summary">
+                <span class="tag tag-beta">BETA</span>
+                <span class="tag tag-new">NEW</span>
+              </div>
+            </div>
+            <span class="v-chevron">▾</span>
+          </div>
+          <div class="v-body">
+            <div class="change-section">
+              <span class="cs-label">미래에셋생명 지원 추가</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-beta">BETA</span>
+                  <p class="change-text">지원 보험사 5번째로 <strong>미래에셋생명</strong> 추가 (BETA)</p>
+                </div>
+              </div>
+              <div class="note-box">
+                <p>생명사 중에 처음으로 미래에셋생명이 추가되었어요! 아직은 초안 단계라 많이 불안정해요. 지속적으로 여러분이 이뻐해주시면 무럭무럭 자라겠죠? 🌱</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0520 -->
+      <div class="v-entry" id="v0520">
+        <div class="v-dot past"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
+                <span class="v-ver">v.0520</span>
+                <span class="v-date">2026.05.20</span>
+              </div>
+              <div class="v-subtitle">"이 보장, 1회인지 매년인지 이제 표시돼요"</div>
+              <div class="v-summary">
+                <span class="tag tag-new">NEW</span>
+              </div>
+            </div>
+            <span class="v-chevron">▾</span>
+          </div>
+          <div class="v-body">
+            <div class="change-section">
+              <span class="cs-label">납입 빈도 태그 신설</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text">카드 세부항목에 이제 지급 횟수가 뱃지로 표시됩니다.<br>
+                  <code>연간1회</code> 매년 한 번 지급 &nbsp;·&nbsp; <code>최초1회</code> 평생 단 한 번 지급 &nbsp;·&nbsp; <code>각각1회</code> 26종 항목별 각각 1회씩</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0514 -->
+      <div class="v-entry" id="v0514">
+        <div class="v-dot past"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
+                <span class="v-ver">v.0514</span>
+                <span class="v-date">2026.05.14</span>
+              </div>
+              <div class="v-subtitle">"흥국화재, 더 깊어졌어요"</div>
+              <div class="v-summary">
+                <span class="tag tag-new">NEW</span>
+                <span class="tag tag-beta">BETA</span>
+              </div>
+            </div>
+            <span class="v-chevron">▾</span>
+          </div>
+          <div class="v-body">
+            <div class="change-section">
+              <span class="cs-label">흥국화재 매핑 추가</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-beta">BETA</span>
+                  <p class="change-text">암 통장의 명가 흥국화재가 추가되었어요! 아직 개발 단계라 여러분의 도움이 많이 필요해요. 여러분들이 참여해주시면 좀 더 업그레이드가 가능하겠죠!?</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0512 -->
+      <div class="v-entry" id="v0512">
+        <div class="v-dot past"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
+                <span class="v-ver">v.0512</span>
+                <span class="v-date">2026.05.12</span>
+              </div>
+              <div class="v-subtitle">"DB손해보험 정확도 업그레이드"</div>
+              <div class="v-summary">
+                <span class="tag tag-new">NEW</span>
+                <span class="tag tag-beta">BETA</span>
+              </div>
+            </div>
+            <span class="v-chevron">▾</span>
+          </div>
+          <div class="v-body">
+            <div class="change-section">
+              <span class="cs-label">DB손해보험 매핑 추가</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-beta">BETA</span>
+                  <p class="change-text">DB손해보험의 암 분석도 오픈했어요! BETA지만 여러분들이 함께 참여해주신다면 정식으로 사용도 가능해요. 틀리거나 오류가 있는 부분은 언제든 연락주세요!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0429 -->
+      <div class="v-entry" id="v0429">
+        <div class="v-dot past"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
+                <span class="v-ver">v.0429</span>
+                <span class="v-date">2026.04.29</span>
+              </div>
+              <div class="v-subtitle">"이름이 바뀌었어요"</div>
+              <div class="v-summary">
+                <span class="tag tag-ux">UX</span>
+              </div>
+            </div>
+            <span class="v-chevron">▾</span>
+          </div>
+          <div class="v-body">
+            <div class="change-section">
+              <span class="cs-label">서비스명 변경</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-ux">UX</span>
+                  <p class="change-text">서비스 공식 명칭 변경: <code>메리츠 암보장 분석기</code> → <strong>GA 암보장 분석기</strong><br>메리츠 단독이 아닌, 모든 GA 설계사를 위한 도구로 확장되었습니다.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end timeline -->
+
+    <!-- FOOTER -->
+    <div class="patch-footer">
+      <p>더 궁금한 점이나 이상한 분석 결과가 있다면 언제든 문의해 주세요.<br>
+      <a href="mailto:contact@surinsur.com">contact@surinsur.com</a></p>
+    </div>
+
+  </div><!-- end patch-content -->
+
+  <script>
+    function toggleEntry(entry) {
+      entry.classList.toggle('open');
+      // update active pill on scroll is handled separately
+    }
+
+    // Jump pill active state on scroll
+    const pills = document.querySelectorAll('.jump-pill');
+    const entries = document.querySelectorAll('.v-entry');
+
+    const observer = new IntersectionObserver((records) => {
+      records.forEach(r => {
+        if (r.isIntersecting) {
+          const id = r.target.id;
+          pills.forEach(p => {
+            p.classList.toggle('active', p.getAttribute('href') === '#' + id);
+          });
+        }
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+
+    entries.forEach(e => { if (e.id) observer.observe(e); });
+  </script>
+
+</body>
+</html>
