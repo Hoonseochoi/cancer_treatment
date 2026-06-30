@@ -233,64 +233,79 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 seenSubKeys.add(key);
                 return true;
             });
-            let subItemsHtml = '';
-            dedupedItems.forEach(sub => {
-                let truncatedSource = sub.source;
-                if (truncatedSource.length > 28) {
-                    truncatedSource = truncatedSource.substring(0, 28) + "...";
-                }
+            const PAY_TAG_MAP = {
+                'once':          '<span style="color:#7C3AED;font-weight:800;font-size:0.6rem;background:#F5F3FF;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(최초1회)</span>',
+                'once-each':     '<span style="color:#B45309;font-weight:800;font-size:0.6rem;background:#FFFBEB;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(각각1회)</span>',
+                'annual':        '<span style="color:#059669;font-weight:800;font-size:0.6rem;background:#ECFDF5;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(연간1회)</span>',
+                'annual-3type':  '<span style="color:#0369A1;font-weight:800;font-size:0.6rem;background:#E0F2FE;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(연 3종류)</span>'
+            };
 
-                let innerTreeHtml = '';
+            const buildSubItemHtml = (sub) => {
                 if (sub.sub && Array.isArray(sub.sub)) {
-                    // Cumulative Logic (Custom II variant or similar)
-                    sub.sub.forEach(inner => {
+                    return sub.sub.map(inner => {
                         const parts = inner.trim().split(' ');
                         const iAmt = parts.pop();
                         const iName = parts.join(' ');
-                        innerTreeHtml += `
-                            <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
-                                <span class="truncate mr-2 flex-1 pl-3">ㄴ ${iName}</span>
-                                <span class="whitespace-nowrap flex-shrink-0 group-hover/row:text-red-400 transition-colors">${iAmt}</span>
-                            </div>`;
-                    });
-                } else {
-                    // Normal Item
-                    let amtDisplay = sub.amount;
-                    if (!amtDisplay.includes('(') && !amtDisplay.includes('~')) {
-                        amtDisplay = formatDisplayAmount(sub.amount);
-                    }
-                    if (sub.maxAmount && sub.maxAmount !== sub.amount && !amtDisplay.includes('(')) {
-                        amtDisplay = `${formatDisplayAmount(sub.amount)}(${formatDisplayAmount(sub.maxAmount)})`;
-                    }
-                    const bigugeumTag = sub.비급여 ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(비급여)</span> ' : '';
-                    const walletTag = sub.fromWallet ? '<span style="color:#DB2777;font-weight:800;font-size:0.65rem">(10억월렛)</span> ' : '';
-                    const stageTag = sub.stage === '4기'
-                        ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(4기)</span> '
-                        : sub.stage === '1~3기'
-                            ? '<span style="color:#F97316;font-weight:800;font-size:0.65rem">(1~3기)</span> '
-                            : '';
-                    const PAY_TAG_MAP = {
-                        'once':          '<span style="color:#7C3AED;font-weight:800;font-size:0.6rem;background:#F5F3FF;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(최초1회)</span>',
-                        'once-each':     '<span style="color:#B45309;font-weight:800;font-size:0.6rem;background:#FFFBEB;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(각각1회)</span>',
-                        'annual':        '<span style="color:#059669;font-weight:800;font-size:0.6rem;background:#ECFDF5;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(연간1회)</span>',
-                        'annual-3type':  '<span style="color:#0369A1;font-weight:800;font-size:0.6rem;background:#E0F2FE;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(연 3종류)</span>'
-                    };
-                    const payTag = PAY_TAG_MAP[sub.payFreq] || '';
-                    innerTreeHtml = `
-                        <div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
-                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${payTag}${sub.name}</span>
-                            <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
+                        return `<div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
+                            <span class="truncate mr-2 flex-1 pl-3">ㄴ ${iName}</span>
+                            <span class="whitespace-nowrap flex-shrink-0">${iAmt}</span>
                         </div>`;
+                    }).join('');
                 }
+                let amtDisplay = sub.amount;
+                if (!amtDisplay.includes('(') && !amtDisplay.includes('~')) amtDisplay = formatDisplayAmount(sub.amount);
+                if (sub.maxAmount && sub.maxAmount !== sub.amount && !amtDisplay.includes('(')) {
+                    amtDisplay = `${formatDisplayAmount(sub.amount)}(${formatDisplayAmount(sub.maxAmount)})`;
+                }
+                const bigugeumTag = sub.비급여 ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(비급여)</span> ' : '';
+                const walletTag = sub.fromWallet ? '<span style="color:#DB2777;font-weight:800;font-size:0.65rem">(10억월렛)</span> ' : '';
+                const stageTag = sub.stage === '4기'
+                    ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(4기)</span> '
+                    : sub.stage === '1~3기' ? '<span style="color:#F97316;font-weight:800;font-size:0.65rem">(1~3기)</span> ' : '';
+                const payTag = PAY_TAG_MAP[sub.payFreq] || '';
+                return `<div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
+                    <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${payTag}${sub.name}</span>
+                    <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
+                </div>`;
+            };
 
-                subItemsHtml += `
-                    <div class="mt-4 pl-2 border-l-2 border-red-500/10 group/row">
-                        <div class="flex items-center justify-between text-[11px] font-bold text-gray-700/90 mb-0.5">
-                            <span class="truncate mr-2 flex-1" title="${sub.source}">ㄴ ${truncatedSource}</span>
-                        </div>
-                        ${innerTreeHtml}
-                    </div>`;
-            });
+            let subItemsHtml = '';
+
+            if (insurer === 'samsung' && dedupedItems.length > 0) {
+                // 삼성화재: source(담보명) 기준 그룹핑 → 접기/펼치기
+                const srcMap = new Map();
+                dedupedItems.forEach(sub => {
+                    const src = sub.source || '';
+                    if (!srcMap.has(src)) srcMap.set(src, []);
+                    srcMap.get(src).push(sub);
+                });
+                srcMap.forEach((groupItems, srcName) => {
+                    const groupTotal = groupItems.reduce((s, sub) => s + parseKoAmount(sub.amount), 0);
+                    const truncSrc = srcName.length > 26 ? srcName.substring(0, 26) + '…' : srcName;
+                    const itemsHtml = groupItems.map(sub => buildSubItemHtml(sub)).join('');
+                    subItemsHtml += `
+                        <details open class="mt-3" style="list-style:none">
+                            <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:4px 6px;border-radius:5px;background:rgba(0,0,0,0.03);font-size:10.5px;font-weight:700;color:#666;margin-bottom:2px;user-select:none;list-style:none" title="${srcName}">
+                                <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">ㄴ ${truncSrc}</span>
+                                <span style="color:#e53e3e;font-weight:800;font-size:11px;white-space:nowrap;flex-shrink:0">${formatKoAmount(groupTotal)}</span>
+                            </summary>
+                            <div>${itemsHtml}</div>
+                        </details>`;
+                });
+            } else {
+                // 기타 보험사: 기존 flat 렌더링
+                dedupedItems.forEach(sub => {
+                    let truncatedSource = sub.source;
+                    if (truncatedSource.length > 28) truncatedSource = truncatedSource.substring(0, 28) + "...";
+                    subItemsHtml += `
+                        <div class="mt-4 pl-2 border-l-2 border-red-500/10 group/row">
+                            <div class="flex items-center justify-between text-[11px] font-bold text-gray-700/90 mb-0.5">
+                                <span class="truncate mr-2 flex-1" title="${sub.source}">ㄴ ${truncatedSource}</span>
+                            </div>
+                            ${buildSubItemHtml(sub)}
+                        </div>`;
+                });
+            }
             let totalDisplay = formatKoAmount(data.totalMin);
             if (data.totalMin !== data.totalMax) {
                 totalDisplay = `${formatKoAmount(data.totalMin)}~${formatKoAmount(data.totalMax)}`;
