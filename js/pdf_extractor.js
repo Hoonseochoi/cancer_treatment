@@ -5,15 +5,28 @@ async function extractTextFromPDF(file, log = console.log) {
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     log(`PDF 로드 완료. 총 ${pdf.numPages}페이지`);
     let fullText = '';
-    // 메리츠: 1, 3~6페이지에 담보리스트 (최적화)
-    // 미래에셋생명: 3~7페이지에 담보리스트 (최적화, 파일명으로 조기 감지)
+    // 미래에셋생명: 파일명으로 조기 감지 → 1~8페이지
+    // 메리츠화재: page 1 텍스트로 감지 → 1,3,4,5페이지 (청약서 page 6+ 중복 방지)
     // 삼성화재 등 대용량 PDF(8페이지 초과): 전체 페이지 스캔
     const isMiraePDF = typeof currentFileName === 'string' && /M-케어|케어건강|미래에셋/i.test(currentFileName);
+    // 메리츠 감지: page 1 빠른 스캔
+    let isMeritzPDF = false;
+    if (!isMiraePDF && pdf.numPages > 8) {
+        try {
+            const p1 = await pdf.getPage(1);
+            const p1c = await p1.getTextContent();
+            const p1text = p1c.items.map(it => it.str).join('');
+            isMeritzPDF = /메리츠화재|meritzfire/i.test(p1text);
+            if (isMeritzPDF) log('[pdf_extractor] 메리츠화재 감지 → 담보 요약 페이지만 처리');
+        } catch(e) {}
+    }
     const pagesToProcess = isMiraePDF
         ? [1, 2, 3, 4, 5, 6, 7, 8].filter(p => p <= pdf.numPages)
-        : pdf.numPages > 8
-            ? Array.from({ length: pdf.numPages }, (_, i) => i + 1)
-            : [1, 3, 4, 5, 6].filter(p => p <= pdf.numPages);
+        : isMeritzPDF
+            ? [1, 3, 4, 5].filter(p => p <= pdf.numPages)
+            : pdf.numPages > 8
+                ? Array.from({ length: pdf.numPages }, (_, i) => i + 1)
+                : [1, 3, 4, 5, 6].filter(p => p <= pdf.numPages);
     const totalPagesToProcess = pagesToProcess.length;
     log(`처리할 페이지: [${pagesToProcess.join(', ')}]`);
     showToast(`총 ${totalPagesToProcess}페이지 정밀 분석을 시작합니다.`, false);
