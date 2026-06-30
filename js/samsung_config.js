@@ -287,8 +287,9 @@ function findSamsungDetails(itemName) {
         return samsungCoverageDetailsMap["암 종합병원 중환자실 입원지원금(연간1회한)"];
     }
 
-    // 6. 암 수술비 단독 (갱신형, 유사암 제외)
-    if (itemName.includes("수술비") && itemName.includes("암") && !itemName.includes("다빈치") && !itemName.includes("통합치료비")) {
+    // 6. 암 수술비 단독 (갱신형, 유사암 제외) — "유사암 제외" 명시된 경우만 매핑
+    // 기타피부암/갑상선암/대장점막내암/제자리암 등 유사암 전용 수술비는 제외
+    if (itemName.includes("수술비") && itemName.includes("암") && itemName.includes("유사암 제외") && !itemName.includes("다빈치") && !itemName.includes("통합치료비")) {
         return samsungCoverageDetailsMap["암수술비(갱신형)"];
     }
 
@@ -446,8 +447,8 @@ function calculateHierarchicalSummarySamsung(results) {
                     payFreq_s = 'once-each';
                 } else if (ONCE_ONLY_KEYS.has(normalizedName)) {
                     payFreq_s = srcIsBundle_s ? 'annual' : 'once';
-                } else if (/통합치료비|특정치료비/.test(item.name)) {
-                    // 통합치료비/특정치료비 소스에서 ONCE_ONLY_KEYS 외 대상(암수술비, 항암방사선 등)도 연간1회
+                } else if (/통합치료비|특정치료비/.test(item.name) || normalizedName === "암수술비") {
+                    // 통합치료비/특정치료비 소스 및 암수술비 단독 담보 → 연간1회
                     payFreq_s = 'annual';
                 }
                 if (!det._expansion && (payFreq_s === 'once' || payFreq_s === 'once-each')) {
