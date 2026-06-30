@@ -642,6 +642,10 @@ window.exportAsImage = async function () {
     // 폰트 대기 (Google Font 로딩 보장)
     await document.fonts.ready;
 
+    // ── 전문가 이름 읽기 (insight 섹션 DOM에서) ──
+    const expertNameEl = document.querySelector('#insight-section b.text-gray-600');
+    const captureExpertName = expertNameEl ? expertNameEl.textContent.trim() : '보험전문가';
+
     // ── QR 코드 사전 생성 (surinsur.com) ──
     let qrBase64 = '';
     try {
@@ -728,34 +732,17 @@ window.exportAsImage = async function () {
             const otherPanel = clonedDoc.getElementById('other-panel-container');
             if (otherPanel) otherPanel.style.display = 'none';
 
-            // ── 상단 브랜드 헤더 주입 ──
+            // ── 상단 브랜드 헤더 주입 (컴팩트) ──
             const brandHeader = clonedDoc.createElement('div');
             brandHeader.innerHTML = `
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;background:#ffffff;border-radius:16px;margin-bottom:16px;border:1px solid #e2e8f0;">
-                    <div style="display:flex;flex-direction:column;gap:5px;">
-                        <div style="font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;">Cancer Coverage Report</div>
-                        <div style="font-size:24px;font-weight:900;color:#1A3A8F;font-family:'Outfit',sans-serif;letter-spacing:-0.03em;line-height:1;">surinsur.com</div>
-                        <div style="font-size:11px;color:#64748b;font-weight:500;letter-spacing:0.01em;">보험사별 암 치료비 보장, 한눈에 정리</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:#ffffff;border-radius:12px;margin-bottom:12px;border:1px solid #e2e8f0;">
+                    <div style="display:flex;flex-direction:column;gap:3px;">
+                        <div style="font-size:14px;font-weight:800;color:#1A3A8F;line-height:1.3;letter-spacing:-0.01em;">보험전문가 ${captureExpertName}의 인사이트</div>
+                        <div style="font-size:10px;color:#94a3b8;font-weight:500;letter-spacing:0.01em;">surinsur.com &nbsp;·&nbsp; 보험사별 암 치료비 보장, 한눈에 정리</div>
                     </div>
-                    ${qrBase64 ? `
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-                        <img src="${qrBase64}" style="width:62px;height:62px;border-radius:8px;border:1px solid #e2e8f0;">
-                        <span style="font-size:9px;color:#94a3b8;font-weight:600;letter-spacing:0.04em;">지금 분석해보기</span>
-                    </div>` : ''}
+                    ${qrBase64 ? `<img src="${qrBase64}" style="width:46px;height:46px;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0;">` : ''}
                 </div>`;
             cloneMain.insertBefore(brandHeader, cloneMain.firstChild);
-
-            // ── 하단 브랜드 푸터 주입 ──
-            const brandFooter = clonedDoc.createElement('div');
-            brandFooter.innerHTML = `
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;margin-top:16px;background:#f8faff;border:2px solid #1A3A8F;border-radius:16px;">
-                    <div style="display:flex;flex-direction:column;gap:5px;">
-                        <div style="font-size:15px;font-weight:900;color:#1A3A8F;letter-spacing:-0.02em;line-height:1.2;">암 치료비 보장이 궁금하다면,</div>
-                        <div style="font-size:11px;color:#64748b;font-weight:500;">보험사별 보장 내역을 한눈에 &nbsp;·&nbsp; 무료로 분석해드립니다</div>
-                    </div>
-                    <div style="background:#1A3A8F;color:#ffffff;font-size:12px;font-weight:800;padding:10px 18px;border-radius:50px;white-space:nowrap;letter-spacing:-0.01em;flex-shrink:0;margin-left:16px;">surinsur.com →</div>
-                </div>`;
-            cloneMain.appendChild(brandFooter);
         }
     };
 
