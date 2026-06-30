@@ -144,8 +144,7 @@ const samsungCoverageDetailsMap = {
         type: "passthrough-dual",
         displayName: "암 항암방사선·약물치료비Ⅲ(방사선·약물)",
         summaryTargets: ["항암방사선치료비", "항암약물치료비"],
-        expandHierarchy: false, // 표적/면역/양성자 자동확장 금지
-        비급여: true
+        expandHierarchy: false // 표적/면역/양성자 자동확장 금지
     },
 
     // 담보 196: 표적항암약물허가 치료비 (갱신형, 급여)
