@@ -271,7 +271,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
 
             let subItemsHtml = '';
 
-            if (insurer === 'samsung' && dedupedItems.length > 0) {
+            if (['samsung', 'meritz'].includes(insurer) && dedupedItems.length > 0) {
                 // 삼성화재: source(담보명) 기준 그룹핑 → 접기/펼치기
                 const srcMap = new Map();
                 dedupedItems.forEach(sub => {
