@@ -22,7 +22,7 @@ GA 암보장 분석기의 분석 결과 보고서를 PNG 이미지로 내보내�
   4. **1차**: `domtoimage.toBlob(clone, { scale: 3, bgcolor: '#EBEBEB', ... })`을 최대 20초 타임아웃(`raceWithTimeout`)으로 시도합니다. 결과 Blob이 없거나 5000바이트 미만이면 실패로 간주합니다.
   5. **2차(폴백)**: 1차가 실패/타임아웃되면 동일한 클론에 대해 `html2canvas(clone, { scale: 3, useCORS: true, backgroundColor: '#EBEBEB', ... })`로 캡처한 뒤 `canvas.toBlob()`으로 PNG Blob을 얻습니다.
   6. 얻어진 Blob으로 `URL.createObjectURL()`을 생성하고, 가상 `<a>` 태그의 `download` 속성에 파일명을 지정해 클릭 이벤트로 다운로드를 트리거합니다. 다운로드 후 10초 뒤 `URL.revokeObjectURL()`로 메모리를 정리합니다.
-  7. 캡처 성공/실패와 무관하고 `finally` 블록에서 오프스크린 클론을 DOM에서 제거(`cleanup()`)합니다.
+  7. 캡처 성공/실패와 무관하게 `finally` 블록에서 오프스크린 클론을 DOM에서 제거(`cleanup()`)합니다.
 
 ## 4. 파일명 규칙
 - 파일명은 고정값이 아니라 업로드된 원본 PDF 파일명을 기준으로 동적으로 생성됩니다.
