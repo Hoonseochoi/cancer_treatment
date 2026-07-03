@@ -637,96 +637,6 @@ function toggleResultsList() {
     }
 }
 
-// ── 캡처용 오프스크린 클론 생성 ──
-// 반환: { clone, cleanup } — 캡처 후 반드시 cleanup() 호출
-function buildCaptureClone(target, qrBase64) {
-    const clone = target.cloneNode(true);
-
-    // 화면 밖 부착 + 원본과 동일한 너비 고정 (레이아웃 재계산 방지)
-    clone.style.cssText = `
-        position: fixed; left: -99999px; top: 0;
-        width: ${target.offsetWidth}px;
-        margin: 0; z-index: -1;
-        background: #EBEBEB;
-    `;
-
-    // 1. 지정 섹션 외 전부 숨김
-    const allowedIds = ['file-info', 'insight-section', 'summary-section'];
-    Array.from(clone.children).forEach(child => {
-        if (!allowedIds.includes(child.id)) child.style.display = 'none';
-    });
-
-    // 2. 대상 섹션 강제 노출 및 내부 버튼 숨김
-    const fileInfo = clone.querySelector('#file-info');
-    const insight = clone.querySelector('#insight-section');
-    const summary = clone.querySelector('#summary-section');
-
-    if (fileInfo) {
-        fileInfo.style.display = 'flex';
-        fileInfo.classList.remove('hidden');
-        fileInfo.style.marginBottom = '24px';
-        const resetBtn = fileInfo.querySelector('#reset-btn');
-        if (resetBtn) resetBtn.style.display = 'none';
-    }
-    if (insight) {
-        insight.style.display = 'block';
-        insight.classList.remove('hidden');
-        insight.style.marginBottom = '24px';
-        insight.style.opacity = '1';
-        insight.style.transform = 'translateY(0)';
-        insight.style.animation = 'none';
-        const deco = insight.querySelector('.blur-3xl');
-        if (deco) deco.style.display = 'none';
-    }
-    if (summary) {
-        summary.style.display = 'block';
-        summary.classList.remove('hidden');
-        const exportBtn = summary.querySelector('#export-pdf-btn');
-        if (exportBtn) exportBtn.style.display = 'none';
-    }
-
-    // 3. 애니메이션/트랜지션만 제거 (line-height, overflow는 절대 건드리지 않는다!)
-    clone.querySelectorAll('*').forEach(el => {
-        el.style.animation = 'none';
-        el.style.transition = 'none';
-    });
-
-    // 4. <details> 펼침 상태 보장 (접힌 담보 그룹도 이미지에는 모두 표시)
-    clone.querySelectorAll('details').forEach(d => d.setAttribute('open', ''));
-
-    // 5. 오류 제보 아일랜드 & 기타 패널 숨김
-    const errorIsland = clone.querySelector('#error-report-island');
-    if (errorIsland) errorIsland.style.display = 'none';
-    const otherPanel = clone.querySelector('#other-panel-container');
-    if (otherPanel) otherPanel.style.display = 'none';
-
-    // 6. QR 코드를 insight 카드 우측에 주입
-    if (insight && qrBase64) {
-        const flexRow = insight.querySelector('.flex');
-        if (flexRow) {
-            const qrEl = document.createElement('div');
-            qrEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;padding-left:16px;';
-            qrEl.innerHTML = `
-                <img src="${qrBase64}" style="width:108px;height:108px;border-radius:12px;border:2px solid rgba(255,255,255,0.6);">
-                <span style="font-size:16px;color:#64748b;font-weight:700;white-space:nowrap;letter-spacing:0.03em;">surinsur.com</span>
-            `;
-            flexRow.appendChild(qrEl);
-        }
-    }
-
-    document.body.appendChild(clone);
-    return { clone, cleanup: () => clone.remove() };
-}
-
-// ── 프라미스 vs 타임아웃 경쟁 헬퍼 (domtoimage.toBlob 무한 행 방지용) ──
-function raceWithTimeout(promise, ms, label) {
-    let timer;
-    const timeout = new Promise((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`${label} timeout (${ms}ms)`)), ms);
-    });
-    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-}
-
 // ── Image Export Function (Renamed from PDF for clarity) ──
 window.exportAsImage = async function () {
     console.log('Exporting image started...');
@@ -765,53 +675,107 @@ window.exportAsImage = async function () {
         console.warn('QR 코드 생성 실패, 생략합니다:', e);
     }
 
-    // ── 오프스크린 클론 생성 ──
-    const { clone, cleanup } = buildCaptureClone(target, qrBase64);
-    // 클론 부착 후 레이아웃/이미지 안정화 한 프레임 대기
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const options = {
+        scale: 3,
+        useCORS: true,
+        allowTaint: false, // Set to false to allow export if assets are clean
+        backgroundColor: '#EBEBEB',
+        logging: true,
+        onclone: (clonedDoc) => {
+            console.log('Clone created successfully');
+            const cloneMain = clonedDoc.querySelector('main');
+            if (!cloneMain) return;
 
-    const SCALE = 3;
-    let blob = null;
+            // 1. main의 모든 자식을 돌며 지정한 섹션 외에는 모두 숨김
+            const allowedIds = ['file-info', 'insight-section', 'summary-section'];
+            Array.from(cloneMain.children).forEach(child => {
+                if (!allowedIds.includes(child.id)) {
+                    child.style.display = 'none';
+                }
+            });
+
+            // 2. 대상 섹션 강제 노출 및 내부 버튼 숨김
+            const fileInfo = clonedDoc.getElementById('file-info');
+            const insight = clonedDoc.getElementById('insight-section');
+            const summary = clonedDoc.getElementById('summary-section');
+
+            if (fileInfo) {
+                fileInfo.style.display = 'flex';
+                fileInfo.classList.remove('hidden');
+                fileInfo.style.marginBottom = '24px';
+                const resetBtn = fileInfo.querySelector('#reset-btn');
+                if (resetBtn) resetBtn.style.display = 'none';
+            }
+            if (insight) {
+                insight.style.display = 'block';
+                insight.classList.remove('hidden');
+                insight.style.marginBottom = '24px';
+                insight.style.opacity = '1';
+                insight.style.transform = 'translateY(0)';
+                // Remove floating animation for capture
+                insight.style.animation = 'none';
+                // Hide blurred decoration which can cause artifacts in html2canvas
+                const deco = insight.querySelector('.blur-3xl');
+                if (deco) deco.style.display = 'none';
+            }
+            if (summary) {
+                summary.style.display = 'block';
+                summary.classList.remove('hidden');
+                const exportBtn = summary.querySelector('#export-pdf-btn');
+                if (exportBtn) exportBtn.style.display = 'none';
+            }
+
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+            * {
+                font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
+                letter-spacing: 0 !important;
+                word-spacing: 0 !important;
+                animation: none !important;
+                transition: none !important;
+            }
+            span, div, p, b, h1, h2, h3 {
+                line-height: 1.6 !important;
+                overflow: visible !important;
+            }
+            `;
+            clonedDoc.head.appendChild(style);
+
+            // ── 오류 제보 아일랜드 & 기타 패널 숨김 (캡처 불필요) ──
+            const errorIsland = clonedDoc.getElementById('error-report-island');
+            if (errorIsland) errorIsland.style.display = 'none';
+            const otherPanel = clonedDoc.getElementById('other-panel-container');
+            if (otherPanel) otherPanel.style.display = 'none';
+
+            // ── QR 코드를 insight 카드 우측에 주입 (별도 헤더 박스 없이) ──
+            if (insight && qrBase64) {
+                const flexRow = insight.querySelector('.flex');
+                if (flexRow) {
+                    const qrEl = clonedDoc.createElement('div');
+                    qrEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;padding-left:16px;';
+                    qrEl.innerHTML = `
+                        <img src="${qrBase64}" style="width:108px;height:108px;border-radius:12px;border:2px solid rgba(255,255,255,0.6);">
+                        <span style="font-size:16px;color:#64748b;font-weight:700;white-space:nowrap;letter-spacing:0.03em;">surinsur.com</span>
+                    `;
+                    flexRow.appendChild(qrEl);
+                }
+            }
+        }
+    };
 
     try {
-        // ── 1차: dom-to-image-more (브라우저 렌더링 그대로 보존) ──
-        try {
-            console.log('Capturing with dom-to-image-more...');
-            blob = await raceWithTimeout(domtoimage.toBlob(clone, {
-                scale: SCALE,
-                bgcolor: '#EBEBEB',
-                width: clone.offsetWidth,
-                height: clone.offsetHeight,
-            }), 20000, 'domtoimage.toBlob');
-            if (!blob || blob.size < 5000) throw new Error('empty result');
-            console.log('dom-to-image capture OK:', blob.size, 'bytes');
-        } catch (primaryErr) {
-            // ── 2차 폴백: html2canvas (동일 클론 사용) ──
-            console.warn('dom-to-image failed, falling back to html2canvas:', primaryErr);
-            const canvas = await html2canvas(clone, {
-                scale: SCALE,
-                useCORS: true,
-                allowTaint: false,
-                backgroundColor: '#EBEBEB',
-                windowWidth: clone.offsetWidth,
-            });
-            blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-            if (!blob) throw new Error('html2canvas toBlob 실패');
-        }
-
-        // ── 다운로드 트리거 ──
-        const url = URL.createObjectURL(blob);
+        console.log('Calling html2canvas...');
+        const canvas = await html2canvas(target, options);
+        console.log('Canvas generated successfully');
+        const imgData = canvas.toDataURL('image/png');
         const link = document.createElement('a');
-        link.href = url;
+        link.href = imgData;
         link.download = finalFileName;
         link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
         console.log('Image download triggered');
     } catch (err) {
         console.error('Capture Error Details:', err);
-        alert(`이미지 저장 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
-    } finally {
-        cleanup();
+        alert(`이미지 저장 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'} `);
     }
 };
 
