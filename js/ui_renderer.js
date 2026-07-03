@@ -782,7 +782,7 @@ window.exportAsImage = async function () {
                 bgcolor: '#EBEBEB',
                 width: clone.offsetWidth,
                 height: clone.offsetHeight,
-            }), 8000, 'domtoimage.toBlob');
+            }), 20000, 'domtoimage.toBlob');
             if (!blob || blob.size < 5000) throw new Error('empty result');
             console.log('dom-to-image capture OK:', blob.size, 'bytes');
         } catch (primaryErr) {
