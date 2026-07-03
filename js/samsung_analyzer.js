@@ -117,21 +117,23 @@ function extractRawCoveragesSamsung(text) {
         const trimmed = line.trim();
         if (!trimmed) return;
 
-        // Must contain a [bracket] prefix to be a coverage line
-        if (!trimmed.includes('[')) return;
+        // Coverage line signature: leading 번호 + content, OR a [bracket] prefix somewhere
+        // (일부 상품은 [갱신형] 등 접두어 없이 "번호 담보명 금액 보험료 기간" 형태로만 표기됨)
+        const looksLikeCoverageLine = /^\s*\d{1,4}\s+\S/.test(trimmed) || trimmed.includes('[');
+        if (!looksLikeCoverageLine) return;
 
-        // Try to match: (번호)  [prefix] (name)  (amount)  (premium or (공통))  (period)
-        //번호 is optional at start
+        // Try to match: (번호)  [prefix]? (name)  (amount)  (premium or (공통))  (period)
+        //번호 is optional at start, [prefix]는 있을 수도 없을 수도 있음
         // Pattern:
         //   ^(\d{1,4})\s+      — optional 번호
-        //   (\[[^\]]+\]\s*)    — bracket prefix like [건강]
+        //   (\[[^\]]+\]\s*)?   — bracket prefix like [건강] (optional)
         //   (.+?)              — coverage name (non-greedy)
         //   \s+([\d억만천백십원,]+원|세부보장참조)   — 가입금액
         //   \s+(\d[\d,]*원|\(공통\))   — 보험료
         //   \s+(\d+년[^\n]*)   — 납입기간
-        const fullPattern = /^(\d{1,4})\s+(\[[^\]]+\]\s*)(.+?)\s+(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원?|\(공통\))\s+(\d+년.*)/;
+        const fullPattern = /^(\d{1,4})\s+(\[[^\]]+\]\s*)?(.+?)\s+(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원?|\(공통\))\s+(\d+년.*)/;
         // Also try without leading 번호:
-        const noIdPattern = /^(\[[^\]]+\]\s*)(.+?)\s+(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원?|\(공통\))\s+(\d+년.*)/;
+        const noIdPattern = /^(\[[^\]]+\]\s*)?(.+?)\s+(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원?|\(공통\))\s+(\d+년.*)/;
 
         let id = '';
         let bracketPrefix = '';
@@ -144,7 +146,7 @@ function extractRawCoveragesSamsung(text) {
         let m = trimmed.match(fullPattern);
         if (m) {
             id = m[1];
-            bracketPrefix = m[2];
+            bracketPrefix = m[2] || '';
             rawName = m[3];
             amountStr = m[4];
             premiumStr = m[5];
@@ -153,7 +155,7 @@ function extractRawCoveragesSamsung(text) {
         } else {
             m = trimmed.match(noIdPattern);
             if (m) {
-                bracketPrefix = m[1];
+                bracketPrefix = m[1] || '';
                 rawName = m[2];
                 amountStr = m[3];
                 premiumStr = m[4];
@@ -164,15 +166,28 @@ function extractRawCoveragesSamsung(text) {
 
         // Fallback: more lenient parse — find amount anywhere in line
         if (!matched) {
-            // Extract bracket prefix
+            // Extract bracket prefix (있으면 사용, 없으면 번호 뒤부터 바로 파싱)
             const bm = trimmed.match(/(\[[^\]]+\]\s*)/);
-            if (!bm) return;
-            bracketPrefix = bm[0];
-            // Use bm.index for safe positional extraction (avoids indexOf collision)
-            const afterBracket = trimmed.substring(bm.index + bm[0].length);
+            let afterBracket;
+            let beforeBracket;
+            if (bm) {
+                bracketPrefix = bm[0];
+                // Use bm.index for safe positional extraction (avoids indexOf collision)
+                afterBracket = trimmed.substring(bm.index + bm[0].length);
+                beforeBracket = trimmed.substring(0, bm.index).trim();
+            } else {
+                // 대괄호 접두어 없음: 선행 번호만 분리하고 나머지 전체를 이름+금액 영역으로 취급
+                const noBracketM = trimmed.match(/^(\d{1,4})\s+(.*)$/);
+                if (noBracketM) {
+                    beforeBracket = noBracketM[1];
+                    afterBracket = noBracketM[2];
+                } else {
+                    beforeBracket = '';
+                    afterBracket = trimmed;
+                }
+            }
 
             // Extract id (번호) from before the bracket
-            const beforeBracket = trimmed.substring(0, bm.index).trim();
             const idM = beforeBracket.match(/^(\d{1,4})$/);
             if (idM) id = idM[1];
 
