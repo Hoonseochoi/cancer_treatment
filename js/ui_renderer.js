@@ -718,6 +718,15 @@ function buildCaptureClone(target, qrBase64) {
     return { clone, cleanup: () => clone.remove() };
 }
 
+// ── 프라미스 vs 타임아웃 경쟁 헬퍼 (domtoimage.toBlob 무한 행 방지용) ──
+function raceWithTimeout(promise, ms, label) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timeout (${ms}ms)`)), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 // ── Image Export Function (Renamed from PDF for clarity) ──
 window.exportAsImage = async function () {
     console.log('Exporting image started...');
@@ -768,12 +777,12 @@ window.exportAsImage = async function () {
         // ── 1차: dom-to-image-more (브라우저 렌더링 그대로 보존) ──
         try {
             console.log('Capturing with dom-to-image-more...');
-            blob = await domtoimage.toBlob(clone, {
+            blob = await raceWithTimeout(domtoimage.toBlob(clone, {
                 scale: SCALE,
                 bgcolor: '#EBEBEB',
                 width: clone.offsetWidth,
                 height: clone.offsetHeight,
-            });
+            }), 8000, 'domtoimage.toBlob');
             if (!blob || blob.size < 5000) throw new Error('empty result');
             console.log('dom-to-image capture OK:', blob.size, 'bytes');
         } catch (primaryErr) {
