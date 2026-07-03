@@ -637,6 +637,87 @@ function toggleResultsList() {
     }
 }
 
+// ── 캡처용 오프스크린 클론 생성 ──
+// 반환: { clone, cleanup } — 캡처 후 반드시 cleanup() 호출
+function buildCaptureClone(target, qrBase64) {
+    const clone = target.cloneNode(true);
+
+    // 화면 밖 부착 + 원본과 동일한 너비 고정 (레이아웃 재계산 방지)
+    clone.style.cssText = `
+        position: fixed; left: -99999px; top: 0;
+        width: ${target.offsetWidth}px;
+        margin: 0; z-index: -1;
+        background: #EBEBEB;
+    `;
+
+    // 1. 지정 섹션 외 전부 숨김
+    const allowedIds = ['file-info', 'insight-section', 'summary-section'];
+    Array.from(clone.children).forEach(child => {
+        if (!allowedIds.includes(child.id)) child.style.display = 'none';
+    });
+
+    // 2. 대상 섹션 강제 노출 및 내부 버튼 숨김
+    const fileInfo = clone.querySelector('#file-info');
+    const insight = clone.querySelector('#insight-section');
+    const summary = clone.querySelector('#summary-section');
+
+    if (fileInfo) {
+        fileInfo.style.display = 'flex';
+        fileInfo.classList.remove('hidden');
+        fileInfo.style.marginBottom = '24px';
+        const resetBtn = fileInfo.querySelector('#reset-btn');
+        if (resetBtn) resetBtn.style.display = 'none';
+    }
+    if (insight) {
+        insight.style.display = 'block';
+        insight.classList.remove('hidden');
+        insight.style.marginBottom = '24px';
+        insight.style.opacity = '1';
+        insight.style.transform = 'translateY(0)';
+        insight.style.animation = 'none';
+        const deco = insight.querySelector('.blur-3xl');
+        if (deco) deco.style.display = 'none';
+    }
+    if (summary) {
+        summary.style.display = 'block';
+        summary.classList.remove('hidden');
+        const exportBtn = summary.querySelector('#export-pdf-btn');
+        if (exportBtn) exportBtn.style.display = 'none';
+    }
+
+    // 3. 애니메이션/트랜지션만 제거 (line-height, overflow는 절대 건드리지 않는다!)
+    clone.querySelectorAll('*').forEach(el => {
+        el.style.animation = 'none';
+        el.style.transition = 'none';
+    });
+
+    // 4. <details> 펼침 상태 보장 (접힌 담보 그룹도 이미지에는 모두 표시)
+    clone.querySelectorAll('details').forEach(d => d.setAttribute('open', ''));
+
+    // 5. 오류 제보 아일랜드 & 기타 패널 숨김
+    const errorIsland = clone.querySelector('#error-report-island');
+    if (errorIsland) errorIsland.style.display = 'none';
+    const otherPanel = clone.querySelector('#other-panel-container');
+    if (otherPanel) otherPanel.style.display = 'none';
+
+    // 6. QR 코드를 insight 카드 우측에 주입
+    if (insight && qrBase64) {
+        const flexRow = insight.querySelector('.flex');
+        if (flexRow) {
+            const qrEl = document.createElement('div');
+            qrEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;padding-left:16px;';
+            qrEl.innerHTML = `
+                <img src="${qrBase64}" style="width:108px;height:108px;border-radius:12px;border:2px solid rgba(255,255,255,0.6);">
+                <span style="font-size:16px;color:#64748b;font-weight:700;white-space:nowrap;letter-spacing:0.03em;">surinsur.com</span>
+            `;
+            flexRow.appendChild(qrEl);
+        }
+    }
+
+    document.body.appendChild(clone);
+    return { clone, cleanup: () => clone.remove() };
+}
+
 // ── Image Export Function (Renamed from PDF for clarity) ──
 window.exportAsImage = async function () {
     console.log('Exporting image started...');
