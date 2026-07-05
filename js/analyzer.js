@@ -75,6 +75,31 @@ function formatDisplayAmount(str) {
     if (val === 0) return str; // 파싱 실패 시 원본 유지
     return formatKoAmount(val);
 }
+// ── 카테고리 계층 기반 root/descendant 판별 헬퍼 ──
+// CATEGORY_HIERARCHY는 js/samsung_config.js(먼저 로드됨)에서 전역으로 선언됨.
+// Meritz 쪽에서는 재선언하지 않고, 존재 시에만 참조 (없으면 전부 root 취급 = 기존 동작과 동일).
+// targetList: passthrough-dual/26jong 항목이 나열한 "직접 타겟" 전체 목록 (평탄화된 배열)
+// target이 targetList 내 다른 어떤 항목의 (transitively) descendant이면 true 반환 → "_expansion" 대상
+function isDescendantWithinList(target, targetList) {
+    if (typeof CATEGORY_HIERARCHY === 'undefined') return false;
+    const visited = new Set();
+    function collectDescendants(node) {
+        (CATEGORY_HIERARCHY[node] || []).forEach(child => {
+            if (!visited.has(child)) {
+                visited.add(child);
+                collectDescendants(child);
+            }
+        });
+    }
+    for (const other of targetList) {
+        if (other === target) continue;
+        visited.clear();
+        collectDescendants(other);
+        if (visited.has(target)) return true;
+    }
+    return false;
+}
+
 // ── 최초 1회 담보 키 (5년 합산 시 ×1만 적용) ──
 const ONCE_ONLY_KEYS = new Set([
     "표적항암약물치료비",
@@ -162,19 +187,23 @@ function calculateHierarchicalSummary(results) {
         }
         // Handle Passthrough-Dual: 세부내역 "암 수술비 ###원", 한눈에보기 암수술비+다빈치로봇수술비 둘 다 반영
         if (details && details.type === 'passthrough-dual') {
-            details = details.summaryTargets.map(t => ({
+            const directTargets = details.summaryTargets;
+            details = directTargets.map(t => ({
                 name: details.displayName,
                 amount: item.amount,
-                targetName: t
+                targetName: t,
+                _expansion: isDescendantWithinList(t, directTargets)
             }));
         }
         if (details && details.type === '26jong') {
             if (!first26SummaryFound) {
                 first26SummaryFound = true;
+                const directTargets26 = details.summaryItems.map(d => d.targetName);
                 details = details.summaryItems.map(d => ({
                     name: d.name,
                     amount: item.amount,
-                    targetName: d.targetName // targetName 전달
+                    targetName: d.targetName, // targetName 전달
+                    _expansion: isDescendantWithinList(d.targetName, directTargets26)
                 }));
             } else {
                 details = null;
@@ -235,8 +264,10 @@ function calculateHierarchicalSummary(results) {
                 const valMax = det.maxAmount ? parseKoAmount(det.maxAmount) : valMin;
                 group.totalMin += valMin;
                 group.totalMax += valMax;
-                group.isolatedMin += valMin;
-                group.isolatedMax += valMax;
+                if (!det._expansion) {
+                    group.isolatedMin += valMin;
+                    group.isolatedMax += valMax;
+                }
                 // ── payFreq 결정 ──
                 const srcIs26Jong  = /26종/.test(item.name) || /26종/.test(det.name || '');
                 const srcIsBundle  = /암진단|통합치료비|계속받는/.test(item.name);
@@ -260,7 +291,8 @@ function calculateHierarchicalSummary(results) {
                     source: item.name,
                     hiddenInDetail: det.hiddenInDetail,
                     sub: det.sub, // 전달용 sub 항목 추가
-                    payFreq: payFreq
+                    payFreq: payFreq,
+                    _expansion: det._expansion || false
                 });
                 // Update display name (pick longest readable name)
                 const is26JongItem = det.name.includes("26종");
