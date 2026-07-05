@@ -292,7 +292,8 @@ function calculateHierarchicalSummary(results) {
                     hiddenInDetail: det.hiddenInDetail,
                     sub: det.sub, // 전달용 sub 항목 추가
                     payFreq: payFreq,
-                    _expansion: det._expansion || false
+                    _expansion: det._expansion || false,
+                    premium: item.premium
                 });
                 // Update display name (pick longest readable name)
                 const is26JongItem = det.name.includes("26종");

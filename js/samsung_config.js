@@ -555,7 +555,8 @@ function calculateHierarchicalSummarySamsung(results) {
                     비급여: det.비급여 || false,
                     _expansion: det._expansion || false,
                     payFreq: payFreq_s,
-                    annualCount: det.annualCount
+                    annualCount: det.annualCount,
+                    premium: item.premium
                 });
                 // Update display name from direct (non-expansion) items only
                 if (!det._expansion && (det.name.length > group.displayName.length || group.displayName === normalizedName)) {

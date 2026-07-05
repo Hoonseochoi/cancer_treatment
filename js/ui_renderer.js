@@ -91,6 +91,12 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         logSamsungProposal(meta, summaryMap);
     }
 
+    // ── 담보 가치점수 계산 (삼성/메리츠 한정) ──
+    let scoreResult = null;
+    if (['samsung', 'meritz'].includes(insurer) && typeof calcCoverageScore === 'function') {
+        scoreResult = calcCoverageScore(summaryMap, results);
+    }
+
     // ── Render 5-Year Insight Card ──
     if (insightSection) {
         insightSection.innerHTML = '';
@@ -128,6 +134,23 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             expertImgBase64 = MIRAE_B64;
         }
 
+        // ── 점수 박스 HTML (있을 때만 렌더링) ──
+        let scoreBoxHtml = '';
+        if (scoreResult) {
+            const s = scoreResult.score;
+            const scoreColor = s >= 80 ? '#059669' : s >= 50 ? '#EA580C' : '#6B7280';
+            const commentText = s >= scoreResult.average ? '든든한 보장이네요 👍' : '이 부분은 보완을 고려해보세요 💬';
+            scoreBoxHtml = `
+                <div id="score-box" class="flex flex-col items-center justify-center shrink-0" style="background:rgba(255,255,255,0.6);border-radius:16px;padding:12px 20px;min-width:140px;border:1px solid rgba(0,0,0,0.05);">
+                    <p class="text-[11px] font-bold text-gray-500 mb-1 whitespace-nowrap">암 치료비 점수는?</p>
+                    <p class="font-black font-outfit" style="font-size:2rem;color:${scoreColor};line-height:1.1;">${s}점</p>
+                    <p class="text-[10px] font-bold text-gray-400 mt-1 whitespace-nowrap">점수는 높을수록 좋아요!</p>
+                    <p class="text-[10px] font-bold text-gray-400 whitespace-nowrap">평균은 ${scoreResult.average}점이에요 📊</p>
+                    <p class="text-[9px] font-semibold mt-1 whitespace-nowrap" style="color:${scoreColor}">${commentText}</p>
+                </div>
+            `;
+        }
+
         insightSection.innerHTML = `
             <div class="premium-card rounded-3xl p-4 sm:p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
                 <!-- Background Decoration -->
@@ -160,7 +183,12 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                             * 반복보장 담보 ×5 + 최초1회 담보 ×1로 산출한 참고값입니다. 실제 보장금액과 상이합니다.
                         </p>
                     </div>
+                    ${scoreBoxHtml}
                 </div>
+                ${scoreResult ? `
+                <p class="text-[9px] text-gray-300 mt-2 font-medium tracking-tight leading-tight break-keep relative z-10">
+                    * 국내 암 치료 통계 경향성을 반영한 추정 점수이며, 실제 보장 결과와 다를 수 있습니다.
+                </p>` : ''}
             </div>
         `;
         insightSection.classList.remove('hidden');
