@@ -125,6 +125,11 @@ function extractRawCoveragesSamsung(text) {
     // 온통보장류 그룹 추적: 번호(id)가 있는 줄이 그룹 시작, 이후 번호 없는 연속 줄들은 같은 그룹에 속함
     // (이름 문자열 비교는 원문 공백/문구가 tier별로 미묘하게 달라 신뢰 불가 → 번호 기반 추적이 안전)
     let lastGroupId = null;
+    // 온[ON]통보장류 그룹의 "공유 보험료": 여러 tier 줄(복합치료 회복지원금Ⅱ 등) + 상해사망 줄이
+    // 금액 패턴(원/만원/억원 접미사) 없이 끝까지 이어붙여지다 보니 fallback 파싱에서 금액을 못 찾아
+    // 그대로 버려지는데, 그 버려지는 줄 안에 그룹 전체가 공유하는 보험료 숫자(예: "13,800")가
+    // 콤마 숫자 형태로 섞여 있다. groupId별로 이 값을 잡아두었다가 5단계 압축 단계에서 대표 항목에 붙인다.
+    const pendingGroupPremium = {};
 
     mergedLines.forEach((line, idx) => {
         const trimmed = line.trim();
@@ -214,6 +219,17 @@ function extractRawCoveragesSamsung(text) {
             // Find amount
             const amountM = afterBracket.match(/(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)/);
             if (!amountM) {
+                // 온통보장류 그룹의 "상해사망" 줄은 금액이 %(잔액의 10% 등)로만 표기되어 원/만원/억원
+                // 접미사가 있는 금액 패턴이 끝내 나타나지 않는다. 이 줄에 그룹 공유 보험료
+                // (예: "13,800", 콤마 포함 순수 숫자, 원/만원/억원 접미사 없음)가 섞여 있는지 확인해서
+                // groupId 기준으로 잡아둔다 (담보8류처럼 그룹이 나중에 비압축되더라도, 5단계에서
+                // 첫 항목에만 붙여 중복 합산을 피한다).
+                const premCandidateM = afterBracket.match(/(?:^|\s)(\d{1,3}(?:,\d{3})+)(?!\s*(?:원|만원|억원|만|억))(?:\s+(\d+년[^\n]*))?/);
+                if (premCandidateM && lastGroupId) {
+                    if (!pendingGroupPremium[lastGroupId]) {
+                        pendingGroupPremium[lastGroupId] = premCandidateM[1].replace(/,/g, '');
+                    }
+                }
                 console.warn(`[Samsung] Fallback parse failed (no amount found): ${trimmed.substring(0, 80)}`);
                 return;
             }
@@ -305,16 +321,38 @@ function extractRawCoveragesSamsung(text) {
             j++;
         }
         const groupLen = j - i;
+        const groupPremium = pendingGroupPremium[cur.groupId] || '';
         if (groupLen > 1) {
             const sameAmount = results.slice(i, j).every(r => r.amount === cur.amount);
             if (sameAmount) {
-                compacted.push(Object.assign({}, cur, { tierCount: groupLen }));
-                console.log(`[Samsung] 그룹 압축: groupId=${cur.groupId} ${groupLen}건 → 1건(단가 ${cur.amount}, 연${groupLen}회)`);
+                // 동일 금액 압축: 그룹 전체가 공유하는 보험료 1건을 대표 항목에 그대로 붙인다.
+                const repItem = Object.assign({}, cur, { tierCount: groupLen });
+                if (groupPremium && !repItem.premium) repItem.premium = groupPremium;
+                compacted.push(repItem);
+                console.log(`[Samsung] 그룹 압축: groupId=${cur.groupId} ${groupLen}건 → 1건(단가 ${cur.amount}, 연${groupLen}회, 보험료 ${repItem.premium || '(미확인)'})`);
             } else {
-                for (let k = i; k < j; k++) compacted.push(results[k]);
+                // 금액이 서로 다른 그룹(담보8류: 이식수술비/절제수술비/특정수술비 등 실제로 별개 항목)은
+                // 압축하지 않고 그대로 둔다. 다만 이 경우에도 그룹 전체가 보험료를 공유하므로,
+                // 모든 항목에 붙이면 후속 "보험료 합산" 로직에서 그룹 보험료가 항목 수만큼 중복 합산된다.
+                // → 첫 항목에만 그룹 공유 보험료를 붙이고, 나머지는 premium: '' 로 두어
+                //   합산 시 정확히 1회만 카운트되도록 한다.
+                for (let k = i; k < j; k++) {
+                    const item = results[k];
+                    if (k === i && groupPremium && !item.premium) {
+                        compacted.push(Object.assign({}, item, { premium: groupPremium }));
+                    } else {
+                        compacted.push(item);
+                    }
+                }
             }
         } else {
-            compacted.push(cur);
+            // 단일 항목 그룹이라도, 상해사망 등 무금액 후속 줄에 공유 보험료가 남아있었을 수 있으니
+            // 비어있는 premium을 채워준다 (없으면 그대로 '').
+            if (groupPremium && !cur.premium) {
+                compacted.push(Object.assign({}, cur, { premium: groupPremium }));
+            } else {
+                compacted.push(cur);
+            }
         }
         i = j;
     }
