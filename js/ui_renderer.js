@@ -170,16 +170,16 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         summaryGrid.innerHTML = '';
         summaryGrid.className = "mb-12";
 
-        // ── 메인 카드 9종 고정 키 ──
+        // ── 메인 카드 9종 고정 키 (표시 순서 = 이 배열 순서) ──
         const MAIN_CARD_KEYS = [
+            "암수술비",
             "항암방사선치료비",
             "항암약물치료비",
-            "암수술비",
             "표적항암약물치료비",
             "면역항암약물치료비",
-            "중입자방사선치료비",
             "양성자방사선치료비",
             "다빈치로봇수술비",
+            "중입자방사선치료비",
             "세기조절방사선치료비"
         ];
 
@@ -194,20 +194,13 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         header.innerHTML = `🛡️ 집계된 암 치료 보장금액 합계 <span style="font-size:1.1em; color:var(--primary-dark); margin-left:12px; font-family:'Outfit';">${headerAmountStr}</span>`;
         summaryGrid.appendChild(header);
 
-        // Convert Map to Array and Sort
-        const allItems = Array.from(summaryMap.entries()).sort((a, b) => {
-            const priorities = ["표적", "면역", "양성자"];
-            const getPriority = (n) => {
-                for (let i = 0; i < priorities.length; i++) {
-                    if (n.includes(priorities[i])) return i;
-                }
-                return 99;
-            };
-            return getPriority(a[0]) - getPriority(b[0]);
-        });
+        // Convert Map to Array
+        const allItems = Array.from(summaryMap.entries());
 
-        // 메인 9장 vs 기타 분리
-        const mainItems = allItems.filter(([name]) => MAIN_CARD_KEYS.includes(name));
+        // 메인 9장 vs 기타 분리 (메인 9장은 MAIN_CARD_KEYS 순서 그대로 정렬)
+        const mainItems = allItems
+            .filter(([name]) => MAIN_CARD_KEYS.includes(name))
+            .sort((a, b) => MAIN_CARD_KEYS.indexOf(a[0]) - MAIN_CARD_KEYS.indexOf(b[0]));
         const otherItems = allItems.filter(([name]) => !MAIN_CARD_KEYS.includes(name));
 
         // 메인 카드 그리드 (summaryGrid는 wrapper, 카드는 inner div에)
