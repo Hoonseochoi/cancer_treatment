@@ -348,6 +348,40 @@ function findSamsungDetails(itemName) {
         return samsungCoverageDetailsMap["암수술비(갱신형)"];
     }
 
+    // 7. 온[ON]통보장(2607.1~) — 그룹형 복합치료 통합보장 계열
+    // 지급사유(복합치료 N회이상) 여러 개가 하나의 가입금액을 공유하는 신규 지급구조.
+    // samsung_analyzer.js의 이름 정리 단계에서 [...] tier 접미사가 제거되므로
+    // 여기서는 통합보장 단위(base name)로만 분기하면 됨.
+    // 유사암Ⅱ 계열은 기존 관례대로 일반암 카드 집계에서 제외
+    // 단, "유사암Ⅱ 제외"(= 일반암) 표기는 "유사암" 부분문자열을 포함하므로 "제외" 여부로 구분 필수
+    if (itemName.includes("유사암") && !itemName.includes("제외") && (itemName.includes("통합보장") || itemName.includes("복합치료"))) {
+        return null;
+    }
+    // 암(유사암 제외) 통합보장 — 전액본인부담 여부로 급여/비급여 및 확장범위 분기
+    if (itemName.includes("통합보장") && itemName.includes("암")) {
+        const isJeonaek = itemName.includes("전액본인부담");
+        return {
+            type: "passthrough-dual",
+            displayName: isJeonaek ? "암 전액본인부담 통합보장(수술·항암방사선·항암약물)" : "암 통합보장(수술·항암방사선·항암약물)",
+            summaryTargets: ["암수술비", "항암방사선치료비", "항암약물치료비"],
+            비급여: isJeonaek,
+            expandHierarchy: isJeonaek // 급여형(유사암제외)은 표적/면역/양성자 등 미확장, 전액본인부담형은 확장
+        };
+    }
+    // 암 외 질환군 통합보장 — 9카드 미포함, "기타" 사이드바로만 노출 (단순 passthrough)
+    if (itemName.includes("통합보장") && (itemName.includes("뇌혈관") || itemName.includes("허혈성심장"))) {
+        return { type: "passthrough", displayName: "뇌혈관·허혈성심장질환 통합보장" };
+    }
+    if (itemName.includes("통합보장") && itemName.includes("순환계")) {
+        return { type: "passthrough", displayName: "특정순환계질환 통합보장" };
+    }
+    if (itemName.includes("통합보장") && itemName.includes("간") && itemName.includes("신장")) {
+        return { type: "passthrough", displayName: "특정 간·폐·신장질환 통합보장" };
+    }
+    if (itemName.includes("통합보장") && itemName.includes("근골격")) {
+        return { type: "passthrough", displayName: "특정 근골격계질환 통합보장" };
+    }
+
     return null;
 }
 
@@ -392,7 +426,7 @@ function calculateHierarchicalSummarySamsung(results) {
         if (details && details.type === 'passthrough') {
             const isBigugeom = details.비급여 || false;
             const tgt = details.summaryTarget || null;
-            details = [{ name: details.displayName, amount: item.amount, 비급여: isBigugeom, ...(tgt ? { targetName: tgt } : {}) }];
+            details = [{ name: details.displayName, amount: item.amount, 비급여: isBigugeom, annualCount: item.tierCount, ...(tgt ? { targetName: tgt } : {}) }];
         }
 
         // Handle Passthrough-Dual (여러 summaryTargets에 동시 반영)
@@ -416,6 +450,7 @@ function calculateHierarchicalSummarySamsung(results) {
                 amount: item.amount,
                 targetName: t,
                 비급여: isBigugeom,
+                annualCount: item.tierCount,
                 _expansion: !directTargets.includes(t) // true = 확장항목, post-processing propagation에서 중복 방지용
             }));
         }
@@ -519,7 +554,8 @@ function calculateHierarchicalSummarySamsung(results) {
                     sub: det.sub,
                     비급여: det.비급여 || false,
                     _expansion: det._expansion || false,
-                    payFreq: payFreq_s
+                    payFreq: payFreq_s,
+                    annualCount: det.annualCount
                 });
                 // Update display name from direct (non-expansion) items only
                 if (!det._expansion && (det.name.length > group.displayName.length || group.displayName === normalizedName)) {

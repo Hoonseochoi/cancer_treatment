@@ -255,9 +255,14 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 const stageTag = sub.stage === '4기'
                     ? '<span style="color:#e53e3e;font-weight:800;font-size:0.65rem">(4기)</span> '
                     : sub.stage === '1~3기' ? '<span style="color:#F97316;font-weight:800;font-size:0.65rem">(1~3기)</span> ' : '';
-                const payTag = PAY_TAG_MAP[sub.payFreq] || '';
+                const hasAnnualCount = sub.annualCount && sub.annualCount > 1;
+                // annualCount 배지(연N회)가 더 구체적인 정보이므로, 있을 땐 기존 payFreq 태그(연간1회 등)는 숨김
+                const payTag = hasAnnualCount ? '' : (PAY_TAG_MAP[sub.payFreq] || '');
+                const annualCountTag = hasAnnualCount
+                    ? `<span style="color:#7C3AED;font-weight:800;font-size:0.6rem;background:#F5F3FF;padding:1px 4px;border-radius:3px;margin-right:3px;vertical-align:middle">(연${sub.annualCount}회)</span> `
+                    : '';
                 return `<div class="text-[10px] mt-1 flex items-center justify-between font-medium text-gray-400">
-                    <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${payTag}${sub.name}</span>
+                    <span class="truncate mr-2 flex-1 pl-3">ㄴ ${bigugeumTag}${walletTag}${stageTag}${payTag}${annualCountTag}${sub.name}</span>
                     <span class="text-red-500 whitespace-nowrap flex-shrink-0 font-black">${amtDisplay}</span>
                 </div>`;
             };

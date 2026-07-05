@@ -65,6 +65,15 @@ function extractRawCoveragesSamsung(text) {
             continue;
         }
 
+        // 담보 번호가 단독 줄로 떨어진 경우(예: "4"만 있는 줄, 다음 줄부터 [건강]... 내용 시작)는
+        // 항상 새 그룹의 경계이므로, 금액을 못 찾아 계속 이어붙이던 pending(예: 상해사망처럼
+        // 끝까지 금액 패턴이 없는 항목)이 있어도 여기서 강제로 끊어낸다.
+        if (/^\d{1,4}$/.test(trimmed)) {
+            if (pending) { mergedLines.push(pending); pending = ''; }
+            mergedLines.push(trimmed);
+            continue;
+        }
+
         const hasAmount = amountPattern.test(trimmed);
         const isNewCoverageLine = coverageLineStart.test(trimmed) || bracketPrefixOnly.test(trimmed);
 
@@ -105,17 +114,28 @@ function extractRawCoveragesSamsung(text) {
 
     console.log(`[Samsung] After line merge: ${mergedLines.length} lines`);
 
-    // ── 3. Cancer-related whitelist keywords ──
+    // ── 3. 관심 담보 화이트리스트 (암 + 온통보장류 타 질환군, 기타 사이드바용) ──
     const cancerWhitelist = [
-        "암", "항암", "중입자", "양성자", "표적", "면역", "다빈치", "로봇", "중환자실", "호르몬"
+        "암", "항암", "중입자", "양성자", "표적", "면역", "다빈치", "로봇", "중환자실", "호르몬",
+        "뇌혈관", "허혈성심장", "순환계", "신장질환", "근골격"
     ];
 
     // ── 4. Parse each merged line ──
     const results = [];
+    // 온통보장류 그룹 추적: 번호(id)가 있는 줄이 그룹 시작, 이후 번호 없는 연속 줄들은 같은 그룹에 속함
+    // (이름 문자열 비교는 원문 공백/문구가 tier별로 미묘하게 달라 신뢰 불가 → 번호 기반 추적이 안전)
+    let lastGroupId = null;
 
     mergedLines.forEach((line, idx) => {
         const trimmed = line.trim();
         if (!trimmed) return;
+
+        // 담보 번호가 단독 줄로 떨어져 나오는 경우 (예: "4"만 있는 줄, 다음 줄부터 [건강]... 내용 시작)
+        // → 그룹 시작 신호로만 사용하고 결과에는 포함하지 않음
+        if (/^\d{1,4}$/.test(trimmed)) {
+            lastGroupId = trimmed;
+            return;
+        }
 
         // Coverage line signature: leading 번호 + content, OR a [bracket] prefix somewhere
         // (일부 상품은 [갱신형] 등 접두어 없이 "번호 담보명 금액 보험료 기간" 형태로만 표기됨)
@@ -217,6 +237,14 @@ function extractRawCoveragesSamsung(text) {
 
         if (!matched || !rawName) return;
 
+        // 그룹 id 갱신/상속: 번호가 있으면 새 그룹 시작, 없으면 직전 그룹에 속함
+        if (id) {
+            lastGroupId = id;
+        } else {
+            id = lastGroupId || '';
+        }
+        const groupId = lastGroupId;
+
         // Clean name: strip any remaining bracket prefixes, leading numbers, leading/trailing spaces
         let name = rawName
             .replace(/\[[^\]]+\]\s*/g, '')   // strip all [xxx] prefixes
@@ -254,6 +282,7 @@ function extractRawCoveragesSamsung(text) {
         const lineIdx = (startIndex === -1 ? 0 : startIndex) + idx;
         results.push({
             id: id || String(lineIdx),
+            groupId: groupId || String(lineIdx),
             name: name,
             amount: amountStr,
             premium: premium,
@@ -262,6 +291,34 @@ function extractRawCoveragesSamsung(text) {
         });
     });
 
-    console.log(`[Samsung] extractRawCoveragesSamsung: ${results.length}건 추출 완료 (${mergedLines.length}줄 분석)`);
-    return results;
+    // ── 5. 그룹형 통합보장(온통보장류) 압축 ──
+    // 같은 groupId(담보 번호) 안에서 금액이 전부 동일한 연속 항목들은
+    // "N회 이상" 누적 임계값 지급구조 → 실제로는 단가(가입금액) 1건만 지급되는 개념이므로
+    // 대표 1건 + tierCount(몇 단계였는지, 배지용)로 압축한다.
+    // 금액이 서로 다른 그룹(치료 종류별로 별도 금액인 경우)은 압축하지 않고 그대로 둔다.
+    const compacted = [];
+    let i = 0;
+    while (i < results.length) {
+        const cur = results[i];
+        let j = i + 1;
+        while (j < results.length && results[j].groupId === cur.groupId) {
+            j++;
+        }
+        const groupLen = j - i;
+        if (groupLen > 1) {
+            const sameAmount = results.slice(i, j).every(r => r.amount === cur.amount);
+            if (sameAmount) {
+                compacted.push(Object.assign({}, cur, { tierCount: groupLen }));
+                console.log(`[Samsung] 그룹 압축: groupId=${cur.groupId} ${groupLen}건 → 1건(단가 ${cur.amount}, 연${groupLen}회)`);
+            } else {
+                for (let k = i; k < j; k++) compacted.push(results[k]);
+            }
+        } else {
+            compacted.push(cur);
+        }
+        i = j;
+    }
+
+    console.log(`[Samsung] extractRawCoveragesSamsung: ${compacted.length}건 추출 완료 (${mergedLines.length}줄 분석, 그룹압축 전 ${results.length}건)`);
+    return compacted;
 }
