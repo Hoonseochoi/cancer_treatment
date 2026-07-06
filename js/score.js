@@ -1,4 +1,4 @@
-console.log('[score] v20260706b 로드됨 ✅');
+console.log('[score] v20260706c 로드됨 ✅');
 // ── 담보 가치점수(암 치료비 점수) 계산 유틸 ──
 // 설계 근거: C:\obsidian_hoons\Hoonseo\CANCER ANALAYSIS\담보_가치점수_설계_플랜.md (6장, v4 최종 확정판)
 // 삼성/메리츠 공용 — summaryMap(calculateHierarchicalSummary*의 반환값)과 raw results 배열만 있으면 계산 가능.
@@ -28,6 +28,13 @@ const SCORE_CAP = 100;
 // 잠정 평균 벤치마크. 실측(로그 스케일 기준 중앙값 35~38점대) 근거로 40점 설정,
 // 데이터가 더 쌓이면 실측 평균/백분위로 교체 예정.
 const SCORE_PROVISIONAL_AVERAGE = 40;
+
+// ── v5.2: 항암약물치료비 단일 절대금액 게이트 ──
+// "넓은 담보(온통보장류)만 있어도 좁은 특화(표적/면역)에 빵만 키운 설계와 동일하게
+// 만점이 나오는" 문제를 막기 위해, 가장 넓은 카드(항암약물치료비, subtreeWeight 54%)의
+// own 5년가치가 이 기준액 미만이면 점수를 비례해서 깎는다(기준액 이상이면 게이트 통과, 1.0).
+// 사용자 확정치: 3,000만원 (담보_가치점수_설계_플랜.md 6-5-3 v5.2 참고)
+const SCORE_GATE_THRESHOLD_5Y = 3000;
 
 // card의 CATEGORY_HIERARCHY 하위 전체(중복 제거)를 Set으로 반환
 function getScoreSubtreeDescendants(card) {
@@ -73,6 +80,7 @@ function calcCoverageScore(summaryMap, rawResults) {
 
     // [1~3단계] 카드별 own 아이템 5년가치 × subtreeWeight, 9개 카드 합산
     let expectedValue5y = 0;
+    let drugCardValue5yOwn = 0; // v5.2 게이트용: 항암약물치료비의 own 5년가치(가중치 적용 전, 순수 금액)
     const cancerSourceNames = new Set();
     Object.keys(SCORE_OWN_WEIGHTS).forEach(cardName => {
         const group = summaryMap.get(cardName);
@@ -87,6 +95,7 @@ function calcCoverageScore(summaryMap, rawResults) {
             cardValue5y += calcItemValue5y(item);
             if (item.source) cancerSourceNames.add(item.source);
         });
+        if (cardName === "항암약물치료비") drugCardValue5yOwn = cardValue5y;
         expectedValue5y += cardValue5y * weight;
     });
 
@@ -108,7 +117,12 @@ function calcCoverageScore(summaryMap, rawResults) {
     // premium은 원(₩) 단위, expectedValue5y는 만원 단위 → 만원으로 환산해 배율 계산
     const totalPremium20y = (monthlyPremiumWon * 12 * 20) / 10000;
     const valueMultiple = expectedValue5y / totalPremium20y;
-    const score = Math.min(SCORE_CAP, Math.round(SCORE_LOG_SCALE * Math.log1p(valueMultiple)));
+    const cappedScore = Math.min(SCORE_CAP, Math.round(SCORE_LOG_SCALE * Math.log1p(valueMultiple)));
+
+    // v5.2: 항암약물치료비 게이트 — 가장 넓은 카드가 기준액 미만이면 그 비율만큼 감점.
+    // cap을 먼저 건 뒤 게이트를 곱하므로 최종 점수는 항상 100 이하로 자연히 수렴한다.
+    const gateFactor = Math.min(1, drugCardValue5yOwn / SCORE_GATE_THRESHOLD_5Y);
+    const score = Math.min(SCORE_CAP, Math.round(cappedScore * gateFactor));
 
     return {
         score,
@@ -116,6 +130,7 @@ function calcCoverageScore(summaryMap, rawResults) {
         expectedValue5y,
         totalPremium20y,
         monthlyPremiumWon,
+        gateFactor,
         average: SCORE_PROVISIONAL_AVERAGE
     };
 }
