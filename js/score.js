@@ -1,4 +1,4 @@
-console.log('[score] v20260706a 로드됨 ✅');
+console.log('[score] v20260706b 로드됨 ✅');
 // ── 담보 가치점수(암 치료비 점수) 계산 유틸 ──
 // 설계 근거: C:\obsidian_hoons\Hoonseo\CANCER ANALAYSIS\담보_가치점수_설계_플랜.md (6장, v4 최종 확정판)
 // 삼성/메리츠 공용 — summaryMap(calculateHierarchicalSummary*의 반환값)과 raw results 배열만 있으면 계산 가능.
@@ -17,9 +17,17 @@ const SCORE_OWN_WEIGHTS = {
     "면역항암약물치료비": 0.10
 };
 
-// 배율→점수 환산 상수, 잠정 평균 벤치마크(실측 데이터 쌓이기 전까지의 하드코딩 기준치)
-const SCORE_MULTIPLE_SCALE = 10;
-const SCORE_PROVISIONAL_AVERAGE = 65;
+// 배율→점수 환산 상수 (로그 압축 + 100점 상한)
+// score = min(100, round(SCORE_LOG_SCALE × ln(1 + valueMultiple)))
+// 근거: samsung_proposals 183건(설계번호 유니크 111건) 실측 배율 분포는 중앙값 3.1배,
+// 최대 30배+(온통보장 live 기준 199배)로 우측 꼬리가 매우 길어 선형(×10)은 상한이 없고
+// "평균 OO점" 문구와 공존 불가 → 로그 압축으로 0~100 스케일에 자연스럽게 안착시킴.
+// (담보_가치점수_설계_플랜.md 6-4 참고)
+const SCORE_LOG_SCALE = 25;
+const SCORE_CAP = 100;
+// 잠정 평균 벤치마크. 실측(로그 스케일 기준 중앙값 35~38점대) 근거로 40점 설정,
+// 데이터가 더 쌓이면 실측 평균/백분위로 교체 예정.
+const SCORE_PROVISIONAL_AVERAGE = 40;
 
 // card의 CATEGORY_HIERARCHY 하위 전체(중복 제거)를 Set으로 반환
 function getScoreSubtreeDescendants(card) {
@@ -100,13 +108,14 @@ function calcCoverageScore(summaryMap, rawResults) {
     // premium은 원(₩) 단위, expectedValue5y는 만원 단위 → 만원으로 환산해 배율 계산
     const totalPremium20y = (monthlyPremiumWon * 12 * 20) / 10000;
     const valueMultiple = expectedValue5y / totalPremium20y;
-    const score = Math.round(valueMultiple * SCORE_MULTIPLE_SCALE);
+    const score = Math.min(SCORE_CAP, Math.round(SCORE_LOG_SCALE * Math.log1p(valueMultiple)));
 
     return {
         score,
         valueMultiple,
         expectedValue5y,
         totalPremium20y,
+        monthlyPremiumWon,
         average: SCORE_PROVISIONAL_AVERAGE
     };
 }

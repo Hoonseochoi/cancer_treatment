@@ -95,6 +95,9 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
     let scoreResult = null;
     if (['samsung', 'meritz'].includes(insurer) && typeof calcCoverageScore === 'function') {
         scoreResult = calcCoverageScore(summaryMap, results);
+        if (scoreResult && typeof logCoverageScore === 'function') {
+            logCoverageScore(meta.fileName, insurer, meta, scoreResult);
+        }
     }
 
     // ── Render 5-Year Insight Card ──

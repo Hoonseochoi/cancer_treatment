@@ -179,6 +179,36 @@ async function logCoverageSnapshot(fileName, insurer, meta, grandTotalMin, grand
 window.logCoverageSnapshot = logCoverageSnapshot;
 
 /**
+ * ── 담보 가치점수(암 치료비 점수) 로깅 ──
+ * js/score.js의 calcCoverageScore() 결과를 coverage_scores 테이블에 저장.
+ * 벤치마크(평균/백분위)를 실측치로 전환하기 위한 축적용 — 삼성/메리츠 한정.
+ * 테이블 생성 SQL: scripts/supabase_coverage_scores.sql
+ */
+async function logCoverageScore(fileName, insurer, meta, scoreResult) {
+    if (!supabaseClient || !scoreResult) return;
+    try {
+        const { error } = await supabaseClient
+            .from('coverage_scores')
+            .insert([{
+                file_name: fileName || null,
+                insurer: insurer,
+                age: meta.age || null,
+                product_name: meta.productName || null,
+                score: scoreResult.score,
+                value_multiple: scoreResult.valueMultiple,
+                expected_value_5y: scoreResult.expectedValue5y,
+                total_premium_20y: scoreResult.totalPremium20y,
+                monthly_premium_won: scoreResult.monthlyPremiumWon || null
+            }]);
+        if (error) throw error;
+        console.log('[score] 담보 가치점수 저장 완료', scoreResult.score);
+    } catch (err) {
+        console.error('Failed to log coverage score:', err);
+    }
+}
+window.logCoverageScore = logCoverageScore;
+
+/**
  * ── 삼성화재 제안서 상세 로깅 ──
  * 삼성 PDF 분석 완료 시 상품명 / 파일명 / RC / 대리점명 / 설계번호 / 보험료 / 9카드 저장
  * 테이블: samsung_proposals
