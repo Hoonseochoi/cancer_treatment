@@ -145,7 +145,17 @@ function extractRawCoveragesSamsung(text) {
         // Coverage line signature: leading 번호 + content, OR a [bracket] prefix somewhere
         // (일부 상품은 [갱신형] 등 접두어 없이 "번호 담보명 금액 보험료 기간" 형태로만 표기됨)
         const looksLikeCoverageLine = /^\s*\d{1,4}\s+\S/.test(trimmed) || trimmed.includes('[');
-        if (!looksLikeCoverageLine) return;
+        if (!looksLikeCoverageLine) {
+            // 온통보장류 그룹의 공유 보험료가 담보명/금액 없이 "13,800"처럼 완전히 단독 줄로
+            // 떨어지는 경우, 대괄호도 없고 "번호+공백+내용" 모양도 아니라 looksLikeCoverageLine
+            // 자체가 false가 되어 아래 fallback 파싱(premCandidate 캡처)까지 도달하지 못하고
+            // 여기서 그냥 버려진다. 그 전에 콤마 포함 순수 숫자 줄인지 먼저 확인해 잡아둔다.
+            const bareGroupPremM = trimmed.match(/^(\d{1,3}(?:,\d{3})+)$/);
+            if (bareGroupPremM && lastGroupId && !pendingGroupPremium[lastGroupId]) {
+                pendingGroupPremium[lastGroupId] = bareGroupPremM[1].replace(/,/g, '');
+            }
+            return;
+        }
 
         // Try to match: (번호)  [prefix]? (name)  (amount)  (premium or (공통))  (period)
         //번호 is optional at start, [prefix]는 있을 수도 없을 수도 있음
