@@ -588,6 +588,11 @@ function calculateHierarchicalSummarySamsung(results) {
                 summaryMap.set(child, { displayName: child, totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0, items: [], onceOnly: ONCE_ONLY_KEYS.has(child) });
             }
             const childGroup = summaryMap.get(child);
+            // 하위 카드가 이미 자기 own 금액을 가지고 있으면(예: 담보표에 다빈치/양성자/표적/면역이
+            // 각자 별도 금액으로 명시된 variant형 통합치료비) 상위 카드의 own 금액을 그 위에 또 더하면
+            // 안 된다(이중계산). 전파는 하위 카드가 own이 전혀 없을 때(0)만 "적어도 이만큼은 보장됨"을
+            // 보여주기 위한 용도로만 적용한다.
+            if (childGroup.isolatedMin !== 0) return;
             childGroup.totalMin += snap.isolatedMin;
             childGroup.totalMax += snap.isolatedMax;
             // 부모 항목도 하위 카드에 추가 (포함관계 출처 표시용)
