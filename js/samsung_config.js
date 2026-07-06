@@ -589,11 +589,11 @@ function calculateHierarchicalSummarySamsung(results) {
                 summaryMap.set(child, { displayName: child, totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0, items: [], onceOnly: ONCE_ONLY_KEYS.has(child) });
             }
             const childGroup = summaryMap.get(child);
-            // 하위 카드가 이미 자기 own 금액을 가지고 있으면(예: 담보표에 다빈치/양성자/표적/면역이
-            // 각자 별도 금액으로 명시된 variant형 통합치료비) 상위 카드의 own 금액을 그 위에 또 더하면
-            // 안 된다(이중계산). 전파는 하위 카드가 own이 전혀 없을 때(0)만 "적어도 이만큼은 보장됨"을
-            // 보여주기 위한 용도로만 적용한다.
-            if (childGroup.isolatedMin !== 0) return;
+            // 하위 카드(다빈치/양성자/표적/면역)는 상위 카드(암수술비/항암방사선/항암약물)의 하위 개념이므로,
+            // 하위 카드가 own 금액을 이미 가지고 있어도 상위 카드의 own 금액을 표시상 항상 포함시킨다
+            // (다빈치 수술도 "수술"의 일종이므로, 다빈치 카드의 총 보장액에는 일반 수술비도 포함되어야 함).
+            // 단, 담보165처럼 애초에 암 무관 담보가 섞이는 문제는 findSamsungDetails에서 "암" 키워드로
+            // 걸러내야 하는 별개의 이슈이며, 여기서 조건을 거는 것으로는 해결되지 않는다.
             childGroup.totalMin += snap.isolatedMin;
             childGroup.totalMax += snap.isolatedMax;
             // 부모 항목도 하위 카드에 추가 (포함관계 출처 표시용)
