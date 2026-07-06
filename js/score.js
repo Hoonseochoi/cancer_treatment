@@ -1,4 +1,4 @@
-console.log('[score] v20260706c 로드됨 ✅');
+console.log('[score] v20260706d 로드됨 ✅');
 // ── 담보 가치점수(암 치료비 점수) 계산 유틸 ──
 // 설계 근거: C:\obsidian_hoons\Hoonseo\CANCER ANALAYSIS\담보_가치점수_설계_플랜.md (6장, v4 최종 확정판)
 // 삼성/메리츠 공용 — summaryMap(calculateHierarchicalSummary*의 반환값)과 raw results 배열만 있으면 계산 가능.
@@ -33,8 +33,10 @@ const SCORE_PROVISIONAL_AVERAGE = 40;
 // "넓은 담보(온통보장류)만 있어도 좁은 특화(표적/면역)에 빵만 키운 설계와 동일하게
 // 만점이 나오는" 문제를 막기 위해, 가장 넓은 카드(항암약물치료비, subtreeWeight 54%)의
 // own 5년가치가 이 기준액 미만이면 점수를 비례해서 깎는다(기준액 이상이면 게이트 통과, 1.0).
-// 사용자 확정치: 3,000만원 (담보_가치점수_설계_플랜.md 6-5-3 v5.2 참고)
-const SCORE_GATE_THRESHOLD_5Y = 3000;
+// 사용자 재확정치: "연 3,000만원"이 기준 의도였음(연간 지급 담보는 ×5년 반영되므로
+// 5년 환산 시 1.3억원 수준) → SCORE_GATE_THRESHOLD_5Y = 13,000(만원)
+// (담보_가치점수_설계_플랜.md 6-5-3 v5.2 참고, 2026-07-06 실측 기반 재조정)
+const SCORE_GATE_THRESHOLD_5Y = 13000;
 
 // card의 CATEGORY_HIERARCHY 하위 전체(중복 제거)를 Set으로 반환
 function getScoreSubtreeDescendants(card) {
