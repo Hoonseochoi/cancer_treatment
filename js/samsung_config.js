@@ -239,7 +239,8 @@ function findSamsungDetails(itemName) {
     // 1. 통합치료비 — "전액본인부담" 명시 여부로 분기
     // 명시 있음 → 비급여 전용 variant (비급여 태그 O)
     // 명시 없음 → 포괄형 variant (급여+비급여 통합, 비급여 태그 X)
-    if (itemName.includes("통합치료비")) {
+    // 담보명에 "암"이 없으면 특정순환계질환/뇌혈관질환 등 비암성 통합치료비 담보 → 암 집계 대상 아님
+    if (itemName.includes("통합치료비") && itemName.includes("암")) {
         if (itemName.includes("전액본인부담")) {
             return samsungCoverageDetailsMap["종합병원 암 전액본인부담(비급여포함) 통합치료비"];
         }
