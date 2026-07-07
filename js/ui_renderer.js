@@ -770,6 +770,50 @@ window.exportAsImage = async function () {
             `;
             clonedDoc.head.appendChild(style);
 
+            // ── 다크모드 무력화 (PNG는 뷰어의 OS 설정과 무관하게 항상 라이트모드로 캡처) ──
+            // style.css의 다크모드 오버라이드는 prefers-color-scheme 미디어쿼리로 걸려 있어
+            // html2canvas가 캡처 시점의 실제 OS 다크모드 상태를 그대로 반영해버린다. 이 스타일을
+            // <head> 맨 끝에 추가해 같은 선택자로 라이트값을 다시 덮어써(동일 특이도, 나중 순서가
+            // 이김) 항상 라이트로 캡처되게 만든다.
+            const forceLightStyle = clonedDoc.createElement('style');
+            forceLightStyle.innerHTML = `
+            :root {
+                --bg-light: #E4E7F0; --white: #FFFFFF;
+                --gray-dark: #0E1629; --gray-mid: #5A607A;
+                --border-color: rgba(0, 0, 0, 0.08);
+            }
+            body.meritz-theme { --bg-light: #EBEBEB; --gray-dark: #404040; --gray-mid: #8C8C8C; --primary-bright: #E60000; --primary-color: #E60000; }
+            body.samsung-theme  { --bg-light: #EAECF4; --primary-bright: #1251CC; --primary-color: #1251CC; }
+            body.db-theme        { --bg-light: #E8F5EE; --primary-bright: #00A04B; --primary-color: #00A04B; }
+            body.heungkuk-theme  { --bg-light: #FDF2F8; --primary-bright: #DB2777; --primary-color: #DB2777; }
+            body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) { --primary-bright: #1A3A8F; --primary-color: #1A3A8F; }
+            body { background-color: var(--bg-color) !important; color: var(--text-main) !important; }
+            .premium-card { box-shadow: 0 4px 20px rgba(0,0,0,0.04) !important; }
+            .bg-white { background-color: #fff !important; }
+            .bg-gray-50 { background-color: #f9fafb !important; }
+            .bg-gray-100 { background-color: #f3f4f6 !important; }
+            .text-gray-900, .text-gray-800, .text-gray-700 { color: #1f2937 !important; }
+            .text-gray-600 { color: #4b5563 !important; }
+            .text-gray-500 { color: #6b7280 !important; }
+            .border-gray-100, .border-gray-200 { border-color: #e5e7eb !important; }
+            .bg-gray-800 { background-color: #1f2937 !important; }
+            [style*="color:#666"] { color: #666 !important; }
+            [style*="background:rgba(0,0,0,0.03)"] { background: rgba(0,0,0,0.03) !important; }
+            #insurer-more-toggle { color: #6b7280 !important; border-color: #d1d5db !important; background: #fff !important; }
+            [onclick="openAboutModal()"] { color: #1A3A8F !important; }
+            [onclick="openInsightModal()"] { color: #e91e8c !important; }
+            [style*="color:#333"] { color: #333 !important; }
+            .welcome-greet { color: #888 !important; }
+            .welcome-name  { color: #1a1a1a !important; }
+            .text-red-600, .text-red-500 { color: var(--primary-bright) !important; }
+            .bg-red-600, .hover\\:bg-red-700:hover { background-color: var(--primary-bright) !important; }
+            .border-red-600, .border-red-500 { border-color: var(--primary-bright) !important; }
+            .insight-card-gradient { background: linear-gradient(135deg, #fff 0%, #fffafa 100%) !important; }
+            .manager-welcome-float { background: rgba(255,255,255,0.85) !important; }
+            #score-box { background: rgba(255,255,255,0.6) !important; border-color: rgba(0,0,0,0.05) !important; }
+            `;
+            clonedDoc.head.appendChild(forceLightStyle);
+
             // ── 오류 제보 아일랜드 & 기타 패널 숨김 (캡처 불필요) ──
             const errorIsland = clonedDoc.getElementById('error-report-island');
             if (errorIsland) errorIsland.style.display = 'none';

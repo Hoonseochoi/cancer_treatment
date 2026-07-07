@@ -184,6 +184,60 @@
       .v-header { padding: 16px 16px 14px; }
       .v-body { padding: 0 16px 16px; }
     }
+
+    /* ── Dark Mode (OS 설정 자동 감지) ──
+       index.html의 TUTORIAL/INSIGHT/PATCHNOTE 모달로 이 페이지를 iframe에 띄울 때
+       모달 패널 배경도 함께 어두워지므로(index.html 다크모드 처리 참고), 이 페이지
+       자체도 같은 계열의 다크 팔레트로 전환해 이질감이 없도록 한다. */
+    @media (prefers-color-scheme: dark) {
+      body { background: #161D2E; color: #E8EAF0; }
+
+      #patch-nav {
+        background: rgba(22, 29, 46, 0.88);
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+      }
+      .nav-logo { color: #E8EAF0; }
+      .nav-back { color: #7C8598; }
+      .nav-back:hover { color: #E8EAF0; }
+
+      .hero-eyebrow { color: #7C8598; }
+      .hero-title { color: #E8EAF0; }
+      .hero-sub { color: #9AA3B5; }
+
+      .jump-wrap {
+        background: rgba(22, 29, 46, 0.9);
+        border-bottom-color: rgba(255, 255, 255, 0.06);
+      }
+      .jump-pill {
+        border-color: rgba(255, 255, 255, 0.12);
+        color: #9AA3B5;
+        background: transparent;
+      }
+      .jump-pill:hover { border-color: #a855f7; color: #c084fc; }
+      .jump-pill.active { background: #7C3AED; color: #fff; border-color: #7C3AED; }
+
+      .timeline::before { background: rgba(255, 255, 255, 0.08); }
+      .v-dot.past { background: #3A4460; }
+
+      .v-card { border-color: rgba(255, 255, 255, 0.08); }
+      .v-card:hover { border-color: rgba(255, 255, 255, 0.16); }
+      .v-card.latest-card { border-color: rgba(124, 58, 237, 0.4); }
+
+      .v-date { color: #7C8598; }
+      .v-subtitle { color: #E8EAF0; }
+
+      .v-body { border-top-color: rgba(255, 255, 255, 0.06); }
+      .cs-label { color: #5C6579; }
+      .change-text { color: #C7CCD8; }
+      .change-text strong { color: #E8EAF0; }
+      .change-text code { background: rgba(255, 255, 255, 0.08); color: #C7CCD8; }
+
+      .note-box { background: rgba(124, 58, 237, 0.12); }
+      .note-box p { color: #d8b4fe; }
+
+      .patch-footer { border-top-color: rgba(255, 255, 255, 0.08); }
+      .patch-footer p { color: #7C8598; }
+    }
   </style>
 </head>
 <body>

@@ -584,3 +584,184 @@ strong {
     #reset-btn span { display: none; }
     #reset-btn::after { content: '↺'; font-size: 14px; }
 }
+
+/* ══════════════════════════════════════════════
+   ── Dark Mode (OS 설정 자동 감지, prefers-color-scheme) ──
+   토글 버튼 없이 기기/브라우저의 다크모드 설정을 그대로 따라감.
+   PNG 내보내기(html2canvas)는 이 미디어쿼리 영향을 받지 않고
+   exportAsImage의 onclone 로직에서 항상 라이트모드로 캡처됨.
+   ══════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-light: #0B1120;
+        --white: #161D2E;
+        --gray-dark: #E8EAF0;
+        --gray-mid: #94A3B8;
+        --border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    /* 보험사별 테마(body.xxx-theme)는 라이트모드에서 --bg-light(그리고 메리츠는 --gray-dark/--gray-mid도)를
+       자체 값으로 이미 덮어쓰고 있어서(body.xxx-theme 선택자 특이도가 :root보다 높음), 다크모드에서도
+       같은 선택자(body.xxx-theme)로 다시 한 번 덮어써야 위 :root 다크값이 이긴다 */
+    body.meritz-theme {
+        --bg-light: #0B1120;
+        --gray-dark: #E8EAF0;
+        --gray-mid: #94A3B8;
+    }
+    body.samsung-theme  { --bg-light: #0B1120; }
+    body.db-theme        { --bg-light: #0B1120; }
+    body.heungkuk-theme  { --bg-light: #0B1120; }
+
+    /* 브랜드 포인트 컬러는 어두운 배경에서 더 밝게(채도 유지, 명도만 상향) */
+    body.meritz-theme  { --primary-bright: #FF5C5C; --primary-color: #FF5C5C; }
+    body.samsung-theme { --primary-bright: #4C8DFF; --primary-color: #4C8DFF; }
+    body.db-theme       { --primary-bright: #22D06B; --primary-color: #22D06B; }
+    body.heungkuk-theme { --primary-bright: #F472B6; --primary-color: #F472B6; }
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) {
+        --primary-bright: #6C8CFF; --primary-color: #6C8CFF;
+    }
+
+    body { background-color: var(--bg-color); color: var(--text-main); }
+
+    /* 은은한 배경 글로우: 라이트모드용 컬러가 다크 배경에서 너무 튀지 않도록 조정 */
+    .bg-subtle-glow,
+    body.meritz-theme .bg-subtle-glow,
+    body.samsung-theme .bg-subtle-glow,
+    body.db-theme .bg-subtle-glow {
+        background: radial-gradient(circle at 10% 20%, rgba(108, 140, 255, 0.06) 0%, transparent 40%),
+                    radial-gradient(circle at 90% 80%, rgba(108, 140, 255, 0.05) 0%, transparent 40%);
+    }
+    body.heungkuk-theme .bg-subtle-glow {
+        background: radial-gradient(ellipse at 60% 40%, rgba(244, 114, 182, 0.08) 0%, transparent 70%);
+    }
+
+    /* 카드 그림자: 다크 배경에서는 옅은 그림자가 안 보이므로 더 짙게 */
+    .premium-card { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35); }
+    .premium-card:hover { box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5); }
+
+    /* ── 하드코딩된 Tailwind 그레이스케일 클래스 오버라이드 ──
+       (index.html 정적 마크업 + js/ui_renderer.js가 생성하는 카드/서브아이템 마크업 공통 적용) */
+
+    /* 밝은 배경(카드/패널) → 어두운 표면색 */
+    .bg-white   { background-color: var(--white) !important; }
+    .bg-gray-50  { background-color: #1B2337 !important; }
+    .bg-gray-100 { background-color: #232C42 !important; }
+    .bg-gray-200 { background-color: #2B3550 !important; }
+    .hover\:bg-gray-200:hover { background-color: #2B3550 !important; }
+
+    /* 어두운 텍스트(원래 흰 배경 위 본문용) → 밝은 텍스트로 반전 */
+    .text-gray-900,
+    .text-gray-800,
+    .text-gray-700 { color: #E8EAF0 !important; }
+    .text-gray-600 { color: #C7CCD8 !important; }
+    .text-gray-500 { color: #9AA3B5 !important; }
+
+    /* 옅은 회색 보더(원래 흰 배경 대비용) → 다크 배경용 은은한 보더 */
+    .border-gray-100,
+    .border-gray-200 { border-color: rgba(255, 255, 255, 0.1) !important; }
+
+    /* 이미 어두운 버튼(bg-gray-800)은 다크 페이지 배경에 묻히지 않도록 한 톤 밝게 */
+    .bg-gray-800 { background-color: #374151 !important; }
+
+    /* ── js/ui_renderer.js가 생성하는 인라인 스타일 오버라이드 ──
+       (라이트 배경 전제로 하드코딩된 인라인 color/background만 선택적으로 조정) */
+
+    /* 담보 출처(summary) 줄: 옅은 회색 텍스트 + 옅은 검정 하이라이트 배경 → 다크 배경용으로 반전 */
+    [style*="color:#666"] { color: #B8C0D0 !important; }
+    [style*="background:rgba(0,0,0,0.03)"] { background: rgba(255, 255, 255, 0.06) !important; }
+
+    /* "지원 회사 +4" 토글 버튼: 인라인 흰 배경/회색 보더 → 다크 배경용 */
+    #insurer-more-toggle {
+        color: #B8C0D0 !important;
+        border-color: rgba(255, 255, 255, 0.16) !important;
+        background: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    /* TUTORIAL / INSIGHT 상단 내비 버튼: 인라인 진한 남색/핑크 → 다크 배경에서도 밝게 보이도록 */
+    [onclick="openAboutModal()"] { color: #6C8CFF !important; }
+    [onclick="openInsightModal()"] { color: #F472B6 !important; }
+
+    /* TOTAL ANALYSIS 배지: 인라인 진회색 텍스트 → 밝은 텍스트로 */
+    [style*="color:#333"] { color: #E8EAF0 !important; }
+
+    /* 매니저 웰컴 배지: 배경이 투명해 페이지 배경 위에 바로 얹히므로, 다크 배경에서는
+       라이트모드 전제(어두운 텍스트)를 밝은 텍스트로 반전. 흥국화재 테마는 이미 흰 텍스트라 영향 없음 */
+    .welcome-greet { color: #9CA3AF !important; }
+    .welcome-name  { color: #E8EAF0 !important; }
+
+    /* ── 보험사별 테마가 라이트모드 전제로 하드코딩해둔 text-red-, bg-red-, border-red- 계열 오버라이드 ──
+       (위 각 body.xxx-theme .text-red-600 등은 리터럴 hex + !important라 특이도가 높음) →
+       다크모드에서도 같은 선택자 형태(body.xxx-theme ...)로 다시 덮어써야 이긴다.
+       테마별로 값을 또 하드코딩하지 않고, 이미 테마별로 맞춰둔 --primary-bright 변수를 참조한다. */
+    body.meritz-theme .text-red-600, body.meritz-theme .text-red-500,
+    body.samsung-theme .text-red-600, body.samsung-theme .text-red-500,
+    body.db-theme .text-red-600, body.db-theme .text-red-500,
+    body.heungkuk-theme .text-red-600, body.heungkuk-theme .text-red-500,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .text-red-600,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .text-red-500
+    { color: var(--primary-bright) !important; }
+
+    body.meritz-theme .bg-red-600,
+    body.samsung-theme .bg-red-600,
+    body.db-theme .bg-red-600,
+    body.heungkuk-theme .bg-red-600,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-600,
+    body.meritz-theme .hover\:bg-red-700:hover,
+    body.samsung-theme .hover\:bg-red-700:hover,
+    body.db-theme .hover\:bg-red-700:hover,
+    body.heungkuk-theme .hover\:bg-red-700:hover,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .hover\:bg-red-700:hover
+    { background-color: var(--primary-bright) !important; }
+
+    body.meritz-theme .border-red-600, body.meritz-theme .border-red-500,
+    body.samsung-theme .border-red-600, body.samsung-theme .border-red-500,
+    body.db-theme .border-red-600, body.db-theme .border-red-500,
+    body.heungkuk-theme .border-red-600, body.heungkuk-theme .border-red-500,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-600,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-500
+    { border-color: var(--primary-bright) !important; }
+
+    body.meritz-theme .border-red-100, body.meritz-theme .border-red-200, body.meritz-theme .border-red-300,
+    body.samsung-theme .border-red-100, body.samsung-theme .border-red-200, body.samsung-theme .border-red-300,
+    body.db-theme .border-red-100, body.db-theme .border-red-200, body.db-theme .border-red-300,
+    body.heungkuk-theme .border-red-100, body.heungkuk-theme .border-red-200, body.heungkuk-theme .border-red-300,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-100,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-200,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-300
+    { border-color: color-mix(in srgb, var(--primary-bright) 35%, transparent) !important; }
+
+    body.meritz-theme .bg-red-50, body.meritz-theme .bg-red-100, body.meritz-theme .file\:bg-red-50,
+    body.samsung-theme .bg-red-50, body.samsung-theme .bg-red-100, body.samsung-theme .file\:bg-red-50,
+    body.db-theme .bg-red-50, body.db-theme .bg-red-100, body.db-theme .file\:bg-red-50,
+    body.heungkuk-theme .bg-red-50, body.heungkuk-theme .bg-red-100, body.heungkuk-theme .file\:bg-red-50,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-50,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-100,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .file\:bg-red-50
+    { background-color: color-mix(in srgb, var(--primary-bright) 14%, #161D2E) !important; }
+
+    body.meritz-theme .bg-red-400,
+    body.samsung-theme .bg-red-400,
+    body.db-theme .bg-red-400,
+    body.heungkuk-theme .bg-red-400,
+    body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-400
+    { background-color: color-mix(in srgb, var(--primary-bright) 55%, white) !important; }
+    .hover\:bg-gray-700:hover { background-color: #4B5563 !important; }
+
+    /* 담보 가치점수 박스: 반투명 흰 배경 → 반투명 밝은 오버레이로 전환 */
+    #score-box {
+        background: rgba(255, 255, 255, 0.06) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* 인사이트 카드(보험전문가 인사이트) 그라데이션 배경: 흰색 고정 → 다크 표면색 그라데이션 */
+    .insight-card-gradient {
+        background: linear-gradient(135deg, var(--white) 0%, #1B2337 100%) !important;
+    }
+
+    /* 매니저 웰컴 배지: 반투명 흰 배경 → 반투명 밝은 오버레이 */
+    .manager-welcome-float {
+        background: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    ::-webkit-scrollbar-thumb { background: #3A4460; }
+}

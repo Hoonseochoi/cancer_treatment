@@ -21,13 +21,19 @@ function applyConfig(config) {
     const font = c.font_family || defaultConfig.font_family;
     const baseSize = c.font_size || defaultConfig.font_size;
     // ... (rest of config logic same as before) ...
-    document.documentElement.style.setProperty('--bg-color', c.background_color);
-    document.documentElement.style.setProperty('--surface-color', c.surface_color);
-    document.documentElement.style.setProperty('--text-color', c.text_color);
-    document.documentElement.style.setProperty('--primary-color', c.primary_color);
-    document.documentElement.style.setProperty('--secondary-color', c.secondary_color);
+    // 다크모드(prefers-color-scheme)에서는 이 인라인 스타일이 style.css의 다크모드
+    // 미디어쿼리 오버라이드보다 항상 우선하게 되어(인라인 style > 어떤 셀렉터든) 다크모드가
+    // 무력화되므로, 다크모드일 때는 건너뛰고 스타일시트가 색을 결정하도록 둔다.
+    const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (!isDarkMode) {
+        document.documentElement.style.setProperty('--bg-color', c.background_color);
+        document.documentElement.style.setProperty('--surface-color', c.surface_color);
+        document.documentElement.style.setProperty('--text-color', c.text_color);
+        document.documentElement.style.setProperty('--primary-color', c.primary_color);
+        document.documentElement.style.setProperty('--secondary-color', c.secondary_color);
+    }
     const wrapper = document.getElementById('app-wrapper');
-    if (wrapper) {
+    if (wrapper && !isDarkMode) {
         wrapper.style.background = c.background_color;
         wrapper.style.color = c.text_color;
     }
