@@ -161,6 +161,14 @@ async function processFile(file) {
             const dnM = text.match(/설계번호\s*[:：]?\s*([\w\-]+)/);
             if (dnM) samsungMeta.designNo = dnM[1].trim();
 
+            // ── 무료 부가서비스(병원동행/가정케어) 감지 ──
+            // 뒤쪽 안내 페이지는 인포그래픽 이미지라 텍스트 레이어가 거의 없어, pdf_extractor.js가
+            // 이미 OCR 폴백으로 처리한 결과가 fullText(text)에 섞여 들어온다. 특정 상품명(온[ON]통보장)에
+            // 한정하지 않고, OCR 텍스트 안에서 서비스명이 실제로 검출될 때만 사이드바에 노출한다
+            // (OCR 인식 시 글자 사이 공백이 섞일 수 있어 유연하게 매칭)
+            samsungMeta.hasHospitalCompanionService = /병\s*원\s*동\s*행/.test(text);
+            samsungMeta.hasHomeCareService = /가\s*정\s*케\s*어/.test(text);
+
             // 대리점명 + 설계사명: "(주)글로벌금융판매케이엘인슈주안(김진숙)" 패턴
             // agency: (주) 또는 주식회사 부터 한글이름 괄호 직전까지
             const agM = text.match(/((?:주식회사|\(주\)|\(유\))[^\n\r()]{2,50}?)\s*(?=\([가-힣]{2,5}\))/) ||

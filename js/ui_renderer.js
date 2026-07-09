@@ -403,12 +403,14 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         const hasWalletOthers     = walletOthers     && walletOthers.length     > 0;
         const hasSanggup2Others   = sanggup2Others   && sanggup2Others.length   > 0;
         const hasLivingCostOthers = livingCostOthers && livingCostOthers.length > 0;
-        // 삼성 온[ON]통보장류 상품: 병원동행/가정케어 부가서비스 안내 대상
-        // (해당 서비스는 PDF 뒷부분에 인포그래픽 이미지로만 실려 있어 텍스트 추출이 불가능하므로,
-        // 상품 공통 고정 문구를 상품명으로 감지해 보여준다 — 담보 구성에 따라 실제 제공 여부는 다를 수 있음)
-        const isOntongProduct = insurer === 'samsung' && !!(meta && meta.productName && /온.{0,6}통보장/.test(meta.productName));
+        // 삼성 무료 부가서비스(병원동행/가정케어) 안내 대상 여부
+        // 특정 상품명에 한정하지 않고, PDF 뒷부분(OCR 폴백 포함 fullText)에서 서비스명이
+        // 실제로 검출된 상품에서만 노출 — main.js에서 이미 감지해 meta에 실어 보냄
+        const hasHospitalCompanionService = insurer === 'samsung' && !!(meta && meta.hasHospitalCompanionService);
+        const hasHomeCareService = insurer === 'samsung' && !!(meta && meta.hasHomeCareService);
+        const hasAnySamsungService = hasHospitalCompanionService || hasHomeCareService;
 
-        if (otherContainer && (hasOtherItems || hasWalletOthers || hasSanggup2Others || hasLivingCostOthers || isOntongProduct)) {
+        if (otherContainer && (hasOtherItems || hasWalletOthers || hasSanggup2Others || hasLivingCostOthers || hasAnySamsungService)) {
             otherContainer.classList.remove('hidden');
 
             // ── 월렛 기타담보 섹션 (흥국 전용, 최상단) ──
@@ -487,26 +489,29 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 });
             }
 
-            // ── 삼성 온[ON]통보장 부가서비스 안내 (병원동행 / 가정케어) ──
-            if (isOntongProduct) {
+            // ── 삼성 무료 부가서비스 안내 (병원동행 / 가정케어, 검출된 것만 표시) ──
+            if (hasAnySamsungService) {
                 const svcPanel = document.createElement('div');
                 svcPanel.className = "premium-card rounded-3xl p-5 flex flex-col gap-3 mb-4";
                 svcPanel.style.border = "1.5px dashed rgba(0,0,0,0.12)";
+                const hospitalBlock = hasHospitalCompanionService ? `
+                        <div>
+                            <p class="text-[11px] font-black text-gray-700 mb-1">🚑 병원동행 서비스</p>
+                            <p class="text-[10px] text-gray-400 leading-relaxed">3대 질환(암·뇌혈관·허혈성심장) 진단/의심소견 또는 간·폐·신장, 근골격계 수술(예정) 시, 동행매니저가 병원 이동·진료 동행·간호사 상담·진료예약을 도와드려요. <span class="font-bold" style="color:var(--primary-color);">4시간 기준 합산 20회</span> 제공.</p>
+                        </div>` : '';
+                const homeCareBlock = hasHomeCareService ? `
+                        <div>
+                            <p class="text-[11px] font-black text-gray-700 mb-1">🏠 가정케어 서비스</p>
+                            <p class="text-[10px] text-gray-400 leading-relaxed">같은 대상 질환으로 진단/수술 시, 전문요양보호사가 집으로 방문해 가사·신체활동·인지·정서 지원을 도와드려요. <span class="font-bold" style="color:var(--primary-color);">4시간 기준 최대 10회</span> 제공.</p>
+                        </div>` : '';
                 svcPanel.innerHTML = `
                     <div class="flex items-center gap-2">
                         <span class="text-base">🏥</span>
                         <h4 class="text-sm font-black" style="color:var(--primary-color);">무료 부가서비스 안내</h4>
                     </div>
-                    <p class="text-[10px] text-gray-400 font-medium -mt-1">가입 담보 구성에 따라 실제 제공 여부는 다를 수 있어요</p>
+                    <p class="text-[10px] text-gray-400 font-medium -mt-1">가입제안서에서 확인된 서비스만 안내해드려요</p>
                     <div class="flex flex-col gap-3">
-                        <div>
-                            <p class="text-[11px] font-black text-gray-700 mb-1">🚑 병원동행 서비스</p>
-                            <p class="text-[10px] text-gray-400 leading-relaxed">3대 질환(암·뇌혈관·허혈성심장) 진단/의심소견 또는 간·폐·신장, 근골격계 수술(예정) 시, 동행매니저가 병원 이동·진료 동행·간호사 상담·진료예약을 도와드려요. <span class="font-bold" style="color:var(--primary-color);">4시간 기준 합산 20회</span> 제공.</p>
-                        </div>
-                        <div>
-                            <p class="text-[11px] font-black text-gray-700 mb-1">🏠 가정케어 서비스</p>
-                            <p class="text-[10px] text-gray-400 leading-relaxed">같은 대상 질환으로 진단/수술 시, 전문요양보호사가 집으로 방문해 가사·신체활동·인지·정서 지원을 도와드려요. <span class="font-bold" style="color:var(--primary-color);">4시간 기준 최대 10회</span> 제공.</p>
-                        </div>
+                        ${hospitalBlock}${homeCareBlock}
                         <p class="text-[10px] text-gray-400 pt-1 border-t border-gray-100">📞 삼성화재 전용 콜센터 <span class="font-bold text-gray-700">1600-8204</span> (전화 신청 → 서류 제출 → 이용)</p>
                     </div>`;
                 otherContainer.appendChild(svcPanel);
