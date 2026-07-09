@@ -162,12 +162,14 @@ async function processFile(file) {
             if (dnM) samsungMeta.designNo = dnM[1].trim();
 
             // ── 무료 부가서비스(병원동행/가정케어) 감지 ──
-            // 뒤쪽 안내 페이지는 인포그래픽 이미지라 텍스트 레이어가 거의 없어, pdf_extractor.js가
-            // 이미 OCR 폴백으로 처리한 결과가 fullText(text)에 섞여 들어온다. 특정 상품명(온[ON]통보장)에
-            // 한정하지 않고, OCR 텍스트 안에서 서비스명이 실제로 검출될 때만 사이드바에 노출한다
-            // (OCR 인식 시 글자 사이 공백이 섞일 수 있어 유연하게 매칭)
-            samsungMeta.hasHospitalCompanionService = /병\s*원\s*동\s*행/.test(text);
-            samsungMeta.hasHomeCareService = /가\s*정\s*케\s*어/.test(text);
+            // 뒤쪽 안내 페이지 본문은 인포그래픽 이미지라 OCR 없인 못 읽지만, OCR은 페이지당
+            // 수십 초가 걸려 이 정보 하나 때문에 강제로 돌리기엔 배보다 배꼽이 큼. 대신 텍스트
+            // 레이어만으로도 잡히는 "부가서비스 이용 안내" 표지 문구 유무로 병원동행을 판단하고,
+            // 온[ON]통보장 상품은 항상 병원동행+가정케어 둘 다 제공한다고 하드코딩으로 처리한다.
+            const hasServicePage = /부가서비스\s*(이용\s*)?안내/.test(text);
+            const isOntongProduct = /온.{0,6}통보장/.test(text);
+            samsungMeta.hasHospitalCompanionService = hasServicePage || isOntongProduct;
+            samsungMeta.hasHomeCareService = isOntongProduct;
 
             // 대리점명 + 설계사명: "(주)글로벌금융판매케이엘인슈주안(김진숙)" 패턴
             // agency: (주) 또는 주식회사 부터 한글이름 괄호 직전까지
