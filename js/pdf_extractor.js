@@ -83,38 +83,43 @@ async function extractTextFromPDF(file, log = console.log) {
             }
             // 1-b. 페이지 대부분이 래스터 이미지인지 검사 (텍스트 레이어는 헤더/푸터만 잡고
             // 실제 본문이 이미지로 그려진 페이지 감지용 — 글자 수만으로는 못 걸러냄)
+            // 성능: 이미 텍스트가 충분히 추출된(500자↑) 페이지는 진짜 본문 페이지일 확률이
+            // 매우 높으므로 이 검사 자체를 건너뛴다 (getOperatorList/OCR 재실행 방지 → 속도 저하 방지)
+            const len0 = pageText.trim().length;
             let hasLargeImage = false;
-            try {
-                const ops = await page.getOperatorList();
-                const viewport0 = page.getViewport({ scale: 1 });
-                const pageArea = viewport0.width * viewport0.height;
-                const mul = (m1, m2) => [
-                    m1[0] * m2[0] + m1[1] * m2[2], m1[0] * m2[1] + m1[1] * m2[3],
-                    m1[2] * m2[0] + m1[3] * m2[2], m1[2] * m2[1] + m1[3] * m2[3],
-                    m1[4] * m2[0] + m1[5] * m2[2] + m2[4], m1[4] * m2[1] + m1[5] * m2[3] + m2[5]
-                ];
-                let stack = [[1, 0, 0, 1, 0, 0]];
-                for (let k = 0; k < ops.fnArray.length; k++) {
-                    const fn = ops.fnArray[k];
-                    if (fn === pdfjsLib.OPS.save) {
-                        stack.push(stack[stack.length - 1].slice());
-                    } else if (fn === pdfjsLib.OPS.restore) {
-                        stack.pop();
-                    } else if (fn === pdfjsLib.OPS.transform) {
-                        stack[stack.length - 1] = mul(stack[stack.length - 1], ops.argsArray[k]);
-                    } else if (fn === pdfjsLib.OPS.paintImageXObject || fn === pdfjsLib.OPS.paintImageXObjectRepeat) {
-                        const m = stack[stack.length - 1];
-                        const coverage = Math.abs(m[0] * m[3] - m[1] * m[2]) / pageArea;
-                        if (coverage > 0.35) { hasLargeImage = true; break; }
+            if (len0 < 500) {
+                try {
+                    const ops = await page.getOperatorList();
+                    const viewport0 = page.getViewport({ scale: 1 });
+                    const pageArea = viewport0.width * viewport0.height;
+                    const mul = (m1, m2) => [
+                        m1[0] * m2[0] + m1[1] * m2[2], m1[0] * m2[1] + m1[1] * m2[3],
+                        m1[2] * m2[0] + m1[3] * m2[2], m1[2] * m2[1] + m1[3] * m2[3],
+                        m1[4] * m2[0] + m1[5] * m2[2] + m2[4], m1[4] * m2[1] + m1[5] * m2[3] + m2[5]
+                    ];
+                    let stack = [[1, 0, 0, 1, 0, 0]];
+                    for (let k = 0; k < ops.fnArray.length; k++) {
+                        const fn = ops.fnArray[k];
+                        if (fn === pdfjsLib.OPS.save) {
+                            stack.push(stack[stack.length - 1].slice());
+                        } else if (fn === pdfjsLib.OPS.restore) {
+                            stack.pop();
+                        } else if (fn === pdfjsLib.OPS.transform) {
+                            stack[stack.length - 1] = mul(stack[stack.length - 1], ops.argsArray[k]);
+                        } else if (fn === pdfjsLib.OPS.paintImageXObject || fn === pdfjsLib.OPS.paintImageXObjectRepeat) {
+                            const m = stack[stack.length - 1];
+                            const coverage = Math.abs(m[0] * m[3] - m[1] * m[2]) / pageArea;
+                            if (coverage > 0.35) { hasLargeImage = true; break; }
+                        }
                     }
+                } catch (opErr) {
+                    console.warn(`Page ${i} Image Coverage Check Error:`, opErr);
                 }
-            } catch (opErr) {
-                console.warn(`Page ${i} Image Coverage Check Error:`, opErr);
             }
             // 2. OCR Fallback
             // 텍스트가 너무 적으면(50자 미만) 이미지로 간주 + 텍스트가 있어도 페이지 대부분이
             // 이미지(본문이 이미지로 그려진 경우)면 OCR 병행
-            const len = pageText.trim().length;
+            const len = len0;
             if (len < 50 || hasLargeImage) {
                 updateProgress(
                     Math.round((idx / totalPagesToProcess) * 100),
