@@ -848,6 +848,10 @@ window.exportAsImage = async function () {
             `;
             clonedDoc.head.appendChild(forceLightStyle);
 
+            if (typeof window.normalizeHtml2CanvasCloneColors === 'function') {
+                window.normalizeHtml2CanvasCloneColors(target, cloneMain);
+            }
+
             // ── 오류 제보 아일랜드 & 기타 패널 숨김 (캡처 불필요) ──
             const errorIsland = clonedDoc.getElementById('error-report-island');
             if (errorIsland) errorIsland.style.display = 'none';
