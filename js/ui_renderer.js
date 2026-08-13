@@ -867,6 +867,51 @@ window.exportAsImage = async function () {
                     flexRow.appendChild(qrEl);
                 }
             }
+
+            // ── 최신 CSS 색상 함수 → rgba 치환 (html2canvas 1.4.1 호환 안전장치) ──
+            // html2canvas 1.4.1은 rgb/rgba/hsl/hsla만 파싱한다. color-mix() 등을 쓰면 크롬/엣지의
+            // computed style이 color(srgb ...) 형식을 돌려주는데, 이때 캡처가
+            // "Attempting to parse an unsupported color function color" 오류로 통째로 실패한다.
+            // CSS에서 color-mix()를 걷어냈지만, Tailwind CDN 등 외부 스타일에서 다시 유입될 수
+            // 있으므로 캡처 직전에 남아있는 color() 값을 인라인 rgba로 덮어써 방어한다.
+            try {
+                const view = clonedDoc.defaultView;
+                if (view) {
+                    const toRgba = (value) => value.replace(
+                        /color\(\s*(?:srgb|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020)\s+([\d.eE+-]+)\s+([\d.eE+-]+)\s+([\d.eE+-]+)\s*(?:\/\s*([\d.eE+-]+%?)\s*)?\)/g,
+                        (match, r, g, b, a) => {
+                            const to255 = (v) => Math.max(0, Math.min(255, Math.round(parseFloat(v) * 255)));
+                            let alpha = 1;
+                            if (a !== undefined) alpha = a.endsWith('%') ? parseFloat(a) / 100 : parseFloat(a);
+                            if (!isFinite(alpha)) alpha = 1;
+                            return `rgba(${to255(r)}, ${to255(g)}, ${to255(b)}, ${alpha})`;
+                        }
+                    );
+                    const COLOR_PROPS = [
+                        'color', 'backgroundColor', 'backgroundImage', 'boxShadow',
+                        'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+                        'outlineColor', 'textDecorationColor', 'columnRuleColor', 'fill', 'stroke'
+                    ];
+                    // 문제의 규칙들이 !important로 선언돼 있어, 인라인 스타일도 반드시
+                    // important로 넣어야 우선순위에서 이긴다 (그냥 el.style.x = ... 는 무시됨)
+                    const toKebab = (p) => p.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+                    let patched = 0;
+                    clonedDoc.querySelectorAll('*').forEach(el => {
+                        const cs = view.getComputedStyle(el);
+                        if (!cs) return;
+                        COLOR_PROPS.forEach(prop => {
+                            const v = cs[prop];
+                            if (typeof v === 'string' && v.includes('color(')) {
+                                el.style.setProperty(toKebab(prop), toRgba(v), 'important');
+                                patched++;
+                            }
+                        });
+                    });
+                    if (patched > 0) console.log(`[export] 미지원 색상 함수 ${patched}건을 rgba로 치환했습니다.`);
+                }
+            } catch (colorErr) {
+                console.warn('[export] 색상 함수 치환 중 오류(무시하고 진행):', colorErr);
+            }
         }
     };
 

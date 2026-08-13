@@ -721,30 +721,43 @@ strong {
     body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-500
     { border-color: var(--primary-bright) !important; }
 
-    body.meritz-theme .border-red-100, body.meritz-theme .border-red-200, body.meritz-theme .border-red-300,
-    body.samsung-theme .border-red-100, body.samsung-theme .border-red-200, body.samsung-theme .border-red-300,
-    body.db-theme .border-red-100, body.db-theme .border-red-200, body.db-theme .border-red-300,
-    body.heungkuk-theme .border-red-100, body.heungkuk-theme .border-red-200, body.heungkuk-theme .border-red-300,
+    /* 주의: 아래 3개 그룹은 color-mix()를 쓰지 않는다.
+       크롬/엣지는 color-mix() 결과를 computed style에서 color(srgb ...) 형식으로 반환하는데,
+       PNG 저장에 쓰는 html2canvas 1.4.1은 rgb/rgba/hsl/hsla만 파싱할 수 있어
+       "Attempting to parse an unsupported color function color" 오류로 저장이 실패한다.
+       따라서 테마별로 미리 계산한 rgb/rgba 리터럴을 직접 명시한다. */
+    body.meritz-theme .border-red-100, body.meritz-theme .border-red-200, body.meritz-theme .border-red-300
+    { border-color: rgba(255, 92, 92, 0.35) !important; }
+    body.samsung-theme .border-red-100, body.samsung-theme .border-red-200, body.samsung-theme .border-red-300
+    { border-color: rgba(76, 141, 255, 0.35) !important; }
+    body.db-theme .border-red-100, body.db-theme .border-red-200, body.db-theme .border-red-300
+    { border-color: rgba(34, 208, 107, 0.35) !important; }
+    body.heungkuk-theme .border-red-100, body.heungkuk-theme .border-red-200, body.heungkuk-theme .border-red-300
+    { border-color: rgba(244, 114, 182, 0.35) !important; }
     body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-100,
     body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-200,
     body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .border-red-300
-    { border-color: color-mix(in srgb, var(--primary-bright) 35%, transparent) !important; }
+    { border-color: rgba(108, 140, 255, 0.35) !important; }
 
-    body.meritz-theme .bg-red-50, body.meritz-theme .bg-red-100, body.meritz-theme .file\:bg-red-50,
-    body.samsung-theme .bg-red-50, body.samsung-theme .bg-red-100, body.samsung-theme .file\:bg-red-50,
-    body.db-theme .bg-red-50, body.db-theme .bg-red-100, body.db-theme .file\:bg-red-50,
-    body.heungkuk-theme .bg-red-50, body.heungkuk-theme .bg-red-100, body.heungkuk-theme .file\:bg-red-50,
+    body.meritz-theme .bg-red-50, body.meritz-theme .bg-red-100, body.meritz-theme .file\:bg-red-50
+    { background-color: rgb(55, 38, 52) !important; }
+    body.samsung-theme .bg-red-50, body.samsung-theme .bg-red-100, body.samsung-theme .file\:bg-red-50
+    { background-color: rgb(30, 45, 75) !important; }
+    body.db-theme .bg-red-50, body.db-theme .bg-red-100, body.db-theme .file\:bg-red-50
+    { background-color: rgb(24, 54, 55) !important; }
+    body.heungkuk-theme .bg-red-50, body.heungkuk-theme .bg-red-100, body.heungkuk-theme .file\:bg-red-50
+    { background-color: rgb(53, 41, 65) !important; }
     body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-50,
     body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-100,
     body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .file\:bg-red-50
-    { background-color: color-mix(in srgb, var(--primary-bright) 14%, #161D2E) !important; }
+    { background-color: rgb(34, 45, 75) !important; }
 
-    body.meritz-theme .bg-red-400,
-    body.samsung-theme .bg-red-400,
-    body.db-theme .bg-red-400,
-    body.heungkuk-theme .bg-red-400,
+    body.meritz-theme .bg-red-400   { background-color: rgb(255, 165, 165) !important; }
+    body.samsung-theme .bg-red-400  { background-color: rgb(157, 192, 255) !important; }
+    body.db-theme .bg-red-400       { background-color: rgb(133, 229, 174) !important; }
+    body.heungkuk-theme .bg-red-400 { background-color: rgb(249, 177, 215) !important; }
     body:not(.samsung-theme):not(.db-theme):not(.heungkuk-theme):not(.meritz-theme) .bg-red-400
-    { background-color: color-mix(in srgb, var(--primary-bright) 55%, white) !important; }
+    { background-color: rgb(174, 192, 255) !important; }
     .hover\:bg-gray-700:hover { background-color: #4B5563 !important; }
 
     /* 담보 가치점수 박스: 반투명 흰 배경 → 반투명 밝은 오버레이로 전환 */
