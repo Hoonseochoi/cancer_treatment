@@ -120,6 +120,21 @@ function extractRawCoveragesSamsung(text) {
         "뇌혈관", "허혈성심장", "순환계", "신장질환", "근골격"
     ];
 
+    // ── 3-b. 수술비 담보 화이트리스트 (수술비 분석기 전용) ──
+    // 암 화이트리스트에는 "암"이 없어 전부 탈락하던 담보들. 암 9카드에는 섞이면 안 되므로
+    // kind:'surgery' 태그를 달아 내보내고, 소비 측(calculateHierarchicalSummarySamsung)에서 분기한다.
+    // 단, "암 수술비"류는 암 화이트리스트가 먼저 잡으므로 여기 올 일이 없다.
+    const surgeryWhitelist = [
+        "종수술비",        // 질병/상해 1~5종 수술비, 1~8종 수술비 (공백 제거 후 매칭)
+        "입원수술비", "통원수술비",
+        "대질병수술비",    // 111대/115대/119대질병 수술비
+        "양성신생물수술비",
+        "치료·수술비", "치료수술비",   // 4대특정질병 치료·수술비
+        "충수염수술비", "인공관절치환수술비", "골절수술비", "화상수술비",
+        "이식수술비",      // 조혈모세포/각막/5대장기 이식 수술비
+        "손상수술비"       // 아킬레스힘줄손상, 상해 척추손상, 관절손상 수술비
+    ];
+
     // ── 4. Parse each merged line ──
     const results = [];
     // 온통보장류 그룹 추적: 번호(id)가 있는 줄이 그룹 시작, 이후 번호 없는 연속 줄들은 같은 그룹에 속함
@@ -280,11 +295,12 @@ function extractRawCoveragesSamsung(text) {
 
         if (!name) return;
 
-        // Only keep cancer-related coverages (whitelist)
+        // Only keep cancer-related or surgery-benefit coverages (whitelist)
         const nameNorm = name.replace(/\s+/g, '');
         const isCancerRelated = cancerWhitelist.some(kw => nameNorm.includes(kw));
-        if (!isCancerRelated) {
-            console.log(`[Samsung] Skipped (not cancer-related): ${name}`);
+        const isSurgeryTier = !isCancerRelated && surgeryWhitelist.some(kw => nameNorm.includes(kw));
+        if (!isCancerRelated && !isSurgeryTier) {
+            console.log(`[Samsung] Skipped (not cancer/surgery): ${name}`);
             return;
         }
 
@@ -313,7 +329,8 @@ function extractRawCoveragesSamsung(text) {
             amount: amountStr,
             premium: premium,
             period: period,
-            original: trimmed
+            original: trimmed,
+            ...(isSurgeryTier ? { kind: 'surgery' } : {})
         });
     });
 

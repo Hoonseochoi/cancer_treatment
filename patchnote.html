@@ -135,6 +135,7 @@
     .tag-fix  { background: #fff7ed; color: #c2410c; }
     .tag-beta { background: #f0fdf4; color: #15803d; }
     .tag-ux   { background: #fdf4ff; color: #7C3AED; }
+    .tag-improve { background: #f5f3ff; color: #6d28d9; }
 
     .v-chevron {
       font-size: 0.75rem; color: #9ca3af; flex-shrink: 0;
@@ -259,7 +260,8 @@
     <!-- JUMP PILLS -->
     <div class="jump-wrap">
       <div class="jump-inner">
-        <a class="jump-pill active" href="#v0706">v.0706</a>
+        <a class="jump-pill active" href="#v0825">v.0825</a>
+        <a class="jump-pill" href="#v0706">v.0706</a>
         <a class="jump-pill" href="#v0630">v.0630</a>
         <a class="jump-pill" href="#v0626">v.0626</a>
         <a class="jump-pill" href="#v0521">v.0521</a>
@@ -273,16 +275,128 @@
     <!-- TIMELINE -->
     <div class="timeline">
 
-      <!-- v.0706 -->
-      <div class="v-entry open latest-entry" id="v0706">
+      <!-- v.0825 -->
+      <div class="v-entry open latest-entry" id="v0825">
         <div class="v-dot latest"></div>
         <div class="v-card latest-card">
           <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
             <div class="v-header-left">
               <div class="v-meta">
+                <span class="v-ver">v.0825</span>
+                <span class="v-date">2026.08.25</span>
+                <span class="v-latest-badge">LATEST</span>
+              </div>
+              <div class="v-subtitle">"암만 보던 화면에서, 수술비까지 같이 봅니다"</div>
+              <div class="v-summary">
+                <span class="tag tag-new">NEW</span>
+              </div>
+            </div>
+            <span class="v-chevron">▾</span>
+          </div>
+          <div class="v-body">
+
+            <div class="change-section">
+              <span class="cs-label">수술비 한눈에 보기 출시</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>결과 화면에 "수술비" 토글이 생겼어요</strong><br>
+                  기존 암 보장 분석은 그대로 두고, 상단 제목 옆에 <strong>[ 암 보장 | 수술비 ]</strong> 토글이 새로 붙었습니다. 누르면 같은 자리에서 수술비 분석으로 바뀌고, 다시 누르면 원래 암 화면으로 돌아와요. 삼성화재 제안서에서 수술비 담보가 발견될 때만 토글이 나타나고, 없으면 아예 표시되지 않습니다. 토글 옆 숫자는 이 제안서에서 찾은 수술비 담보 개수예요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>수술 30종을 눌러보면 어디서 얼마가 나오는지 보여드려요</strong><br>
+                  대장용종·치핵·백내장·디스크처럼 실제로 많이 하는 수술 30가지를 2열로 정리했습니다. 각 수술마다 <strong>질병수술비 · 1~5종 · 1~8종 · N대질병 수술비</strong> 중 어디서 검토되는지 태그로 보여주고, 합쳐서 얼마까지 검토 가능한지 금액이 바로 나옵니다. 카드를 누르면 담보별로 얼마씩인지, 그리고 그 판단의 근거가 된 약관 수술코드와 분류표 항 번호까지 펼쳐집니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>같은 수술도 술기에 따라 종이 갈리는 걸 그대로 보여드려요</strong><br>
+                  예를 들어 결장절제술은 <strong>림프절절제를 같이 하면 7종, 안 하면 5종</strong>으로 내려갑니다. 전립선은 술기에 따라 1종부터 4종까지 갈리고요. 이렇게 갈리는 경우 태그에 해당 종을 모두 표시하고, 금액이 달라지면 범위로 보여드립니다. 펼치면 술기별로 각각 얼마인지 확인하실 수 있어요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>금액이 같은 술기는 하나로 묶어서 보여드려요</strong><br>
+                  개복이든 복강경이든 결국 같은 금액이 나온다면, 카드를 두 장 보실 이유가 없죠. 이런 경우 <strong>"복강경/개복 담낭절제술"</strong>처럼 하나로 합쳐서 표시합니다. 화면이 훨씬 짧아졌어요.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">암 수술비 계산 보완</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>암 수술비 카드에 일반 수술비도 함께 반영했어요</strong><br>
+                  암 수술을 받으면 암 전용 담보만 나오는 게 아닙니다. <strong>암도 질병이라 질병수술비가 나오고, 1~5종·1~8종 수술비도 함께 지급</strong>돼요. 지금까지는 이게 빠져 있어서 실제보다 적게 보였는데, 이번에 암 수술비 카드에 같이 넣었습니다. 다빈치로봇수술비 카드에도 동일하게 반영됩니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>암 수술비가 범위로 표시될 수 있어요</strong><br>
+                  약관상 <strong>개복해서 완전히 절제하는 근치수술이면 5종, 내시경이나 카테터로 하면 3종</strong>으로 나뉩니다. 어느 쪽이냐에 따라 금액이 달라지기 때문에, 암 수술비 카드가 "1,330만원~2,030만원"처럼 범위로 표시될 수 있습니다. 나머지 8개 카드 금액은 그대로예요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>수술비 담보가 통째로 누락되던 문제를 고쳤어요</strong><br>
+                  담보 이름에 "암"이 들어가야만 읽어들이고 있어서, <strong>질병 1~5종 수술비·N대질병 수술비·통합 양성신생물 수술비</strong> 같은 담보가 하나도 잡히지 않았습니다. 실제 제안서로 확인해보니 40건이 빠지고 있었어요. 이제 정상적으로 인식됩니다.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">면책 기준 반영</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>안 나오는 수술비를 나온다고 계산하던 문제를 고쳤어요</strong><br>
+                  질병수술비와 N대질병 수술비는 약관에서 보상하지 않는 질병이 정해져 있는데, 이걸 반영하지 않고 있었습니다. 대표적으로 <strong>치핵은 70만원 → 30만원, 제왕절개는 60만원 → 30만원</strong>으로 바로잡혔어요. 1~5종 수술비는 별도 특약이라 이 면책을 받지 않으므로 그대로 지급됩니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>왜 안 나오는지도 같이 보여드려요</strong><br>
+                  면책에 걸린 담보를 그냥 빼버리지 않고, <strong>흐리게 남긴 채 근거 조항을 함께 표시</strong>합니다. "제6조②7호 치핵 및 직장 또는 항문관련질환(I84, K60~K62, K64) — 면책" 처럼요. 고객님께 설명하실 때 바로 쓰실 수 있어요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>지급 기준을 약관 조항 그대로 안내드려요</strong><br>
+                  화면 아래에 꼭 아셔야 할 내용을 정리했습니다. <strong>1~5종은 동시에 두 종류 이상 수술해도 가장 높은 것 하나만</strong> 나오지만, 신체부위가 다르고 치료목적이 독립적이면 각각 지급됩니다(눈·귀·팔·다리는 좌우를 다른 부위로 봅니다). <strong>1~8종은 1회 입원·통원당 코드 하나만</strong> 나오고, 두 개 이상이면 높은 종으로 지급돼요. 미용·성형, 피임, 검사·진단 목적 수술은 수술로 보지 않습니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>N대질병 수술비에는 암이 들어있지 않아요</strong><br>
+                  5대주요기관·22대·3대·19대생활·62대생활 분류표를 전부 확인해보니 <strong>악성신생물(암)은 한 건도 포함되어 있지 않았습니다.</strong> 대신 양성종양은 들어있어요. 그래서 암 수술에는 N대질병 수술비가 나오지 않고, 반대로 양성종양 수술이면 나옵니다. 화면에도 그렇게 반영했어요.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">알아두실 점</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>금액은 "검토 가능한 범위"입니다</strong><br>
+                  화면의 금액은 가입금액을 기준으로 <strong>검토 가능한 최대 범위</strong>이며 지급을 확정하는 값이 아닙니다. 실제 보상 여부는 청구 시 제출된 정확한 수술행위와 약관에 따라 결정돼요. 상담 시 참고 자료로만 활용해 주세요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>현재는 삼성화재만 지원해요</strong><br>
+                  수술 분류 기준이 보험사마다 달라서, 우선 삼성화재부터 적용했습니다. DB손해보험·흥국화재 등은 순차적으로 지원할 예정이에요.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0706 -->
+      <div class="v-entry" id="v0706">
+        <div class="v-dot"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
                 <span class="v-ver">v.0706</span>
                 <span class="v-date">2026.07.06</span>
-                <span class="v-latest-badge">LATEST</span>
               </div>
               <div class="v-subtitle">"보장금액 크다고 다 좋은 설계는 아니에요"</div>
               <div class="v-summary">
