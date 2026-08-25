@@ -138,10 +138,15 @@ const CC_PATHS = {
 };
 const CC_FISSURE = 'M50,13 C50,28 45,37 50,47 C55,57 49,67 50,81';
 
+// 치료행위 카드·하단 문구의 공통 기준선.
+// 기관별 size에서 유도하면 뇌(340)와 심장(322)의 카드 높이가 어긋나므로 고정값을 쓴다.
+const CC_ACT_Y = 348;   // 카드 상단
+const CC_SUM_Y = 402;   // "+ 수술비" 한 줄
+const CC_CAP_Y = 428;   // 맨 아래 캡션
+
 function ccOrgan(o, policy) {
     const p = CC_PATHS[o.path];
-    // 치료행위 카드가 놓일 기준선 — 기관 그림 아래
-    const y1 = o.cy + o.size / 2 - 6;
+    const y1 = CC_ACT_Y;
     // base 고리(가장 바깥) = 치료행위 중 가장 높은 하나 + 별도 수술비 담보 총액.
     // 진단비는 그림에 넣지 않고 하단 진단비 막대에서 별도로 보여준다.
     const baseTotal = policy.ringTotal;
@@ -170,10 +175,11 @@ function ccOrgan(o, policy) {
             const txt = r.base ? ccW(v) : '+' + ccW(v);
             s += `<text x="${o.cx}" y="${y + r.af * 0.92 + 2}" text-anchor="middle" class="r-amt"
       style="font-size:${r.af}px" fill="${fill}">${txt}</text>`;
-            // 그림만 보고도 최대치임을 알 수 있도록 금액 아래에 작게 표시
+            // 그림만 보고도 최대치임을 알 수 있도록 금액 아래에 작게 표시.
+            // Dongle 은 글자 높이에 비해 줄 상자가 커서 간격을 넉넉히 줘야 붙어 보이지 않는다.
             if (r.base) {
-                s += `<text x="${o.cx}" y="${y + r.af * 0.92 + 16}" text-anchor="middle" class="dia-note"
-      style="font-size:10px" fill="${fill}" opacity=".72">최대 검토 가능</text>`;
+                s += `<text x="${o.cx}" y="${y + r.af * 0.92 + 24}" text-anchor="middle" class="dia-note"
+      style="font-size:10.4px" fill="${fill}" opacity=".7">최대 검토 가능</text>`;
             }
         }
     });
@@ -190,7 +196,7 @@ function ccOrgan(o, policy) {
         const totalW = acts.length * cw + (acts.length - 1) * gap;
         let cx0 = o.cx - totalW / 2;
         acts.forEach(a => {
-            s += `<g transform="translate(${cx0},${y1 - 10})">
+            s += `<g transform="translate(${cx0},${y1})">
         <rect width="${cw}" height="34" rx="8" fill="#fff" stroke="${o.actLine}" stroke-width="1"></rect>
         <text x="${cw / 2}" y="13" text-anchor="middle" class="dia-note"
           style="font-size:9.6px" fill="var(--muted)">${a.n}</text>
@@ -199,11 +205,9 @@ function ccOrgan(o, policy) {
       </g>`;
             cx0 += cw + gap;
         });
-        if (policy.surgSum > 0) {
-            s += `<text x="${o.cx}" y="${y1 + 38}" text-anchor="middle" class="dia-note"
-        style="font-size:10.4px" fill="var(--ink-2)">+ 수술비 ${ccW(policy.surgSum)} (수술 시 함께 지급)</text>`;
-        }
     }
+    // "+ 수술비" 는 뇌·심장 공통 금액이라 기관마다 찍으면 같은 문구가 두 번 나온다.
+    // 다이어그램 조립부에서 가운데 한 번만 그린다.
     // 라벨은 기관 그림 위쪽(히어로 바 바로 아래)에 배치
     s += `<text x="${o.cx}" y="${o.cy - o.size / 2 - 8}" text-anchor="middle" class="organ-label">${o.label}</text>`;
     return s;
@@ -219,9 +223,9 @@ function ccSmallHeart(h) {
     // 총액을 또 찍으면 화면에 같은 숫자가 네 번 나오므로 "적용"만 표시한다.
     s += `<text x="${h.cx}" y="${h.cy + 2}" text-anchor="middle"
     style="font-size:18px" fill="${h.ink}">치료비 적용</text>`;
-    s += `<text x="${h.cx}" y="${h.cy + h.size / 2 + 4}" text-anchor="middle"
+    s += `<text x="${h.cx}" y="${h.cy + h.size / 2 + 6}" text-anchor="middle"
     style="font-size:17px" fill="var(--ink)">${h.k}</text>`;
-    s += `<text x="${h.cx}" y="${h.cy + h.size / 2 + 18}" text-anchor="middle" class="dia-note"
+    s += `<text x="${h.cx}" y="${h.cy + h.size / 2 + 22}" text-anchor="middle" class="dia-note"
     style="font-size:9.6px">${h.kcd}</text>`;
     return s;
 }
@@ -276,7 +280,7 @@ function renderCirculatoryPanel(results) {
         label: '뇌 계열', cx: 196, cy: 196, size: 340, path: 'brain',
         actLine: '#C7CEF5', actInk: '#312E81',
         rings: [
-            { k: '뇌혈관질환', base: true, s: 1.00, ty: -0.335, nf: 20, af: 36, c: 'var(--brain-3)', ink: '#312E81' },
+            { k: '뇌혈관질환', base: true, s: 1.00, ty: -0.375, nf: 20, af: 36, c: 'var(--brain-3)', ink: '#312E81' },
             { k: '뇌졸중', s: 0.60, ty: -0.155, nf: 16, af: 19, c: 'var(--brain-2)', ink: '#fff' },
             { k: '뇌출혈', s: 0.33, ty: 0.000, nf: 14, af: 17, c: 'var(--brain-1)', ink: '#fff' }
         ]
@@ -285,7 +289,7 @@ function renderCirculatoryPanel(results) {
         label: '심장 계열', cx: 512, cy: 196, size: 322, path: 'heart',
         actLine: '#F5C2D6', actInk: '#9D174D',
         rings: [
-            { k: '허혈성심장질환', base: true, s: 1.00, ty: -0.295, nf: 20, af: 36, c: 'var(--heart-3)', ink: '#9D174D' },
+            { k: '허혈성심장질환', base: true, s: 1.00, ty: -0.345, nf: 20, af: 36, c: 'var(--heart-3)', ink: '#9D174D' },
             { k: '급성심근경색증', s: 0.50, ty: -0.050, nf: 15, af: 18, c: 'var(--heart-2)', ink: '#fff' }
         ]
     };
@@ -296,20 +300,23 @@ function renderCirculatoryPanel(results) {
 
     // ── 진단비 막대 ──
     const dxMax = Math.max(...CIRCULATORY_DATA.DX.map(d => policy.dx[d.k] || 0), 1);
-    const barsHtml = CIRCULATORY_DATA.DX.map(d => {
-        const v = policy.dx[d.k] || 0;
-        return `<div class="bar-row${v ? '' : ' off'}">
+    // 미가입 담보는 아예 그리지 않는다 (가입한 보장만 보여준다)
+    const barsHtml = CIRCULATORY_DATA.DX.filter(d => (policy.dx[d.k] || 0) > 0).map(d => {
+        const v = policy.dx[d.k];
+        return `<div class="bar-row">
       <span class="bn">${d.k}<em>${d.kcd}</em></span>
-      <span class="bar-track">${v ? `<span class="bar-fill" style="width:${(v / dxMax * 100).toFixed(1)}%;background:${d.c}"></span>` : ''}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${(v / dxMax * 100).toFixed(1)}%;background:${d.c}"></span></span>
       <span class="bv">${ccW(v)}</span>
     </div>`;
     }).join('');
 
     // ── 수술비 구성 ──
     const sxMap = { 입원: policy.sx.입원, 종5: policy.sx.종5, 대질병: policy.sx.대질병, 종8: policy.sx.종8, 오대: policy.sx.오대 };
-    const sxHtml = CIRCULATORY_DATA.SX.map(r => `
-    <div class="sx-row${sxMap[r.k] ? '' : ' off'}"><span>${r.n}<em>${r.s}</em></span><b>${ccW(sxMap[r.k])}</b></div>`).join('')
-        + `<div class="sx-sum"><span>수술비 합계</span><span class="num">${ccW(policy.surgSum)}</span></div>`
+    const sxHtml = CIRCULATORY_DATA.SX.filter(r => sxMap[r.k] > 0).map(r => `
+    <div class="sx-row"><span>${r.n}<em>${r.s}</em></span><b>${ccW(sxMap[r.k])}</b></div>`).join('')
+        + (policy.surgSum > 0
+            ? `<div class="sx-sum"><span>수술비 합계</span><span class="num">${ccW(policy.surgSum)}</span></div>`
+            : '')
         + `<div class="sx-sum" style="border-top:0;padding-top:2px;color:var(--outer)">
        <span>+ 치료행위 합계 <em style="font-style:normal;color:var(--cc-muted)">(수술·혈전용해·혈전제거)</em></span><span class="num">${ccW(policy.treatAll)}</span></div>`
         + `<div class="sx-sum" style="font-size:13px"><span>동심원 안 금액 (최대)</span><span class="num">${ccW(policy.ringTotal)}</span></div>`
@@ -357,9 +364,9 @@ function renderCirculatoryPanel(results) {
           <span class="hero-tag">아래 모든 질환에 적용</span>
           <span class="hero-sub">${policy.통합
               ? `${tongName} · 연간 ${ccW(policy.통합.amount)} 한도<br>수술 · 혈전용해 · 혈전제거 · 중환자실 · 검사 · 약물 · 재활`
-              : `중환자실 입원지원금 ${ccW(policy.중환자실)}<br>수술 · 혈전용해 · 혈전제거 시 지급`}</span>
+              : `${policy.중환자실 > 0 ? `중환자실 입원지원금 ${ccW(policy.중환자실)}<br>` : ''}수술 · 혈전용해 · 혈전제거 시 지급`}</span>
         </div>
-        <svg class="diagram" viewBox="0 0 900 400" role="img" aria-label="뇌·심장 치료비·수술비 동심원">
+        <svg class="diagram" viewBox="0 0 900 448" role="img" aria-label="뇌·심장 치료비·수술비 동심원">
           <defs>
             <filter id="cc-soft" x="-25%" y="-25%" width="150%" height="150%">
               <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0E1629" flood-opacity="0.10"></feDropShadow>
@@ -368,7 +375,10 @@ function renderCirculatoryPanel(results) {
           ${ccOrgan(BRAIN, policy)}
           ${ccOrgan(HEART, policy)}
           ${SMALL.map(ccSmallHeart).join('')}
-          <text x="450" y="396" text-anchor="middle" class="dia-note">
+          ${policy.surgSum > 0 ? `
+          <text x="354" y="${CC_SUM_Y}" text-anchor="middle" class="dia-note"
+            style="font-size:10.6px" fill="var(--cc-ink-2)">+ 수술비 ${ccW(policy.surgSum)} (수술 시 함께 지급)</text>` : ''}
+          <text x="450" y="${CC_CAP_Y}" text-anchor="middle" class="dia-note">
             오른쪽 두 하트는 허혈성심장질환의 안쪽 고리가 아니라, 특정순환계질환 안의 별개 집합입니다
           </text>
         </svg>
@@ -391,8 +401,10 @@ function renderCirculatoryPanel(results) {
         <div class="bars">${barsHtml}</div>
       </div>
       <div class="cc-card" style="margin:0">
-        <h2>수술비 구성</h2>
-        <p class="sub">동심원 안 금액에 합산된 수술비 계열입니다.</p>
+        <h2>${policy.surgSum > 0 ? '수술비 구성' : '치료비 구성'}</h2>
+        <p class="sub">${policy.surgSum > 0
+            ? '동심원 안 금액에 합산된 수술비 계열입니다.'
+            : '동심원 안 금액의 산출 내역입니다. 별도 수술비 담보는 가입되어 있지 않습니다.'}</p>
         <div class="sx">${sxHtml}</div>
       </div>
     </div>

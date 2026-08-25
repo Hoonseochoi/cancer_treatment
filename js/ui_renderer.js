@@ -138,8 +138,11 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         }
 
         // ── 점수 박스 HTML (있을 때만 렌더링) ──
+        // 암 치료비 점수 노출 스위치 — 산출·로깅(coverage_scores)은 그대로 두고 화면 표시만 끈다.
+        // 벤치마크 데이터를 더 모은 뒤 다시 켤 예정. true 로 바꾸면 즉시 복구된다.
+        const SHOW_SCORE = false;
         let scoreBoxHtml = '';
-        if (scoreResult) {
+        if (SHOW_SCORE && scoreResult) {
             const s = scoreResult.score;
             const scoreColor = s >= 80 ? '#059669' : s >= 50 ? '#EA580C' : '#6B7280';
             const commentText = s >= scoreResult.average ? '든든한 보장이네요 👍' : '이 부분은 보완을 고려해보세요 💬';
@@ -188,7 +191,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                     </div>
                     ${scoreBoxHtml}
                 </div>
-                ${scoreResult ? `
+                ${SHOW_SCORE && scoreResult ? `
                 <p class="text-[9px] text-gray-300 mt-2 font-medium tracking-tight leading-tight break-keep relative z-10">
                     * 국내 암 치료 통계 경향성을 반영한 추정 점수이며, 실제 보장 결과와 다를 수 있습니다.
                 </p>` : ''}
