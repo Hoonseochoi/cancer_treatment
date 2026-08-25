@@ -92,6 +92,68 @@ function calcSurgeryVariant(policy, s, v) {
     return { rows, total: rows.reduce((a, b) => a + (b.on ? b.v : 0), 0) };
 }
 
+// 지급액이 같은 술기끼리 묶는다. 술기가 갈려도 금액이 같으면 카드를 여러 장 보여줄
+// 이유가 없다. 라벨은 공통 접두·접미를 살리고 다른 부분만 "/"로 합친다.
+//   위전절제술(복강경) + 위전절제술(개복) → 위전절제술(복강경/개복)
+//   복강경 담낭절제술 + 개복 담낭절제술   → 복강경/개복 담낭절제술
+// 공통부가 없어 합친 결과가 길어지면 "○○ 외 N가지"로 떨어뜨린다.
+function isParenBalanced(s) {
+    let d = 0;
+    for (const c of s) {
+        if (c === '(') d++;
+        else if (c === ')') { d--; if (d < 0) return false; }
+    }
+    return d === 0;
+}
+
+function mergeVariantLabels(labels) {
+    if (labels.length === 1) return labels[0];
+    const uniq = [...new Set(labels)];
+    if (uniq.length === 1) return uniq[0];
+
+    const min = Math.min(...uniq.map(s => s.length));
+    let p = 0;
+    while (p < min && uniq.every(s => s[p] === uniq[0][p])) p++;
+    let q = 0;
+    while (q < min - p && uniq.every(s => s[s.length - 1 - q] === uniq[0][uniq[0].length - 1 - q])) q++;
+
+    // "동반"과 "미동반"처럼 한쪽이 다른 쪽의 부분집합이면 접두·접미가 같은 글자를 두고
+    // 겹쳐 잡아 "동/미동반" 같이 낱말 중간에서 잘린다. 공통부가 한글 낱말 안에서
+    // 시작·끝나지 않도록 경계까지 물러선다. 조금 길어져도 잘못 읽히는 것보다 낫다.
+    const midsAt = (pp, qq) => uniq.map(s => s.slice(pp, s.length - qq));
+    const han = c => /[가-힣]/.test(c || '');
+    while (q > 0 && (midsAt(p, q).some(m => !m) ||
+           uniq.some(s => han(s[s.length - q]) && han(s[s.length - q - 1])))) q--;
+    while (p > 0 && (midsAt(p, q).some(m => !m) ||
+           uniq.some(s => han(s[p]) && han(s[p - 1])))) p--;
+
+    const mids = midsAt(p, q).filter(Boolean);
+    if (mids.length === uniq.length && mids.length <= 3) {
+        const merged = uniq[0].slice(0, p) + mids.join('/') + (q ? uniq[0].slice(uniq[0].length - q) : '');
+        // 중간 토막에 여는 괄호만 들어가면 "…절제술(복강경/…절제술(개복)" 처럼 괄호가 깨진다.
+        if (merged.length <= 42 && isParenBalanced(merged)) return merged;
+    }
+    return `${uniq[0]} 외 ${uniq.length - 1}가지`;
+}
+
+// [{v, r}] → 금액이 같은 것끼리 묶은 [{total, label, rows, variants}]
+function groupVariantsByAmount(cs) {
+    const byTotal = new Map();
+    cs.forEach(c => {
+        const k = String(c.r.total);
+        if (!byTotal.has(k)) byTotal.set(k, []);
+        byTotal.get(k).push(c);
+    });
+    return [...byTotal.values()]
+        .map(items => ({
+            total: items[0].r.total,
+            rows: items[0].r.rows,               // 금액이 같으므로 내역도 동일
+            label: mergeVariantLabels(items.map(x => x.v.label)),
+            variants: items.map(x => x.v)
+        }))
+        .sort((a, b) => a.total - b.total);
+}
+
 function renderSurgeryPanel(results) {
     const host = document.getElementById('surgery-panel');
     if (!host || typeof SURGERY_DATA === 'undefined') return false;
@@ -109,12 +171,14 @@ function renderSurgeryPanel(results) {
         const g5 = [...new Set(s.variants.map(v => v.g5))].sort((a, b) => a - b);
         const g8 = [...new Set(s.variants.map(v => v.g8))].sort((a, b) => a - b);
 
-        const detail = cs.map(({ v, r }) => `
+        const groups = groupVariantsByAmount(cs);
+        const detail = groups.map(g => `
             <div class="sg-v">
-              <div class="sg-vh"><span>${v.label}</span><b>${fmt(r.total)}</b></div>
-              ${r.rows.map(x => `<div class="sg-r${x.on ? '' : ' off'}">
+              <div class="sg-vh"><span>${g.label}</span><b>${fmt(g.total)}</b></div>
+              ${g.rows.map(x => `<div class="sg-r${x.on ? '' : ' off'}">
                   <span>${x.k}<em>${x.s}</em></span><b>${x.on ? fmt(x.v) : '—'}</b></div>`).join('')}
-              <div class="sg-src">1~8종 ${v.c8} ${v.g8}종 「${v.n8}」 · 1~5종 ${v.n5no}항 ${v.g5}종</div>
+              <div class="sg-src">${g.variants.map(v =>
+                  `1~8종 ${v.c8} ${v.g8}종 「${v.n8}」 · 1~5종 ${v.n5no}항 ${v.g5}종`).join('<br>')}</div>
             </div>`).join('');
 
         return `<div class="sg-row" data-open="false">
@@ -131,7 +195,7 @@ function renderSurgeryPanel(results) {
                 </span>
               </span>
               <span class="sg-money"><b>${lo === hi ? fmt(lo) : fmt(lo) + '~' + fmt(hi)}</b>
-                <em>검토 가능${s.variants.length > 1 ? ` · 술기 ${s.variants.length}가지` : ''}</em></span>
+                <em>검토 가능${groups.length > 1 ? ` · 술기에 따라 ${groups.length}구간` : ''}</em></span>
             </button>
             <div class="sg-d">${detail}
               ${s.note ? `<div class="sg-note"><b>확인 포인트</b>${s.note}</div>` : ''}
