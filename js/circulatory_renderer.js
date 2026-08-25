@@ -123,9 +123,11 @@ function buildCirculatoryPolicy(results) {
     p.capped = false;
     if (p.cap > 0 && p.treatAll > p.cap) { p.treatAll = p.cap; p.capped = true; }
 
-    p.treatSum = p.treatBest;                    // 대표 시나리오
-    p.ringTotal = p.treatBest + p.surgSum;       // 동심원 대표 금액
-    p.maxTotal = p.treatAll + p.surgSum;         // 세 행위 모두 받은 최대치
+    // 이 화면의 목적이 "이 제안서로 최대 얼마까지 검토 가능한가"이므로 동심원에는 최대치를 싣는다.
+    // 다만 수술과 혈전제거는 약관상 함께 지급되지 않으므로, 근거·주의 문구를 반드시 함께 보여준다.
+    p.treatSum = p.treatAll;                     // 치료행위 최대 합
+    p.maxTotal = p.treatAll + p.surgSum;         // 세 행위 + 수술비
+    p.ringTotal = p.maxTotal;                    // 동심원 안 금액 = 최대 보장금액
     return p;
 }
 
@@ -163,11 +165,16 @@ function ccOrgan(o, policy) {
         const fill = (r.base || v > 0) ? r.ink : '#7C8397';
         s += `<text x="${o.cx}" y="${y}" text-anchor="middle" class="r-name"
       style="font-size:${r.nf}px" fill="${fill}" opacity=".94">${r.k}</text>`;
-        // base는 총액, 내부 고리는 전용 담보가 있을 때만 "+금액". 없으면 금액 없이 질환명만.
+        // base는 최대 금액, 내부 고리는 전용 담보가 있을 때만 "+금액". 없으면 금액 없이 질환명만.
         if (r.base || v > 0) {
             const txt = r.base ? ccW(v) : '+' + ccW(v);
             s += `<text x="${o.cx}" y="${y + r.af * 0.92 + 2}" text-anchor="middle" class="r-amt"
       style="font-size:${r.af}px" fill="${fill}">${txt}</text>`;
+            // 그림만 보고도 최대치임을 알 수 있도록 금액 아래에 작게 표시
+            if (r.base) {
+                s += `<text x="${o.cx}" y="${y + r.af * 0.92 + 16}" text-anchor="middle" class="dia-note"
+      style="font-size:10px" fill="${fill}" opacity=".72">최대 검토 가능</text>`;
+            }
         }
     });
     // ── 기관 하단 치료행위 카드 ──
@@ -234,7 +241,7 @@ function inclHtml(policy) {
 // 세 치료행위를 모두 받은 극단적 시나리오의 최대 금액.
 // 대표 금액(ringTotal)과 분리해서, 무엇을 더한 값인지 근거를 같이 적는다.
 function maxHtml(policy) {
-    if (policy.maxTotal <= policy.ringTotal) return '';
+    if (policy.maxTotal <= 0) return '';
     const acts = [
         ['수술', policy.surgTreat.수술],
         ['혈전용해', policy.surgTreat.혈전용해],
@@ -304,8 +311,8 @@ function renderCirculatoryPanel(results) {
     <div class="sx-row${sxMap[r.k] ? '' : ' off'}"><span>${r.n}<em>${r.s}</em></span><b>${ccW(sxMap[r.k])}</b></div>`).join('')
         + `<div class="sx-sum"><span>수술비 합계</span><span class="num">${ccW(policy.surgSum)}</span></div>`
         + `<div class="sx-sum" style="border-top:0;padding-top:2px;color:var(--outer)">
-       <span>+ 치료행위 중 가장 높은 하나</span><span class="num">${ccW(policy.treatBest)}</span></div>`
-        + `<div class="sx-sum" style="font-size:13px"><span>동심원 안 금액</span><span class="num">${ccW(policy.ringTotal)}</span></div>`
+       <span>+ 치료행위 합계 <em style="font-style:normal;color:var(--cc-muted)">(수술·혈전용해·혈전제거)</em></span><span class="num">${ccW(policy.treatAll)}</span></div>`
+        + `<div class="sx-sum" style="font-size:13px"><span>동심원 안 금액 (최대)</span><span class="num">${ccW(policy.ringTotal)}</span></div>`
         + inclHtml(policy)
         + maxHtml(policy);
 
@@ -339,7 +346,7 @@ function renderCirculatoryPanel(results) {
     host.innerHTML = `
     <div class="cc-card">
       <h2>치료비 · 수술비 보장 구조</h2>
-      <p class="sub">가장 바깥 고리는 그 질환으로 <strong>치료·수술받았을 때 검토 가능한 치료비+수술비 총액</strong>입니다. 안쪽 고리는 전용 담보가 있을 때 추가됩니다.</p>
+      <p class="sub">가장 바깥 고리는 그 질환으로 <strong>치료·수술받았을 때 검토 가능한 최대 금액</strong>입니다(치료비+수술비). 안쪽 고리는 전용 담보가 있을 때 추가됩니다.</p>
 
       <div class="circle-wrap">
         <div class="hero">
