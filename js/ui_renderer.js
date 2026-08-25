@@ -792,6 +792,24 @@ window.exportAsImage = async function () {
                 summary.classList.remove('hidden');
                 const exportBtn = summary.querySelector('#export-pdf-btn');
                 if (exportBtn) exportBtn.style.display = 'none';
+
+                // ── 수술비 뷰 캡처 ──
+                // 수술비 토글이 켜져 있으면 그 화면 그대로 담는다. 토글 버튼 자체는 조작용
+                // UI라 이미지에서는 뺀다. 상세는 펼친 것만 남기면 카드 높이가 들쭉날쭉해
+                // 캡처가 지저분해지므로 전부 접어서 목록 형태로 통일한다.
+                const sgToggle = clonedDoc.getElementById('surgery-toggle');
+                if (sgToggle) sgToggle.style.display = 'none';
+                const sgPanel = clonedDoc.getElementById('surgery-panel');
+                const sgOn = sgPanel && !sgPanel.classList.contains('hidden');
+                if (sgOn) {
+                    sgPanel.style.display = 'block';
+                    sgPanel.querySelectorAll('.sg-row').forEach(r => {
+                        r.dataset.open = 'false';
+                        const d = r.querySelector('.sg-d');
+                        if (d) d.style.display = 'none';
+                    });
+                    sgPanel.querySelectorAll('.caret').forEach(c => { c.style.display = 'none'; });
+                }
             }
 
             const style = clonedDoc.createElement('style');
@@ -851,6 +869,17 @@ window.exportAsImage = async function () {
             .insight-card-gradient { background: linear-gradient(135deg, #fff 0%, #fffafa 100%) !important; }
             .manager-welcome-float { background: rgba(255,255,255,0.85) !important; }
             #score-box { background: rgba(255,255,255,0.6) !important; border-color: rgba(0,0,0,0.05) !important; }
+            /* 수술비 패널 토큰도 라이트값으로 되돌린다 (style.css의 다크 오버라이드 무력화) */
+            :root {
+              --sg-surface:#FFFFFF; --sg-surface-2:#F7F9FC; --sg-line:#E3E7F0;
+              --sg-ink:#0E1629; --sg-ink-2:#39415C; --sg-muted:#6B7290; --sg-off:#A8AEC0;
+              --sg-chip:#EEF1F7; --sg-chip-ink:#39415C; --sg-accent:#0B6B7A; --sg-accent-soft:#E2F1F4;
+              --sg-etc:#F3F0E8; --sg-etc-ink:#8A6A12;
+              --sg-note-bg:#FDF6EC; --sg-note-line:#F0DFC4; --sg-note-ink:#7A5A12;
+              --sg-g1:#DDE4F2; --sg-g1i:#39415C; --sg-g2:#C3D0EA; --sg-g2i:#39415C;
+              --sg-g3:#9DB2DE; --sg-g4:#7391D0; --sg-g5:#4A6FC2; --sg-gi:#FFFFFF;
+              --sg-shadow:rgba(14,22,41,.06); --sg-shadow-2:rgba(14,22,41,.08);
+            }
             `;
             clonedDoc.head.appendChild(forceLightStyle);
 

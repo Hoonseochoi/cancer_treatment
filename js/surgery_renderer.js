@@ -73,14 +73,26 @@ function calcSurgeryVariant(policy, s, v) {
 
     if (s.cancer) {
         rows.push({ k: '질병군 수술비', s: '분류표에 악성신생물 미포함 — 해당 없음', v: 0, on: false });
-    } else if (s.g111) {
-        const key = matchGroupKey(policy, s.g111, v.gwan);
-        if (key && blocked('group')) {
-            rows.push({ k: `질병군 수술비(${key})`, s: exWhy, v: 0, on: false });
-        } else if (key) {
-            rows.push({ k: `질병군 수술비(${key})`, s: v.gwan ? '관혈' : '비관혈',
-                        v: policy.군[key], on: true });
-        }
+    } else {
+        // N대질병 수술비는 그룹 간 중복 지급되지 않는다. 한 질병이 여러 그룹에 해당해도
+        // 가입금액이 가장 높은 그룹 하나만 지급하고, 나머지는 미지급으로 남겨 보여준다.
+        const gs = Array.isArray(s.g111) ? s.g111 : (s.g111 ? [s.g111] : []);
+        const cands = gs
+            .map(g => matchGroupKey(policy, g, v.gwan))
+            .filter(Boolean)
+            .map(key => ({ key, amt: policy.군[key] || 0 }))
+            .sort((a, b) => b.amt - a.amt);
+        cands.forEach((c, i) => {
+            if (blocked('group')) {
+                rows.push({ k: `질병군 수술비(${c.key})`, s: exWhy, v: 0, on: false });
+            } else if (i === 0) {
+                rows.push({ k: `질병군 수술비(${c.key})`, s: v.gwan ? '관혈' : '비관혈',
+                            v: c.amt, on: true });
+            } else {
+                rows.push({ k: `질병군 수술비(${c.key})`,
+                            s: '그룹 간 중복 미지급 — 최고 금액 1개만 지급', v: 0, on: false });
+            }
+        });
     }
     if (s.benign && policy.양성[s.benign] != null) {
         rows.push({ k: `통합 양성신생물 수술비(${s.benign})`, s: '가입 후 1년 이내 감액',
@@ -225,6 +237,7 @@ function renderSurgeryPanel(results) {
           <li><strong>1~8종 수술비는 국민건강보험 요양급여(또는 의료급여) 절차를 거쳐 급여항목이 발생</strong>해야 하며, 계약 시점에 급여였다가 <strong>비급여로 변경되면 보장에서 제외</strong>됩니다(제3조②④).</li>
           <li><strong>다음은 「수술」로 보지 않아 1~5종 수술비가 지급되지 않습니다</strong>(제4조③): 흡인 / 천자 / 신경 BLOCK / <strong>미용성형 목적</strong> / <strong>피임 목적</strong> / <strong>검사 및 진단을 위한 수술(생검, 복강경검사 등)</strong> / 기타 수술의 정의에 해당하지 않는 시술.</li>
           <li>동일 질병으로 두 종류 이상 또는 같은 종류의 수술을 2회 이상 받은 경우 <strong>1회에 한하여</strong> 지급되며, 일부 담보는 <strong>수술개시일부터 60일 이내 2회 이상을 1회로 간주</strong>합니다.</li>
+          <li><strong>N대질병 수술비는 그룹 간 중복 지급되지 않습니다.</strong> 한 질병이 5대주요기관·22대·62대생활 등 여러 그룹에 해당하더라도 <strong>가입금액이 가장 높은 그룹 하나만</strong> 지급됩니다.</li>
           <li><strong>N대질병 수술비 분류표에는 악성신생물(암)이 없습니다.</strong> 양성신생물은 포함됩니다. 1~5종 수술비는 다수 항목이 <strong>「근본수술」·「근치수술」</strong>을 요건으로 합니다.</li>
           <li>양성신생물 수술비 등 일부 담보는 <strong>가입 후 1년 이내 감액 지급</strong>됩니다. 고의·자해, 수익자·계약자의 고의, 전쟁·외국의 무력행사·혁명·내란·사변·폭동으로 인한 경우도 면책입니다(제6조①).</li>
         </ol>
