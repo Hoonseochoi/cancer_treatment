@@ -394,6 +394,72 @@ const CATEGORY_HIERARCHY = {
     "표적항암약물치료비": ["면역항암약물치료비"]  // 면역항암은 표적항암을 포함 (면역7천=면역3+표적3+비급여약물1)
 };
 
+// ── applySurgeryTiersToCancerSurgery ──
+// 암 수술 1건이 발생하면 암 전용 담보 외에 일반 수술비 계열도 함께 지급된다.
+//   · 질병 입원/통원 수술비 — 암도 질병이므로 지급 (입원·통원은 서로 배타 → 큰 쪽만)
+//   · 질병 1~5종 수술비   — 약관 [별표-상해및질병관련17] Ⅱ섹션 기준
+//                            관혈적 악성신생물 근치수술 = 5종, 내시경·경피적 = 3종
+//                            → 술식에 따라 갈리므로 3종~5종을 min~max 범위로 반영
+//   · 질병 1~8종 수술비   — 담보가 있는 상품에 한해 반영 (암 주요 절제술은 7종)
+// 반대로 111대/115대/119대질병 수술비는 분류표에 악성신생물(C코드)이 없어 암에는 지급되지 않으므로
+// 여기서 가산하지 않는다.
+function applySurgeryTiersToCancerSurgery(summaryMap, results) {
+    if (!Array.isArray(results)) return;
+    const surg = results.filter(r => r && r.kind === 'surgery');
+    if (!surg.length) return;
+
+    const target = summaryMap.get('암수술비');
+    if (!target) return; // 암 수술 담보 자체가 없으면 가산 대상 없음
+
+    const pick = re => surg.find(r => re.test((r.name || '').replace(/\s+/g, '')));
+    const amt = r => (r ? parseKoAmount(r.amount) : 0);
+    const push = (name, srcName) => {
+        if (target.items.some(i => i.name === name)) return;
+        target.items.push({ name, amount: srcName, source: '수술비 계열', surgeryTier: true });
+    };
+
+    let addMin = 0, addMax = 0;
+
+    // 1) 질병 수술비 (입원/통원 배타 → 큰 쪽 하나만)
+    const ipwon = pick(/질병.*입원수술비/);
+    const tongwon = pick(/질병.*통원수술비/);
+    const base = Math.max(amt(ipwon), amt(tongwon));
+    if (base > 0) {
+        const src = amt(ipwon) >= amt(tongwon) ? ipwon : tongwon;
+        addMin += base; addMax += base;
+        push(src.name, src.amount);
+    }
+
+    // 2) 질병 1~5종 수술비 — 3종(내시경·경피적) ~ 5종(관혈적 근치수술)
+    const j3 = pick(/질병1[~-]5종수술비\(3종\)/);
+    const j5 = pick(/질병1[~-]5종수술비\(5종\)/);
+    if (j5 || j3) {
+        const lo = amt(j3) || amt(j5);
+        const hi = amt(j5) || amt(j3);
+        addMin += Math.min(lo, hi); addMax += Math.max(lo, hi);
+        if (j5) push(j5.name, j5.amount);
+        if (j3 && j3 !== j5) push(j3.name, j3.amount);
+    }
+
+    // 3) 질병 1~8종 수술비 — 해당 담보가 있는 상품만 (암 주요 절제술 = 7종)
+    const p7 = pick(/질병1[~-]8종수술비\(7종\)/);
+    const p5 = pick(/질병1[~-]8종수술비\(5종\)/);
+    if (p7 || p5) {
+        const lo = amt(p5) || amt(p7);
+        const hi = amt(p7) || amt(p5);
+        addMin += Math.min(lo, hi); addMax += Math.max(lo, hi);
+        if (p7) push(p7.name, p7.amount);
+        if (p5 && p5 !== p7) push(p5.name, p5.amount);
+    }
+
+    if (addMin || addMax) {
+        target.isolatedMin += addMin;
+        target.isolatedMax += addMax;
+        target.totalMin += addMin;
+        target.totalMax += addMax;
+    }
+}
+
 // ── calculateHierarchicalSummarySamsung: 삼성화재 버전 계층적 요약 계산 ──
 // js/analyzer.js의 calculateHierarchicalSummary와 동일한 로직
 // samsungCoverageDetailsMap / findSamsungDetails 사용, 26종 분기 제거
@@ -569,6 +635,10 @@ function calculateHierarchicalSummarySamsung(results) {
             });
         }
     });
+
+    // ── 암수술비 카드에 일반 수술비 계열 가산 ──
+    // 계층 전파 직전에 실행 → 다빈치로봇수술비 등 하위 카드에도 자동으로 따라간다.
+    applySurgeryTiersToCancerSurgery(summaryMap, results);
 
     // ── 상위→하위 카테고리 금액 누적 (포함관계 표현) ──
     // isolatedMin 기반 snapshot 사용: passthrough-dual 확장과의 이중계산 방지

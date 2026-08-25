@@ -675,6 +675,12 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         }
         listEl.appendChild(itemCard);
     });
+
+    // 수술비 토글 (삼성 + 수술비 담보 감지 시에만 노출)
+    if (typeof setupSurgeryToggle === 'function') {
+        try { setupSurgeryToggle(results, insurer); }
+        catch (e) { console.warn('[surgery] 토글 초기화 실패', e); }
+    }
 }
 
 // [NEW] Toggle Results List

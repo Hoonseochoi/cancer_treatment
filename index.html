@@ -650,11 +650,14 @@
               <div class="relative">
                 <!-- 메인 흰 카드 (풀 사이즈 유지) -->
                 <div class="premium-card rounded-3xl p-4 sm:p-8 border-none bg-white shadow-xl">
-                    <div class="flex items-center gap-3 mb-8">
+                    <div class="flex items-center gap-3 mb-8 flex-wrap">
                         <div class="w-1.5 h-6 bg-red-600 rounded-full"></div>
                         <h2 id="result-header" class="text-lg sm:text-2xl font-black text-gray-800">보장 내역 한눈에 보기</h2>
+                        <!-- 암 ↔ 수술비 토글: 삼성 제안서에서 수술비 담보가 감지될 때만 노출 -->
+                        <div id="surgery-toggle" class="hidden ml-auto"></div>
                     </div>
                     <div id="summary-grid"></div>
+                    <div id="surgery-panel" class="hidden"></div>
                     <p class="text-[10px] text-gray-400 font-medium text-right mt-8">
                         * 가입제안서를 기반으로 암 치료비를 한눈에 보기 쉽게 재구성한 값입니다. 실제 보상금액과 조건은 가입제안서 및 약관을 확인해주세요. 해당 자료는 참고용으로만 활용하시기 바랍니다.
                     </p>
@@ -800,6 +803,8 @@
     <script src="js/pdf_extractor.js?v=20260709d"></script>
     <script src="js/analyzer.js?v=20260630c"></script>
     <script src="js/score.js?v=20260706d"></script>
+    <script src="js/surgery_data.js?v=20260825a"></script>
+    <script src="js/surgery_renderer.js?v=20260825a"></script>
     <script src="js/ui_renderer.js?v=20260708b"></script>
     <script src="js/main.js?v=20260709a"></script>
 
