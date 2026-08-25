@@ -158,9 +158,9 @@ async function logRawCoverageItems(fileName, insurer, productName, results, matc
     try {
         const rows = results.map(item => {
             const name = item.name || '';
-            // kind==='surgery'가 최우선: 수술비 계열은 이름에 "수술비"가 들어있어도
-            // findXDetails(암 9카드 로직)와는 완전히 다른 체계라 이 검사 자체가 무의미하다.
-            const isSurgeryTier = item.kind === 'surgery';
+            // kind 태그(surgery/circulatory)가 최우선: 이 계열들은 이름에 "수술비"/"치료비"가
+            // 들어있어도 findXDetails(암 9카드 로직)와는 완전히 다른 체계라 이 검사 자체가 무의미하다.
+            const isTagged = item.kind === 'surgery' || item.kind === 'circulatory';
             const looksLikeTreatment = TREATMENT_KEYWORDS.some(kw => name.includes(kw));
             return {
                 file_name: fileName || null,
@@ -171,7 +171,7 @@ async function logRawCoverageItems(fileName, insurer, productName, results, matc
                 premium: item.premium || null,
                 period: item.period || null,
                 kind: item.kind || null,
-                matched: (isSurgeryTier || !looksLikeTreatment) ? null
+                matched: (isTagged || !looksLikeTreatment) ? null
                     : (typeof matchFn === 'function' ? !!matchFn(item.name) : null)
             };
         });

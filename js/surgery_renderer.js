@@ -271,34 +271,43 @@ function renderSurgeryPanel(results) {
     return true;
 }
 
-// 암 ↔ 수술비 토글. 수술비 담보가 감지된 경우에만 토글 자체를 노출한다.
+// 암 ↔ 수술비 ↔ 뇌·심장 3탭 토글. 수술비 또는 뇌·심장 담보가 감지된 경우에만 노출한다.
 function setupSurgeryToggle(results, insurer) {
     const wrap = document.getElementById('surgery-toggle');
     const panel = document.getElementById('surgery-panel');
+    const ccPanel = document.getElementById('circulatory-panel');
     const grid = document.getElementById('summary-grid');
-    if (!wrap || !panel || !grid) return;
+    if (!wrap || !panel || !grid || !ccPanel) return;
 
     const count = (results || []).filter(r => r && r.kind === 'surgery').length;
-    if (insurer !== 'samsung' || count === 0 || !renderSurgeryPanel(results)) {
+    const ccCount = (results || []).filter(r => r && r.kind === 'circulatory').length;
+    const hasSurgery = insurer === 'samsung' && count > 0 && renderSurgeryPanel(results);
+    const hasCirc = insurer === 'samsung' && ccCount > 0 && renderCirculatoryPanel(results);
+    if (!hasSurgery && !hasCirc) {
         wrap.classList.add('hidden');
         panel.classList.add('hidden');
+        ccPanel.classList.add('hidden');
         return;
     }
+
     wrap.classList.remove('hidden');
     wrap.innerHTML = `
       <button type="button" data-v="cancer" aria-selected="true">암 보장</button>
-      <button type="button" data-v="surgery" aria-selected="false">수술비 <span class="sg-badge">${count}</span></button>`;
+      ${hasSurgery ? `<button type="button" data-v="surgery" aria-selected="false">수술비 <span class="sg-badge">${count}</span></button>` : ''}
+      ${hasCirc ? `<button type="button" data-v="circulatory" aria-selected="false">뇌·심장 <span class="sg-badge">${ccCount}</span></button>` : ''}`;
     wrap.onclick = e => {
         const b = e.target.closest('button[data-v]');
         if (!b) return;
-        const surgery = b.dataset.v === 'surgery';
+        const v = b.dataset.v;
         wrap.querySelectorAll('button[data-v]').forEach(x =>
-            x.setAttribute('aria-selected', String((x.dataset.v === 'surgery') === surgery)));
-        panel.classList.toggle('hidden', !surgery);
-        grid.classList.toggle('hidden', surgery);
+            x.setAttribute('aria-selected', String(x.dataset.v === v)));
+        panel.classList.toggle('hidden', v !== 'surgery');
+        ccPanel.classList.toggle('hidden', v !== 'circulatory');
+        grid.classList.toggle('hidden', v !== 'cancer');
         const other = document.getElementById('other-panel-container');
-        if (other) other.classList.toggle('hidden', surgery);
+        if (other) other.classList.toggle('hidden', v !== 'cancer');
         const header = document.getElementById('result-header');
-        if (header) header.textContent = surgery ? '수술비 한눈에 보기' : '보장 내역 한눈에 보기';
+        if (header) header.textContent = v === 'surgery' ? '수술비 한눈에 보기'
+            : v === 'circulatory' ? '뇌·심장 한눈에 보기' : '보장 내역 한눈에 보기';
     };
 }

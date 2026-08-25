@@ -793,8 +793,8 @@ window.exportAsImage = async function () {
                 const exportBtn = summary.querySelector('#export-pdf-btn');
                 if (exportBtn) exportBtn.style.display = 'none';
 
-                // ── 수술비 뷰 캡처 ──
-                // 수술비 토글이 켜져 있으면 그 화면 그대로 담는다. 토글 버튼 자체는 조작용
+                // ── 수술비·뇌·심장 뷰 캡처 ──
+                // 토글이 켜져 있으면 그 화면 그대로 담는다. 토글 버튼 자체는 조작용
                 // UI라 이미지에서는 뺀다. 상세는 펼친 것만 남기면 카드 높이가 들쭉날쭉해
                 // 캡처가 지저분해지므로 전부 접어서 목록 형태로 통일한다.
                 const sgToggle = clonedDoc.getElementById('surgery-toggle');
@@ -820,6 +820,16 @@ window.exportAsImage = async function () {
                         if (caret) caret.style.display = 'none';
                     }
                 }
+                // 뇌·심장 뷰: 분류표(? 버튼)는 접고, 물음표 버튼 자체는 조작용이라 뺀다.
+                const ccPanel = clonedDoc.getElementById('circulatory-panel');
+                const ccOn = ccPanel && !ccPanel.classList.contains('hidden');
+                if (ccOn) {
+                    ccPanel.style.display = 'block';
+                    const ccCodes = ccPanel.querySelector('[data-cc="codes"]');
+                    if (ccCodes) { ccCodes.dataset.open = 'false'; ccCodes.style.display = 'none'; }
+                    const qm = ccPanel.querySelector('.qm');
+                    if (qm) qm.style.display = 'none';
+                }
             }
 
             const style = clonedDoc.createElement('style');
@@ -834,6 +844,10 @@ window.exportAsImage = async function () {
             span, div, p, b, h1, h2, h3 {
                 line-height: 1.6 !important;
                 overflow: visible !important;
+            }
+            /* 뇌·심장 동심원 안 글자는 Dongle 폰트 기준으로 크기를 잡았다 — 예외 유지 */
+            #circulatory-panel svg text, #circulatory-panel .hero-amt {
+                font-family: 'Dongle', 'Noto Sans KR', sans-serif !important;
             }
             `;
             clonedDoc.head.appendChild(style);

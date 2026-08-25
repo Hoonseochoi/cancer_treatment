@@ -115,10 +115,14 @@ function extractRawCoveragesSamsung(text) {
     console.log(`[Samsung] After line merge: ${mergedLines.length} lines`);
 
     // ── 3. 관심 담보 화이트리스트 (암 + 온통보장류 타 질환군, 기타 사이드바용) ──
+    // "뇌혈관"·"허혈성심장"·"순환계"는 circulatoryWhitelist(아래)로 이동했다.
+    // 다만 그룹형 통합보장(온통보장류)은 기존 passthrough(기타 사이드바) 흐름을 유지해야 하므로
+    // etcWhitelist로 별도 운영한다.
     const cancerWhitelist = [
         "암", "항암", "중입자", "양성자", "표적", "면역", "다빈치", "로봇", "중환자실", "호르몬",
-        "뇌혈관", "허혈성심장", "순환계", "신장질환", "근골격"
+        "신장질환", "근골격"
     ];
+    const etcWhitelist = ["뇌혈관", "허혈성심장", "순환계"];
 
     // ── 3-b. 수술비 담보 화이트리스트 (수술비 분석기 전용) ──
     // 암 화이트리스트에는 "암"이 없어 전부 탈락하던 담보들. 암 9카드에는 섞이면 안 되므로
@@ -133,6 +137,15 @@ function extractRawCoveragesSamsung(text) {
         "충수염수술비", "인공관절치환수술비", "골절수술비", "화상수술비",
         "이식수술비",      // 조혈모세포/각막/5대장기 이식 수술비
         "손상수술비"       // 아킬레스힘줄손상, 상해 척추손상, 관절손상 수술비
+    ];
+
+    // ── 3-c. 뇌·심장(순환계) 담보 화이트리스트 (뇌·심장 분석기 전용) ──
+    // 특정순환계질환 특정치료비Ⅲ, 중환자실 입원지원금, 뇌혈관/허혈성심장/부정맥/특정3대심장 진단비.
+    // 뇌졸중·뇌출혈·심근경색은 이현정님 설계엔 없지만 타 설계의 단독 진단비 담보를 위해 포함.
+    // 암 화이트리스트의 "중환자실"보다 먼저 검사해야 특정순환계 중환자실 담보가 암으로 새지 않는다.
+    // 단, 그룹형 통합보장(온통보장류)은 제외 — 기존 passthrough(기타 사이드바) 흐름 유지.
+    const circulatoryWhitelist = [
+        "순환계", "부정맥", "3대심장", "뇌혈관", "허혈성심장", "뇌졸중", "뇌출혈", "심근경색"
     ];
 
     // ── 4. Parse each merged line ──
@@ -242,7 +255,37 @@ function extractRawCoveragesSamsung(text) {
             if (idM) id = idM[1];
 
             // Find amount
-            const amountM = afterBracket.match(/(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)/);
+            // 담보명 안에 금액 표기가 섞인 경우("…통합치료비(표준형, 연간1억원한도)")를 가입금액으로
+            // 오인하면 이름이 거기서 잘리고 금액도 틀린 값이 잡힌다. 담보명 내부 표기는 뒤에
+            // "한도"가 붙거나 괄호 안에서 끝나므로, 그런 후보는 건너뛰고 다음 금액을 찾는다.
+            const AMOUNT_RE = /(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)/g;
+            let amountM = null;
+            for (let am; (am = AMOUNT_RE.exec(afterBracket)) !== null; ) {
+                const after = afterBracket.slice(am.index + am[0].length);
+                // "1억원한도)" 처럼 한도/이내/까지가 붙으면 담보명의 일부 → 가입금액 아님
+                if (/^\s*(한도|이내|까지|초과|미만)/.test(after)) continue;
+                amountM = am;
+                break;
+            }
+
+            // 담보명만 있고 가입금액이 다음 줄로 떨어진 레이아웃
+            // (예: "112 [간편]…통합치료비(표준형, 연간1억원한도)(1년감액)" / "1억원" / "1,521 20년납…")
+            // 이름 안의 한도 표기를 걸러내면 이 줄에는 금액이 남지 않으므로 다음 줄에서 가져온다.
+            let borrowedTail = '';
+            if (!amountM) {
+                const nextAmt = (mergedLines[idx + 1] || '').trim();
+                if (/^(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)$/.test(nextAmt)) {
+                    borrowedTail = ' ' + nextAmt + ' ' + (mergedLines[idx + 2] || '').trim();
+                    afterBracket = afterBracket + borrowedTail;
+                    AMOUNT_RE.lastIndex = 0;
+                    for (let am; (am = AMOUNT_RE.exec(afterBracket)) !== null; ) {
+                        const after = afterBracket.slice(am.index + am[0].length);
+                        if (/^\s*(한도|이내|까지|초과|미만)/.test(after)) continue;
+                        amountM = am;
+                        break;
+                    }
+                }
+            }
             if (!amountM) {
                 // 온통보장류 그룹의 "상해사망" 줄은 금액이 %(잔액의 10% 등)로만 표기되어 원/만원/억원
                 // 접미사가 있는 금액 패턴이 끝내 나타나지 않는다. 이 줄에 그룹 공유 보험료
@@ -295,12 +338,15 @@ function extractRawCoveragesSamsung(text) {
 
         if (!name) return;
 
-        // Only keep cancer-related or surgery-benefit coverages (whitelist)
+        // Only keep cancer-related, surgery-benefit, or circulatory coverages (whitelist)
         const nameNorm = name.replace(/\s+/g, '');
-        const isCancerRelated = cancerWhitelist.some(kw => nameNorm.includes(kw));
-        const isSurgeryTier = !isCancerRelated && surgeryWhitelist.some(kw => nameNorm.includes(kw));
-        if (!isCancerRelated && !isSurgeryTier) {
-            console.log(`[Samsung] Skipped (not cancer/surgery): ${name}`);
+        const isGroupType = nameNorm.includes('통합보장');
+        const isCirculatory = !isGroupType && circulatoryWhitelist.some(kw => nameNorm.includes(kw));
+        const isCancerRelated = !isCirculatory && (cancerWhitelist.some(kw => nameNorm.includes(kw)) ||
+            (isGroupType && etcWhitelist.some(kw => nameNorm.includes(kw))));
+        const isSurgeryTier = !isCancerRelated && !isCirculatory && surgeryWhitelist.some(kw => nameNorm.includes(kw));
+        if (!isCancerRelated && !isSurgeryTier && !isCirculatory) {
+            console.log(`[Samsung] Skipped (not cancer/surgery/circulatory): ${name}`);
             return;
         }
 
@@ -330,7 +376,7 @@ function extractRawCoveragesSamsung(text) {
             premium: premium,
             period: period,
             original: trimmed,
-            ...(isSurgeryTier ? { kind: 'surgery' } : {})
+            ...(isCirculatory ? { kind: 'circulatory' } : isSurgeryTier ? { kind: 'surgery' } : {})
         });
     });
 

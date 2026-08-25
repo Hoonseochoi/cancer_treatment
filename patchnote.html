@@ -208,7 +208,8 @@
     <!-- JUMP PILLS -->
     <div class="jump-wrap">
       <div class="jump-inner">
-        <a class="jump-pill active" href="#v0825">v.0825</a>
+        <a class="jump-pill active" href="#v0826">v.0826</a>
+        <a class="jump-pill" href="#v0825">v.0825</a>
         <a class="jump-pill" href="#v0706">v.0706</a>
         <a class="jump-pill" href="#v0630">v.0630</a>
         <a class="jump-pill" href="#v0626">v.0626</a>
@@ -223,16 +224,117 @@
     <!-- TIMELINE -->
     <div class="timeline">
 
-      <!-- v.0825 -->
-      <div class="v-entry open latest-entry" id="v0825">
+      <!-- v.0826 -->
+      <div class="v-entry open latest-entry" id="v0826">
         <div class="v-dot latest"></div>
         <div class="v-card latest-card">
           <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
             <div class="v-header-left">
               <div class="v-meta">
+                <span class="v-ver">v.0826</span>
+                <span class="v-date">2026.08.26</span>
+                <span class="v-latest-badge">LATEST</span>
+              </div>
+              <div class="v-subtitle">"뇌랑 심장, 어디까지 나오는지 한 장에"</div>
+              <div class="v-summary">
+                <span class="tag tag-new">NEW</span>
+              </div>
+            </div>
+            <span class="v-chevron">▾</span>
+          </div>
+          <div class="v-body">
+
+            <div class="change-section">
+              <span class="cs-label">뇌·심장 한눈에 보기 출시</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>결과 화면에 "뇌·심장" 토글이 생겼어요</strong><br>
+                  암 보장·수술비에 이어 세 번째 탭입니다. 삼성화재 제안서에서 순환계 담보가 발견되면 나타나고, 없으면 표시되지 않아요. 뇌와 심장을 각각 그림으로 그리고, <strong>넓은 질환일수록 큰 원</strong>으로 겹쳐 보여드립니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>안쪽 질환이면 바깥 담보까지 같이 나와요</strong><br>
+                  뇌출혈은 뇌졸중에 속하고, 뇌졸중은 뇌혈관질환에 속합니다. 심장도 급성심근경색이 허혈성심장질환 안에 들어가고요. 그래서 <strong>안쪽 질환으로 진단받으면 바깥 담보까지 함께 작동</strong>합니다. 이 관계를 원의 크기로 표현했고, 가입금액을 원 안에 바로 적었습니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>치료행위별로 얼마인지 카드로 보여드려요</strong><br>
+                  뇌·심장 그림 아래에 <strong>수술 · 혈전용해 · 혈전제거</strong> 카드가 각각 붙습니다. 세 가지가 금액이 다를 수 있어서 합치지 않고 따로 표시했어요. 아래쪽에는 세 가지를 모두 받았을 때의 <strong>최대 보장금액</strong>도 근거와 함께 적어드립니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>진단비는 막대그래프로 따로 정리했어요</strong><br>
+                  진단만으로 나오는 담보는 성격이 달라서 그림 아래 막대그래프로 뺐습니다. 막대가 길수록 넓은 질환을 덮는 담보예요. 미가입 담보는 점선으로 비워둬서 <strong>어디가 빠져 있는지</strong> 한눈에 보입니다.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">치료비 담보 두 종류 구분</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>특정치료비와 통합치료비는 다른 담보예요</strong><br>
+                  이름이 비슷해서 헷갈리기 쉬운데 보장 범위가 완전히 다릅니다. <strong>특정치료비</strong>는 수술·혈전용해·혈전제거 세 가지를 받을 때 가입금액을 지급하고, <strong>통합치료비</strong>는 <strong>검사부터 재활까지</strong> 치료 전 과정을 보장해요. 이제 어느 담보를 갖고 계신지에 따라 화면이 다르게 나옵니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>통합치료비는 치료 경로를 그려드려요</strong><br>
+                  통합치료비에 가입돼 있으면 <strong>검사 ▸ 약물 ▸ 치료 ▸ 수술 ▸ 재활</strong> 순서로 각 단계에 얼마가 나오는지 한 줄로 이어서 보여드립니다. MRI·CT부터 항응고제, 에크모, 전문재활치료까지 14개 항목 금액이 약관 지급표 그대로 들어가 있어요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>어떤 질환까지 보장되는지 물음표를 눌러보세요</strong><br>
+                  "특정 순환계 질환" 옆 물음표를 누르면 <strong>보장되는 41개 질환 목록</strong>이 펼쳐집니다. 뇌·심장 그림에 그려진 질환은 파란색으로 표시돼서 어디에 해당하는지 바로 찾을 수 있어요.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">금액 계산 정확도 개선</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>같은 질환에 담보가 두 개면 합쳐서 보여드려요</strong><br>
+                  뇌혈관질환 진단비와 뇌혈관질환(90일면책) 진단비처럼 <strong>같은 질환에 담보가 두 개 붙는 경우</strong>가 있습니다. 별개 특약이라 면책기간을 넘기면 둘 다 나오는데, 지금까지 하나만 세고 있었어요. 실제 제안서에서 1,000만원으로 보이던 게 <strong>2,000만원</strong>으로 바로잡혔습니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>통합치료비 담보가 통째로 빠지던 문제를 고쳤어요</strong><br>
+                  담보 이름 안에 "연간 1억원 한도"처럼 금액이 적혀 있으면, 그걸 가입금액으로 잘못 읽어서 <strong>담보 이름이 중간에 잘리고</strong> 금액도 틀리게 잡혔습니다. 이제 이름 속 한도 표기는 건너뛰고 진짜 가입금액을 찾아갑니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>세 가지 치료를 다 받은 것처럼 계산하던 문제를 고쳤어요</strong><br>
+                  수술·혈전용해·혈전제거 금액을 무조건 다 더해서 실제보다 크게 보였습니다. 약관 지급표에 <strong>「수술(혈전제거술 제외)」</strong>이라고 적혀 있어서 수술과 혈전제거는 함께 나오지 않아요. 이제 대표 금액은 <strong>가장 높은 치료 하나</strong>를 기준으로 하고, 세 가지를 모두 받은 경우는 "최대 보장금액"으로 따로 안내합니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>연 최대 한도를 반영했어요</strong><br>
+                  통합치료비는 항목별 금액을 다 더해도 <strong>연 최대 한도</strong>(표준형 1억 / 실속형 5천만)를 넘지 못합니다. 이제 한도를 넘으면 한도까지만 계산하고, 그렇게 계산했다고 화면에 표시해드려요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>가입 초기 감액 안내를 정확히 했어요</strong><br>
+                  기존에는 "1년 이내 50% 감액"만 안내했는데, 실제로는 <strong>180일 미만이면 10%</strong>만 지급됩니다. 가입 직후 사고 시 안내와 5배까지 차이 날 수 있어서 두 구간을 나눠 적었습니다.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0825 -->
+      <div class="v-entry" id="v0825">
+        <div class="v-dot"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
                 <span class="v-ver">v.0825</span>
                 <span class="v-date">2026.08.25</span>
-                <span class="v-latest-badge">LATEST</span>
               </div>
               <div class="v-subtitle">"암만 보던 화면에서, 수술비까지 같이 봅니다"</div>
               <div class="v-summary">

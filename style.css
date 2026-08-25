@@ -695,3 +695,135 @@ strong {
   .sg-money{text-align:left;display:flex;align-items:baseline;gap:8px}
   .sg-money em{margin-top:0}
 }
+
+/* ── 뇌·심장(순환계) 분석기 패널 ──
+   클로드 아티팩트 "뇌·심장 보장 한눈에" (2026-08-25 확정안) 이식.
+   클래스 충돌 방지를 위해 cc- 접두어 + #circulatory-panel 스코프로 격리한다. */
+#circulatory-panel{
+  --cc-ground:#F4F6FA; --cc-surface:#FFFFFF; --cc-surface-2:#EEF1F7; --cc-line:#DFE4EE;
+  --cc-ink:#0E1629; --cc-ink-2:#39415C; --cc-muted:#6B7290; --cc-off:#A8AEC0;
+  --brain-1:#312E81; --brain-2:#4F46E5; --brain-3:#A5B4FC; --brain-soft:#EEF0FE;
+  --heart-1:#9D174D; --heart-2:#D6336C; --heart-3:#F8A8C4; --heart-soft:#FDF0F5;
+  --outer:#475569; --outer-soft:#F3F6FA; --outer-band:#E3EAF3;
+  --warn:#9A4A12; --warn-soft:#FDF6EC; --warn-line:#F0DFC4;
+  --cc-shadow:0 1px 2px rgba(14,22,41,.05),0 8px 24px rgba(14,22,41,.06);
+  color:var(--cc-ink);
+}
+#circulatory-panel .cc-card{background:var(--cc-surface);border:1px solid var(--cc-line);
+  border-radius:16px;padding:18px 20px;box-shadow:var(--cc-shadow);margin-bottom:14px}
+#circulatory-panel .cc-card h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--cc-muted);font-weight:700;margin:0}
+#circulatory-panel .cc-card .sub{font-size:11.5px;color:var(--cc-muted);margin:3px 0 12px}
+#circulatory-panel .num{font-variant-numeric:tabular-nums}
+
+/* 최외곽 특정순환계 — 히어로 바와 동심원을 한 덩어리로 묶어
+   "이 담보가 안의 모든 질환을 감싼다"가 형태로 읽히게 한다 */
+#circulatory-panel .circle-wrap{border:1.6px solid #BCCBE0;border-radius:18px;overflow:hidden;
+  background:linear-gradient(180deg,#E8EFF8 0%,#F6F9FC 42%);
+  box-shadow:inset 0 0 0 4px rgba(255,255,255,.55)}
+#circulatory-panel .hero{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;
+  background:#D9E4F2;border-bottom:1.6px dashed #B4C5DC;padding:11px 18px}
+#circulatory-panel .hero-l{font-size:14.5px;font-weight:700;color:#2B3B52;display:flex;align-items:center;gap:7px}
+#circulatory-panel .hero-amt{font-family:'Dongle','Noto Sans KR',sans-serif;font-size:52px;font-weight:700;
+  color:#1E293B;line-height:.72;letter-spacing:.01em}
+#circulatory-panel .hero-sub{font-size:11.5px;color:#54627A;margin-left:auto;text-align:right;line-height:1.5}
+#circulatory-panel .hero-tag{display:inline-block;background:#2B3B52;color:#fff;font-size:10px;font-weight:800;
+  padding:2px 8px;border-radius:999px;letter-spacing:.02em}
+#circulatory-panel .qm{appearance:none;width:17px;height:17px;border-radius:50%;border:0;cursor:pointer;
+  background:#94A3B8;color:#fff;font:inherit;font-size:11px;font-weight:800;line-height:17px;
+  padding:0;transition:background .18s}
+#circulatory-panel .qm:hover{background:#64748B}
+#circulatory-panel .qm:focus-visible{outline:2px solid var(--outer);outline-offset:2px}
+#circulatory-panel .codes{display:none;margin:0 0 12px;padding:13px 15px;border-radius:12px;
+  background:var(--cc-surface-2);border:1px solid var(--cc-line)}
+#circulatory-panel .codes[data-open="true"]{display:block}
+#circulatory-panel .codes h4{margin:0 0 3px;font-size:12px;font-weight:800;color:var(--cc-ink)}
+#circulatory-panel .codes p{margin:0 0 9px;font-size:10.8px;color:var(--cc-muted);line-height:1.6}
+#circulatory-panel .code-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:2px 14px}
+#circulatory-panel .ci{display:flex;justify-content:space-between;gap:8px;font-size:10.6px;color:var(--cc-ink-2);
+  padding:2px 0;border-bottom:1px dashed var(--cc-line)}
+#circulatory-panel .ci b{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--outer)}
+#circulatory-panel .ci.hit{color:var(--brain-2);font-weight:700}
+#circulatory-panel .ci.hit b{color:var(--brain-2)}
+
+#circulatory-panel .diagram{width:100%;height:auto;display:block}
+/* 그림 안 글자는 둥글고 말랑한 서체로 */
+#circulatory-panel .diagram text{font-family:'Dongle','Noto Sans KR',sans-serif;font-weight:700;letter-spacing:.02em}
+#circulatory-panel .ring-shape{transition:opacity .18s}
+#circulatory-panel .organ-label{font-size:19px;fill:var(--cc-muted);font-family:'Dongle','Noto Sans KR',sans-serif;font-weight:700}
+#circulatory-panel .dia-note{font-family:'Noto Sans KR',sans-serif!important;font-weight:600;font-size:10.4px;fill:var(--cc-muted)}
+
+/* 하단 2단: 진단비 막대 / 수술비 구성 */
+#circulatory-panel .cc-duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#circulatory-panel .bars{display:grid;gap:9px}
+#circulatory-panel .bar-row{display:grid;grid-template-columns:112px 1fr auto;gap:9px;align-items:center;font-size:11px}
+#circulatory-panel .bar-row .bn{color:var(--cc-ink-2);font-weight:600;line-height:1.3}
+#circulatory-panel .bar-row .bn em{display:block;font-style:normal;font-size:9.4px;color:var(--cc-muted);font-weight:500}
+#circulatory-panel .bar-track{height:16px;border-radius:5px;background:var(--cc-surface-2);overflow:hidden;display:block}
+#circulatory-panel .bar-fill{height:100%;border-radius:5px;display:block}
+#circulatory-panel .bar-row .bv{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:11.5px}
+#circulatory-panel .bar-row.off .bn,#circulatory-panel .bar-row.off .bv{color:var(--cc-off)}
+#circulatory-panel .bar-row.off .bar-track{border:1.3px dashed var(--cc-off);background:transparent}
+
+#circulatory-panel .sx{display:grid;gap:4px}
+#circulatory-panel .sx-row{display:flex;justify-content:space-between;gap:10px;font-size:11px;padding:4px 0;
+  border-bottom:1px dashed var(--cc-line);color:var(--cc-ink-2)}
+#circulatory-panel .sx-row:last-child{border-bottom:0}
+#circulatory-panel .sx-row em{font-style:normal;font-size:9.6px;color:var(--cc-muted);display:block}
+#circulatory-panel .sx-row b{white-space:nowrap;font-variant-numeric:tabular-nums}
+#circulatory-panel .sx-row.off,#circulatory-panel .sx-row.off b{color:var(--cc-off)}
+/* 최대 보장금액 — 대표 금액과 구분되게 강조하되, 근거를 함께 적는다 */
+#circulatory-panel .cc-max{margin-top:12px;padding:11px 13px;border-radius:11px;
+  background:#EEF0FE;border:1px solid #C7CEF5}
+#circulatory-panel .cc-max-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+#circulatory-panel .cc-max-top span{font-size:12px;font-weight:800;color:#312E81}
+#circulatory-panel .cc-max-top b{font-size:19px;font-weight:800;color:#312E81;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums}
+#circulatory-panel .cc-max-sub{margin:6px 0 0;font-size:11px;color:#4338CA;line-height:1.6}
+#circulatory-panel .cc-max-note{margin:7px 0 0;padding-top:7px;border-top:1px solid #C7CEF5;
+  font-size:10.6px;color:#5B5FA8;line-height:1.6}
+#circulatory-panel .sx-sum{display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;
+  border-top:1.5px solid var(--cc-line);font-size:12px;font-weight:800}
+
+#circulatory-panel .trap-box{margin-top:12px;padding:10px 13px;border-radius:11px;background:var(--warn-soft);
+  border:1px solid var(--warn-line);font-size:11.5px;color:var(--warn);line-height:1.6}
+#circulatory-panel .trap-box b{display:block;font-size:11px;margin-bottom:2px}
+
+/* 치료 경로 — 검사 ▸ 약물 ▸ 치료 ▸ 수술 ▸ 재활 */
+#circulatory-panel .journey{border-top:1.6px dashed #B4C5DC;background:rgba(255,255,255,.62);padding:14px 18px 16px}
+#circulatory-panel .jhead{font-size:11.8px;font-weight:700;color:#2B3B52;margin-bottom:12px}
+#circulatory-panel .jsteps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+#circulatory-panel .jstep{position:relative;padding:0 13px}
+#circulatory-panel .jstep:first-child{padding-left:0}
+#circulatory-panel .jstep:last-child{padding-right:0}
+#circulatory-panel .jstep:not(:last-child)::after{content:'';position:absolute;right:-5px;top:13px;
+  width:9px;height:9px;border-right:2px solid #A9BAD1;border-top:2px solid #A9BAD1;
+  transform:rotate(45deg)}
+#circulatory-panel .jcap{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+#circulatory-panel .jnum{width:19px;height:19px;border-radius:50%;background:#A3AFC2;color:#fff;font-size:10px;
+  font-weight:800;display:grid;place-items:center;flex:none}
+#circulatory-panel .jstep.has .jnum{background:var(--brain-2)}
+#circulatory-panel .jcap b{font-size:12.5px;color:var(--cc-ink)}
+#circulatory-panel .jstep.has .jcap b{color:var(--brain-2)}
+#circulatory-panel .ji{display:flex;justify-content:space-between;gap:6px;font-size:10.4px;padding:2.5px 0;
+  color:var(--cc-ink-2);border-bottom:1px dashed rgba(20,30,50,.08)}
+#circulatory-panel .ji:last-child{border-bottom:0}
+#circulatory-panel .ji b{white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}
+#circulatory-panel .ji.off,#circulatory-panel .ji.off b{color:var(--cc-off)}
+#circulatory-panel .jnote{margin:12px 0 0;font-size:11px;color:var(--cc-ink-2);line-height:1.65}
+#circulatory-panel .jnote b{color:var(--warn)}
+
+#circulatory-panel .cc-disc{margin-top:4px;padding:13px 15px;border-radius:12px;background:var(--cc-surface-2);
+  border:1px solid var(--cc-line)}
+#circulatory-panel .cc-disc b{display:block;font-size:10.5px;letter-spacing:.08em;color:var(--cc-muted);margin-bottom:6px}
+#circulatory-panel .cc-disc p{margin:0;font-size:11px;color:var(--cc-ink-2);line-height:1.7}
+#circulatory-panel .cc-disc strong{color:var(--cc-ink)}
+#circulatory-panel .cc-src{margin-top:12px;font-size:10.5px;color:var(--cc-muted);text-align:center;line-height:1.7}
+
+@media (max-width:760px){
+  #circulatory-panel .cc-duo{grid-template-columns:1fr}
+  #circulatory-panel .jsteps{grid-template-columns:repeat(2,1fr);gap:12px}
+  #circulatory-panel .jstep{padding:0}
+  #circulatory-panel .jstep:not(:last-child)::after{display:none}
+}
+@media (prefers-reduced-motion:reduce){#circulatory-panel *{transition:none!important}}
