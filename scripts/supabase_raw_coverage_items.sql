@@ -19,8 +19,11 @@ CREATE TABLE IF NOT EXISTS raw_coverage_items (
     period        TEXT,                 -- 납기/만기 (원문 텍스트, 추출기가 제공하는 경우만)
     kind          TEXT,                 -- 'surgery' 등 세부 계열 태그 (현재는 삼성 한정, 없으면 NULL)
     matched       BOOLEAN               -- 암 9카드 매핑 로직(findXDetails)에 잡히는지.
-                                         -- kind='surgery' 행은 애초에 이 로직 대상이 아니므로 NULL(해당 없음).
-                                         -- 그 외 NULL은 해당 보험사에 매칭 함수가 아직 없는 경우.
+                                         -- NULL = 검사 대상이 아님: kind='surgery' 행(다른 체계라 애초에
+                                         -- 이 로직 대상이 아님) 또는 담보명에 "수술비"·"치료비"·"약물"이
+                                         -- 없는 행(진단비·통합보장·지원금 등, 9카드가 원래 다루는 영역이
+                                         -- 아니라 항상 false로 찍히면서 진짜 누락을 가리는 노이즈였음).
+                                         -- true/false만 실제 매칭 여부를 의미한다.
 );
 
 CREATE INDEX IF NOT EXISTS idx_raw_coverage_items_insurer    ON raw_coverage_items (insurer);
@@ -41,6 +44,7 @@ WITH CHECK (true);
 -- ── 점검용 쿼리 예시 (Dashboard SQL Editor에서 실행) ──
 --
 -- 보험사별 미매칭 담보명 빈도 (반영 우선순위 판단용)
+-- matched IS NOT NULL 조건이 진단비·통합보장 등 검사 대상 아닌 행을 자동으로 뺀다
 -- SELECT insurer, coverage_name, COUNT(*) AS cnt
 -- FROM raw_coverage_items
 -- WHERE matched = false

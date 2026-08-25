@@ -146,25 +146,35 @@ window.logUnmatchedCoverages = logUnmatchedCoverages;
  * 잡히고 저건 안 잡히는지" 대조가 가능하다. matchFn을 넘기지 않으면 matched는 NULL.
  * 테이블 생성 SQL: scripts/supabase_raw_coverage_items.sql
  */
+// matched 판정 대상을 "치료비성 담보"로만 좁힌다. 진단비·통합보장·지원금 같은 담보는
+// 애초에 findXDetails(9카드 매칭 로직)의 대상이 아니라 늘 false로 찍히는데, 그걸 그대로
+// 두면 설계상 정상인 케이스가 매번 "미매칭" 노이즈로 쌓여 진짜 누락(예: 세기조절방사선
+// 치료비가 findSamsungDetails에 아예 없던 것)이 그 안에 묻힌다. 이름에 아래 키워드가
+// 없으면 검사 대상이 아니라는 뜻으로 matched를 NULL로 둔다.
+const TREATMENT_KEYWORDS = ['수술비', '치료비', '약물'];
+
 async function logRawCoverageItems(fileName, insurer, productName, results, matchFn) {
     if (!supabaseClient || !results || !results.length) return;
     try {
-        const rows = results.map(item => ({
-            file_name: fileName || null,
-            insurer: insurer,
-            product_name: productName || null,
-            coverage_name: item.name || null,
-            amount: item.amount || null,
-            premium: item.premium || null,
-            period: item.period || null,
-            kind: item.kind || null,
-            // matchFn(=find*Details)은 암 9카드 매칭 로직이라, kind가 'surgery'인 행은
-            // 애초에 이 함수로 걸릴 대상이 아니다(수술비 계열은 다른 체계). 그런 행까지
-            // false로 찍으면 매번 같은 수십 건이 "미매칭"으로 반복돼 진짜 누락과 구분이
-            // 안 되므로, 이 경우엔 matched를 "해당 없음" 의미로 NULL로 둔다.
-            matched: item.kind === 'surgery' ? null
-                : (typeof matchFn === 'function' ? !!matchFn(item.name) : null)
-        }));
+        const rows = results.map(item => {
+            const name = item.name || '';
+            // kind==='surgery'가 최우선: 수술비 계열은 이름에 "수술비"가 들어있어도
+            // findXDetails(암 9카드 로직)와는 완전히 다른 체계라 이 검사 자체가 무의미하다.
+            const isSurgeryTier = item.kind === 'surgery';
+            const looksLikeTreatment = TREATMENT_KEYWORDS.some(kw => name.includes(kw));
+            return {
+                file_name: fileName || null,
+                insurer: insurer,
+                product_name: productName || null,
+                coverage_name: item.name || null,
+                amount: item.amount || null,
+                premium: item.premium || null,
+                period: item.period || null,
+                kind: item.kind || null,
+                matched: (isSurgeryTier || !looksLikeTreatment) ? null
+                    : (typeof matchFn === 'function' ? !!matchFn(item.name) : null)
+            };
+        });
         const { error } = await supabaseClient
             .from('raw_coverage_items')
             .insert(rows);
