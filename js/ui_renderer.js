@@ -809,6 +809,16 @@ window.exportAsImage = async function () {
                         if (d) d.style.display = 'none';
                     });
                     sgPanel.querySelectorAll('.caret').forEach(c => { c.style.display = 'none'; });
+                    // 면책 안내도 상단 리드 문구만 남기고 접는다. 상담 중 펼쳐본 상태로
+                    // 캡처 버튼을 누르는 경우가 있어, 현재 열림 상태와 무관하게 강제로 접는다.
+                    const disc = sgPanel.querySelector('.sg-disc');
+                    if (disc) {
+                        disc.dataset.open = 'false';
+                        const rest = disc.querySelector('.sg-disc-rest');
+                        if (rest) rest.style.display = 'none';
+                        const caret = disc.querySelector('.sg-disc-caret');
+                        if (caret) caret.style.display = 'none';
+                    }
                 }
             }
 

@@ -220,9 +220,15 @@ function renderSurgeryPanel(results) {
         <p>가입한 수술비 담보 기준으로 각 수술에서 검토 가능한 금액입니다.</p>
       </div>
       <div class="sg-list">${cards}</div>
-      <div class="sg-disc"><b>반드시 확인해 주세요</b>
-        <ol>
-          <li>표시 금액은 <strong>가입금액 기준 검토 가능한 최대 범위</strong>이며 지급을 확정하는 값이 아닙니다. 보상 여부는 <strong>청구 시 제출된 정확한 수술행위</strong>와 약관에 따라 결정됩니다.</li>
+      <div class="sg-disc" data-open="false">
+        <button class="sg-disc-btn" aria-expanded="false">
+          <span class="sg-disc-head">
+            <b>반드시 확인해 주세요</b>
+            <p class="sg-disc-lead">표시 금액은 <strong>가입금액 기준 검토 가능한 최대 범위</strong>이며 지급을 확정하는 값이 아닙니다. 보상 여부는 <strong>청구 시 제출된 정확한 수술행위</strong>와 약관에 따라 결정됩니다.</p>
+          </span>
+          <span class="sg-disc-caret"></span>
+        </button>
+        <ol class="sg-disc-rest">
           <li>같은 수술도 <strong>개복·복강경·내시경, 림프절절제 동반 여부</strong>에 따라 수술 종류(종)와 금액이 달라집니다.</li>
           <li><strong>질병 입원 수술비·통원 수술비 및 N대질병 수술비는 아래 질병에 대해 보상하지 않습니다</strong>(질병 수술비 특별약관 제6조②).
             정신 및 행동장애(F04~F99) / 습관성 유산·불임·인공수정 관련 합병증(N96~N98, 단 계약일로부터 2년 경과 후 발생 시 지급) /
@@ -246,12 +252,21 @@ function renderSurgeryPanel(results) {
     // onclick 으로 대입한다. addEventListener 를 쓰면 제안서를 다시 분석할 때마다
     // 핸들러가 중첩되어 클릭 한 번에 토글이 여러 번 뒤집힌다.
     host.onclick = e => {
-        const b = e.target.closest('.sg-btn');
-        if (!b) return;
-        const row = b.closest('.sg-row');
-        const open = row.dataset.open === 'true';
-        row.dataset.open = String(!open);
-        b.setAttribute('aria-expanded', String(!open));
+        const rowBtn = e.target.closest('.sg-btn');
+        if (rowBtn) {
+            const row = rowBtn.closest('.sg-row');
+            const open = row.dataset.open === 'true';
+            row.dataset.open = String(!open);
+            rowBtn.setAttribute('aria-expanded', String(!open));
+            return;
+        }
+        const discBtn = e.target.closest('.sg-disc-btn');
+        if (discBtn) {
+            const disc = discBtn.closest('.sg-disc');
+            const open = disc.dataset.open === 'true';
+            disc.dataset.open = String(!open);
+            discBtn.setAttribute('aria-expanded', String(!open));
+        }
     };
     return true;
 }
