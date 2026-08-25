@@ -214,11 +214,37 @@ function renderSurgeryPanel(results) {
             </div></div>`;
     }).filter(Boolean).join('');
 
+    // ── 다빈도 수술 TOP 5 요약 ──
+    // 수술비는 진단비처럼 "최초 1회한"이 아니라 수술받을 때마다 검토되므로
+    // 5년 합계보다 "이 수술 받으면 얼마"가 상담에서 훨씬 잘 통한다.
+    // 아래 30종 중 실제로 많이 하는 5종을 뽑아 연간 기준 금액으로 먼저 보여준다.
+    const topList = (typeof SURGERY_TOP5 !== 'undefined' ? SURGERY_TOP5 : [])
+        .map(nm => {
+            const s = SURGERY_DATA.find(x => x.name === nm);
+            if (!s) return null;
+            const tot = s.variants.map(v => calcSurgeryVariant(policy, s, v).total);
+            const lo = Math.min(...tot), hi = Math.max(...tot);
+            return hi > 0 ? { name: nm, lo, hi } : null;
+        })
+        .filter(Boolean);
+
     host.innerHTML = `
       <div class="sg-head">
         <h3>수술비 검토</h3>
         <p>가입한 수술비 담보 기준으로 각 수술에서 검토 가능한 금액입니다.</p>
       </div>
+      ${topList.length ? `
+      <div class="sg-top5">
+        <div class="sg-top5-head">많이 하는 수술 TOP ${topList.length} · 연간 검토 가능 금액</div>
+        <div class="sg-top5-grid">
+          ${topList.map(t => `
+          <div class="sg-top5-item">
+            <span class="t5n">${t.name}</span>
+            <b class="num">${t.lo === t.hi ? fmt(t.lo) : fmt(t.lo) + '~' + fmt(t.hi)}</b>
+          </div>`).join('')}
+        </div>
+        <p class="sg-top5-note">수술비는 진단비와 달리 <strong>최초 1회한이 아니라</strong> 수술받을 때마다 검토됩니다(질병수술비는 매회지급, 1~5종은 동일사고당 1회). 위 금액은 <strong>해당 수술 1회 기준</strong>이며, 아래 목록에서 30종 전체와 술기별 상세를 확인하실 수 있습니다.</p>
+      </div>` : ''}
       <div class="sg-list">${cards}</div>
       <div class="sg-disc" data-open="false">
         <button class="sg-disc-btn" aria-expanded="false">
@@ -306,6 +332,11 @@ function setupSurgeryToggle(results, insurer) {
         grid.classList.toggle('hidden', v !== 'cancer');
         const other = document.getElementById('other-panel-container');
         if (other) other.classList.toggle('hidden', v !== 'cancer');
+        // 상단 인사이트 카드는 "5년간 받을 암 치료비"라 암 탭 전용이다.
+        // 수술비·뇌심 탭에는 각 패널이 자체 요약을 갖고 있으므로 같이 띄우면
+        // 뇌심 금액인 줄 오해하게 된다.
+        const insight = document.getElementById('insight-section');
+        if (insight) insight.classList.toggle('hidden', v !== 'cancer');
         const header = document.getElementById('result-header');
         if (header) header.textContent = v === 'surgery' ? '수술비 한눈에 보기'
             : v === 'circulatory' ? '뇌·심장 한눈에 보기' : '보장 내역 한눈에 보기';

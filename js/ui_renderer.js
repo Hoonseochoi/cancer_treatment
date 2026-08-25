@@ -709,23 +709,10 @@ function toggleResultsList() {
     }
 }
 
-// ── Image Export Function (Renamed from PDF for clarity) ──
-window.exportAsImage = async function () {
-    console.log('Exporting image started...');
-    const target = document.querySelector('main');
-    if (!target) {
-        console.error('Target main element not found');
-        return;
-    }
-
-    // 원본 파일명 가져오기 및 분석 키워드 추가
-    const fileNameEl = document.getElementById('file-name');
-    let originalName = '분석결과';
-    if (fileNameEl && fileNameEl.innerText) {
-        originalName = fileNameEl.innerText.replace(/\.pdf$/i, '');
-    }
-    const finalFileName = `${originalName} 분석.png`;
-
+// ── 캡처 공통 준비 ──
+// 이미지 저장과 전체 PDF 저장이 완전히 같은 렌더링 경로를 쓰도록,
+// 폰트 대기·전문가 이름·QR을 한 번만 준비해 두 곳에서 공유한다.
+async function prepareCaptureAssets() {
     // 폰트 대기 (Google Font 로딩 보장)
     await document.fonts.ready;
 
@@ -746,8 +733,37 @@ window.exportAsImage = async function () {
     } catch (e) {
         console.warn('QR 코드 생성 실패, 생략합니다:', e);
     }
+    return { captureExpertName, qrBase64 };
+}
 
-    const options = {
+// 현재 켜져 있는 탭 이름
+function currentCaptureView() {
+    const shown = id => {
+        const el = document.getElementById(id);
+        return !!el && !el.classList.contains('hidden');
+    };
+    if (shown('surgery-panel')) return 'surgery';
+    if (shown('circulatory-panel')) return 'circulatory';
+    return 'cancer';
+}
+
+// PDF에 담을 탭 목록 — 실제로 렌더링된 탭만 (토글 버튼 존재 여부로 판단)
+function availableCaptureViews() {
+    const wrap = document.getElementById('surgery-toggle');
+    if (!wrap || wrap.classList.contains('hidden')) return ['cancer'];
+    return Array.from(wrap.querySelectorAll('button[data-v]')).map(b => b.dataset.v);
+}
+
+const CAPTURE_VIEW_TITLE = {
+    cancer: '보장 내역 한눈에 보기',
+    surgery: '수술비 한눈에 보기',
+    circulatory: '뇌·심장 한눈에 보기'
+};
+
+// forceView가 주어지면 클론 안에서 해당 탭을 강제로 켠다(라이브 DOM은 건드리지 않음).
+// null이면 지금 화면에 켜져 있는 탭을 그대로 캡처한다.
+function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) {
+    return {
         scale: 3,
         useCORS: true,
         allowTaint: false, // Set to false to allow export if assets are clean
@@ -757,6 +773,22 @@ window.exportAsImage = async function () {
             console.log('Clone created successfully');
             const cloneMain = clonedDoc.querySelector('main');
             if (!cloneMain) return;
+
+            // 0. 전체 PDF 저장처럼 특정 탭을 지정한 경우, 클론 쪽에서만 탭을 갈아끼운다.
+            //    라이브 화면을 실제로 토글하지 않으므로 사용자에게 깜빡임이 보이지 않는다.
+            if (forceView) {
+                const setShown = (id, on) => {
+                    const el = clonedDoc.getElementById(id);
+                    if (el) el.classList.toggle('hidden', !on);
+                };
+                setShown('summary-grid', forceView === 'cancer');
+                setShown('surgery-panel', forceView === 'surgery');
+                setShown('circulatory-panel', forceView === 'circulatory');
+                setShown('other-panel-container', forceView === 'cancer');
+                setShown('insight-section', forceView === 'cancer');
+                const hdr = clonedDoc.getElementById('result-header');
+                if (hdr) hdr.textContent = CAPTURE_VIEW_TITLE[forceView] || hdr.textContent;
+            }
 
             // 1. main의 모든 자식을 돌며 지정한 섹션 외에는 모두 숨김
             const allowedIds = ['file-info', 'insight-section', 'summary-section'];
@@ -778,7 +810,17 @@ window.exportAsImage = async function () {
                 const resetBtn = fileInfo.querySelector('#reset-btn');
                 if (resetBtn) resetBtn.style.display = 'none';
             }
-            if (insight) {
+            // 수술비·뇌심 탭이 켜져 있으면 암 인사이트 카드는 캡처에서 뺀다.
+            // (암 5년 금액이 뇌심 금액처럼 읽히는 것을 막는다)
+            const capShown = id => {
+                const el = clonedDoc.getElementById(id);
+                return !!el && !el.classList.contains('hidden');
+            };
+            const capSgOn = capShown('surgery-panel');
+            const capCcOn = capShown('circulatory-panel');
+            if (insight && (capSgOn || capCcOn)) {
+                insight.style.display = 'none';
+            } else if (insight) {
                 insight.style.display = 'block';
                 insight.classList.remove('hidden');
                 insight.style.marginBottom = '24px';
@@ -795,6 +837,8 @@ window.exportAsImage = async function () {
                 summary.classList.remove('hidden');
                 const exportBtn = summary.querySelector('#export-pdf-btn');
                 if (exportBtn) exportBtn.style.display = 'none';
+                const exportAllBtn = summary.querySelector('#export-all-pdf-btn');
+                if (exportAllBtn) exportAllBtn.style.display = 'none';
 
                 // ── 수술비·뇌·심장 뷰 캡처 ──
                 // 토글이 켜져 있으면 그 화면 그대로 담는다. 토글 버튼 자체는 조작용
@@ -852,6 +896,16 @@ window.exportAsImage = async function () {
             #circulatory-panel svg text, #circulatory-panel .hero-amt {
                 font-family: 'Dongle', 'Noto Sans KR', sans-serif !important;
             }
+            /* 위 line-height:1.6 !important가 style.css의 .hero-amt 줄높이를(비-important라)
+               눌러 금액 박스가 부풀면서 "아래 모든 질환에 적용" 태그가 금액 위에 얹힌다.
+               화면과 같은 값으로 되돌린다. */
+            #circulatory-panel .hero-amt {
+                line-height: 1 !important;
+                display: inline-block !important;
+            }
+            #circulatory-panel .hero-l,
+            #circulatory-panel .hero-tag,
+            #circulatory-panel .hero-sub { line-height: 1.5 !important; }
             `;
             clonedDoc.head.appendChild(style);
 
@@ -973,12 +1027,112 @@ window.exportAsImage = async function () {
             } catch (colorErr) {
                 console.warn('[export] 색상 함수 치환 중 오류(무시하고 진행):', colorErr);
             }
+
+            // ── SVG 자체 완결화 (뇌·심장 동심원) ──
+            // html2canvas는 <svg>를 XMLSerializer로 직렬화해 하나의 이미지로 그린다.
+            // 이때 문서의 CSS는 따라가지 않으므로,
+            //   · fill="var(--brain-3)" 같은 CSS 변수 → 해석 불가 → 도형이 통째로 사라지고
+            //   · .diagram text {font-size:...} 같은 클래스 규칙 → 유실 → 글자 크기가 뭉개진다.
+            // 캡처 직전에 계산된 실제 값을 인라인 style로 박아 SVG 하나로 완결시킨다.
+            try {
+                const sview = clonedDoc.defaultView || window;
+                const SVG_PROPS = [
+                    'fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-opacity',
+                    'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'opacity',
+                    'font-family', 'font-size', 'font-weight', 'font-style',
+                    'letter-spacing', 'text-anchor', 'dominant-baseline'
+                ];
+                let svgFixed = 0;
+                clonedDoc.querySelectorAll('svg').forEach(svg => {
+                    // 직렬화된 SVG가 고유 크기를 갖도록 viewBox 기준 width/height를 명시
+                    const vb = (svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/);
+                    if (vb.length === 4 && !svg.getAttribute('width')) {
+                        svg.setAttribute('width', vb[2]);
+                        svg.setAttribute('height', vb[3]);
+                    }
+                    svg.querySelectorAll('*').forEach(el => {
+                        const cs = sview.getComputedStyle(el);
+                        if (!cs) return;
+                        SVG_PROPS.forEach(prop => {
+                            const v = cs.getPropertyValue(prop);
+                            if (v && v !== 'normal' && v !== 'auto') {
+                                el.style.setProperty(prop, v);
+                            }
+                        });
+                        svgFixed++;
+                    });
+                });
+                if (svgFixed > 0) console.log(`[export] SVG 요소 ${svgFixed}건의 스타일을 인라인화했습니다.`);
+            } catch (svgErr) {
+                console.warn('[export] SVG 인라인화 중 오류(무시하고 진행):', svgErr);
+            }
+
+            // ── 클론 문서의 웹폰트 로딩 대기 ──
+            // html2canvas는 별도 iframe에 문서를 복제해서 렌더링한다. 이 iframe은 원본 문서의
+            // 폰트 로딩 상태를 물려받지 않으므로, 아직 Dongle이 안 올라온 상태로 측정되면
+            // .hero-amt(52px, line-height .72)가 폭 넓은 대체 폰트로 그려지면서
+            // "1,000만원"이 아래 "뇌 계열" 줄을 덮어버린다.
+            // onclone이 반환한 Promise는 렌더링 전에 await 되므로 여기서 기다린다.
+            return (async () => {
+                const cf = clonedDoc.fonts;
+                if (!cf) return;
+                try {
+                    await Promise.all([
+                        cf.load('700 52px Dongle'),
+                        cf.load('700 19px Dongle'),
+                        cf.load('700 13px Dongle'),
+                        cf.load('400 16px "Noto Sans KR"'),
+                        cf.load('800 16px "Noto Sans KR"')
+                    ]);
+                    await cf.ready;
+                } catch (fontErr) {
+                    console.warn('[export] 폰트 대기 실패(무시하고 진행):', fontErr);
+                }
+
+                // 그래도 Dongle을 못 쓰면, 좁은 Dongle 기준으로 잡아둔 line-height가
+                // 대체 폰트에서 아래 줄을 침범한다. 이럴 때만 안전한 값으로 낮춘다.
+                if (!cf.check('700 52px Dongle')) {
+                    console.warn('[export] Dongle 미로드 — 대체 폰트 기준으로 금액 크기를 낮춥니다.');
+                    const fb = clonedDoc.createElement('style');
+                    fb.innerHTML = `
+                    #circulatory-panel .hero-amt {
+                        font-family: 'Noto Sans KR', sans-serif !important;
+                        font-size: 30px !important;
+                        line-height: 1.2 !important;
+                    }
+                    #circulatory-panel svg text { font-family: 'Noto Sans KR', sans-serif !important; }
+                    `;
+                    clonedDoc.head.appendChild(fb);
+                }
+            })();
         }
     };
+}
+
+// 캡처 대상 파일명의 기준이 되는 원본 제안서 이름
+function captureBaseName() {
+    const fileNameEl = document.getElementById('file-name');
+    if (fileNameEl && fileNameEl.innerText) {
+        return fileNameEl.innerText.replace(/\.pdf$/i, '');
+    }
+    return '분석결과';
+}
+
+// ── Image Export Function (Renamed from PDF for clarity) ──
+window.exportAsImage = async function () {
+    console.log('Exporting image started...');
+    const target = document.querySelector('main');
+    if (!target) {
+        console.error('Target main element not found');
+        return;
+    }
+
+    const finalFileName = `${captureBaseName()} 분석.png`;
+    const assets = await prepareCaptureAssets();
 
     try {
         console.log('Calling html2canvas...');
-        const canvas = await html2canvas(target, options);
+        const canvas = await html2canvas(target, buildCaptureOptions(assets));
         console.log('Canvas generated successfully');
         const imgData = canvas.toDataURL('image/png');
         const link = document.createElement('a');
@@ -989,6 +1143,79 @@ window.exportAsImage = async function () {
     } catch (err) {
         console.error('Capture Error Details:', err);
         alert(`이미지 저장 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'} `);
+    }
+};
+
+// ── 전체 PDF 저장 ──
+// 암 / 수술비 / 뇌·심장 탭을 각각 한 장씩 담아 A4 세로 PDF로 내보낸다.
+// 담보가 없어 렌더링되지 않은 탭은 자동으로 건너뛴다(예: 수술비 담보가 없는 제안서 → 2장).
+window.exportAllAsPdf = async function () {
+    const target = document.querySelector('main');
+    if (!target) {
+        console.error('Target main element not found');
+        return;
+    }
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('PDF 라이브러리를 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.');
+        return;
+    }
+
+    const btn = document.getElementById('export-all-pdf-btn');
+    const btnLabel = btn ? btn.querySelector('.eap-label') : null;
+    const restore = () => {
+        if (btn) btn.disabled = false;
+        if (btnLabel) btnLabel.textContent = '전체 PDF 저장';
+    };
+
+    const views = availableCaptureViews();
+    const startView = currentCaptureView();
+    // html2canvas는 문서를 복제할 때 "원본" 요소의 계산된 스타일을 인라인으로 복사한다.
+    // 숨겨진(display:none) 패널은 레이아웃이 없어 SVG transform이 단위행렬로 굳어버려
+    // 동심원이 통째로 깨진다. 그래서 클론에서 켜는 대신 실제 탭을 잠깐 전환한 뒤 찍는다.
+    const activateView = async v => {
+        const b = document.querySelector(`#surgery-toggle button[data-v="${v}"]`);
+        if (b) b.click();
+        // 전환 후 레이아웃이 실제로 반영될 때까지 두 프레임 기다린다
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    };
+
+    try {
+        if (btn) btn.disabled = true;
+        const assets = await prepareCaptureAssets();
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const PW = pdf.internal.pageSize.getWidth();
+        const PH = pdf.internal.pageSize.getHeight();
+        const M = 8;   // 여백(mm)
+
+        for (let i = 0; i < views.length; i++) {
+            const v = views[i];
+            if (btnLabel) btnLabel.textContent = `저장 중… ${i + 1}/${views.length}`;
+            await activateView(v);
+            const canvas = await html2canvas(target, buildCaptureOptions(assets));
+
+            // 여백 안쪽에 비율 유지로 맞춘다. 세로가 긴 화면은 높이 기준으로 축소된다.
+            const maxW = PW - M * 2;
+            const maxH = PH - M * 2;
+            const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
+            const w = canvas.width * ratio;
+            const h = canvas.height * ratio;
+
+            if (i > 0) pdf.addPage();
+            pdf.addImage(
+                canvas.toDataURL('image/jpeg', 0.92), 'JPEG',
+                (PW - w) / 2, M, w, h, undefined, 'FAST'
+            );
+        }
+
+        pdf.save(`${captureBaseName()} 분석 보고서.pdf`);
+        console.log(`[export] PDF ${views.length}장 저장 완료`);
+    } catch (err) {
+        console.error('PDF Export Error:', err);
+        alert(`PDF 저장 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'} `);
+    } finally {
+        await activateView(startView);   // 보고 있던 탭으로 되돌린다
+        restore();
     }
 };
 

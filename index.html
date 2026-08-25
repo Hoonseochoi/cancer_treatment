@@ -14,18 +14,18 @@
     <meta charset="UTF-8">
     <meta name="color-scheme" content="light">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GA 암보장 분석기</title>
+    <title>슈린슈 스마트 가입제안서</title>
     
     <!-- Social Media Metadata -->
-    <meta property="og:title" content="GA 암보장 분석기">
-    <meta property="og:description" content="GA 암보장 분석기로 당신의 보장을 확인하세요.">
+    <meta property="og:title" content="슈린슈 스마트 가입제안서">
+    <meta property="og:description" content="가입제안서 PDF를 올리면 암·뇌·심 치료비 및 수술비를 스마트하게 정리해드려요.">
     <meta property="og:image" content="level/metadata.png">
     <meta property="og:url" content="https://hoonseochoi.com">
     <meta property="og:type" content="website">
     
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="GA 암보장 분석기">
-    <meta name="twitter:description" content="GA 암보장 분석기로 당신의 보장을 확인하세요.">
+    <meta name="twitter:title" content="슈린슈 스마트 가입제안서">
+    <meta name="twitter:description" content="가입제안서 PDF를 올리면 암·뇌·심 치료비 및 수술비를 스마트하게 정리해드려요.">
     <meta name="twitter:image" content="level/metadata.png">
 
     <!-- Favicon -->
@@ -53,7 +53,7 @@
         rel="stylesheet">
 
     <!-- External Styles -->
-    <link rel="stylesheet" href="style.css?v=20260826a">
+    <link rel="stylesheet" href="style.css?v=20260826d">
     <style>
         /* Floating Animation for Insight Card - Refined for Stability */
         @keyframes insightFloat {
@@ -516,25 +516,25 @@
                     <svg width="14" height="14" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                         <path d="M9 12l2 2 4-4" />
                         <circle cx="12" cy="12" r="10" />
-                    </svg> 슈린슈 암 치료비 분석 지원 시스템
+                    </svg> 슈린슈 스마트 가입제안서 시스템
                 </div>
 
                 <h1 id="main-title"
                     class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-6 leading-tight tracking-tighter">
                     <span class="title-accent text-4xl sm:text-7xl font-black relative px-2"
                         style="font-family: 'Noto Sans KR', sans-serif;">
-                        암 치료비
+                        슈린슈
                         <span
                             class="absolute bottom-2 left-0 w-full h-4 bg-gradient-to-r from-red-600/15 to-transparent -z-10 rounded-full"></span>
                     </span>
                     <span
                         class="title-main text-4xl sm:text-7xl font-black text-gray-700 opacity-90 px-1"
                         style="font-family: 'Outfit', 'Noto Sans KR', sans-serif;">
-                        보장금액 분석
+                        스마트 가입제안서
                     </span>
                 </h1>
                 <p id="subtitle" class="text-base sm:text-lg max-w-2xl text-gray-500 font-medium text-center">
-                    가입제안서 PDF를 업로드하면,<br>슈린슈가 보장내역에서 암 치료비만 깔끔하게 정리해드릴게요 !
+                    가입제안서 PDF를 업로드하면,<br>슈린슈가 보장내역에서 암·뇌·심 치료비 및 수술비를 스마트하게 정리해드려요 !
                 </p>
             </header>
 
@@ -667,6 +667,7 @@
                         * 가입제안서를 기반으로 암 치료비를 한눈에 보기 쉽게 재구성한 값입니다. 실제 보상금액과 조건은 가입제안서 및 약관을 확인해주세요. 해당 자료는 참고용으로만 활용하시기 바랍니다.
                     </p>
                     <div class="mt-4 flex flex-wrap justify-between items-center gap-4 relative">
+                        <div class="flex flex-wrap items-center gap-2">
                         <button id="export-pdf-btn" onclick="exportAsImage()"
                             class="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-xl text-xs font-bold hover:bg-gray-700 transition-colors shadow-lg">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -677,6 +678,19 @@
                             </svg>
                             이미지 저장
                         </button>
+                        <!-- 암·수술비·뇌심 탭을 각각 한 장씩 담아 A4 PDF로 내보낸다 -->
+                        <button id="export-all-pdf-btn" onclick="exportAllAsPdf()"
+                            class="flex items-center gap-2 px-4 py-2 bg-white text-gray-800 border border-gray-300 rounded-xl text-xs font-bold hover:bg-gray-50 disabled:opacity-50 disabled:cursor-wait transition-colors shadow-sm">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="12" y1="18" x2="12" y2="12" />
+                                <polyline points="9 15 12 18 15 15" />
+                            </svg>
+                            <span class="eap-label">전체 PDF 저장</span>
+                        </button>
+                        </div>
 
                         <div class="relative w-[130px] h-[36px]">
                             <!-- Error Report Dynamic Island (Anchored to bottom right) -->
@@ -795,7 +809,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Modularized App Scripts -->
-    <script src="js/config.js?v=20260825e"></script>
+    <script src="js/config.js?v=20260826a"></script>
     <script src="js/samsung_config.js?v=20260706c"></script>
     <script src="js/samsung_analyzer.js?v=20260826a"></script>
     <script src="js/db_config.js?v=20260513e"></script>
@@ -808,11 +822,11 @@
     <script src="js/pdf_extractor.js?v=20260709d"></script>
     <script src="js/analyzer.js?v=20260630c"></script>
     <script src="js/score.js?v=20260706d"></script>
-    <script src="js/surgery_data.js?v=20260825e"></script>
+    <script src="js/surgery_data.js?v=20260826a"></script>
     <script src="js/circulatory_data.js?v=20260826a"></script>
-    <script src="js/circulatory_renderer.js?v=20260826c"></script>
-    <script src="js/surgery_renderer.js?v=20260826a"></script>
-    <script src="js/ui_renderer.js?v=20260826c"></script>
+    <script src="js/circulatory_renderer.js?v=20260826d"></script>
+    <script src="js/surgery_renderer.js?v=20260826b"></script>
+    <script src="js/ui_renderer.js?v=20260826i"></script>
     <script src="js/main.js?v=20260825g"></script>
 
     <!-- ── ABOUT MODAL ── -->
