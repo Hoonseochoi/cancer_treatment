@@ -12,6 +12,7 @@
         gtag('config', 'G-TGJ12EJLX8');
     </script>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="light">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GA 암보장 분석기</title>
     
@@ -52,7 +53,7 @@
         rel="stylesheet">
 
     <!-- External Styles -->
-    <link rel="stylesheet" href="style.css?v=20260825d">
+    <link rel="stylesheet" href="style.css?v=20260825e">
     <style>
         /* Floating Animation for Insight Card - Refined for Stability */
         @keyframes insightFloat {
@@ -793,7 +794,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Modularized App Scripts -->
-    <script src="js/config.js?v=20260707a"></script>
+    <script src="js/config.js?v=20260825e"></script>
     <script src="js/samsung_config.js?v=20260706c"></script>
     <script src="js/samsung_analyzer.js?v=20260706a"></script>
     <script src="js/db_config.js?v=20260513e"></script>
@@ -806,9 +807,9 @@
     <script src="js/pdf_extractor.js?v=20260709d"></script>
     <script src="js/analyzer.js?v=20260630c"></script>
     <script src="js/score.js?v=20260706d"></script>
-    <script src="js/surgery_data.js?v=20260825d"></script>
-    <script src="js/surgery_renderer.js?v=20260825d"></script>
-    <script src="js/ui_renderer.js?v=20260825d"></script>
+    <script src="js/surgery_data.js?v=20260825e"></script>
+    <script src="js/surgery_renderer.js?v=20260825e"></script>
+    <script src="js/ui_renderer.js?v=20260825e"></script>
     <script src="js/main.js?v=20260709a"></script>
 
     <!-- ── ABOUT MODAL ── -->
@@ -973,24 +974,6 @@
       }
       #insight-modal-close:hover { background: rgba(0,0,0,0.16); }
       #insight-modal-iframe { width: 100%; height: 100%; border: none; display: block; }
-    </style>
-
-    <!-- ── 다크모드: 모달 패널(TUTORIAL/INSIGHT/PATCHNOTE)은 각각 white 배경으로 고정되어
-         있어, iframe으로 불러오는 페이지들(about.html/insight.html/patchnote.html)도
-         다크모드 시 함께 어두워지도록 패널 배경/닫기 버튼 색도 같이 전환한다 ── -->
-    <style>
-      @media (prefers-color-scheme: dark) {
-        #about-modal-panel, #patchnote-modal-panel, #insight-modal-panel {
-          background: #161D2E !important;
-        }
-        #about-modal-close, #patchnote-modal-close, #insight-modal-close {
-          background: rgba(255,255,255,0.08) !important;
-          color: #E8EAF0 !important;
-        }
-        #about-modal-close:hover, #patchnote-modal-close:hover, #insight-modal-close:hover {
-          background: rgba(255,255,255,0.16) !important;
-        }
-      }
     </style>
 
     <div id="insight-modal-overlay" onclick="handleInsightOverlayClick(event)">

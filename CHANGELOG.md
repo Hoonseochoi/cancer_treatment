@@ -15,7 +15,8 @@
 - **UI 개선**: PATCHNOTE 진입 버튼에 NEW 뱃지 추가.
 - **로직 수정**: N대질병 수술비 그룹 간 중복 미지급 반영. 한 질병이 여러 그룹에 해당해도 가입금액 최고 1개만 지급하고 나머지는 미지급으로 표시.
 - **기능 추가**: 수술비 뷰 이미지 저장 지원. 캡처 시 상세는 전부 접고 토글 버튼은 제외해 목록 형태로 담는다.
-- **UI 개선**: 수술비 패널 색상을 CSS 변수로 토큰화하고 다크모드 대응. 캡처는 `forceLightStyle`에서 토큰을 라이트값으로 되돌려 OS 설정과 무관하게 항상 라이트로 저장(`color-mix` 미사용 — html2canvas 1.4.1 호환).
+- **UI 개선**: 수술비 패널 색상을 CSS 변수로 토큰화. `color-mix` 미사용(html2canvas 1.4.1 호환).
+- **UI 변경**: 다크모드 제거, 항상 라이트로 고정. `style.css`·`index.html`·`about.html`·`patchnote.html`·`insight.html`의 `@media (prefers-color-scheme: dark)` 블록 6개를 모두 삭제하고, `:root { color-scheme: light }`와 각 페이지 `<meta name="color-scheme" content="light">`로 스크롤바·폼 컨트롤까지 라이트 고정. 다크모드에서 인라인 스타일이 오버라이드를 눌러 건너뛰던 `config.js`의 `isDarkMode` 분기도 제거.
 
 ## [2026-02-20]
 - **기능 추가**: 매니저 환영 플로팅 뱃지 시스템 도입.

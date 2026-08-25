@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>INSIGHT — 9개 담보 완전 해설</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -291,62 +292,7 @@
     .di-item-dot { width: 5px; height: 5px; background: #fff; border-radius: 50%; flex-shrink: 0; opacity: 0; transition: opacity 0.2s; }
     .di-item.on .di-item-dot { opacity: 1; }
 
-    /* ── Dark Mode (OS 설정 자동 감지) ──
-       #di-* (Dynamic Island TOC)는 원래도 항상 다크 톤이라 그대로 둠 */
-    @media (prefers-color-scheme: dark) {
-      body { background: #161D2E; color: #E8EAF0; }
-
-      #insight-nav {
-        background: rgba(22, 29, 46, 0.88);
-        border-bottom-color: rgba(255, 255, 255, 0.08);
-      }
-      .nav-logo { color: #E8EAF0; }
-      .nav-back { color: #7C8598; }
-      .nav-back:hover { color: #E8EAF0; }
-
-      .hero-tag, .eyebrow, .cs-count, .ce-num, .cl-label, footer, .cta-disc { color: #7C8598; }
-      .hero-title, h2.stitle, .cs-title, h3.ce-title, .ct-name, .cta-title { color: #E8EAF0; }
-      .hero-sub, .slead, .cs-lead, .ce-oneliner, .ce-pill, .price-drug { color: #9AA3B5; }
-      .hero-badge { background: #1B2337; color: #C7CCD8; }
-
-      .vcard, .hier-box, .ce-callout.price { background: #1B2337; border-color: rgba(255,255,255,0.08); }
-      .vcard:hover { border-color: rgba(255,255,255,0.18); }
-      .vtitle { color: #E8EAF0; }
-      .vdesc { color: #7C8598; }
-
-      .hier-parent { background: #E8EAF0; color: #161D2E; }
-      .hier-child { background: #232C42; color: #C7CCD8; border-color: rgba(255,255,255,0.1); }
-      .hier-note { color: #7C8598; }
-
-      .coverage-section-header { border-bottom-color: rgba(255,255,255,0.3); }
-      .ce-badge.parent { background: #E8EAF0; color: #161D2E; }
-      .ce-badge.child  { background: #232C42; color: #7C8598; }
-
-      .coverage-entry { border-bottom-color: rgba(255,255,255,0.06); }
-      .ce-body { color: #C7CCD8; }
-      .ce-body strong { color: #E8EAF0; }
-
-      .ce-callout.warning { background: rgba(180,131,0,0.15); border-color: rgba(217,164,6,0.3); }
-      .ce-callout.info    { background: rgba(3,150,220,0.12); border-color: rgba(3,150,220,0.3); }
-      .cl-body { color: #C7CCD8; }
-      .cl-body strong { color: #E8EAF0; }
-      .price-row { border-bottom-color: rgba(255,255,255,0.08); }
-
-      .ce-pill { background: #232C42; border-color: rgba(255,255,255,0.08); }
-      .ce-pill strong { color: #C7CCD8; }
-
-      .compare-table th { color: #7C8598; border-bottom-color: rgba(255,255,255,0.3); }
-      .compare-table td { color: #C7CCD8; border-bottom-color: rgba(255,255,255,0.06); }
-      .compare-table tr:hover td { background: #1B2337; }
-      .ct-p { background: #E8EAF0; color: #161D2E; }
-      .ct-c { background: #232C42; color: #9AA3B5; }
-
-      .cta-btn { background: #E8EAF0; color: #161D2E; }
-      .cta-btn:hover { background: #fff; }
-
-      footer { border-top-color: rgba(255,255,255,0.06); }
-    }
-  </style>
+      </style>
 </head>
 <body>
 

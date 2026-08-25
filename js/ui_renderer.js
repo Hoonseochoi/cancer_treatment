@@ -828,11 +828,10 @@ window.exportAsImage = async function () {
             `;
             clonedDoc.head.appendChild(style);
 
-            // ── 다크모드 무력화 (PNG는 뷰어의 OS 설정과 무관하게 항상 라이트모드로 캡처) ──
-            // style.css의 다크모드 오버라이드는 prefers-color-scheme 미디어쿼리로 걸려 있어
-            // html2canvas가 캡처 시점의 실제 OS 다크모드 상태를 그대로 반영해버린다. 이 스타일을
-            // <head> 맨 끝에 추가해 같은 선택자로 라이트값을 다시 덮어써(동일 특이도, 나중 순서가
-            // 이김) 항상 라이트로 캡처되게 만든다.
+            // ── 캡처용 색상 고정 ──
+            // 앱 자체는 항상 라이트로 동작하지만(다크 오버라이드 제거됨), html2canvas는
+            // Tailwind 유틸리티 클래스와 보험사 테마 변수를 그대로 읽어가므로 캡처 시점의
+            // 값을 여기서 한 번 더 못박아 PNG 색이 흔들리지 않게 한다.
             const forceLightStyle = clonedDoc.createElement('style');
             forceLightStyle.innerHTML = `
             :root {
