@@ -50,12 +50,19 @@ function matchGroupKey(policy, group, gwan) {
 }
 
 // 한 술기(variant)에 대해 검토 가능한 담보를 분해한다.
+// 질병 수술비 특별약관 제6조②의 KCD 면책은 질병 입원/통원 수술비와 N대질병 수술비에만
+// 적용된다. 1~5종·1~8종은 각각 별도 특약이라 이 면책을 받지 않으므로 그대로 지급된다.
 function calcSurgeryVariant(policy, s, v) {
     const rows = [];
+    const ex = s.excl || null;
+    const blocked = t => !!(ex && ex.tiers && ex.tiers.indexOf(t) >= 0);
+    const exWhy = ex ? `제6조②${ex.ho} ${ex.why}(${ex.kcd}) — 면책` : '';
+
     const base = Math.max(policy.입원, policy.통원);
     if (base > 0) {
-        rows.push({ k: policy.입원 >= policy.통원 ? '질병 입원 수술비' : '질병 통원 수술비',
-                    s: '입원·통원 중 택일', v: base, on: true });
+        const name = policy.입원 >= policy.통원 ? '질병 입원 수술비' : '질병 통원 수술비';
+        if (blocked('base')) rows.push({ k: name, s: exWhy, v: 0, on: false });
+        else rows.push({ k: name, s: '입원·통원 중 택일', v: base, on: true });
     }
     const a5 = policy.종5[v.g5];
     if (a5 > 0) rows.push({ k: `질병 1~5종 수술비(${v.g5}종)`, s: v.n5, v: a5, on: true });
@@ -68,8 +75,12 @@ function calcSurgeryVariant(policy, s, v) {
         rows.push({ k: '질병군 수술비', s: '분류표에 악성신생물 미포함 — 해당 없음', v: 0, on: false });
     } else if (s.g111) {
         const key = matchGroupKey(policy, s.g111, v.gwan);
-        if (key) rows.push({ k: `질병군 수술비(${key})`, s: v.gwan ? '관혈' : '비관혈',
-                             v: policy.군[key], on: true });
+        if (key && blocked('group')) {
+            rows.push({ k: `질병군 수술비(${key})`, s: exWhy, v: 0, on: false });
+        } else if (key) {
+            rows.push({ k: `질병군 수술비(${key})`, s: v.gwan ? '관혈' : '비관혈',
+                        v: policy.군[key], on: true });
+        }
     }
     if (s.benign && policy.양성[s.benign] != null) {
         rows.push({ k: `통합 양성신생물 수술비(${s.benign})`, s: '가입 후 1년 이내 감액',
@@ -136,24 +147,35 @@ function renderSurgeryPanel(results) {
       <div class="sg-disc"><b>반드시 확인해 주세요</b>
         <ol>
           <li>표시 금액은 <strong>가입금액 기준 검토 가능한 최대 범위</strong>이며 지급을 확정하는 값이 아닙니다. 보상 여부는 <strong>청구 시 제출된 정확한 수술행위</strong>와 약관에 따라 결정됩니다.</li>
-          <li>같은 수술도 <strong>개복·복강경·내시경, 림프절절제 동반 여부, 병원 등급</strong>에 따라 수술 종류(종)와 금액이 달라집니다.</li>
-          <li><strong>1~5종 수술비는 두 종류 이상 수술을 받아도 가장 높은 가입금액 한 종류만</strong> 지급됩니다. 낮은 금액을 먼저 지급한 경우 차액만 지급됩니다.</li>
-          <li><strong>질병 입원 수술비와 통원 수술비는 배타적</strong>이며, 본 화면은 둘 중 큰 금액 하나만 반영했습니다.</li>
+          <li>같은 수술도 <strong>개복·복강경·내시경, 림프절절제 동반 여부</strong>에 따라 수술 종류(종)와 금액이 달라집니다.</li>
+          <li><strong>질병 입원 수술비·통원 수술비 및 N대질병 수술비는 아래 질병에 대해 보상하지 않습니다</strong>(질병 수술비 특별약관 제6조②).
+            정신 및 행동장애(F04~F99) / 습관성 유산·불임·인공수정 관련 합병증(N96~N98, 단 계약일로부터 2년 경과 후 발생 시 지급) /
+            임신·출산(<strong>제왕절개 포함</strong>)·산후기(O00~O99) / 선천기형·변형 및 염색체이상(Q00~Q99) / 비만(E66) /
+            요실금(N39.3, N39.4, R32) / <strong>치핵 및 직장·항문관련질환(I84, K60~K62, K64)</strong> / 치아우식증·치아·치주질환(K00~K08).
+            <em>1~5종·1~8종 수술비는 별도 특약이라 이 면책의 적용을 받지 않습니다.</em></li>
+          <li><strong>질병 1~5종 수술비</strong>는 동시에 두 종류 이상의 수술을 받은 경우 <strong>가장 높은 가입금액에 해당하는 한 종류만</strong> 지급합니다.
+            다만 <strong>동일한 신체부위가 아니면서 의학적으로 치료목적이 다른 독립적인 수술</strong>이면 각각 지급합니다(제3조①).
+            신체부위는 눈·귀·코·씹어먹거나 말하는 기능 관련 부위·머리·목·경추·체간골·흉부장기·복부장기·비뇨생식기·팔·다리·손가락·발가락으로 구분하며, <strong>눈·귀·팔·다리는 좌우를 각각 다른 부위</strong>로 봅니다(제3조②).</li>
+          <li><strong>질병 1~8종 수술비</strong>는 1회의 입원 또는 통원 중 2가지 이상의 수술을 받아도 <strong>하나의 수술시술코드에 한하여</strong> 지급하며, 2가지 이상의 코드가 부여되면 <strong>수술시술종류가 높은 하나</strong>를 지급합니다(제4조①②).
+            <em>예: 유방재건술(J051, 3종)과 유방절제술(J061, 7종)을 동시에 받으면 7종으로 지급</em></li>
+          <li><strong>1~8종 수술비는 국민건강보험 요양급여(또는 의료급여) 절차를 거쳐 급여항목이 발생</strong>해야 하며, 계약 시점에 급여였다가 <strong>비급여로 변경되면 보장에서 제외</strong>됩니다(제3조②④).</li>
+          <li><strong>다음은 「수술」로 보지 않아 1~5종 수술비가 지급되지 않습니다</strong>(제4조③): 흡인 / 천자 / 신경 BLOCK / <strong>미용성형 목적</strong> / <strong>피임 목적</strong> / <strong>검사 및 진단을 위한 수술(생검, 복강경검사 등)</strong> / 기타 수술의 정의에 해당하지 않는 시술.</li>
           <li>동일 질병으로 두 종류 이상 또는 같은 종류의 수술을 2회 이상 받은 경우 <strong>1회에 한하여</strong> 지급되며, 일부 담보는 <strong>수술개시일부터 60일 이내 2회 이상을 1회로 간주</strong>합니다.</li>
-          <li><strong>미용·성형 목적, 피임 목적의 수술은 면책</strong>입니다. 1~5종 수술비는 다수 항목이 <strong>「근본수술」·「근치수술」</strong>을 요건으로 합니다.</li>
-          <li><strong>111대·115대·119대 질병 수술비 분류표에는 악성신생물(암)이 없습니다.</strong> 양성신생물은 포함됩니다.</li>
-          <li>양성신생물 수술비 등 일부 담보는 <strong>가입 후 1년 이내 감액 지급</strong>됩니다.</li>
+          <li><strong>N대질병 수술비 분류표에는 악성신생물(암)이 없습니다.</strong> 양성신생물은 포함됩니다. 1~5종 수술비는 다수 항목이 <strong>「근본수술」·「근치수술」</strong>을 요건으로 합니다.</li>
+          <li>양성신생물 수술비 등 일부 담보는 <strong>가입 후 1년 이내 감액 지급</strong>됩니다. 고의·자해, 수익자·계약자의 고의, 전쟁·외국의 무력행사·혁명·내란·사변·폭동으로 인한 경우도 면책입니다(제6조①).</li>
         </ol>
       </div>`;
 
-    host.addEventListener('click', e => {
+    // onclick 으로 대입한다. addEventListener 를 쓰면 제안서를 다시 분석할 때마다
+    // 핸들러가 중첩되어 클릭 한 번에 토글이 여러 번 뒤집힌다.
+    host.onclick = e => {
         const b = e.target.closest('.sg-btn');
         if (!b) return;
         const row = b.closest('.sg-row');
         const open = row.dataset.open === 'true';
         row.dataset.open = String(!open);
         b.setAttribute('aria-expanded', String(!open));
-    });
+    };
     return true;
 }
 
