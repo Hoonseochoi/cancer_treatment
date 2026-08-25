@@ -140,6 +140,44 @@ async function logUnmatchedCoverages(fileName, insurer, coverageNames) {
 window.logUnmatchedCoverages = logUnmatchedCoverages;
 
 /**
+ * ── 원본 담보 전량 로깅 ──
+ * 제안서에서 추출된 모든 담보 행을 매칭 성공/실패 무관하게 raw_coverage_items에 기록.
+ * unmatched_coverages(미인식 담보명만)와 달리 매칭된 담보까지 전량 남겨, "왜 이건
+ * 잡히고 저건 안 잡히는지" 대조가 가능하다. matchFn을 넘기지 않으면 matched는 NULL.
+ * 테이블 생성 SQL: scripts/supabase_raw_coverage_items.sql
+ */
+async function logRawCoverageItems(fileName, insurer, productName, results, matchFn) {
+    if (!supabaseClient || !results || !results.length) return;
+    try {
+        const rows = results.map(item => ({
+            file_name: fileName || null,
+            insurer: insurer,
+            product_name: productName || null,
+            coverage_name: item.name || null,
+            amount: item.amount || null,
+            premium: item.premium || null,
+            period: item.period || null,
+            kind: item.kind || null,
+            // matchFn(=find*Details)은 암 9카드 매칭 로직이라, kind가 'surgery'인 행은
+            // 애초에 이 함수로 걸릴 대상이 아니다(수술비 계열은 다른 체계). 그런 행까지
+            // false로 찍으면 매번 같은 수십 건이 "미매칭"으로 반복돼 진짜 누락과 구분이
+            // 안 되므로, 이 경우엔 matched를 "해당 없음" 의미로 NULL로 둔다.
+            matched: item.kind === 'surgery' ? null
+                : (typeof matchFn === 'function' ? !!matchFn(item.name) : null)
+        }));
+        const { error } = await supabaseClient
+            .from('raw_coverage_items')
+            .insert(rows);
+        if (error) throw error;
+        const unmatchedCount = rows.filter(r => r.matched === false).length;
+        console.log(`[raw_coverage] ${rows.length}건 로깅 (미매칭 ${unmatchedCount}건)`);
+    } catch (err) {
+        console.error('Failed to log raw coverage items:', err);
+    }
+}
+window.logRawCoverageItems = logRawCoverageItems;
+
+/**
  * ── 커버리지 스냅샷 로깅 ──
  * PDF 분석 완료 시 9개 카드 값 + 메타정보를 coverage_snapshots 테이블에 저장
  */

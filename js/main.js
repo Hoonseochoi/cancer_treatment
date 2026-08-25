@@ -1,3 +1,15 @@
+// ── 보험사별 담보 매칭 함수 맵 (raw_coverage_items 로깅용) ──
+// 각 find*Details()는 내부적으로 자체 매핑 테이블까지 다 확인하므로, 호출 결과의
+// truthy 여부만으로 "이 담보명이 현재 로직에 잡히는지"를 그대로 판정할 수 있다.
+// main.js가 다른 스크립트들보다 나중에 로드되므로 이 시점엔 전부 정의돼 있다.
+const MATCH_FN_BY_INSURER = {
+    samsung: typeof findSamsungDetails === 'function' ? findSamsungDetails : null,
+    db: typeof findDBDetails === 'function' ? findDBDetails : null,
+    heungkuk: typeof findHeungkukDetails === 'function' ? findHeungkukDetails : null,
+    mirae: typeof findMiraeDetails === 'function' ? findMiraeDetails : null,
+    meritz: typeof findDetails === 'function' ? findDetails : null
+};
+
 // ── Insurer Detection ──
 function detectInsurer(text) {
     // 0차: DB손해보험 → idbins.com URL / 브랜드명 (가장 명확한 식별자)
@@ -324,6 +336,11 @@ async function processFile(file) {
                         ? extractRawCoveragesMirae(text)
                         : extractRawCoverages(text);
         console.log(`[extraction] ${results.length}건 추출 (insurer=${insurer})`);
+
+        // 원본 담보 전량 로깅 (매칭 성공/실패 무관, 향후 매핑 로직 보완용)
+        if (typeof logRawCoverageItems === 'function') {
+            logRawCoverageItems(file.name, insurer, samsungMeta.productName, results, MATCH_FN_BY_INSURER[insurer]);
+        }
 
         // 미인식 담보 추적
         if (insurer === 'samsung' && typeof findSamsungDetails === 'function') {
