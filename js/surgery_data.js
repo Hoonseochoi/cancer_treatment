@@ -131,7 +131,8 @@ const SURGERY_DATA = [
     "gwan": false
    }
   ],
-  "hot": 4
+  "hot": 4,
+  "noBase": "절단·절제가 없어 약관의 「수술」 정의 미충족 — 지급 대상 아님"
  },
  {
   "name": "갑상선 결절 고주파절제술",

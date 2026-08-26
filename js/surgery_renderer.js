@@ -61,7 +61,10 @@ function calcSurgeryVariant(policy, s, v) {
     const base = Math.max(policy.입원, policy.통원);
     if (base > 0) {
         const name = policy.입원 >= policy.통원 ? '질병 입원 수술비' : '질병 통원 수술비';
-        if (blocked('base')) rows.push({ k: name, s: exWhy, v: 0, on: false });
+        // noBase = 약관의 「수술」 정의(절단·절제)를 충족하지 못해 질병수술비 자체가
+        // 나오지 않는 행위. 계산상 금액이 붙어 버리면 상담에서 오해를 부른다.
+        if (s.noBase) rows.push({ k: name, s: s.noBase, v: 0, on: false });
+        else if (blocked('base')) rows.push({ k: name, s: exWhy, v: 0, on: false });
         else rows.push({ k: name, s: '입원·통원 중 택일', v: base, on: true });
     }
     // g5/g8이 null이면 분류표에 대응 항목이 없다는 뜻이다(하이푸 등 비수술 시술).
