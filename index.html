@@ -53,7 +53,7 @@
         rel="stylesheet">
 
     <!-- External Styles -->
-    <link rel="stylesheet" href="style.css?v=20260826f">
+    <link rel="stylesheet" href="style.css?v=20260826g">
     <style>
         /* Floating Animation for Insight Card - Refined for Stability */
         @keyframes insightFloat {
@@ -409,7 +409,7 @@
                           <span aria-label="새 소식" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#7C3AED,#a855f7);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(124,58,237,0.35);pointer-events:none;">NEW</span>
                         </span>
                         <span style="position:relative;display:inline-block;animation:aboutFloat 4.2s ease-in-out infinite;animation-delay:1.2s;line-height:1;">
-                          <button onclick="openSurgeryDict()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#0B6B7A,#14B8A6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">백과사전</button>
+                          <button onclick="openSurgeryDict()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#0B6B7A,#14B8A6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">1~8종 검색</button>
                           <span aria-label="새 소식" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#0B6B7A,#14B8A6);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(11,107,122,0.35);pointer-events:none;">NEW</span>
                         </span>
                     </div><!-- end left-group -->
@@ -840,7 +840,7 @@
     <script src="js/circulatory_renderer.js?v=20260826d"></script>
     <script src="js/surgery_renderer.js?v=20260826f"></script>
     <script src="js/surgery_dict_data.js?v=20260826a"></script>
-    <script src="js/surgery_dict.js?v=20260826a"></script>
+    <script src="js/surgery_dict.js?v=20260826b"></script>
     <script src="js/ui_renderer.js?v=20260826p"></script>
     <script src="js/main.js?v=20260826a"></script>
 
@@ -882,12 +882,12 @@
       #about-modal-iframe { width: 100%; height: 100%; border: none; display: block; }
     </style>
 
-    <!-- ── 수술비 백과사전 ── -->
+    <!-- ── 1~8종 수술 검색 ── -->
     <div id="sd-overlay">
       <div id="sd-panel">
         <div id="sd-head">
           <div>
-            <h2>수술비 백과사전</h2>
+            <h2>1~8종 수술 검색</h2>
             <p>질병명 · 수술명 · 수가코드로 1~8종 등급을 찾아보세요</p>
           </div>
           <button id="sd-close" onclick="closeSurgeryDict()" aria-label="닫기">✕</button>
@@ -900,6 +900,15 @@
                  placeholder="예) 대장용종 · 백내장 · 디스크 · Q7701">
         </div>
         <div id="sd-result"></div>
+        <div id="sd-foot">
+          <b>⚠ 참고용 자료입니다</b>
+          KDRG v4.6 분류체계를 기준으로 정리했으며, 실제 지급은 가입 시점의 약관과 KDRG 버전,
+          진단명·수술행위·급여 여부에 따라 달라질 수 있습니다. 여기서 확인한 종·금액은
+          <strong>사전 참고용</strong>일 뿐 확정된 보험금이 아니며, 최종 판단은 약관 원문과
+          보험사 심사를 기준으로 합니다.<br>
+          코드가 검색돼도 <strong>미용 목적·피임(불임술 포함) 목적·검사 및 진단 목적의 수술은
+          약관상 지급 제외</strong>입니다. 목적이 애매한 시술은 반드시 약관 원문을 확인하세요.
+        </div>
       </div>
     </div>
 

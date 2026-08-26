@@ -926,7 +926,10 @@ strong {
 .sd-amt-l{font-size:11px;color:var(--sg-muted)}
 .sd-amt b{font-size:15px;font-weight:800;color:var(--sg-accent);white-space:nowrap;
   font-variant-numeric:tabular-nums}
-.sd-disc{margin:14px 0 0;font-size:10.4px;color:var(--sg-off);line-height:1.7}
+/* 항상 보이는 하단 고지 — 검색 전/후 화면 모두에 붙어 결과마다 반복하지 않는다 */
+#sd-foot{flex-shrink:0;padding:11px 24px;border-top:1px solid var(--sg-line);
+  background:var(--sg-note-bg);font-size:10.6px;color:var(--sg-note-ink);line-height:1.7}
+#sd-foot b{display:block;font-size:11px;font-weight:800;margin-bottom:3px;color:var(--sg-note-ink)}
 
 .sd-empty{padding:30px 4px;text-align:center}
 .sd-empty b{display:block;font-size:14px;color:var(--sg-ink);margin-bottom:8px}
@@ -956,7 +959,7 @@ strong {
 @media(max-width:560px){
   #sd-overlay{padding:0}
   #sd-panel{max-width:none;max-height:100vh;height:100%;border-radius:0}
-  #sd-head,#sd-result{padding-left:16px;padding-right:16px}
+  #sd-head,#sd-result,#sd-foot{padding-left:16px;padding-right:16px}
   #sd-searchbar{margin-left:16px;margin-right:16px}
   .sd-rel{width:42px}
 }
