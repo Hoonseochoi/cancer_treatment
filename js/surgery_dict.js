@@ -123,7 +123,17 @@ const DICT_SYNONYM = {
     '만성콩팥병': ['혈액투석'],
 
     // ── 뇌혈관질환 ──
-    '뇌졸중': ['뇌졸중']
+    '뇌졸중': ['뇌졸중'],
+
+    // ── 유사도(바이그램)로도 못 잡는 것들 ──
+    // 한글 병명과 약관의 한자어 용어가 글자를 하나도 안 공유하면 바이그램
+    // 유사도 자체가 성립하지 않는다(예: "손목터널증후군" vs "수근관"은 겹치는
+    // 글자가 없다). 이런 건 유사도가 아니라 의학적으로 같은 걸 안다는 지식이
+    // 있어야 이어줄 수 있어서, 발견할 때마다 여기에 추가한다.
+    '손목터널증후군': ['수근관'],
+    '수근관증후군': ['수근관'],
+    '척추관협착증': ['척추후궁'],
+    '허리협착증': ['척추후궁']
 };
 
 // 검색어를 약관 용어까지 넓힌다. ['대장용종'] → ['대장용종','결장경','폴립']
@@ -167,6 +177,30 @@ function dictScore(terms, code, t, procs) {
     return { s, hitProc };
 }
 
+// ── 관련도 낮은 결과를 위한 유사도 매칭 ──
+// 관련율(%)을 굳이 만든 이유가 "정확히 안 맞아도 관련 있는 걸 보여주기" 위해서인데,
+// 지금까지는 정답이 하나도 안 걸리면 그냥 빈 화면이었다. "탈출증" 같은 우연한
+// 글자 겹침 사고를 겪고 나서 임의 위치 분할(blind splitting)은 걷어냈지만,
+// 그 자리를 메울 안전한 대체재가 없었다.
+// 2글자 슬라이딩 윈도우(바이그램) 자카드 계수는 이 둘의 장점만 취한다 —
+// 부분 글자가 겹치면 관련도가 오르되(재현율), 겹치는 비율이 낮으면 점수도
+// 낮게 나온다(정밀도). "요추간판탈출증"과 "직장 탈출증 수술"은 "탈출증" 2글자만
+// 겹쳐 비율이 낮고, 진짜 정답 "추간판제거술"과는 "추간"·"간판"이 겹쳐 비율이
+// 훨씬 높다 — 즉 이 사고 케이스에서도 정답이 자연히 위로 온다.
+function bigrams(s) {
+    const out = new Set();
+    const clean = s.replace(/[\s()·,\-\[\]]/g, '');
+    if (clean.length < 2) { if (clean) out.add(clean); return out; }
+    for (let i = 0; i < clean.length - 1; i++) out.add(clean.slice(i, i + 2));
+    return out;
+}
+function diceSim(a, b) {
+    if (!a.size || !b.size) return 0;
+    let inter = 0;
+    a.forEach(g => { if (b.has(g)) inter++; });
+    return (2 * inter) / (a.size + b.size);
+}
+
 function dictSearch(q, limit = 20) {
     if (!q || q.trim().length < 2) return [];
     const terms = dictExpand(q);
@@ -177,10 +211,30 @@ function dictSearch(q, limit = 20) {
         const { s, hitProc } = dictScore(terms, code, t, procs);
         if (s > 0) res.push({ code, g: t[0], n: t[1], tier: t[2], score: s, procs: hitProc });
     });
-    res.sort((a, b) => b.score - a.score || a.code.localeCompare(b.code));
-    const top = res.slice(0, limit);
-    const max = top.length ? top[0].score : 1;
-    top.forEach(r => { r.rel = Math.max(5, Math.round(r.score / max * 100)); });
+
+    if (res.length) {
+        res.sort((a, b) => b.score - a.score || a.code.localeCompare(b.code));
+        const top = res.slice(0, limit);
+        const max = top.length ? top[0].score : 1;
+        top.forEach(r => { r.rel = Math.max(5, Math.round(r.score / max * 100)); r.fuzzy = false; });
+        return top;
+    }
+
+    // ── 정확히 맞는 게 하나도 없을 때만 유사도로 대체한다 ──
+    // 확실한 결과가 있는데 굳이 흐릿한 후보를 섞지 않는다. 완전히 빈 화면일 때만
+    // "그나마 관련 있을 수 있는" 항목을 보여준다.
+    const qBig = bigrams(terms[0]);
+    const fuzzy = [];
+    Object.keys(SURGERY_DICT.tier).forEach(code => {
+        const t = SURGERY_DICT.tier[code];
+        const text = t[0] + t[1];
+        const sim = diceSim(qBig, bigrams(text));
+        if (sim >= 0.12) fuzzy.push({ code, g: t[0], n: t[1], tier: t[2], score: sim, procs: [] });
+    });
+    fuzzy.sort((a, b) => b.score - a.score || a.code.localeCompare(b.code));
+    const top = fuzzy.slice(0, Math.min(limit, 8));
+    // 관련율 상한을 60%로 눌러 "확실한 일치"와 시각적으로 구분한다.
+    top.forEach(r => { r.rel = Math.max(5, Math.min(60, Math.round(r.score * 100))); r.fuzzy = true; });
     return top;
 }
 
@@ -217,22 +271,27 @@ function dictRender(q) {
 
     const hits = dictSearch(q);
     if (!hits.length) {
+        // 유사도 기준(0.12)조차 못 넘긴 경우 — 진짜로 관련 항목이 없다고 볼 수 있다.
         box.innerHTML = `<div class="sd-empty">
-            <b>‘${q}’에 해당하는 항목을 찾지 못했어요.</b>
-            <p>둘 중 하나예요 — ① 수술명이 약관 용어로 적혀 있어서일 수 있어요.
-               예를 들어 백내장은 <em>수정체</em>, 대장용종은 <em>결장경</em>으로 검색해 보세요.
-               수가코드(예: <em>Q7701</em>)도 바로 찾을 수 있습니다.<br><br>
-               ② 이 검색 결과가 없다면 <strong>절단·절제 등을 동반하는 수술로 분류되지 않는
+            <b>‘${q}’와 관련 있어 보이는 항목을 찾지 못했어요.</b>
+            <p>수술명이 약관 용어로 적혀 있어서일 수 있어요. 예를 들어 백내장은 <em>수정체</em>,
+               대장용종은 <em>결장경</em>으로 검색해 보세요. 수가코드(예: <em>Q7701</em>)도
+               바로 찾을 수 있습니다.<br><br>
+               그래도 안 나온다면 <strong>절단·절제 등을 동반하는 수술로 분류되지 않는
                질환</strong>일 가능성이 높아요. 감기·고혈압·당뇨병처럼 약물로 치료하는
                질환은 애초에 1~8종 수술비 대상이 아닙니다.</p>
           </div>`;
         return;
     }
     const policy = dictPolicy();
+    const isFuzzy = hits[0].fuzzy;
     box.innerHTML = `
       <div class="sd-count">${hits.length}건 · 관련율 높은 순</div>
+      ${isFuzzy ? `<p class="sd-fuzzy-note">⚡ 정확히 일치하는 항목은 없어서, <strong>글자가 비슷한 순</strong>으로
+          관련 있을 수 있는 항목을 보여드려요. 관련율이 낮을수록 실제로는 무관할 가능성이 커요 —
+          아래 목록은 참고만 하시고, 정확한 명칭이나 수가코드로 다시 검색해 보시는 걸 권해요.</p>` : ''}
       ${hits.map(h => `
-        <div class="sd-card">
+        <div class="sd-card${h.fuzzy ? ' fuzzy' : ''}">
           <div class="sd-top">
             <span class="sd-rel" style="--w:${h.rel}%"><i></i><b>${h.rel}%</b></span>
             <span class="sd-name">${h.n}</span>
@@ -241,7 +300,7 @@ function dictRender(q) {
           <div class="sd-sub">${h.g} · <code>${h.code}</code></div>
           ${h.procs.length ? `<ul class="sd-procs">${h.procs.slice(0, 5).map(p =>
               `<li><code>${p[0]}</code> ${p[1]}</li>`).join('')}</ul>` : ''}
-          ${dictAmountHtml(h.tier, policy)}
+          ${h.fuzzy ? '' : dictAmountHtml(h.tier, policy)}
         </div>`).join('')}`;
     // 면책 문구는 항상 보이는 하단 고정 영역(#sd-foot)에 있어 결과마다 반복하지 않는다.
 }
