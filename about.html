@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="color-scheme" content="light">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>About — GA 암보장 분석기</title>
+  <title>About — 슈린슈 스마트 가입제안서</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -114,6 +114,66 @@
     .ficon { font-size: 1.3rem; margin-bottom: 8px; display: block; }
     .ftitle { font-size: 0.88rem; font-weight: 700; color: #111; margin-bottom: 4px; }
     .fdesc { font-size: 0.78rem; color: #9ca3af; line-height: 1.65; }
+
+    /* ── OPEN 배너 (스마트 가입제안서) ── */
+    .open-banner {
+      background: #111; color: #fff; border-radius: 20px;
+      padding: 40px 36px; margin-top: 28px;
+    }
+    .open-flag {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 0.62rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16);
+      color: #fff; border-radius: 99px; padding: 5px 12px; margin-bottom: 18px;
+    }
+    .open-flag .dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; }
+    .open-h { font-size: clamp(1.4rem, 3.4vw, 2rem); font-weight: 900; letter-spacing: -1px; line-height: 1.25; margin-bottom: 12px; }
+    .open-p { font-size: 0.87rem; color: rgba(255,255,255,0.5); line-height: 1.85; max-width: 520px; }
+    .open-only {
+      margin-top: 22px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .open-only-badge {
+      font-size: 0.72rem; font-weight: 800; color: #111; background: #fff;
+      border-radius: 8px; padding: 5px 11px;
+    }
+    .open-only-txt { font-size: 0.76rem; color: rgba(255,255,255,0.42); line-height: 1.6; }
+
+    /* ── 탭 카드 3종 ── */
+    .tabgrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 28px; }
+    @media(max-width:640px){ .tabgrid { grid-template-columns: 1fr; } }
+    .tabcard { background: #fafafa; border: 1px solid #efefef; border-radius: 16px; padding: 22px 20px; }
+    .tabcard.on { background: #111; border-color: #111; }
+    .tabpill {
+      display: inline-block; font-size: 0.66rem; font-weight: 800; letter-spacing: .5px;
+      border-radius: 99px; padding: 3px 10px; margin-bottom: 11px;
+      background: #ececec; color: #6b7280;
+    }
+    .tabcard.on .tabpill { background: rgba(255,255,255,0.14); color: #fff; }
+    .tabt { font-size: 0.92rem; font-weight: 800; color: #111; margin-bottom: 6px; }
+    .tabcard.on .tabt { color: #fff; }
+    .tabd { font-size: 0.79rem; color: #9ca3af; line-height: 1.7; }
+    .tabcard.on .tabd { color: rgba(255,255,255,0.5); }
+
+    /* ── 인라인 캡처 ── */
+    .shotwrap { margin-top: 28px; }
+    .shot { border-radius: 14px; overflow: hidden; border: 1px solid #ececec; box-shadow: 0 6px 28px rgba(0,0,0,0.06); }
+    .shot img { width: 100%; display: block; }
+    .shotcap { font-size: 0.73rem; color: #b0b0b0; margin-top: 10px; line-height: 1.7; }
+    .shot-btn { max-width: 300px; border: none; box-shadow: none; }
+
+    /* ── 포인트 리스트 ── */
+    .plist { margin-top: 26px; display: grid; gap: 10px; }
+    .pitem {
+      display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start;
+      background: #fafafa; border: 1px solid #efefef; border-radius: 13px; padding: 16px 18px;
+    }
+    .pnum {
+      width: 22px; height: 22px; border-radius: 7px; background: #111; color: #fff;
+      font-size: 0.66rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    }
+    .ptxt { font-size: 0.82rem; color: #6b7280; line-height: 1.75; }
+    .ptxt b { color: #111; font-weight: 700; }
 
     /* ── COLLAB BOX ── */
     .collab-box {
@@ -270,7 +330,7 @@
 
 <nav id="about-nav">
   <div class="nav-inner">
-    <a href="index.html" class="nav-logo">GA 암보장 분석기</a>
+    <a href="index.html" class="nav-logo">슈린슈 스마트 가입제안서</a>
     <a href="index.html" class="nav-back">← 분석기로</a>
   </div>
 </nav>
@@ -283,7 +343,7 @@
     <h1 class="hero-title">복잡한 가입제안서,<br>핵심만 빠르게</h1>
     <p class="hero-sub">
       내가 설계한 가입제안서 설명하기 힘드셨죠?<br>
-      PDF 하나면 암 치료비 담보가 자동으로 정리됩니다.
+      PDF 하나면 암 · 수술비 · 뇌·심장 담보가 자동으로 정리됩니다.
     </p>
     <div class="hero-badges">
       <span class="hero-badge">메리츠화재</span>
@@ -305,7 +365,7 @@
       <div class="vcard fu">
         <span class="vicon">⚡</span>
         <p class="vtitle">즉시 분석</p>
-        <p class="vdesc">PDF 업로드 후 수초 내 암 치료비 담보 자동 추출. 5년 최대 보장금액까지 한 화면에.</p>
+        <p class="vdesc">PDF 업로드 후 수초 내 담보 자동 추출. 5년 최대 보장금액까지 한 화면에.</p>
       </div>
       <div class="vcard fu" style="transition-delay:.07s">
         <span class="vicon">🏢</span>
@@ -314,9 +374,147 @@
       </div>
       <div class="vcard fu" style="transition-delay:.14s">
         <span class="vicon">📸</span>
-        <p class="vtitle">이미지 저장</p>
-        <p class="vdesc">분석 결과를 PNG 한 장으로 저장. 카카오톡으로 고객에게 바로 공유하세요.</p>
+        <p class="vtitle">저장 &amp; 공유</p>
+        <p class="vdesc">화면은 PNG 한 장으로, 전체는 A4 PDF로. 카카오톡으로 고객에게 바로 공유하세요.</p>
       </div>
+    </div>
+  </section>
+
+  <!-- SMART OPEN -->
+  <section class="section fu" id="s-smart">
+    <span class="eyebrow">NEW</span>
+    <h2 class="stitle">스마트 가입제안서 OPEN</h2>
+    <p class="slead">
+      암 치료비만 보던 화면에 <strong>수술비</strong>와 <strong>뇌·심장</strong>이 더해졌습니다.<br>
+      같은 제안서 한 장으로 세 가지 보장을 각각 정리해 보여드립니다.
+    </p>
+
+    <div class="open-banner fu">
+      <span class="open-flag"><span class="dot"></span>Now Open</span>
+      <p class="open-h">제안서 한 장, 세 가지 관점</p>
+      <p class="open-p">
+        업로드하면 상단에 토글이 생깁니다. 암 보장 · 수술비 · 뇌·심장을 눌러가며
+        보여주고, 필요한 화면만 저장하거나 세 장을 한 번에 PDF로 내보낼 수 있습니다.
+      </p>
+      <div class="open-only">
+        <span class="open-only-badge">삼성화재 전용</span>
+        <span class="open-only-txt">
+          수술비 · 뇌·심장 분석은 현재 <strong style="color:rgba(255,255,255,.75)">삼성화재 제안서에서만</strong> 동작합니다.
+          다른 보험사는 기존과 같이 암 보장 분석만 제공됩니다.
+        </span>
+      </div>
+    </div>
+
+    <div class="tabgrid">
+      <div class="tabcard fu">
+        <span class="tabpill">기본</span>
+        <p class="tabt">암 보장</p>
+        <p class="tabd">기존 그대로입니다. 9개 카드와 5년간 받을 수 있는 암 치료비를 보여줍니다.</p>
+      </div>
+      <div class="tabcard on fu" style="transition-delay:.07s">
+        <span class="tabpill">NEW</span>
+        <p class="tabt">수술비</p>
+        <p class="tabd">많이 하는 수술 30종이 각각 얼마까지 검토 가능한지 금액으로 나옵니다.</p>
+      </div>
+      <div class="tabcard on fu" style="transition-delay:.14s">
+        <span class="tabpill">NEW</span>
+        <p class="tabt">뇌·심장</p>
+        <p class="tabd">뇌와 심장을 동심원으로 그려, 어느 질환이 얼마를 덮는지 한눈에 보여줍니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 수술비 -->
+  <section class="section fu" id="s-surgery">
+    <span class="eyebrow">SURGERY</span>
+    <h2 class="stitle">"이 수술 받으면 얼마 나와요?"</h2>
+    <p class="slead">
+      상담에서 가장 많이 듣는 질문입니다. 담보를 하나씩 짚어가며 계산하지 않아도,
+      수술 이름 옆에 검토 가능한 금액이 바로 붙습니다.
+    </p>
+
+    <div class="shotwrap">
+      <div class="shot"><img src="ABOUT/sg_top5.png" alt="수술비 검토 화면 — 다빈도 수술 TOP 5와 수술별 금액 목록"></div>
+      <p class="shotcap">맨 위에 많이 하는 수술 5종을 먼저 띄우고, 아래에 30종 전체를 나열합니다.</p>
+    </div>
+
+    <div class="plist">
+      <div class="pitem fu">
+        <span class="pnum">1</span>
+        <p class="ptxt"><b>다빈도 수술 TOP 5를 먼저</b> — 백내장 · 대장용종 · 치핵 · 담낭절제 · 디스크.
+        고객이 가장 많이 묻는 다섯 가지를 상단에 고정했습니다.</p>
+      </div>
+      <div class="pitem fu" style="transition-delay:.06s">
+        <span class="pnum">2</span>
+        <p class="ptxt"><b>어느 담보에서 나오는지까지</b> — 질병수술비 · 1~5종 · 1~8종 · N대질병이
+        각각 몇 종으로 걸리는지 뱃지로 표시합니다. 금액의 근거를 그 자리에서 설명할 수 있습니다.</p>
+      </div>
+      <div class="pitem fu" style="transition-delay:.12s">
+        <span class="pnum">3</span>
+        <p class="ptxt"><b>술기가 갈리면 범위로</b> — 개복이냐 복강경이냐에 따라 금액이 달라지는 수술은
+        범위로 보여주고, 누르면 술기별 상세가 펼쳐집니다.</p>
+      </div>
+      <div class="pitem fu" style="transition-delay:.18s">
+        <span class="pnum">4</span>
+        <p class="ptxt"><b>면책도 반영</b> — 치핵 · 제왕절개처럼 약관 제6조②에 걸리는 수술은
+        해당 담보를 빼고 계산합니다. 실제보다 크게 보이지 않도록 했습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 뇌심장 -->
+  <section class="section fu" id="s-circ">
+    <span class="eyebrow">BRAIN &amp; HEART</span>
+    <h2 class="stitle">뇌와 심장은,<br>넓을수록 좋은 보장입니다</h2>
+    <p class="slead">
+      뇌출혈 ⊂ 뇌졸중 ⊂ 뇌혈관질환. 급성심근경색 ⊂ 허혈성심장질환.
+      말로 설명하면 어려운 포함 관계를 동심원으로 그려, 바깥 고리가 넓을수록 좋다는 걸 눈으로 보여줍니다.
+    </p>
+
+    <div class="shotwrap">
+      <div class="shot"><img src="ABOUT/cc_rings.png" alt="뇌·심장 한눈에 보기 — 뇌와 심장 모양 동심원과 치료 행위별 금액"></div>
+      <p class="shotcap">뇌는 뇌 모양으로, 심장은 하트 모양으로. 각 고리 안에 검토 가능한 최대 금액이 들어갑니다.</p>
+    </div>
+
+    <div class="plist">
+      <div class="pitem fu">
+        <span class="pnum">1</span>
+        <p class="ptxt"><b>가장 바깥 고리 = 최대 금액</b> — 그 질환으로 치료·수술받았을 때
+        검토 가능한 금액(치료비 + 수술비)입니다. 안쪽 고리는 전용 담보가 있을 때만 더해집니다.</p>
+      </div>
+      <div class="pitem fu" style="transition-delay:.06s">
+        <span class="pnum">2</span>
+        <p class="ptxt"><b>특정 순환계 질환 치료비를 강조</b> — 41개 질병코드를 통째로 덮는 가장 넓은 담보입니다.
+        옆의 <strong>?</strong>를 누르면 어떤 코드가 포함되는지 전부 확인할 수 있습니다.</p>
+      </div>
+      <div class="pitem fu" style="transition-delay:.12s">
+        <span class="pnum">3</span>
+        <p class="ptxt"><b>수술 · 혈전용해 · 혈전제거</b> — 치료 행위별로 얼마가 나오는지 카드로 표시하고,
+        수술비 계열(질병수술비 · 1~5종 · N대질병)을 합산해 함께 보여줍니다.</p>
+      </div>
+      <div class="pitem fu" style="transition-delay:.18s">
+        <span class="pnum">4</span>
+        <p class="ptxt"><b>놓치기 쉬운 구멍도 알려드립니다</b> — 예를 들어 뇌졸중 분류표에는 I64(상세불명 뇌졸중)가
+        없습니다. 이런 함정은 화면에 경고로 띄웁니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 전체 PDF -->
+  <section class="section fu" id="s-pdf">
+    <span class="eyebrow">EXPORT</span>
+    <h2 class="stitle">세 화면을 한 번에, PDF로</h2>
+    <p class="slead">
+      「이미지 저장」 옆에 <strong>전체 PDF 저장</strong>이 생겼습니다.
+      암 보장 · 수술비 · 뇌·심장을 각각 한 장씩 담아 A4 세로 PDF로 내려받습니다.
+    </p>
+
+    <div class="shotwrap">
+      <div class="shot shot-btn"><img src="ABOUT/pdf_btn.png" alt="이미지 저장과 전체 PDF 저장 버튼"></div>
+      <p class="shotcap">
+        담보가 없어 표시되지 않는 탭은 자동으로 빠집니다.
+        수술비 담보가 없는 제안서라면 암 보장과 뇌·심장, 두 장으로 나옵니다.
+      </p>
     </div>
   </section>
 
@@ -337,7 +535,7 @@
       <div class="step rev fu">
         <div>
           <span class="snum">STEP 02</span>
-          <p class="stept">암 치료비 자동 분석</p>
+          <p class="stept">담보 자동 분석</p>
           <p class="stepd">업로드된 PDF에서 암 관련 담보만 자동으로 추출합니다.<br><br>항암방사선 · 항암약물 · 암수술비 등 9개 카드로 분류하고, 5년간 받을 수 있는 최대 보장금액을 한눈에 확인하세요.</p>
         </div>
         <div class="simgs2">
@@ -372,7 +570,7 @@
       <div class="icard fu" style="transition-delay:.07s">
         <div class="iname">삼성화재</div>
         <span class="ibadge blive">✓ 정식 지원</span>
-        <p class="idesc">담보가입현황 기반 정밀 추출</p>
+        <p class="idesc">담보가입현황 기반 정밀 추출 · <strong>수술비/뇌·심장 지원</strong></p>
       </div>
       <div class="icard fu" style="transition-delay:.14s">
         <div class="iname">DB손해보험</div>
@@ -397,7 +595,7 @@
         <div class="fbody">
           <span class="ficon">🖼️</span>
           <p class="ftitle">이미지 저장</p>
-          <p class="fdesc">분석된 암 치료비 보장 내역을 이미지 한 장으로 저장합니다. 고객 미팅 전 빠르게 준비하거나 상담 후 증빙 자료로 활용하세요.</p>
+          <p class="fdesc">보고 있는 화면을 이미지 한 장으로 저장합니다. 고객 미팅 전 빠르게 준비하거나 상담 후 증빙 자료로 활용하세요.</p>
         </div>
       </div>
       <div class="fcard fu" style="transition-delay:.1s">
@@ -428,7 +626,7 @@
     <p class="cta-sub">PDF 하나면 충분합니다</p>
     <a href="index.html" class="cta-btn" onclick="if(window!==window.top){window.parent.closeAboutModal();return false;}">가입제안서 업로드하기 →</a>
     <p class="cta-disc">
-      * 이 서비스는 가입제안서를 기반으로 암 치료비를 한눈에 보기 쉽게 재구성한 참고용 도구입니다.<br>
+      * 이 서비스는 가입제안서를 기반으로 담보를 한눈에 보기 쉽게 재구성한 참고용 도구입니다.<br>
       실제 보상금액과 조건은 가입제안서 및 약관을 반드시 확인하세요.
     </p>
   </div>
@@ -436,7 +634,7 @@
 </div><!-- /about-content -->
 
 <footer>
-  GA 암보장 분석기 · 설계 매니저를 위한 도구 · 문의: contact@surinsur.com
+  슈린슈 스마트 가입제안서 · 설계 매니저를 위한 도구 · 문의: contact@surinsur.com
 </footer>
 
 <!-- ════ DYNAMIC ISLAND TOC ════ -->
@@ -447,7 +645,7 @@
     <!-- CLOSED PILL -->
     <div id="di-closed">
       <div class="di-dot"></div>
-      <span id="di-section-label">GA 암보장 분석기</span>
+      <span id="di-section-label">슈린슈 스마트 가입제안서</span>
       <!-- Progress circle (r=9.5, circ≈59.69) -->
       <svg id="di-svg" width="22" height="22" viewBox="0 0 22 22">
         <circle id="di-circ-bg" cx="11" cy="11" r="9.5" fill="none" stroke-width="2.2"/>
@@ -485,6 +683,10 @@
   // ════ Dynamic Island TOC ════
   const SECTIONS = [
     { id: 's-why',      label: '왜 이 도구인가' },
+    { id: 's-smart',    label: '스마트 가입제안서 OPEN' },
+    { id: 's-surgery',  label: '수술비 한눈에 보기' },
+    { id: 's-circ',     label: '뇌·심장 한눈에 보기' },
+    { id: 's-pdf',      label: '전체 PDF 저장' },
     { id: 's-how',      label: '사용 방법 (3 Step)' },
     { id: 's-insurer',  label: '지원 보험사' },
     { id: 's-features', label: '주요 기능' },
@@ -541,7 +743,7 @@
     if (cur !== activeId) {
       activeId = cur;
       const found = SECTIONS.find(s => s.id === cur);
-      labelEl.textContent = found ? found.label : 'GA 암보장 분석기';
+      labelEl.textContent = found ? found.label : '슈린슈 스마트 가입제안서';
       document.querySelectorAll('.di-item').forEach(b => b.classList.toggle('on', b.dataset.sid === cur));
     }
   }
