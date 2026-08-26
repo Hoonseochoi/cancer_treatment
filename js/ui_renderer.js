@@ -910,12 +910,28 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
 
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
+            /* 화면과 같은 폰트 스택을 쓴다(style.css의 body와 동일).
+               Noto Sans KR로 갈아끼우면 글자는 나오지만 폰트마다 ascent/descent가 달라
+               같은 줄상자 안에서 베이스라인이 내려앉는다. 실제로 수술비 태그(질수·1~5종…)의
+               글자가 칩 아래로 밀려 잘려 보였다. 화면과 같은 폰트를 써야 결과도 같다. */
             * {
-                font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
+                font-family: 'Outfit', 'Noto Sans KR', 'Malgun Gothic', sans-serif !important;
                 letter-spacing: 0 !important;
                 word-spacing: 0 !important;
                 animation: none !important;
                 transition: none !important;
+            }
+            /* ── 수술비 태그(질수·1~5종…) 글자가 칩 아래로 밀리던 문제 ──
+               html2canvas는 글자 베이스라인을 줄상자 아래쪽에 붙여 그린다. 화면에서는
+               padding 2px + line-height 16.8px로 가운데 오지만, 캡처에서는 위 10.6px /
+               아래 0.5px로 바닥에 붙어 잘려 보였다(실측).
+               위 여백을 0으로 두고 아래 여백을 글자 크기만큼(1em) 주면, 밀려 그려진
+               글자가 정확히 가운데에 온다. 칩 높이는 21px 그대로 유지된다.
+               실측: 위 5.63 / 아래 5.50 (편차 0.06px) */
+            .sg-chip {
+                line-height: 1 !important;
+                padding-top: 0 !important;
+                padding-bottom: 1em !important;
             }
             span, div, p, b, h1, h2, h3 {
                 line-height: 1.6 !important;
@@ -1138,6 +1154,9 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
                 // Dongle은 기다리지 않는다 — 캡처에서는 아예 쓰지 않기 때문이다.
                 try {
                     await Promise.all([
+                        cf.load('400 16px Outfit'),
+                        cf.load('700 16px Outfit'),
+                        cf.load('800 16px Outfit'),
                         cf.load('400 16px "Noto Sans KR"'),
                         cf.load('700 16px "Noto Sans KR"'),
                         cf.load('800 16px "Noto Sans KR"')
