@@ -48,8 +48,23 @@
       color: #111; margin-bottom: 24px;
     }
     .hero-sub { font-size: 1rem; color: #6b7280; max-width: 460px; line-height: 1.8; margin-bottom: 40px; }
-    .hero-badges { display: flex; gap: 8px; flex-wrap: wrap; }
-    .hero-badge { font-size: 0.75rem; font-weight: 600; color: #374151; background: #f3f4f6; border-radius: 8px; padding: 5px 12px; }
+    /* 삼성화재가 대표(전 기능 지원)라 크게, 나머지 3사는 암 보장만이라 작게 */
+    .hero-badges { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 0.92rem; font-weight: 800; letter-spacing: -0.3px;
+      color: #fff; background: #111; border-radius: 11px; padding: 9px 14px;
+    }
+    .hero-badge em {
+      font-style: normal; font-size: 0.63rem; font-weight: 700; letter-spacing: 0.5px;
+      color: rgba(255,255,255,0.72); background: rgba(255,255,255,0.13);
+      border-radius: 99px; padding: 2px 7px;
+    }
+    .hero-badge-sub {
+      font-size: 0.68rem; font-weight: 600; color: #9ca3af;
+      background: #f5f5f5; border-radius: 7px; padding: 4px 9px;
+    }
+    .hero-badge-note { font-size: 0.68rem; color: #c4c4c4; margin-top: 12px; line-height: 1.7; }
 
     /* ── SECTION ── */
     .section { margin-top: 96px; }
@@ -102,7 +117,49 @@
     .ibadge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; margin-bottom: 8px; }
     .blive { background: #dcfce7; color: #15803d; }
     .bbeta { background: #fef9c3; color: #854d0e; }
+    /* 대표 보험사(삼성화재) 카드 — 나머지와 확실히 구분되도록 반전 */
+    .icard.lead { background: #111; border-color: #111; }
+    .icard.lead .iname { color: #fff; }
+    .icard.lead .idesc { color: rgba(255,255,255,0.5); }
+    .icard.lead .idesc strong { color: rgba(255,255,255,0.9); }
+    .blead { background: #fff; color: #111; }
     .idesc { font-size: 0.76rem; color: #b0b0b0; line-height: 1.6; }
+
+    /* ── 지원 매트릭스 표 ── */
+    .mtx-wrap { margin-top: 28px; overflow-x: auto; }
+    .mtx { width: 100%; min-width: 520px; border-collapse: separate; border-spacing: 0; }
+    .mtx th, .mtx td { padding: 16px 14px; text-align: center; vertical-align: middle; }
+    .mtx thead th {
+      font-size: 0.74rem; font-weight: 800; color: #111;
+      border-bottom: 1.5px solid #ececec; white-space: nowrap;
+    }
+    .mtx thead th.lead-col { color: #111; }
+    .mtx thead th:first-child {
+      text-align: left; font-size: 0.68rem; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase; color: #c4c4c4;
+    }
+    .mtx tbody td { border-bottom: 1px solid #f5f5f5; }
+    .mtx tbody tr:last-child td { border-bottom: none; }
+    .mtx .row-h {
+      text-align: left; font-size: 0.8rem; font-weight: 700; color: #111; white-space: nowrap;
+    }
+    .mtx .row-sub { display: block; font-size: 0.68rem; font-weight: 500; color: #b0b0b0; margin-top: 3px; }
+    .mtx-logos { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .mtx-logos img { height: 19px; max-width: 84px; object-fit: contain; }
+    .mtx-logos img.sm { height: 15px; max-width: 66px; opacity: .55; }
+    .mtx-solo { display: inline-flex; flex-direction: column; align-items: center; gap: 5px; }
+    .mtx-solo img { height: 22px; max-width: 92px; object-fit: contain; }
+    .mtx-only { font-size: 0.62rem; font-weight: 800; letter-spacing: .4px; color: #111;
+                background: #f0f0f0; border-radius: 99px; padding: 2px 8px; }
+    .mtx-note { font-size: 0.7rem; color: #c4c4c4; margin-top: 14px; line-height: 1.75; }
+    /* 좁은 화면에서는 표가 자기 영역 안에서만 가로로 스크롤된다 — 잘린 게 아님을 알린다 */
+    .mtx-hint { display: none; }
+    @media(max-width:680px){
+      .mtx-hint { display: block; font-size: 0.66rem; color: #c4c4c4; margin-top: 10px; }
+      .mtx { min-width: 480px; }
+      .mtx th, .mtx td { padding: 14px 10px; }
+      .mtx .row-sub { display: none; }
+    }
 
     /* ── FEATURE CARDS ── */
     .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 28px; }
@@ -346,11 +403,12 @@
       PDF 하나면 암 · 수술비 · 뇌·심장 담보가 자동으로 정리됩니다.
     </p>
     <div class="hero-badges">
-      <span class="hero-badge">메리츠화재</span>
-      <span class="hero-badge">삼성화재</span>
-      <span class="hero-badge">DB손해보험</span>
-      <span class="hero-badge">흥국화재</span>
+      <span class="hero-badge">삼성화재<em>전 기능</em></span>
+      <span class="hero-badge-sub">메리츠화재</span>
+      <span class="hero-badge-sub">DB손해보험</span>
+      <span class="hero-badge-sub">흥국화재</span>
     </div>
+    <p class="hero-badge-note">수술비 · 뇌·심장 분석은 삼성화재 전용입니다. 나머지 3사는 암 보장 분석을 지원합니다.</p>
   </section>
 
   <!-- WHY -->
@@ -528,7 +586,7 @@
         <div>
           <span class="snum">STEP 01</span>
           <p class="stept">제안서 PDF 업로드</p>
-          <p class="stepd">가입제안서 PDF 파일을 업로드 존에 드래그하거나 클릭해서 선택하세요.<br><br>메리츠화재 · 삼성화재 · DB손해보험 · 흥국화재 제안서를 자동 인식합니다.</p>
+          <p class="stepd">가입제안서 PDF 파일을 업로드 존에 드래그하거나 클릭해서 선택하세요.<br><br>삼성화재를 비롯해 메리츠화재 · DB손해보험 · 흥국화재 제안서를 자동 인식합니다.</p>
         </div>
         <div class="simg"><img src="ABOUT/landing.png" alt="업로드 화면"></div>
       </div>
@@ -562,15 +620,15 @@
     <h2 class="stitle">현재 지원하는 보험사</h2>
     <p class="slead">각사 PDF 포맷을 자동 인식합니다</p>
     <div class="igrid">
-      <div class="icard fu">
-        <div class="iname">메리츠화재</div>
-        <span class="ibadge blive">✓ 정식 지원</span>
-        <p class="idesc">레벨링 서비스 연동 · 매니저 코드 자동 인식</p>
+      <div class="icard lead fu">
+        <div class="iname">삼성화재</div>
+        <span class="ibadge blead">★ 대표 · 전 기능</span>
+        <p class="idesc">담보가입현황 기반 정밀 추출 · <strong>암 · 수술비 · 뇌·심장 전부 지원</strong></p>
       </div>
       <div class="icard fu" style="transition-delay:.07s">
-        <div class="iname">삼성화재</div>
+        <div class="iname">메리츠화재</div>
         <span class="ibadge blive">✓ 정식 지원</span>
-        <p class="idesc">담보가입현황 기반 정밀 추출 · <strong>수술비/뇌·심장 지원</strong></p>
+        <p class="idesc">암 보장 분석 · 레벨링 서비스 연동 · 매니저 코드 자동 인식</p>
       </div>
       <div class="icard fu" style="transition-delay:.14s">
         <div class="iname">DB손해보험</div>
@@ -582,6 +640,50 @@
         <span class="ibadge bbeta">◆ BETA</span>
         <p class="idesc">흥Good 시리즈 지원 · 일부 담보 누락 가능</p>
       </div>
+    </div>
+
+    <div class="mtx-wrap fu">
+      <table class="mtx">
+        <thead>
+          <tr>
+            <th>지원 가능 회사</th>
+            <th>암 보장 분석</th>
+            <th class="lead-col">수술 보장 분석</th>
+            <th class="lead-col">뇌·심장 보장 분석</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-h">보험사<span class="row-sub">제안서 PDF 자동 인식</span></td>
+            <td>
+              <div class="mtx-logos">
+                <img src="sci2.svg" alt="삼성화재">
+                <img class="sm" src="mci2.png" alt="메리츠화재">
+                <img class="sm" src="dbci_small.jpg" alt="DB손해보험">
+                <img class="sm" src="hkfire_ci_small.png" alt="흥국화재">
+                <img class="sm" src="mirae_ci_small.png" alt="미래에셋생명">
+              </div>
+            </td>
+            <td>
+              <span class="mtx-solo">
+                <img src="sci2.svg" alt="삼성화재">
+                <span class="mtx-only">삼성화재 전용</span>
+              </span>
+            </td>
+            <td>
+              <span class="mtx-solo">
+                <img src="sci2.svg" alt="삼성화재">
+                <span class="mtx-only">삼성화재 전용</span>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="mtx-hint">← → 표를 옆으로 밀어서 보실 수 있습니다</p>
+      <p class="mtx-note">
+        암 보장 분석은 5개사 모두 지원합니다(DB손해보험 · 흥국화재 · 미래에셋생명은 BETA).<br>
+        수술 보장 분석과 뇌·심장 보장 분석은 삼성화재 제안서에서만 동작합니다.
+      </p>
     </div>
   </section>
 
