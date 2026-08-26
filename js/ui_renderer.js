@@ -709,6 +709,17 @@ function toggleResultsList() {
     }
 }
 
+// ── 캡처용 폰트 상수 ──
+// 캡처는 웹폰트(Dongle)를 쓰지 않는다. html2canvas가 <svg>를 data URI 이미지로
+// 직렬화해 그리는데, 그 격리된 컨텍스트에는 문서의 웹폰트가 따라가지 않기 때문이다.
+// 로컬에 반드시 있는 폰트로 고정해야 매번 같은 결과가 나온다.
+const CAPTURE_KR_FONT = "'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif";
+// Dongle은 같은 font-size에서 폭이 약 0.6배로 좁다(실측 141 vs 235).
+// 대체 폰트로 바꾸면서 이 비율만큼 크기를 줄여야 글자가 고리 밖으로 넘치지 않는다.
+const DONGLE_SCALE = 0.6;
+// 캡처는 항상 이 폭의 데스크톱 레이아웃으로 그린다(실제 창 크기와 무관).
+const CAPTURE_WIDTH = 1280;
+
 // ── 캡처 공통 준비 ──
 // 이미지 저장과 전체 PDF 저장이 완전히 같은 렌더링 경로를 쓰도록,
 // 폰트 대기·전문가 이름·QR을 한 번만 준비해 두 곳에서 공유한다.
@@ -764,6 +775,10 @@ const CAPTURE_VIEW_TITLE = {
 // null이면 지금 화면에 켜져 있는 탭을 그대로 캡처한다.
 function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) {
     return {
+        // 브라우저 창 크기와 무관하게 항상 같은(데스크톱) 레이아웃으로 찍는다.
+        // 창이 좁으면 카드가 1열로 쌓여 세로로 길쭉한 이미지가 나오고,
+        // A4에 넣었을 때 좌우가 텅 비어 보인다.
+        windowWidth: CAPTURE_WIDTH,
         scale: 3,
         useCORS: true,
         allowTaint: false, // Set to false to allow export if assets are clean
@@ -879,6 +894,20 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
                 }
             }
 
+            // ── 조작용 UI·떠다니는 배지 일괄 제거 ──
+            // 결과물에 남을 이유가 없고, 대부분 absolute/animation이라 캡처에서
+            // 엉뚱한 자리에 찍히거나 다른 요소를 덮는다.
+            [
+                '#manager-badge-container',   // 우상단 매니저 배지 (떠다님)
+                '#error-report-island',       // 우하단 오류 제보 (bounce)
+                '#insurer-more-toggle',       // 지원사 +4 버튼
+                '#other-insurers-wrap',       // +4 펼침 영역
+                '#toast',                     // 토스트 알림
+                '.qm'                         // 분류표 물음표 버튼 전체
+            ].forEach(sel => {
+                clonedDoc.querySelectorAll(sel).forEach(el => { el.style.display = 'none'; });
+            });
+
             const style = clonedDoc.createElement('style');
             style.innerHTML = `
             * {
@@ -892,15 +921,35 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
                 line-height: 1.6 !important;
                 overflow: visible !important;
             }
-            /* 뇌·심장 동심원 안 글자는 Dongle 폰트 기준으로 크기를 잡았다 — 예외 유지 */
+            /* ── 캡처에서는 Dongle을 쓰지 않는다 ──
+               html2canvas는 <svg>를 data URI 이미지로 직렬화해 그리는데, 그 격리된
+               렌더링 컨텍스트에는 문서의 웹폰트가 따라가지 않는다. 실측 결과 Dongle을
+               지정해도 폴백 폰트와 잉크 폭이 완전히 같았다(214 = 214).
+               타이밍에 따라 되기도 안 되기도 해서 글자가 흔들려 보이던 원인이다.
+               캡처는 항상 로컬에 있는 폰트로 고정하고, 폭이 넓어지는 만큼
+               크기를 줄인다(아래 스크립트에서 ${'$'}{DONGLE_SCALE}배). */
             #circulatory-panel svg text, #circulatory-panel .hero-amt {
-                font-family: 'Dongle', 'Noto Sans KR', sans-serif !important;
+                font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif !important;
+            }
+
+            /* ── 동적 요소 제거 ──
+               떠다니는 배지·바운스 애니메이션은 캡처 시점의 transform이 그대로 굳어
+               위치가 어긋난 채로 찍힌다. 애니메이션을 끄는 것만으로는 부족해서
+               변형 자체를 되돌린다. (SVG 내부 transform은 도형 좌표라 건드리면 안 되므로
+               HTML 요소로 한정한다) */
+            .animate-insight, .stagger-in, .manager-welcome-float,
+            .animate-bounce, [class*="animate-"]:not(svg):not(svg *) {
+                transform: none !important;
+                opacity: 1 !important;
+                filter: none !important;
             }
             /* 위 line-height:1.6 !important가 style.css의 .hero-amt 줄높이를(비-important라)
                눌러 금액 박스가 부풀면서 "아래 모든 질환에 적용" 태그가 금액 위에 얹힌다.
                화면과 같은 값으로 되돌린다. */
             #circulatory-panel .hero-amt {
-                line-height: 1 !important;
+                /* 화면은 Dongle 52px. 대체 폰트는 폭이 넓으므로 같은 비율로 줄인다. */
+                font-size: ${(52 * DONGLE_SCALE).toFixed(1)}px !important;
+                line-height: 1.15 !important;
                 display: inline-block !important;
             }
             #circulatory-panel .hero-l,
@@ -1059,6 +1108,13 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
                                 el.style.setProperty(prop, v);
                             }
                         });
+                        // Dongle 기준으로 잡아둔 크기를 대체 폰트 폭에 맞춰 줄인다.
+                        // (Dongle은 같은 px에서 폭이 약 0.6배로 좁다 — 실측 141 vs 235)
+                        if (/Dongle/i.test(cs.fontFamily || '')) {
+                            const fs = parseFloat(cs.fontSize);
+                            if (fs > 0) el.style.setProperty('font-size', (fs * DONGLE_SCALE).toFixed(2) + 'px');
+                            el.style.setProperty('font-family', CAPTURE_KR_FONT);
+                        }
                         svgFixed++;
                     });
                 });
@@ -1076,37 +1132,39 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
             return (async () => {
                 const cf = clonedDoc.fonts;
                 if (!cf) return;
+                // 본문은 Noto Sans KR(웹폰트)로 그린다. 클론 iframe은 원본 문서의 폰트
+                // 로딩 상태를 물려받지 않으므로 여기서 기다린다. onclone이 반환한
+                // Promise는 렌더링 전에 await 된다.
+                // Dongle은 기다리지 않는다 — 캡처에서는 아예 쓰지 않기 때문이다.
                 try {
                     await Promise.all([
-                        cf.load('700 52px Dongle'),
-                        cf.load('700 19px Dongle'),
-                        cf.load('700 13px Dongle'),
                         cf.load('400 16px "Noto Sans KR"'),
+                        cf.load('700 16px "Noto Sans KR"'),
                         cf.load('800 16px "Noto Sans KR"')
                     ]);
                     await cf.ready;
                 } catch (fontErr) {
                     console.warn('[export] 폰트 대기 실패(무시하고 진행):', fontErr);
                 }
-
-                // 그래도 Dongle을 못 쓰면, 좁은 Dongle 기준으로 잡아둔 line-height가
-                // 대체 폰트에서 아래 줄을 침범한다. 이럴 때만 안전한 값으로 낮춘다.
-                if (!cf.check('700 52px Dongle')) {
-                    console.warn('[export] Dongle 미로드 — 대체 폰트 기준으로 금액 크기를 낮춥니다.');
-                    const fb = clonedDoc.createElement('style');
-                    fb.innerHTML = `
-                    #circulatory-panel .hero-amt {
-                        font-family: 'Noto Sans KR', sans-serif !important;
-                        font-size: 30px !important;
-                        line-height: 1.2 !important;
-                    }
-                    #circulatory-panel svg text { font-family: 'Noto Sans KR', sans-serif !important; }
-                    `;
-                    clonedDoc.head.appendChild(fb);
-                }
             })();
         }
     };
+}
+
+// 캡처 배경색(html2canvas의 backgroundColor와 같은 값)을 rgb로 돌려준다.
+// PDF에서 남는 자리를 이 색으로 칠해 흰 테두리가 생기지 않게 하는 용도.
+function captureBgColor() {
+    const fallback = { r: 235, g: 235, b: 235 };   // #EBEBEB
+    try {
+        const cs = getComputedStyle(document.body).backgroundColor;
+        const m = /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/.exec(cs);
+        if (!m) return fallback;
+        const c = { r: +m[1], g: +m[2], b: +m[3] };
+        // 투명(0,0,0 with alpha 0)으로 잡히면 기본값을 쓴다
+        return (c.r === 0 && c.g === 0 && c.b === 0) ? fallback : c;
+    } catch (e) {
+        return fallback;
+    }
 }
 
 // 캡처 대상 파일명의 기준이 되는 원본 제안서 이름
@@ -1186,7 +1244,9 @@ window.exportAllAsPdf = async function () {
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const PW = pdf.internal.pageSize.getWidth();
         const PH = pdf.internal.pageSize.getHeight();
-        const M = 8;   // 여백(mm)
+
+        // 캡처 배경색 — 남는 자리를 이 색으로 채워 흰 여백처럼 보이지 않게 한다.
+        const bg = captureBgColor();
 
         for (let i = 0; i < views.length; i++) {
             const v = views[i];
@@ -1194,17 +1254,22 @@ window.exportAllAsPdf = async function () {
             await activateView(v);
             const canvas = await html2canvas(target, buildCaptureOptions(assets));
 
-            // 여백 안쪽에 비율 유지로 맞춘다. 세로가 긴 화면은 높이 기준으로 축소된다.
-            const maxW = PW - M * 2;
-            const maxH = PH - M * 2;
-            const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
+            if (i > 0) pdf.addPage();
+
+            // 페이지 전체를 배경색으로 먼저 칠한다. 화면은 A4보다 세로로 길어
+            // 비율을 지키면 위아래 또는 좌우에 자리가 남는데, 흰색으로 두면
+            // 인쇄물에서 테두리처럼 보인다.
+            pdf.setFillColor(bg.r, bg.g, bg.b);
+            pdf.rect(0, 0, PW, PH, 'F');
+
+            // 여백 0 기준으로 페이지에 꽉 채운다(비율 유지 — 늘리거나 자르지 않는다).
+            const ratio = Math.min(PW / canvas.width, PH / canvas.height);
             const w = canvas.width * ratio;
             const h = canvas.height * ratio;
 
-            if (i > 0) pdf.addPage();
             pdf.addImage(
                 canvas.toDataURL('image/jpeg', 0.92), 'JPEG',
-                (PW - w) / 2, M, w, h, undefined, 'FAST'
+                (PW - w) / 2, (PH - h) / 2, w, h, undefined, 'FAST'
             );
         }
 
