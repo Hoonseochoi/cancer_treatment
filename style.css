@@ -866,3 +866,97 @@ strong {
   #circulatory-panel .jstep:not(:last-child)::after{display:none}
 }
 @media (prefers-reduced-motion:reduce){#circulatory-panel *{transition:none!important}}
+
+/* ══════════════════════════════════════════
+   수술비 백과사전 (모달)
+   ══════════════════════════════════════════ */
+#sd-overlay{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(14,22,41,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  opacity:0;pointer-events:none;transition:opacity .28s ease}
+#sd-overlay.open{opacity:1;pointer-events:auto}
+#sd-panel{width:100%;max-width:760px;max-height:88vh;display:flex;flex-direction:column;
+  background:#fff;border-radius:20px;overflow:hidden;
+  box-shadow:0 30px 80px rgba(14,22,41,.35);
+  transform:translateY(14px) scale(.985);transition:transform .32s cubic-bezier(.22,1,.36,1)}
+#sd-overlay.open #sd-panel{transform:none}
+
+#sd-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:22px 24px 16px;border-bottom:1px solid var(--sg-line)}
+#sd-head h2{margin:0;font-size:18px;font-weight:800;color:var(--sg-ink);letter-spacing:-.02em}
+#sd-head p{margin:5px 0 0;font-size:12px;color:var(--sg-muted)}
+#sd-close{width:30px;height:30px;flex-shrink:0;border:0;border-radius:9px;cursor:pointer;
+  background:var(--sg-surface-2);color:var(--sg-muted);font-size:13px;line-height:1}
+#sd-close:hover{background:var(--sg-chip);color:var(--sg-ink)}
+
+#sd-searchbar{display:flex;align-items:center;gap:9px;margin:16px 24px 0;padding:11px 14px;
+  border:1.5px solid var(--sg-line);border-radius:12px;background:var(--sg-surface-2);color:var(--sg-muted)}
+#sd-searchbar:focus-within{border-color:var(--sg-accent);background:#fff;color:var(--sg-accent)}
+#sd-input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:14px;
+  font-weight:600;color:var(--sg-ink)}
+#sd-input::placeholder{color:var(--sg-off);font-weight:500}
+#sd-input::-webkit-search-cancel-button{cursor:pointer}
+
+#sd-result{flex:1;overflow-y:auto;padding:16px 24px 24px}
+.sd-count{font-size:11px;font-weight:700;color:var(--sg-muted);margin-bottom:10px}
+
+.sd-card{border:1px solid var(--sg-line);border-radius:13px;padding:13px 15px;margin-bottom:8px;
+  background:var(--sg-surface)}
+.sd-top{display:flex;align-items:center;gap:10px}
+.sd-name{flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--sg-ink);line-height:1.45}
+.sd-tier{flex-shrink:0;font-size:11px;font-weight:800;color:#fff;background:var(--sg-g3);
+  border-radius:6px;padding:3px 8px}
+.sd-tier.t1,.sd-tier.t2{background:var(--sg-g2);color:var(--sg-g2i)}
+.sd-tier.t3,.sd-tier.t4{background:var(--sg-g3)}
+.sd-tier.t5,.sd-tier.t6{background:var(--sg-g5)}
+.sd-tier.t7,.sd-tier.t8{background:var(--sg-ink)}
+/* 관련율 — 막대 + 숫자 */
+.sd-rel{flex-shrink:0;width:52px;display:flex;flex-direction:column;gap:3px}
+.sd-rel i{display:block;height:4px;border-radius:99px;background:var(--sg-line);position:relative}
+.sd-rel i::after{content:'';position:absolute;inset:0 auto 0 0;width:var(--w);
+  border-radius:99px;background:var(--sg-accent)}
+.sd-rel b{font-size:10px;font-weight:800;color:var(--sg-accent);letter-spacing:-.02em}
+.sd-sub{margin-top:6px;font-size:11px;color:var(--sg-muted)}
+.sd-sub code,.sd-procs code{font-family:'Outfit',monospace;font-size:10.5px;font-weight:700;
+  color:var(--sg-accent);background:var(--sg-accent-soft);border-radius:4px;padding:1px 5px}
+.sd-procs{margin:9px 0 0;padding:9px 0 0;border-top:1px dashed var(--sg-line);list-style:none;
+  display:grid;gap:4px}
+.sd-procs li{font-size:11.5px;color:var(--sg-ink-2);line-height:1.5}
+.sd-amt{margin-top:9px;padding-top:9px;border-top:1px solid var(--sg-line);
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.sd-amt-l{font-size:11px;color:var(--sg-muted)}
+.sd-amt b{font-size:15px;font-weight:800;color:var(--sg-accent);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.sd-disc{margin:14px 0 0;font-size:10.4px;color:var(--sg-off);line-height:1.7}
+
+.sd-empty{padding:30px 4px;text-align:center}
+.sd-empty b{display:block;font-size:14px;color:var(--sg-ink);margin-bottom:8px}
+.sd-empty p{margin:0;font-size:12px;color:var(--sg-muted);line-height:1.8}
+.sd-empty em{font-style:normal;font-weight:700;color:var(--sg-accent)}
+
+/* ── 기본 화면: 사용법 ── */
+.sd-tut-head{margin-bottom:14px}
+.sd-tut-head b{display:block;font-size:14px;font-weight:800;color:var(--sg-ink)}
+.sd-tut-head span{font-size:11.5px;color:var(--sg-muted)}
+.sd-steps{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:9px}
+.sd-steps li{display:grid;grid-template-columns:22px 1fr;gap:11px;align-items:start;
+  background:var(--sg-surface-2);border:1px solid var(--sg-line);border-radius:12px;padding:12px 14px}
+.sd-step-n{width:22px;height:22px;border-radius:7px;background:var(--sg-accent);color:#fff;
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.sd-steps b{display:block;font-size:12.5px;font-weight:700;color:var(--sg-ink);margin-bottom:3px}
+.sd-steps p{margin:0;font-size:11.5px;color:var(--sg-muted);line-height:1.65}
+.sd-tut-shot{border:1px solid var(--sg-line);border-radius:12px;overflow:hidden;background:var(--sg-surface-2)}
+.sd-tut-shot img{width:100%;display:block}
+.sd-tut-shot span{display:block;padding:9px 13px;font-size:10.8px;color:var(--sg-muted);line-height:1.6}
+.sd-quick{margin-top:16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sd-quick span{font-size:11px;font-weight:700;color:var(--sg-muted);margin-right:2px}
+.sd-quick button{border:1px solid var(--sg-line);background:#fff;border-radius:99px;cursor:pointer;
+  font:inherit;font-size:11.5px;font-weight:600;color:var(--sg-ink-2);padding:5px 11px}
+.sd-quick button:hover{border-color:var(--sg-accent);color:var(--sg-accent);background:var(--sg-accent-soft)}
+
+@media(max-width:560px){
+  #sd-overlay{padding:0}
+  #sd-panel{max-width:none;max-height:100vh;height:100%;border-radius:0}
+  #sd-head,#sd-result{padding-left:16px;padding-right:16px}
+  #sd-searchbar{margin-left:16px;margin-right:16px}
+  .sd-rel{width:42px}
+}

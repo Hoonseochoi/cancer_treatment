@@ -408,6 +408,10 @@
                           <!-- 오른쪽으로 빼면 좁은 화면(375px)에서 잘린다. TUTORIAL과 같은 기준으로 맞춘다. -->
                           <span aria-label="새 소식" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#7C3AED,#a855f7);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(124,58,237,0.35);pointer-events:none;">NEW</span>
                         </span>
+                        <span style="position:relative;display:inline-block;animation:aboutFloat 4.2s ease-in-out infinite;animation-delay:1.2s;line-height:1;">
+                          <button onclick="openSurgeryDict()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#0B6B7A,#14B8A6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">백과사전</button>
+                          <span aria-label="새 소식" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#0B6B7A,#14B8A6);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(11,107,122,0.35);pointer-events:none;">NEW</span>
+                        </span>
                     </div><!-- end left-group -->
                     <!-- RIGHT: Manager Badge -->
                     <div style="display:flex;align-items:center;gap:18px;">
@@ -835,8 +839,10 @@
     <script src="js/circulatory_data.js?v=20260826a"></script>
     <script src="js/circulatory_renderer.js?v=20260826d"></script>
     <script src="js/surgery_renderer.js?v=20260826f"></script>
+    <script src="js/surgery_dict_data.js?v=20260826a"></script>
+    <script src="js/surgery_dict.js?v=20260826a"></script>
     <script src="js/ui_renderer.js?v=20260826p"></script>
-    <script src="js/main.js?v=20260825g"></script>
+    <script src="js/main.js?v=20260826a"></script>
 
     <!-- ── ABOUT MODAL ── -->
     <style>
@@ -875,6 +881,27 @@
       #about-modal-close:hover { background: rgba(0,0,0,0.16); }
       #about-modal-iframe { width: 100%; height: 100%; border: none; display: block; }
     </style>
+
+    <!-- ── 수술비 백과사전 ── -->
+    <div id="sd-overlay">
+      <div id="sd-panel">
+        <div id="sd-head">
+          <div>
+            <h2>수술비 백과사전</h2>
+            <p>질병명 · 수술명 · 수가코드로 1~8종 등급을 찾아보세요</p>
+          </div>
+          <button id="sd-close" onclick="closeSurgeryDict()" aria-label="닫기">✕</button>
+        </div>
+        <div id="sd-searchbar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>
+          </svg>
+          <input id="sd-input" type="search" autocomplete="off"
+                 placeholder="예) 대장용종 · 백내장 · 디스크 · Q7701">
+        </div>
+        <div id="sd-result"></div>
+      </div>
+    </div>
 
     <div id="about-modal-overlay" onclick="handleModalOverlayClick(event)">
       <div id="about-modal-panel">
