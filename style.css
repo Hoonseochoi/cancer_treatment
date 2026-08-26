@@ -630,6 +630,27 @@ strong {
 .sg-top5-item b{font-size:14px;font-weight:800;color:var(--sg-ink);white-space:nowrap;
   letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .sg-top5-note{margin:9px 0 0;font-size:10.4px;color:var(--sg-muted);line-height:1.6}
+.sg-hot-legend{margin:0 0 12px;font-size:11px;color:var(--sg-muted);line-height:1.7}
+.sg-hot-legend i{display:inline-flex;align-items:center;justify-content:center;
+  width:15px;height:15px;margin:0 1px;border-radius:4px;background:var(--sg-accent);
+  color:#fff;font-style:normal;font-size:9px;font-weight:800;line-height:1;vertical-align:1px}
+/* ── 손해율 TOP10 강조 ──
+   보험사가 손해율 때문에 예의주시하는 수술들이라 상담에서 가장 많이 나온다.
+   테두리와 금액 색으로 나머지와 확실히 구분한다. */
+.sg-row.hot{border-color:var(--sg-accent);box-shadow:0 0 0 1px var(--sg-accent),0 4px 14px rgba(11,107,122,.10)}
+.sg-row.hot .sg-money b{color:var(--sg-accent)}
+.sg-rank{display:inline-flex;align-items:center;justify-content:center;
+  width:17px;height:17px;margin-right:6px;border-radius:5px;
+  background:var(--sg-accent);color:#fff;font-style:normal;
+  font-size:10px;font-weight:800;line-height:1;vertical-align:1px}
+/* 표준 수술비로는 지급되지 않는 시술(하이푸 등) */
+.sg-row.none{border-color:var(--sg-line);box-shadow:none;background:var(--sg-surface-2)}
+.sg-row.none .sg-name{color:var(--sg-muted)}
+.sg-row.none .sg-rank{background:var(--sg-off)}
+.sg-money b.zero{color:var(--sg-off);font-size:15px;letter-spacing:-.01em}
+.sg-chip.sg-none{background:var(--sg-off);color:#fff}
+.sg-chip.sg-warn{background:var(--sg-note-bg);color:var(--sg-note-ink);border:1px solid var(--sg-note-line)}
+
 .sg-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:start}
 /* 펼친 행은 두 칸을 모두 차지해 상세 내역이 눌리지 않게 한다 */
 .sg-row[data-open="true"]{grid-column:1 / -1}

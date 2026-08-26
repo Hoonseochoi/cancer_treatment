@@ -64,12 +64,23 @@ function calcSurgeryVariant(policy, s, v) {
         if (blocked('base')) rows.push({ k: name, s: exWhy, v: 0, on: false });
         else rows.push({ k: name, s: '입원·통원 중 택일', v: base, on: true });
     }
-    const a5 = policy.종5[v.g5];
-    if (a5 > 0) rows.push({ k: `질병 1~5종 수술비(${v.g5}종)`, s: v.n5, v: a5, on: true });
+    // g5/g8이 null이면 분류표에 대응 항목이 없다는 뜻이다(하이푸 등 비수술 시술).
+    // 지급 대상이 아니라는 사실 자체가 상담에서 중요하므로 0원 줄로 남겨 보여준다.
+    if (v.g5 == null) {
+        rows.push({ k: '질병 1~5종 수술비', s: '1~5종 분류표에 해당 항목 없음', v: 0, on: false });
+    } else {
+        const a5 = policy.종5[v.g5];
+        if (a5 > 0) rows.push({ k: `질병 1~5종 수술비(${v.g5}종)`, s: v.n5, v: a5, on: true });
+        else rows.push({ k: `1~5종 분류: ${v.g5}종`, s: '이 상품에 해당 담보 없음', v: 0, on: false });
+    }
 
-    const a8 = policy.종8[v.g8];
-    if (a8 > 0) rows.push({ k: `질병 1~8종 수술비(${v.g8}종)`, s: v.n8, v: a8, on: true });
-    else rows.push({ k: `1~8종 분류: ${v.g8}종`, s: '이 상품에 해당 담보 없음', v: 0, on: false });
+    if (v.g8 == null) {
+        rows.push({ k: '질병 1~8종 수술비', s: '1~8종 분류표에 해당 항목 없음', v: 0, on: false });
+    } else {
+        const a8 = policy.종8[v.g8];
+        if (a8 > 0) rows.push({ k: `질병 1~8종 수술비(${v.g8}종)`, s: v.n8, v: a8, on: true });
+        else rows.push({ k: `1~8종 분류: ${v.g8}종`, s: '이 상품에 해당 담보 없음', v: 0, on: false });
+    }
 
     if (s.cancer) {
         rows.push({ k: '질병군 수술비', s: '분류표에 악성신생물 미포함 — 해당 없음', v: 0, on: false });
@@ -179,9 +190,12 @@ function renderSurgeryPanel(results) {
         const cs = s.variants.map(v => ({ v, r: calcSurgeryVariant(policy, s, v) }));
         const tot = cs.map(c => c.r.total);
         const lo = Math.min(...tot), hi = Math.max(...tot);
-        if (hi === 0) return '';
-        const g5 = [...new Set(s.variants.map(v => v.g5))].sort((a, b) => a - b);
-        const g8 = [...new Set(s.variants.map(v => v.g8))].sort((a, b) => a - b);
+        // 손해율 TOP10은 금액이 0이어도 숨기지 않는다. "이 시술은 수술비가 안 나온다"는
+        // 사실 자체가 상담에서 가장 중요한 정보라서다(하이푸·고주파절제 등).
+        if (hi === 0 && !s.hot) return '';
+        // 분류표에 대응 항목이 없으면 g5/g8이 null이다 — 뱃지에서 제외한다.
+        const g5 = [...new Set(s.variants.map(v => v.g5))].filter(g => g != null).sort((a, b) => a - b);
+        const g8 = [...new Set(s.variants.map(v => v.g8))].filter(g => g != null).sort((a, b) => a - b);
 
         const groups = groupVariantsByAmount(cs);
         const detail = groups.map(g => `
@@ -190,24 +204,34 @@ function renderSurgeryPanel(results) {
               ${g.rows.map(x => `<div class="sg-r${x.on ? '' : ' off'}">
                   <span>${x.k}<em>${x.s}</em></span><b>${x.on ? fmt(x.v) : '—'}</b></div>`).join('')}
               <div class="sg-src">${g.variants.map(v =>
-                  `1~8종 ${v.c8} ${v.g8}종 「${v.n8}」 · 1~5종 ${v.n5no}항 ${v.g5}종`).join('<br>')}</div>
+                  [v.c8 ? `1~8종 ${v.c8} ${v.g8}종 「${v.n8}」` : '1~8종 분류표에 해당 항목 없음',
+                   v.n5no ? `1~5종 ${v.n5no}항 ${v.g5}종` : '1~5종 분류표에 해당 항목 없음'
+                  ].join(' · ')).join('<br>')}</div>
             </div>`).join('');
 
-        return `<div class="sg-row" data-open="false">
+        // 1~5종·1~8종 어디에도 대응 항목이 없는 행위는 "수술"이 아니라 시술로 볼 여지가 커
+        // 질병수술비조차 분쟁이 된다(하이푸 등). 금액은 보여주되 반드시 짚어준다.
+        const noTier = s.variants.every(v => v.g5 == null && v.g8 == null);
+        const none = hi === 0;   // 표준 수술비로는 지급되지 않는 시술
+        return `<div class="sg-row${s.hot ? ' hot' : ''}${none ? ' none' : ''}" data-open="false">
             <button class="sg-btn" aria-expanded="false">
               <span class="sg-l">
-                <span class="sg-name">${s.name}</span>
+                <span class="sg-name">${s.hot ? `<i class="sg-rank">${s.hot}</i>` : ''}${s.name}</span>
                 <span class="sg-tags">
-                  ${policy.입원 || policy.통원 ? '<span class="sg-chip sg-base">질수</span>' : ''}
+                  ${none ? '' : (policy.입원 || policy.통원 ? '<span class="sg-chip sg-base">질수</span>' : '')}
                   ${g5.map(grade).join('')}
-                  <span class="sg-chip sg-cls">1~8종 ${g8.join('·')}종</span>
+                  ${g8.length ? `<span class="sg-chip sg-cls">1~8종 ${g8.join('·')}종</span>` : ''}
                   ${s.cancer ? '<span class="sg-chip sg-cancer">암</span>' : ''}
                   ${s.benign ? '<span class="sg-chip sg-etc">양성신생물</span>' : ''}
                   ${s.special ? `<span class="sg-chip sg-etc">${s.special}</span>` : ''}
+                  ${none ? '<span class="sg-chip sg-none">수술비 미해당</span>'
+                         : (noTier ? '<span class="sg-chip sg-warn">지급 분쟁 소지</span>' : '')}
                 </span>
               </span>
-              <span class="sg-money"><b>${lo === hi ? fmt(lo) : fmt(lo) + '~' + fmt(hi)}</b>
-                <em>검토 가능${groups.length > 1 ? ` · 술기에 따라 ${groups.length}구간` : ''}</em></span>
+              <span class="sg-money">${none
+                  ? '<b class="zero">해당 없음</b><em>전용 특약이 있어야 보장</em>'
+                  : `<b>${lo === hi ? fmt(lo) : fmt(lo) + '~' + fmt(hi)}</b>
+                     <em>검토 가능${groups.length > 1 ? ` · 술기에 따라 ${groups.length}구간` : ''}</em>`}</span>
             </button>
             <div class="sg-d">${detail}
               ${s.note ? `<div class="sg-note"><b>확인 포인트</b>${s.note}</div>` : ''}
@@ -243,8 +267,9 @@ function renderSurgeryPanel(results) {
             <b class="num">${t.lo === t.hi ? fmt(t.lo) : fmt(t.lo) + '~' + fmt(t.hi)}</b>
           </div>`).join('')}
         </div>
-        <p class="sg-top5-note">수술비는 진단비와 달리 <strong>최초 1회한이 아니라</strong> 수술받을 때마다 검토됩니다(질병수술비는 매회지급, 1~5종은 동일사고당 1회). 위 금액은 <strong>해당 수술 1회 기준</strong>이며, 아래 목록에서 30종 전체와 술기별 상세를 확인하실 수 있습니다.</p>
+        <p class="sg-top5-note">수술비는 진단비와 달리 <strong>최초 1회한이 아니라</strong> 수술받을 때마다 검토됩니다(질병수술비는 매회지급, 1~5종은 동일사고당 1회). 위 금액은 <strong>해당 수술 1회 기준</strong>이며, 아래 목록에서 ${SURGERY_DATA.length}종 전체와 술기별 상세를 확인하실 수 있습니다.</p>
       </div>` : ''}
+      <p class="sg-hot-legend"><i>1</i>~<i>10</i> 번호가 붙은 항목은 <strong>보험사 손해율이 급등한 수술 TOP 10</strong>입니다. 청구가 많은 만큼 상담에서도 가장 자주 나옵니다.</p>
       <div class="sg-list">${cards}</div>
       <div class="sg-disc" data-open="false">
         <button class="sg-disc-btn" aria-expanded="false">
