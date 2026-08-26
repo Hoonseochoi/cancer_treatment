@@ -716,7 +716,7 @@ function toggleResultsList() {
 const CAPTURE_KR_FONT = "'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif";
 // Dongle은 같은 font-size에서 폭이 약 0.6배로 좁다(실측 141 vs 235).
 // 대체 폰트로 바꾸면서 이 비율만큼 크기를 줄여야 글자가 고리 밖으로 넘치지 않는다.
-const DONGLE_SCALE = 0.6;
+const DONGLE_SCALE = 0.68;
 // 캡처는 항상 이 폭의 데스크톱 레이아웃으로 그린다(실제 창 크기와 무관).
 const CAPTURE_WIDTH = 1280;
 
@@ -942,9 +942,16 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
                렌더링 컨텍스트에는 문서의 웹폰트가 따라가지 않는다. 실측 결과 Dongle을
                지정해도 폴백 폰트와 잉크 폭이 완전히 같았다(214 = 214).
                타이밍에 따라 되기도 안 되기도 해서 글자가 흔들려 보이던 원인이다.
-               캡처는 항상 로컬에 있는 폰트로 고정하고, 폭이 넓어지는 만큼
-               크기를 줄인다(아래 스크립트에서 ${'$'}{DONGLE_SCALE}배). */
-            #circulatory-panel svg text, #circulatory-panel .hero-amt {
+               캡처는 항상 로컬에 있는 폰트로 고정하고, 폭이 넓어지는 만큼 크기를 줄인다.
+
+               다만 svg text의 폰트 교체는 여기서 하지 않고 아래 스크립트가 크기 보정과
+               함께 처리한다. 여기서 미리 바꿔버리면 스크립트가 "원래 Dongle이었는지"를
+               알 수 없어 보정이 통째로 건너뛰어지고, 글자 폭이 +47~75%가 되어 동심원
+               밖으로 삐져나간다. 그래서 위 * 규칙에 눌리지 않도록 Dongle 지정만 되살린다. */
+            #circulatory-panel svg text {
+                font-family: 'Dongle', 'Noto Sans KR', sans-serif !important;
+            }
+            #circulatory-panel .hero-amt {
                 font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif !important;
             }
 
@@ -1108,6 +1115,7 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
                     'letter-spacing', 'text-anchor', 'dominant-baseline'
                 ];
                 let svgFixed = 0;
+                const dongleEls = [];
                 clonedDoc.querySelectorAll('svg').forEach(svg => {
                     // 직렬화된 SVG가 고유 크기를 갖도록 viewBox 기준 width/height를 명시
                     const vb = (svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/);
@@ -1124,16 +1132,39 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
                                 el.style.setProperty(prop, v);
                             }
                         });
-                        // Dongle 기준으로 잡아둔 크기를 대체 폰트 폭에 맞춰 줄인다.
-                        // (Dongle은 같은 px에서 폭이 약 0.6배로 좁다 — 실측 141 vs 235)
+                        // Dongle 기준으로 잡아둔 크기를 대체 폰트에 맞춰 줄인다.
+                        // Dongle은 같은 px에서 폭이 약 0.68배로 좁아, 그대로 두면 글자가
+                        // 동심원 밖으로 삐져나간다. 굵기도 한 단계 낮춰야 답답해 보이지 않는다.
                         if (/Dongle/i.test(cs.fontFamily || '')) {
                             const fs = parseFloat(cs.fontSize);
                             if (fs > 0) el.style.setProperty('font-size', (fs * DONGLE_SCALE).toFixed(2) + 'px');
                             el.style.setProperty('font-family', CAPTURE_KR_FONT);
+                            el.style.setProperty('font-weight', '600');
+                            dongleEls.push(el);
                         }
                         svgFixed++;
                     });
                 });
+                // ── 글자 폭을 화면과 정확히 일치시킨다 ──
+                // 크기를 0.68배로 줄여도 글자마다 폭 비율이 조금씩 달라(0.57~0.68)
+                // 긴 글자는 여전히 고리 밖으로 나갈 수 있다. 화면(Dongle)에서 잰 실제
+                // 폭을 textLength로 못박으면 폰트가 무엇이든 같은 자리에 들어간다.
+                const liveTexts = document.querySelectorAll('#circulatory-panel svg text');
+                const cloneTexts = clonedDoc.querySelectorAll('#circulatory-panel svg text');
+                if (liveTexts.length === cloneTexts.length) {
+                    let pinned = 0;
+                    cloneTexts.forEach((el, i) => {
+                        if (dongleEls.indexOf(el) < 0) return;      // Dongle이던 글자만
+                        let w = 0;
+                        try { w = liveTexts[i].getComputedTextLength(); } catch (e) { return; }
+                        if (!(w > 0)) return;                        // 숨겨져 있으면 0이 나온다
+                        el.setAttribute('textLength', w.toFixed(2));
+                        el.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+                        pinned++;
+                    });
+                    if (pinned > 0) console.log(`[export] SVG 글자 ${pinned}건의 폭을 화면 기준으로 고정했습니다.`);
+                }
+
                 if (svgFixed > 0) console.log(`[export] SVG 요소 ${svgFixed}건의 스타일을 인라인화했습니다.`);
             } catch (svgErr) {
                 console.warn('[export] SVG 인라인화 중 오류(무시하고 진행):', svgErr);
