@@ -61,10 +61,7 @@ function calcSurgeryVariant(policy, s, v) {
     const base = Math.max(policy.입원, policy.통원);
     if (base > 0) {
         const name = policy.입원 >= policy.통원 ? '질병 입원 수술비' : '질병 통원 수술비';
-        // noBase = 약관의 「수술」 정의(절단·절제)를 충족하지 못해 질병수술비 자체가
-        // 나오지 않는 행위. 계산상 금액이 붙어 버리면 상담에서 오해를 부른다.
-        if (s.noBase) rows.push({ k: name, s: s.noBase, v: 0, on: false });
-        else if (blocked('base')) rows.push({ k: name, s: exWhy, v: 0, on: false });
+        if (blocked('base')) rows.push({ k: name, s: exWhy, v: 0, on: false });
         else rows.push({ k: name, s: '입원·통원 중 택일', v: base, on: true });
     }
     // g5/g8이 null이면 분류표에 대응 항목이 없다는 뜻이다(하이푸 등 비수술 시술).
@@ -272,7 +269,7 @@ function renderSurgeryPanel(results) {
         </div>
         <p class="sg-top5-note">수술비는 진단비와 달리 <strong>최초 1회한이 아니라</strong> 수술받을 때마다 검토됩니다(질병수술비는 매회지급, 1~5종은 동일사고당 1회). 위 금액은 <strong>해당 수술 1회 기준</strong>이며, 아래 목록에서 ${SURGERY_DATA.length}종 전체와 술기별 상세를 확인하실 수 있습니다.</p>
       </div>` : ''}
-      <p class="sg-hot-legend"><i>1</i>~<i>10</i> 번호가 붙은 항목은 <strong>보험사 손해율이 급등한 수술 TOP 10</strong>입니다. 청구가 많은 만큼 상담에서도 가장 자주 나옵니다.</p>
+      <p class="sg-hot-legend"><i>1</i>~<i>9</i> 번호가 붙은 항목은 <strong>보험사 손해율이 급등한 수술</strong>입니다. 청구가 많은 만큼 상담에서도 가장 자주 나옵니다.</p>
       <div class="sg-list">${cards}</div>
       <div class="sg-disc" data-open="false">
         <button class="sg-disc-btn" aria-expanded="false">

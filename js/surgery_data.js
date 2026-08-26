@@ -112,29 +112,6 @@ const SURGERY_DATA = [
   "hot": 3
  },
  {
-  "name": "자궁근종 하이푸(HIFU)",
-  "cat": "여성",
-  "cancer": false,
-  "g111": null,
-  "benign": null,
-  "special": null,
-  "note": "초음파로 태우는 방식이라 절단·절제가 없다. 1~5종·1~8종 분류표 어디에도 대응 항목이 없어 통상 수술비 대상이 아니며, 하이푸 전용 특약이 있어야 보장된다.",
-  "variants": [
-   {
-    "label": "고강도초음파 소작(HIFU)",
-    "c8": null,
-    "g8": null,
-    "n8": null,
-    "n5no": null,
-    "g5": null,
-    "n5": null,
-    "gwan": false
-   }
-  ],
-  "hot": 4,
-  "noBase": "절단·절제가 없어 약관의 「수술」 정의 미충족 — 지급 대상 아님"
- },
- {
   "name": "갑상선 결절 고주파절제술",
   "cat": "내분비",
   "cancer": false,
@@ -154,7 +131,7 @@ const SURGERY_DATA = [
     "gwan": false
    }
   ],
-  "hot": 5
+  "hot": 4
  },
  {
   "name": "척추 신경성형술·풍선확장술",
@@ -176,7 +153,7 @@ const SURGERY_DATA = [
     "gwan": false
    }
   ],
-  "hot": 6
+  "hot": 5
  },
  {
   "name": "유방 맘모톰 절제(진공보조)",
@@ -198,7 +175,7 @@ const SURGERY_DATA = [
     "gwan": false
    }
   ],
-  "hot": 7
+  "hot": 6
  },
  {
   "name": "요로결석 체외충격파",
@@ -230,7 +207,7 @@ const SURGERY_DATA = [
     "gwan": false
    }
   ],
-  "hot": 8
+  "hot": 7
  },
  {
   "name": "치핵(치질)",
@@ -271,7 +248,7 @@ const SURGERY_DATA = [
     "group"
    ]
   },
-  "hot": 9
+  "hot": 8
  },
  {
   "name": "전립선 결찰술(유로리프트)",
@@ -293,7 +270,7 @@ const SURGERY_DATA = [
     "gwan": false
    }
   ],
-  "hot": 10
+  "hot": 9
  },
  {
   "name": "충수절제술(맹장)",
