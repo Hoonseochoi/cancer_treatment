@@ -208,7 +208,8 @@
     <!-- JUMP PILLS -->
     <div class="jump-wrap">
       <div class="jump-inner">
-        <a class="jump-pill active" href="#v0826">v.0826</a>
+        <a class="jump-pill active" href="#v0831">v.0831</a>
+        <a class="jump-pill" href="#v0826">v.0826</a>
         <a class="jump-pill" href="#v0825">v.0825</a>
         <a class="jump-pill" href="#v0706">v.0706</a>
         <a class="jump-pill" href="#v0630">v.0630</a>
@@ -224,16 +225,122 @@
     <!-- TIMELINE -->
     <div class="timeline">
 
-      <!-- v.0826 -->
-      <div class="v-entry open latest-entry" id="v0826">
+      <!-- v.0831 -->
+      <div class="v-entry open latest-entry" id="v0831">
         <div class="v-dot latest"></div>
         <div class="v-card latest-card">
           <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
             <div class="v-header-left">
               <div class="v-meta">
+                <span class="v-ver">v.0831</span>
+                <span class="v-date">2026.08.31</span>
+                <span class="v-latest-badge">LATEST</span>
+              </div>
+              <div class="v-subtitle">"어느 담보에서 얼마가 나오는지, 카드마다 펼쳐서"</div>
+              <div class="v-summary">
+                <span class="tag tag-new">NEW</span>
+              </div>
+            </div>
+            <span class="v-chevron">▾</span>
+          </div>
+          <div class="v-body">
+
+            <div class="change-section">
+              <span class="cs-label">1~8종 수술 검색 출시</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>상단에 &lsquo;1~8종 검색&rsquo; 버튼이 생겼어요</strong><br>
+                  수술비 목록에 없는 수술은 이제 직접 찾아보실 수 있습니다. 고객이 말한 병명을 그대로 넣으면 <strong>관련 수술과 수가코드, 몇 종인지</strong>가 나옵니다. 제안서를 올린 상태라면 <strong>그 고객 가입금액으로 계산한 금액</strong>까지 같이 붙어요. &lsquo;대장용종&rsquo; 한 단어로 결장경 시술(1종)과 폴립 절제술 코드가 한 번에 나옵니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>근거는 약관 별표16 = KDRG입니다</strong><br>
+                  약관 2-109 제3조②에 <strong>별표16의 수술·시술 코드가 곧 KDRG 분류</strong>라고 적혀 있습니다. 그 대응표를 그대로 옮겨 왔기 때문에, 화면에 나온 등급을 약관에서 되짚어 확인하실 수 있어요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>정확히 안 맞아도 가까운 걸 보여드려요</strong><br>
+                  처음에는 딱 맞는 단어를 넣어야만 결과가 나와서, 조금만 달라도 <strong>&lsquo;검색 결과 없음&rsquo;</strong>이 떴습니다. 이제 비슷한 정도를 따져 <strong>가까운 항목을 대신 보여드립니다</strong>. 질병 TOP 30·수술 TOP 30으로 검증하면서 &lsquo;스텐트&rsquo;, &lsquo;협심증&rsquo;, &lsquo;하지정맥류&rsquo;처럼 자주 쓰는 말도 찾아가도록 동의어를 채웠어요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>면책 안내를 항상 띄워 둡니다</strong><br>
+                  참고용 자료라는 점과 함께, <strong>미용 목적·피임 목적·검사 및 진단 목적의 수술은 코드가 검색돼도 지급 대상이 아니라는</strong> 안내를 화면 하단에 고정해 뒀습니다. 목적이 애매한 시술은 약관 원문을 꼭 확인해 주세요.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">뇌·심장 화면 개편</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>동심원을 걷어내고 카드로 바꿨어요</strong><br>
+                  포함 관계를 원으로 그리다 보니 정작 <strong>어느 담보에서 얼마가 나오는지</strong>가 잘 안 보였습니다. 이제 암 보장 화면처럼 카드로 펼칩니다. <strong>치료행위</strong>(수술·혈전용해·혈전제거)가 윗줄, <strong>질환별 진단비</strong>가 아랫줄이에요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>카드 안에 세부 담보를 그대로 폅니다</strong><br>
+                  큰 금액만 보고 오해하지 않도록, 특정치료비에서 얼마·통합치료비에서 얼마인지 카드 안에 줄줄이 적었습니다. 통합치료비는 <strong>연 한도와 보장주기</strong>까지 담보명 아래 붙였어요 — 수술은 <strong>매회보장</strong>, 혈전용해·혈전제거는 <strong>연 1회보장</strong>입니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>뇌와 심장을 색으로 갈라 묶었어요</strong><br>
+                  진단비 카드를 <strong>파란 상자(뇌 계열)</strong>와 <strong>분홍 상자(심장 계열)</strong>로 나눠 담았습니다. 윗줄 순환계 치료 담보는 이 화면에서 가장 넓게 받아내는 축이라 <strong>금빛 테두리</strong>로 세웠고요. 미가입 담보는 회색으로 남겨 무엇이 비어 있는지도 같이 보입니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>중환자실은 치료행위 옆으로 옮겼어요</strong><br>
+                  중환자실 치료비는 수술·혈전용해·혈전제거에 딸려 나오는 담보라, 따로 떨어져 있는 것보다 <strong>같은 줄 옆칸</strong>에 붙는 게 읽기 편합니다. 절반 폭으로 넣어 네 칸이 한 줄에 들어갑니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>치료 경로는 해당 담보가 있을 때만 나와요</strong><br>
+                  검사부터 재활까지 이어지는 경로는 <strong>순환계 통합치료비</strong> 가입자에게만 해당됩니다. 담보가 없으면 이 줄은 아예 표시되지 않아요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>겹치던 표를 하나로 합쳤어요</strong><br>
+                  진단비 막대그래프와 수술비 구성 표가 위 카드와 같은 내용을 반복하고 있었습니다. 둘을 걷어내고 <strong>「보장금액 합계」</strong> 하나로 정리했어요. 이 설계에서 한 번의 사고로 검토 가능한 금액만 남깁니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>질환 전용 수술비를 놓치지 않아요</strong><br>
+                  뇌혈관질환 수술비처럼 <strong>특정 질환에만 붙는 치료·수술비</strong>가 어디에도 표시되지 않고 있었습니다. 이제 해당 진단비 카드에 <strong>&lsquo;이 질환 전용 치료·수술비 OOO 별도&rsquo;</strong>로 적어드립니다.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">인사이트 · 튜토리얼</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>인사이트에 수술비 · 뇌심 편을 더했어요</strong><br>
+                  <strong>1~8종과 기존 수술비의 차이</strong>(흡인·천자 같은 시술류까지 보상하는 &lsquo;수술의 정의&rsquo; 차이)와, <strong>혈전용해 · 혈전제거 · 수술</strong>이 각각 어떤 치료인지 정리했습니다. 기계적 혈전제거술 종류와 에크모 같은 중환자실 치료도 함께 담았어요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>튜토리얼 화면과 사진을 새로 찍었어요</strong><br>
+                  뇌·심장 설명이 예전 동심원 기준이라 지금 화면과 달랐습니다. 카드 레이아웃으로 다시 쓰고 사진도 새로 찍었어요. <strong>1~8종 수술 검색</strong> 사용법도 튜토리얼에 새 장으로 들어갔습니다.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0826 -->
+      <div class="v-entry" id="v0826">
+        <div class="v-dot"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
                 <span class="v-ver">v.0826</span>
                 <span class="v-date">2026.08.26</span>
-                <span class="v-latest-badge">LATEST</span>
               </div>
               <div class="v-subtitle">"뇌랑 심장, 어디까지 나오는지 한 장에"</div>
               <div class="v-summary">

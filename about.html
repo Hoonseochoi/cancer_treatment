@@ -472,12 +472,12 @@
       <div class="tabcard on fu" style="transition-delay:.07s">
         <span class="tabpill">NEW</span>
         <p class="tabt">수술비</p>
-        <p class="tabd">많이 하는 수술 30종이 각각 얼마까지 검토 가능한지 금액으로 나옵니다.</p>
+        <p class="tabd">많이 하는 수술 32종이 각각 얼마까지 검토 가능한지 금액으로 나옵니다. 목록에 없는 수술은 <strong>1~8종 검색</strong>으로 찾습니다.</p>
       </div>
       <div class="tabcard on fu" style="transition-delay:.14s">
         <span class="tabpill">NEW</span>
         <p class="tabt">뇌·심장</p>
-        <p class="tabd">뇌와 심장을 동심원으로 그려, 어느 질환이 얼마를 덮는지 한눈에 보여줍니다.</p>
+        <p class="tabd">치료행위와 질환별 진단비를 카드로 갈라, 어느 담보에서 얼마가 나오는지 펼쳐 보여줍니다.</p>
       </div>
     </div>
   </section>
@@ -520,41 +520,95 @@
     </div>
   </section>
 
-  <!-- 뇌심장 -->
-  <section class="section fu" id="s-circ">
-    <span class="eyebrow">BRAIN &amp; HEART</span>
-    <h2 class="stitle">뇌와 심장은,<br>넓을수록 좋은 보장입니다</h2>
+  <!-- 1~8종 수술 검색 -->
+  <section class="section fu" id="s-dict">
+    <span class="eyebrow">SEARCH</span>
+    <h2 class="stitle">목록에 없는 수술은,<br>직접 찾아보세요</h2>
     <p class="slead">
-      뇌출혈 ⊂ 뇌졸중 ⊂ 뇌혈관질환. 급성심근경색 ⊂ 허혈성심장질환.
-      말로 설명하면 어려운 포함 관계를 동심원으로 그려, 바깥 고리가 넓을수록 좋다는 걸 눈으로 보여줍니다.
+      상단 <strong>1~8종 검색</strong>을 누르면 검색창이 열립니다.
+      고객이 말한 병명 그대로 넣으면 관련 수술과 <strong>수가코드 · 몇 종인지</strong>가 나오고,
+      제안서를 올린 상태라면 <strong>그 고객 가입금액으로 계산한 금액</strong>까지 함께 붙습니다.
     </p>
 
     <div class="shotwrap">
-      <div class="shot"><img src="ABOUT/cc_rings.png" alt="뇌·심장 한눈에 보기 — 뇌와 심장 모양 동심원과 치료 행위별 금액"></div>
-      <p class="shotcap">뇌는 뇌 모양으로, 심장은 하트 모양으로. 각 고리 안에 검토 가능한 최대 금액이 들어갑니다.</p>
+      <div class="shot"><img src="ABOUT/dict_demo.png" alt="1~8종 수술 검색 — ‘대장용종’ 검색 결과와 수가코드, 등급, 금액"></div>
+      <p class="shotcap">‘대장용종’ 한 단어로 결장경 시술(1종)과 폴립 절제술 수가코드, 계산된 50만원까지.</p>
     </div>
 
     <div class="plist">
       <div class="pitem fu">
         <span class="pnum">1</span>
-        <p class="ptxt"><b>가장 바깥 고리 = 최대 금액</b> — 그 질환으로 치료·수술받았을 때
-        검토 가능한 금액(치료비 + 수술비)입니다. 안쪽 고리는 전용 담보가 있을 때만 더해집니다.</p>
+        <p class="ptxt"><b>고객이 말한 그대로</b> — ‘대장용종’, ‘디스크’, ‘스텐트’처럼 흔히 쓰는 말도
+        약관 용어로 바꿔 찾습니다. 수가코드(Q7701)를 직접 넣어도 됩니다.</p>
       </div>
       <div class="pitem fu" style="transition-delay:.06s">
         <span class="pnum">2</span>
-        <p class="ptxt"><b>특정 순환계 질환 치료비를 강조</b> — 41개 질병코드를 통째로 덮는 가장 넓은 담보입니다.
-        옆의 <strong>?</strong>를 누르면 어떤 코드가 포함되는지 전부 확인할 수 있습니다.</p>
+        <p class="ptxt"><b>관련율로 판단하세요</b> — 같은 시술이 여러 분류에 걸칠 수 있어서,
+        검색어에 가까운 순으로 <strong>관련율</strong>을 붙여 정렬합니다.
+        정확히 맞는 항목이 없어도 <strong>가까운 것들을 대신 보여드립니다</strong>.</p>
       </div>
       <div class="pitem fu" style="transition-delay:.12s">
         <span class="pnum">3</span>
-        <p class="ptxt"><b>수술 · 혈전용해 · 혈전제거</b> — 치료 행위별로 얼마가 나오는지 카드로 표시하고,
-        수술비 계열(질병수술비 · 1~5종 · N대질병)을 합산해 함께 보여줍니다.</p>
+        <p class="ptxt"><b>근거는 KDRG</b> — 약관 별표16의 수술·시술 코드가 곧 KDRG 분류입니다.
+        그 대응표를 그대로 옮겨 왔기 때문에, 화면의 등급을 약관에서 되짚어 확인할 수 있습니다.</p>
+      </div>
+      <div class="pitem fu" style="transition-delay:.18s">
+        <span class="pnum">4</span>
+        <p class="ptxt"><b>참고용입니다</b> — 실제 지급은 가입 시점의 약관과 KDRG 버전, 급여 여부에 따라 달라집니다.
+        <strong>미용 · 피임 · 검사 목적의 수술은 코드가 검색돼도 지급 대상이 아닙니다.</strong>
+        화면 하단에도 같은 안내를 항상 띄워 둡니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 뇌심장 -->
+  <section class="section fu" id="s-circ">
+    <span class="eyebrow">BRAIN &amp; HEART</span>
+    <h2 class="stitle">뇌와 심장은,<br>담보 한 장씩 펼쳐 봅니다</h2>
+    <p class="slead">
+      순환계는 담보 이름이 서로 닮아 어느 게 어디서 나오는지 헷갈립니다.
+      그래서 <strong>치료행위</strong>와 <strong>질환별 진단비</strong>를 카드로 갈라 놓고,
+      카드마다 그 금액을 이루는 <strong>세부 담보를 그대로 펼쳐</strong> 보여드립니다.
+    </p>
+
+    <div class="shotwrap">
+      <div class="shot"><img src="ABOUT/cc_cards.png" alt="뇌·심장 보장 구조 — 치료행위 카드 4개와 뇌 계열·심장 계열로 묶인 진단비 카드"></div>
+      <p class="shotcap">윗줄은 금빛 테두리로 세운 순환계 치료 담보, 아랫줄은 뇌 계열(파랑) · 심장 계열(분홍)로 묶은 진단비입니다.</p>
+    </div>
+
+    <div class="plist">
+      <div class="pitem fu">
+        <span class="pnum">1</span>
+        <p class="ptxt"><b>치료행위별로 한 카드씩</b> — <strong>수술 · 혈전용해 · 혈전제거</strong>는
+        같은 사고라도 금액이 달라서 합치지 않았습니다. 옆에 <strong>중환자실 치료비</strong>를
+        절반 폭으로 붙여, 네 칸이 한 줄에 들어옵니다.</p>
+      </div>
+      <div class="pitem fu" style="transition-delay:.06s">
+        <span class="pnum">2</span>
+        <p class="ptxt"><b>금액의 출처가 카드 안에</b> — 특정치료비에서 얼마, 통합치료비에서 얼마인지
+        줄줄이 적혀 있습니다. 통합치료비는 <strong>연 한도와 보장주기</strong>(수술은 매회, 혈전용해·혈전제거는 연 1회)까지
+        담보명 아래 붙여, 큰 금액만 보고 오해하는 일이 없게 했습니다.</p>
+      </div>
+      <div class="pitem fu" style="transition-delay:.12s">
+        <span class="pnum">3</span>
+        <p class="ptxt"><b>뇌와 심장을 색으로 갈라</b> — 진단비 카드를 파란 상자(뇌 계열)와
+        분홍 상자(심장 계열)로 묶었습니다. <strong>미가입 담보는 회색</strong>으로 남겨두어,
+        무엇이 비어 있는지도 같이 보입니다.</p>
       </div>
       <div class="pitem fu" style="transition-delay:.18s">
         <span class="pnum">4</span>
         <p class="ptxt"><b>놓치기 쉬운 구멍도 알려드립니다</b> — 예를 들어 뇌졸중 분류표에는 I64(상세불명 뇌졸중)가
         없습니다. 이런 함정은 화면에 경고로 띄웁니다.</p>
       </div>
+    </div>
+
+    <div class="shotwrap">
+      <div class="shot"><img src="ABOUT/cc_journey.png" alt="치료 경로 — 검사·약물·치료·수술·재활 5단계 지급 한도"></div>
+      <p class="shotcap">
+        <strong>순환계 통합치료비</strong>에 가입돼 있을 때만 나오는 화면입니다.
+        MRI·CT부터 항응고제, 에크모, 전문재활치료까지 검사에서 재활까지 이어지는 금액을 약관 지급표 그대로 폅니다.
+        해당 담보가 없으면 이 줄은 아예 표시되지 않습니다.
+      </p>
     </div>
   </section>
 
@@ -787,6 +841,7 @@
     { id: 's-why',      label: '왜 이 도구인가' },
     { id: 's-smart',    label: '스마트 가입제안서 OPEN' },
     { id: 's-surgery',  label: '수술비 한눈에 보기' },
+    { id: 's-dict',     label: '1~8종 수술 검색' },
     { id: 's-circ',     label: '뇌·심장 한눈에 보기' },
     { id: 's-pdf',      label: '전체 PDF 저장' },
     { id: 's-how',      label: '사용 방법 (3 Step)' },

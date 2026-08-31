@@ -325,7 +325,7 @@ function dictTutorialHtml() {
         </ol>
         <div class="sd-tut-shot">
           <img src="ABOUT/dict_demo.png" alt="‘대장용종’으로 검색한 결과 예시">
-          <span>‘대장용종’ 검색 — 결장경 시술(1종)과 폴립 절제술 수가코드가 함께 나옵니다.</span>
+          <span>‘대장용종’ 검색 — 결장경 시술(1종)과 폴립 절제술 수가코드, 그리고 그 고객 가입금액으로 계산한 금액까지.</span>
         </div>
         <div class="sd-quick">
           <span>바로 해보기</span>
