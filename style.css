@@ -785,32 +785,8 @@ strong {
 #circulatory-panel .ci.hit{color:var(--brain-2);font-weight:700}
 #circulatory-panel .ci.hit b{color:var(--brain-2)}
 
-#circulatory-panel .diagram{width:100%;height:auto;display:block}
-/* 그림 안 글자는 둥글고 말랑한 서체로 */
-#circulatory-panel .diagram text{font-family:'Dongle','Noto Sans KR',sans-serif;font-weight:700;letter-spacing:.02em}
-#circulatory-panel .ring-shape{transition:opacity .18s}
-#circulatory-panel .organ-label{font-size:19px;fill:var(--cc-muted);font-family:'Dongle','Noto Sans KR',sans-serif;font-weight:700}
-#circulatory-panel .dia-note{font-family:'Noto Sans KR',sans-serif!important;font-weight:600;font-size:10.4px;fill:var(--cc-muted)}
-
-/* 하단 2단: 진단비 막대 / 수술비 구성 */
-#circulatory-panel .cc-duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-#circulatory-panel .bars{display:grid;gap:9px}
-#circulatory-panel .bar-row{display:grid;grid-template-columns:112px 1fr auto;gap:9px;align-items:center;font-size:11px}
-#circulatory-panel .bar-row .bn{color:var(--cc-ink-2);font-weight:600;line-height:1.3}
-#circulatory-panel .bar-row .bn em{display:block;font-style:normal;font-size:9.4px;color:var(--cc-muted);font-weight:500}
-#circulatory-panel .bar-track{height:16px;border-radius:5px;background:var(--cc-surface-2);overflow:hidden;display:block}
-#circulatory-panel .bar-fill{height:100%;border-radius:5px;display:block}
-#circulatory-panel .bar-row .bv{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:11.5px}
-#circulatory-panel .bar-row.off .bn,#circulatory-panel .bar-row.off .bv{color:var(--cc-off)}
-#circulatory-panel .bar-row.off .bar-track{border:1.3px dashed var(--cc-off);background:transparent}
 
 #circulatory-panel .sx{display:grid;gap:4px}
-#circulatory-panel .sx-row{display:flex;justify-content:space-between;gap:10px;font-size:11px;padding:4px 0;
-  border-bottom:1px dashed var(--cc-line);color:var(--cc-ink-2)}
-#circulatory-panel .sx-row:last-child{border-bottom:0}
-#circulatory-panel .sx-row em{font-style:normal;font-size:9.6px;color:var(--cc-muted);display:block}
-#circulatory-panel .sx-row b{white-space:nowrap;font-variant-numeric:tabular-nums}
-#circulatory-panel .sx-row.off,#circulatory-panel .sx-row.off b{color:var(--cc-off)}
 /* 최대 보장금액 — 대표 금액과 구분되게 강조하되, 근거를 함께 적는다 */
 #circulatory-panel .cc-max{margin-top:12px;padding:11px 13px;border-radius:11px;
   background:#EEF0FE;border:1px solid #C7CEF5}
@@ -860,7 +836,6 @@ strong {
 #circulatory-panel .cc-src{margin-top:12px;font-size:10.5px;color:var(--cc-muted);text-align:center;line-height:1.7}
 
 @media (max-width:760px){
-  #circulatory-panel .cc-duo{grid-template-columns:1fr}
   #circulatory-panel .jsteps{grid-template-columns:repeat(2,1fr);gap:12px}
   #circulatory-panel .jstep{padding:0}
   #circulatory-panel .jstep:not(:last-child)::after{display:none}
@@ -970,3 +945,73 @@ strong {
   #sd-searchbar{margin-left:16px;margin-right:16px}
   .sd-rel{width:42px}
 }
+
+/* ══════════════════════════════════════════
+   뇌·심장 카드 레이아웃 (동심원 대체)
+   치료행위 / 질환별 진단비 / 수술비·중환자실을 전부 카드로 편다.
+   ══════════════════════════════════════════ */
+.ccx{display:grid;gap:8px}
+.ccx-cap2{margin:6px 0 0;font-size:11px;font-weight:800;color:var(--cc-muted);
+  letter-spacing:-.01em}
+.ccx-cap2:first-child{margin-top:0}
+
+.ccg{display:grid;gap:8px}
+.ccg.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ccg.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+/* 진단비 카드는 뇌 계열 / 심장 계열을 색 테두리 상자로 갈라 담는다.
+   테두리 색이 어느 장기 쪽 보장인지 알려주는 유일한 표시라, 배경도 같은 계열로 옅게 깐다. */
+/* 두 상자는 높이를 맞춘다 — 담보 수가 달라도 좌우가 비뚤어지지 않게 */
+.ccgrps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:stretch}
+.ccgrp{padding:9px 10px 10px;border-radius:14px;border:1.5px solid var(--grp);
+  background:var(--grp-bg);min-width:0}
+.ccgrp.brain{--grp:var(--brain-3);--grp-bg:var(--brain-soft);--grp-ink:var(--brain-1)}
+.ccgrp.heart{--grp:var(--heart-3);--grp-bg:var(--heart-soft);--grp-ink:var(--heart-1)}
+.ccgrp-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  margin:0 2px 7px;font-size:11px;font-weight:800;color:var(--grp-ink);letter-spacing:-.01em}
+.ccgrp-h em{font-style:normal;font-size:9.5px;font-weight:700;opacity:.7}
+
+.ccc{padding:11px 13px;border-radius:12px;background:var(--cc-surface);
+  border:1px solid var(--cc-line);box-shadow:var(--cc-shadow);min-width:0}
+.ccc-h{display:flex;align-items:center;gap:6px;min-width:0}
+.ccc-ico{display:inline-flex;flex-shrink:0;color:var(--ink);font-size:0;line-height:0}
+.ccc-n{font-size:11.5px;font-weight:800;color:var(--cc-ink);line-height:1.35;
+  word-break:keep-all;min-width:0}
+.ccc-amt{margin:5px 0 0;font-size:18px;font-weight:800;color:var(--ink);
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.2}
+.ccc-kcd{margin:2px 0 0;font-size:9.5px;color:var(--cc-off);letter-spacing:.01em}
+/* 세부 담보 — 이 금액이 어디서 나왔는지 근거를 카드 안에 편다 */
+.ccc-rows{list-style:none;margin:8px 0 0;padding:8px 0 0;display:grid;gap:3px;
+  border-top:1px dashed var(--cc-line)}
+.ccc-rows li{display:flex;align-items:baseline;justify-content:space-between;gap:7px;
+  font-size:10.2px;color:var(--cc-muted);line-height:1.5}
+.ccc-rows li span{min-width:0;word-break:keep-all}
+.ccc-rows li b{flex-shrink:0;font-weight:800;color:var(--cc-ink-2);
+  font-variant-numeric:tabular-nums}
+.ccc-note{margin:7px 0 0;font-size:10px;color:var(--cc-muted);line-height:1.55}
+/* 미가입 — 회색으로 비활성화 */
+.ccc.off{opacity:.5;background:var(--cc-surface-2)}
+.ccc.off .ccc-amt{font-size:14px;font-weight:700}
+
+@media(max-width:640px){
+  .ccg.g3,.ccg.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ccgrps{grid-template-columns:1fr}
+}
+
+/* ── 인라인 아이콘 (외부 폰트 없이 CSS만으로) ── */
+.cci{display:inline-block;width:15px;height:15px;flex-shrink:0;vertical-align:-2px;
+  background:currentColor;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
+.cci-brain{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M12 3c-1.5-1-3.6-.6-4.5.8C6 3.6 4.2 4.5 4 6.2 2.6 6.9 2.2 8.7 3.1 10c-1 1.3-.6 3.2.8 3.9-.1 1.7 1.4 3 3 2.8.5 1.4 2.2 2 3.4 1.3V3Zm2 0v15c1.2.7 2.9.1 3.4-1.3 1.6.2 3.1-1.1 3-2.8 1.4-.7 1.8-2.6.8-3.9.9-1.3.5-3.1-.9-3.8-.2-1.7-2-2.6-3.5-2.4C16.9 2.4 15.5 2 14 3Z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M12 3c-1.5-1-3.6-.6-4.5.8C6 3.6 4.2 4.5 4 6.2 2.6 6.9 2.2 8.7 3.1 10c-1 1.3-.6 3.2.8 3.9-.1 1.7 1.4 3 3 2.8.5 1.4 2.2 2 3.4 1.3V3Zm2 0v15c1.2.7 2.9.1 3.4-1.3 1.6.2 3.1-1.1 3-2.8 1.4-.7 1.8-2.6.8-3.9.9-1.3.5-3.1-.9-3.8-.2-1.7-2-2.6-3.5-2.4C16.9 2.4 15.5 2 14 3Z'/%3E%3C/svg%3E")}
+.cci-heart{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M12 21s-8-5.3-8-11a4.7 4.7 0 0 1 8-3.4A4.7 4.7 0 0 1 20 10c0 5.7-8 11-8 11Z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M12 21s-8-5.3-8-11a4.7 4.7 0 0 1 8-3.4A4.7 4.7 0 0 1 20 10c0 5.7-8 11-8 11Z'/%3E%3C/svg%3E")}
+.cci-drop{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M12 2.5 6.8 9.4a6.5 6.5 0 1 0 10.4 0L12 2.5Z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M12 2.5 6.8 9.4a6.5 6.5 0 1 0 10.4 0L12 2.5Z'/%3E%3C/svg%3E")}
+.cci-pulse{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12h4l2.5-7 5 14L16 12h6'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12h4l2.5-7 5 14L16 12h6'/%3E%3C/svg%3E")}
+.cci-scalpel{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M14.5 3.5 21 10 9.5 21.5H3v-6.5L14.5 3.5Zm0 2.8L6 14.8v3.7h3.7l8.5-8.5-3.7-3.7Z'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M14.5 3.5 21 10 9.5 21.5H3v-6.5L14.5 3.5Zm0 2.8L6 14.8v3.7h3.7l8.5-8.5-3.7-3.7Z'/%3E%3C/svg%3E")}
+.cci-bed{color:var(--warn);-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 18V7m0 6h18v5M7 11h2'/%3E%3Cpath d='M21 18v-5a3 3 0 0 0-3-3h-7'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 18V7m0 6h18v5M7 11h2'/%3E%3Cpath d='M21 18v-5a3 3 0 0 0-3-3h-7'/%3E%3C/svg%3E")}
+

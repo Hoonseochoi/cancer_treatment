@@ -50,6 +50,28 @@ function buildCirculatoryPolicy(results) {
     p.치료비 = val(find(CIRCULATORY_DATA.TREAT_RE));
     p.중환자실 = val(find(CIRCULATORY_DATA.ICU_RE));
 
+    // ── 질환 전용 치료비·수술비 ──
+    // 치료행위·수술비 담보는 대부분 순환계 전체에 공통으로 붙어 뇌혈관과 허혈성의
+    // 금액이 같아진다. 다만 "뇌혈관질환 수술비"처럼 특정 질환에만 붙는 담보가
+    // 따로 들어오는 제안서가 있어, 그 경우에는 두 질환의 금액이 갈린다.
+    // 진단비는 dx에서 이미 따로 잡으므로 여기서는 제외한다.
+    p.own = {};
+    CIRCULATORY_DATA.DX.forEach(d => {
+        // 검증된 DX 패턴에서 "…진단비" 꼬리만 떼어 질환명 부분을 그대로 재사용한다.
+        const stem = d.re.source.replace(/\.\*진단비$/, '');
+        let ownRe;
+        try { ownRe = new RegExp(stem + '.*(치료비|수술비)'); } catch (e) { p.own[d.k] = 0; return; }
+        const seen = new Set();
+        p.own[d.k] = (circ.length ? circ : all).reduce((acc, r) => {
+            const n = norm(r.name);
+            if (seen.has(n) || !ownRe.test(n)) return acc;
+            // 순환계 전체 공통 담보(특정치료비·중환자실)는 질환 전용이 아니다.
+            if (CIRCULATORY_DATA.TREAT_RE.test(n) || CIRCULATORY_DATA.ICU_RE.test(n)) return acc;
+            seen.add(n);
+            return acc + parseKoAmount(r.amount);
+        }, 0);
+    });
+
     // 순환계 통합치료비(순통치) — 특정치료비Ⅲ와 별개 담보. 검사~재활 전 경로를
     // 연간 한도 내에서 보장하며, 있을 때만 치료 경로 차트를 노출한다.
     // type: std=표준형(연간 1억) / lite=실속형(연간 5천)
@@ -127,108 +149,16 @@ function buildCirculatoryPolicy(results) {
     // 다만 수술과 혈전제거는 약관상 함께 지급되지 않으므로, 근거·주의 문구를 반드시 함께 보여준다.
     p.treatSum = p.treatAll;                     // 치료행위 최대 합
     p.maxTotal = p.treatAll + p.surgSum;         // 세 행위 + 수술비
-    p.ringTotal = p.maxTotal;                    // 동심원 안 금액 = 최대 보장금액
+    p.ringTotal = p.maxTotal;                    // 질환 카드에 싣는 금액 = 최대 보장금액
     return p;
 }
 
-// ── SVG 동심원 ──
+// 뇌·심장 실루엣 path — 지금은 쓰는 곳이 없지만 카드에 도형을 다시 넣을 때를 위해 남긴다.
 const CC_PATHS = {
     brain: 'M50,11 C61,6 74,10 79,19 C88,21 93,30 90,39 C95,46 93,56 86,61 C85,71 77,78 67,78 C62,84 52,86 45,82 C37,86 28,83 24,76 C15,75 8,67 9,58 C3,52 3,42 9,36 C7,27 13,18 22,16 C28,9 41,7 50,11 Z',
     heart: 'M50,88 C50,88 12,62 12,37 C12,22 24,13 36,13 C44,13 49,18 50,22 C51,18 56,13 64,13 C76,13 88,22 88,37 C88,62 50,88 50,88 Z'
 };
-const CC_FISSURE = 'M50,13 C50,28 45,37 50,47 C55,57 49,67 50,81';
-
-// 치료행위 카드·하단 문구의 공통 기준선.
-// 기관별 size에서 유도하면 뇌(340)와 심장(322)의 카드 높이가 어긋나므로 고정값을 쓴다.
-const CC_ACT_Y = 348;   // 카드 상단
-const CC_SUM_Y = 402;   // "+ 수술비" 한 줄
-const CC_CAP_Y = 428;   // 맨 아래 캡션
-
-function ccOrgan(o, policy) {
-    const p = CC_PATHS[o.path];
-    const y1 = CC_ACT_Y;
-    // base 고리(가장 바깥) = 치료행위 중 가장 높은 하나 + 별도 수술비 담보 총액.
-    // 진단비는 그림에 넣지 않고 하단 진단비 막대에서 별도로 보여준다.
-    const baseTotal = policy.ringTotal;
-    let s = `<g filter="url(#cc-soft)" transform="translate(${o.cx},${o.cy}) scale(${o.size / 100}) translate(-50,-50)">`;
-    o.rings.forEach(r => {
-        const v = r.base ? baseTotal : (policy.dx[r.k] || 0);
-        const on = v > 0;
-        s += `<path d="${p}" class="ring-shape" stroke-linejoin="round"
-      transform="translate(50,50) scale(${r.s}) translate(-50,-50)"
-      fill="${on ? r.c : 'rgba(255,255,255,.82)'}"
-      stroke="${on ? 'rgba(255,255,255,.95)' : '#9AA1B4'}"
-      stroke-width="${on ? 1.5 : 1.3}" ${on ? '' : 'stroke-dasharray="3.2 2.4"'}></path>`;
-    });
-    if (o.path === 'brain')
-        s += `<path d="${CC_FISSURE}" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.3" stroke-linecap="round"></path>`;
-    s += `</g>`;
-    o.rings.forEach(r => {
-        const v = r.base ? baseTotal : (policy.dx[r.k] || 0);
-        const y = o.cy + r.ty * o.size;
-        // 미가입 고리는 도형이 흰색이므로 글자를 회색으로 — ink(흰색)를 쓰면 안 보인다
-        const fill = (r.base || v > 0) ? r.ink : '#7C8397';
-        s += `<text x="${o.cx}" y="${y}" text-anchor="middle" class="r-name"
-      style="font-size:${r.nf}px" fill="${fill}" opacity=".94">${r.k}</text>`;
-        // base는 최대 금액, 내부 고리는 전용 담보가 있을 때만 "+금액". 없으면 금액 없이 질환명만.
-        if (r.base || v > 0) {
-            const txt = r.base ? ccW(v) : '+' + ccW(v);
-            s += `<text x="${o.cx}" y="${y + r.af * 0.92 + 2}" text-anchor="middle" class="r-amt"
-      style="font-size:${r.af}px" fill="${fill}">${txt}</text>`;
-            // 그림만 보고도 최대치임을 알 수 있도록 금액 아래에 작게 표시.
-            // Dongle 은 글자 높이에 비해 줄 상자가 커서 간격을 넉넉히 줘야 붙어 보이지 않는다.
-            if (r.base) {
-                s += `<text x="${o.cx}" y="${y + r.af * 0.92 + 24}" text-anchor="middle" class="dia-note"
-      style="font-size:10.4px" fill="${fill}" opacity=".7">최대 검토 가능</text>`;
-            }
-        }
-    });
-    // ── 기관 하단 치료행위 카드 ──
-    // 수술·혈전용해·혈전제거는 서로 배타적이라 합산하지 않고 각각 얼마인지 카드로 보여준다.
-    // 그림 안에 들어가야 하므로 작게, 셋을 나란히 배치한다.
-    const acts = [
-        { n: '수술', v: policy.surgTreat.수술 },
-        { n: '혈전용해', v: policy.surgTreat.혈전용해 },
-        { n: '혈전제거', v: policy.surgTreat.혈전제거 }
-    ].filter(a => a.v > 0);
-    if (acts.length) {
-        const cw = 86, gap = 6;
-        const totalW = acts.length * cw + (acts.length - 1) * gap;
-        let cx0 = o.cx - totalW / 2;
-        acts.forEach(a => {
-            s += `<g transform="translate(${cx0},${y1})">
-        <rect width="${cw}" height="34" rx="8" fill="#fff" stroke="${o.actLine}" stroke-width="1"></rect>
-        <text x="${cw / 2}" y="13" text-anchor="middle" class="dia-note"
-          style="font-size:9.6px" fill="var(--muted)">${a.n}</text>
-        <text x="${cw / 2}" y="27" text-anchor="middle" class="r-amt"
-          style="font-size:13px" fill="${o.actInk}">${ccW(a.v)}</text>
-      </g>`;
-            cx0 += cw + gap;
-        });
-    }
-    // "+ 수술비" 는 뇌·심장 공통 금액이라 기관마다 찍으면 같은 문구가 두 번 나온다.
-    // 다이어그램 조립부에서 가운데 한 번만 그린다.
-    // 라벨은 기관 그림 위쪽(히어로 바 바로 아래)에 배치
-    s += `<text x="${o.cx}" y="${o.cy - o.size / 2 - 8}" text-anchor="middle" class="organ-label">${o.label}</text>`;
-    return s;
-}
-
-// 부정맥·특정3대심장질환은 허혈성심장질환의 부분집합이 아니라 특정순환계질환 안의
-// 별개 집합이다(별표55에 각각 독립 항목 I49·I46.0·I47·I48·I50으로 들어있다).
-function ccSmallHeart(h) {
-    let s = `<g filter="url(#cc-soft)" transform="translate(${h.cx},${h.cy}) scale(${h.size / 100}) translate(-50,-50)">
-    <path d="${CC_PATHS.heart}" class="ring-shape" stroke-linejoin="round"
-      fill="${h.c}" stroke="rgba(255,255,255,.95)" stroke-width="1.6"></path></g>`;
-    // 이 둘도 특정순환계질환Ⅱ 안에 있어 같은 치료비가 적용된다.
-    // 총액을 또 찍으면 화면에 같은 숫자가 네 번 나오므로 "적용"만 표시한다.
-    s += `<text x="${h.cx}" y="${h.cy + 2}" text-anchor="middle"
-    style="font-size:18px" fill="${h.ink}">치료비 적용</text>`;
-    s += `<text x="${h.cx}" y="${h.cy + h.size / 2 + 6}" text-anchor="middle"
-    style="font-size:17px" fill="var(--ink)">${h.k}</text>`;
-    s += `<text x="${h.cx}" y="${h.cy + h.size / 2 + 22}" text-anchor="middle" class="dia-note"
-    style="font-size:9.6px">${h.kcd}</text>`;
-    return s;
-}
+// 동심원 렌더 코드는 카드 레이아웃으로 대체되면서 통째로 제거했다.
 
 // 진단비 포함 총액 — 동심원(치료비+수술비)에 뇌혈관질환·허혈성심장질환 진단비를 더한 값.
 // 두 진단비 금액이 다르면 min~max 범위로 표시.
@@ -269,57 +199,107 @@ function maxHtml(policy) {
     </div>`;
 }
 
+// 카드 한 장. 미가입이면 회색으로 비활성화한다.
+// rows = 카드 안에 나열할 세부 담보 [{n, v}] — 이 금액이 어디서 나왔는지 보여주는 근거다.
+function ccCard(o) {
+    const on = o.v > 0;
+    const rows = (o.rows || []).filter(r => r.v > 0);
+    return `<div class="ccc${on ? '' : ' off'}" style="--ink:${on ? o.ink : 'var(--cc-off)'}">
+        <div class="ccc-h">
+          <span class="ccc-ico">${o.icon || ''}</span>
+          <span class="ccc-n">${o.name}</span>
+        </div>
+        <p class="ccc-amt">${on ? ccW(o.v) : '미가입'}</p>
+        ${o.kcd ? `<p class="ccc-kcd">${o.kcd}</p>` : ''}
+        ${rows.length ? `<ul class="ccc-rows">${rows.map(r =>
+            `<li><span>${r.n}</span><b>${ccW(r.v)}</b></li>`).join('')}</ul>` : ''}
+        ${o.note ? `<p class="ccc-note">${o.note}</p>` : ''}
+      </div>`;
+}
+
+// 동심원을 대신하는 카드 묶음.
+//   1열 치료행위(수술·혈전용해·혈전제거) / 2열 질환별 진단비 / 3열 수술비·중환자실
+// 특정순환계 치료비는 질환이 아니라 "치료행위"에 붙는 담보라, 하나로 뭉쳐 두는 것보다
+// 행위별로 쪼개는 편이 실제 지급 구조와 맞는다.
+function ccCardsHtml(policy, tongName) {
+    const jFlat = policy.통합 ? CIRCULATORY_DATA.JOURNEY.flatMap(g => g.items) : [];
+    const jVal = key => {
+        if (!policy.통합) return 0;
+        const it = jFlat.find(x => x.n.startsWith(key));
+        return it ? (policy.통합.type === 'std' ? it.std : it.stdL) || 0 : 0;
+    };
+    const ACTS = [
+        { k: '수술', icon: '<i class="cci cci-scalpel"></i>', ink: 'var(--brain-2)' },
+        { k: '혈전용해', icon: '<i class="cci cci-drop"></i>', ink: 'var(--heart-2)' },
+        { k: '혈전제거', icon: '<i class="cci cci-pulse"></i>', ink: 'var(--outer)' }
+    ];
+    const actHtml = ACTS.map(a => ccCard({
+        name: a.k, v: policy.surgTreat[a.k] || 0, ink: a.ink, icon: a.icon,
+        rows: [
+            { n: '특정순환계 특정치료비', v: policy.치료비 },
+            { n: `통합치료비${tongName ? '(' + tongName + ')' : ''}`, v: jVal(a.k) }
+        ]
+    })).join('');
+
+    // 질환별 진단비 — 어떤 담보가 합쳐진 값인지 카드 안에 그대로 편다.
+    // 뇌 계열 / 심장 계열을 각각 색 테두리 상자로 묶어, 어느 장기 쪽 보장인지 한눈에 갈리게 한다.
+    const dxCard = d => ccCard({
+        name: d.k, kcd: d.kcd, v: policy.dx[d.k] || 0, ink: d.c,
+        icon: `<i class="cci ${/뇌/.test(d.k) ? 'cci-brain' : 'cci-heart'}"></i>`,
+        // 담보명에서 카드 제목과 겹치는 앞부분은 떼어낸다("뇌졸중 진단비(1년50%)" → "진단비(1년50%)")
+        rows: (policy.dxParts[d.k] || []).map(x => ({ n: x.name.replace(d.k, '').trim() || x.name, v: x.v })),
+        note: (policy.own[d.k] > 0) ? `이 질환 전용 치료·수술비 ${ccW(policy.own[d.k])} 별도` : ''
+    });
+    const dxGroup = (cls, label, list) => `
+      <section class="ccgrp ${cls}">
+        <h5 class="ccgrp-h">${label}<em>${list.length}개 담보</em></h5>
+        <div class="ccg g2">${list.map(dxCard).join('')}</div>
+      </section>`;
+    const brainDx = CIRCULATORY_DATA.DX.filter(d => /뇌/.test(d.k));
+    const heartDx = CIRCULATORY_DATA.DX.filter(d => !/뇌/.test(d.k));
+    const dxHtml = dxGroup('brain', '뇌 계열', brainDx) + dxGroup('heart', '심장 계열', heartDx);
+
+    const sxMap = { 입원: policy.sx.입원, 종5: policy.sx.종5, 대질병: policy.sx.대질병, 종8: policy.sx.종8, 오대: policy.sx.오대 };
+    const sxRows = CIRCULATORY_DATA.SX.map(r => ({ n: r.n, v: sxMap[r.k] }));
+
+    return `
+    <div class="ccx">
+      <p class="ccx-cap2">치료행위 — 특정순환계질환으로 아래 치료를 받으면 각각 지급됩니다</p>
+      <div class="ccg g3">${actHtml}</div>
+
+      <p class="ccx-cap2">질환별 진단비 — 진단만으로 지급되는 담보입니다</p>
+      <div class="ccgrps">${dxHtml}</div>
+
+      <p class="ccx-cap2">수술비 · 중환자실</p>
+      <div class="ccg g2">
+        ${ccCard({
+            name: '수술비', v: policy.surgSum, ink: 'var(--brain-2)',
+            icon: '<i class="cci cci-scalpel"></i>', rows: sxRows,
+            note: policy.surgSum > 0 ? '수술 시 치료행위 금액에 더해 함께 지급됩니다' : ''
+        })}
+        ${ccCard({
+            name: '중환자실 입원지원금', v: policy.중환자실, ink: 'var(--warn)',
+            icon: '<i class="cci cci-bed"></i>',
+            note: '수술 · 혈전용해 · 혈전제거로 중환자실에 입원했을 때'
+        })}
+      </div>
+    </div>`;
+}
+
 function renderCirculatoryPanel(results) {
     const host = document.getElementById('circulatory-panel');
     if (!host || typeof CIRCULATORY_DATA === 'undefined') return false;
     const policy = buildCirculatoryPolicy(results);
     if (!policy) return false;
 
-    // ── 동심원 기하 (아티팩트 확정값) ──
-    const BRAIN = {
-        label: '뇌 계열', cx: 196, cy: 196, size: 340, path: 'brain',
-        actLine: '#C7CEF5', actInk: '#312E81',
-        rings: [
-            { k: '뇌혈관질환', base: true, s: 1.00, ty: -0.375, nf: 20, af: 36, c: 'var(--brain-3)', ink: '#312E81' },
-            { k: '뇌졸중', s: 0.60, ty: -0.155, nf: 16, af: 19, c: 'var(--brain-2)', ink: '#fff' },
-            { k: '뇌출혈', s: 0.33, ty: 0.000, nf: 14, af: 17, c: 'var(--brain-1)', ink: '#fff' }
-        ]
-    };
-    const HEART = {
-        label: '심장 계열', cx: 512, cy: 196, size: 322, path: 'heart',
-        actLine: '#F5C2D6', actInk: '#9D174D',
-        rings: [
-            { k: '허혈성심장질환', base: true, s: 1.00, ty: -0.345, nf: 20, af: 36, c: 'var(--heart-3)', ink: '#9D174D' },
-            { k: '급성심근경색증', s: 0.50, ty: -0.050, nf: 15, af: 18, c: 'var(--heart-2)', ink: '#fff' }
-        ]
-    };
-    const SMALL = [
-        { k: '기타 심장부정맥', kcd: 'I49', cx: 768, cy: 118, size: 122, c: 'var(--heart-2)', ink: '#fff' },
-        { k: '특정3대심장질환', kcd: 'I46.0·I47·I48·I50', cx: 768, cy: 268, size: 122, c: 'var(--heart-1)', ink: '#fff' }
-    ];
-
-    // ── 진단비 막대 ──
-    const dxMax = Math.max(...CIRCULATORY_DATA.DX.map(d => policy.dx[d.k] || 0), 1);
-    // 미가입 담보는 아예 그리지 않는다 (가입한 보장만 보여준다)
-    const barsHtml = CIRCULATORY_DATA.DX.filter(d => (policy.dx[d.k] || 0) > 0).map(d => {
-        const v = policy.dx[d.k];
-        return `<div class="bar-row">
-      <span class="bn">${d.k}<em>${d.kcd}</em></span>
-      <span class="bar-track"><span class="bar-fill" style="width:${(v / dxMax * 100).toFixed(1)}%;background:${d.c}"></span></span>
-      <span class="bv">${ccW(v)}</span>
-    </div>`;
-    }).join('');
-
     // ── 수술비 구성 ──
     const sxMap = { 입원: policy.sx.입원, 종5: policy.sx.종5, 대질병: policy.sx.대질병, 종8: policy.sx.종8, 오대: policy.sx.오대 };
-    const sxHtml = CIRCULATORY_DATA.SX.filter(r => sxMap[r.k] > 0).map(r => `
-    <div class="sx-row"><span>${r.n}<em>${r.s}</em></span><b>${ccW(sxMap[r.k])}</b></div>`).join('')
-        + (policy.surgSum > 0
+    // 개별 수술비 담보는 위 수술비 카드에 이미 펼쳐 두었으므로, 여기서는 합계만 이어 붙인다.
+    const sxHtml = (policy.surgSum > 0
             ? `<div class="sx-sum"><span>수술비 합계</span><span class="num">${ccW(policy.surgSum)}</span></div>`
             : '')
         + `<div class="sx-sum" style="border-top:0;padding-top:2px;color:var(--outer)">
-       <span>+ 치료행위 합계 <em style="font-style:normal;color:var(--cc-muted)">(수술·혈전용해·혈전제거)</em></span><span class="num">${ccW(policy.treatAll)}</span></div>`
-        + `<div class="sx-sum" style="font-size:13px"><span>동심원 안 금액 (최대)</span><span class="num">${ccW(policy.ringTotal)}</span></div>`
+       <span>치료행위 합계 <em style="font-style:normal;color:var(--cc-muted)">(수술·혈전용해·혈전제거)</em></span><span class="num">${ccW(policy.treatAll)}</span></div>`
         + inclHtml(policy)
         + maxHtml(policy);
 
@@ -353,60 +333,24 @@ function renderCirculatoryPanel(results) {
     host.innerHTML = `
     <div class="cc-card">
       <h2>치료비 · 수술비 보장 구조</h2>
-      <p class="sub">가장 바깥 고리는 그 질환으로 <strong>치료·수술받았을 때 검토 가능한 최대 금액</strong>입니다(치료비+수술비). 안쪽 고리는 전용 담보가 있을 때 추가됩니다.</p>
+      <p class="sub">카드 큰 금액은 <strong>그 항목으로 검토 가능한 금액</strong>이고, 아래 목록은 그 금액을 이루는 <strong>세부 담보</strong>입니다. 회색으로 흐린 카드는 가입되지 않은 담보입니다.</p>
 
-      <div class="circle-wrap">
-        <div class="hero">
-          <span class="hero-l">${policy.통합 ? '특정 순환계 질환 통합치료비' : '특정 순환계 질환 치료비'}
-            <button type="button" class="qm" data-cc="qm" aria-expanded="false" aria-controls="cc-codes" title="보장 범위 보기">?</button>
-          </span>
-          <span class="hero-amt num">${policy.통합 ? ccW(policy.통합.amount) : ccW(policy.치료비)}</span>
-          <span class="hero-tag">아래 모든 질환에 적용</span>
-          <span class="hero-sub">${policy.통합
-              ? `${tongName} · 연간 ${ccW(policy.통합.amount)} 한도<br>수술 · 혈전용해 · 혈전제거 · 중환자실 · 검사 · 약물 · 재활`
-              : `${policy.중환자실 > 0 ? `중환자실 입원지원금 ${ccW(policy.중환자실)}<br>` : ''}수술 · 혈전용해 · 혈전제거 시 지급`}</span>
-        </div>
-        <svg class="diagram" viewBox="0 0 900 448" role="img" aria-label="뇌·심장 치료비·수술비 동심원">
-          <defs>
-            <filter id="cc-soft" x="-25%" y="-25%" width="150%" height="150%">
-              <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0E1629" flood-opacity="0.10"></feDropShadow>
-            </filter>
-          </defs>
-          ${ccOrgan(BRAIN, policy)}
-          ${ccOrgan(HEART, policy)}
-          ${SMALL.map(ccSmallHeart).join('')}
-          ${policy.surgSum > 0 ? `
-          <text x="354" y="${CC_SUM_Y}" text-anchor="middle" class="dia-note"
-            style="font-size:10.6px" fill="var(--cc-ink-2)">+ 수술비 ${ccW(policy.surgSum)} (수술 시 함께 지급)</text>` : ''}
-          <text x="450" y="${CC_CAP_Y}" text-anchor="middle" class="dia-note">
-            오른쪽 두 하트는 허혈성심장질환의 안쪽 고리가 아니라, 특정순환계질환 안의 별개 집합입니다
-          </text>
-        </svg>
-        ${journeySection}
-      </div>
+      ${ccCardsHtml(policy, tongName)}
+      ${journeySection}
       <div class="codes" data-cc="codes" data-open="false">
         <h4>특정순환계질환 분류표 · ${CIRCULATORY_DATA.CODES.length}개 항목</h4>
         <p>[별표-질병관련55] 특정순환계질환Ⅱ 기준이며, <strong>Ⅱ와 Ⅲ의 보장 범위는 동일</strong>합니다
            (가입 담보는 특정치료비Ⅲ). 제9차 개정 한국표준질병·사인분류(통계청 고시 제2025-299호) 중 아래 질병을 말합니다.
-           <strong style="color:var(--brain-2)">파란 항목</strong>이 위 동심원에 그려진 뇌·심장 계열입니다.</p>
+           <strong style="color:var(--brain-2)">파란 항목</strong>이 위 카드에 나온 뇌·심장 계열입니다.</p>
         <div class="code-grid">${codesHtml}</div>
       </div>
       <div class="trap-box">${CIRCULATORY_DATA.TRAP}</div>
     </div>
 
-    <div class="cc-duo">
-      <div class="cc-card" style="margin:0">
-        <h2>진단비</h2>
-        <p class="sub">진단만으로 지급되는 담보입니다. 막대가 길수록 넓은 질환을 덮습니다.</p>
-        <div class="bars">${barsHtml}</div>
-      </div>
-      <div class="cc-card" style="margin:0">
-        <h2>${policy.surgSum > 0 ? '수술비 구성' : '치료비 구성'}</h2>
-        <p class="sub">${policy.surgSum > 0
-            ? '동심원 안 금액에 합산된 수술비 계열입니다.'
-            : '동심원 안 금액의 산출 내역입니다. 별도 수술비 담보는 가입되어 있지 않습니다.'}</p>
-        <div class="sx">${sxHtml}</div>
-      </div>
+    <div class="cc-card">
+      <h2>보장금액 합계</h2>
+      <p class="sub">위 카드 금액을 합쳐, 한 번의 사고에서 검토 가능한 금액을 정리한 것입니다.</p>
+      <div class="sx">${sxHtml}</div>
     </div>
 
     <div class="cc-disc">
