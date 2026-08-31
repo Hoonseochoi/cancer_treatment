@@ -881,6 +881,20 @@ strong {
   border:1px solid var(--sg-note-line)}
 .sd-card.fuzzy{border-style:dashed;opacity:.86}
 
+/* 급여가 발생하지 않아 1~8종 대상이 아닌 수술 — 결과가 아니라 "왜 안 되는지"가
+   답이라, 목록 위에서 경고색으로 먼저 말한다. */
+.sd-nc{margin:0 0 14px;padding:13px 15px;border-radius:13px;
+  background:#FEF6EC;border:1.5px solid #F0C48A}
+.sd-nc b{display:block;font-size:13px;font-weight:800;color:#9A5B12;margin-bottom:6px;
+  letter-spacing:-.01em}
+.sd-nc p{margin:0;font-size:11.8px;line-height:1.75;color:#7C4A11}
+.sd-nc p strong{font-weight:800;color:#8A3F0B}
+.sd-nc-base{margin-top:8px!important;padding-top:8px;border-top:1px dashed #EBC08A;
+  font-size:11.2px!important;color:#8A6636!important}
+/* 급여 갈래가 함께 있는 경우 — 완전 제외가 아니므로 한 톤 낮춘다 */
+.sd-nc.half{background:#FFFBF2;border-color:#EBD4A8}
+.sd-nc.half b{color:#8A6A16}
+
 .sd-card{border:1px solid var(--sg-line);border-radius:13px;padding:13px 15px;margin-bottom:8px;
   background:var(--sg-surface)}
 .sd-top{display:flex;align-items:center;gap:10px}
