@@ -957,7 +957,8 @@ strong {
 
 .ccg{display:grid;gap:8px}
 .ccg.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.ccg.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* 치료행위 3칸 + 중환자실 1칸(절반 폭) */
+.ccg.gact{grid-template-columns:2fr 2fr 2fr 1fr}
 
 /* 진단비 카드는 뇌 계열 / 심장 계열을 색 테두리 상자로 갈라 담는다.
    테두리 색이 어느 장기 쪽 보장인지 알려주는 유일한 표시라, 배경도 같은 계열로 옅게 깐다. */
@@ -986,6 +987,9 @@ strong {
 .ccc-rows li{display:flex;align-items:baseline;justify-content:space-between;gap:7px;
   font-size:10.2px;color:var(--cc-muted);line-height:1.5}
 .ccc-rows li span{min-width:0;word-break:keep-all}
+/* 한도·보장주기 — 담보명만으로는 안 보이는 조건을 이름 아래 작게 */
+.ccc-rows li span em{display:block;font-style:normal;font-size:9.2px;
+  color:var(--cc-off);font-weight:600;letter-spacing:-.01em}
 .ccc-rows li b{flex-shrink:0;font-weight:800;color:var(--cc-ink-2);
   font-variant-numeric:tabular-nums}
 .ccc-note{margin:7px 0 0;font-size:10px;color:var(--cc-muted);line-height:1.55}
@@ -993,8 +997,19 @@ strong {
 .ccc.off{opacity:.5;background:var(--cc-surface-2)}
 .ccc.off .ccc-amt{font-size:14px;font-weight:700}
 
+/* 특정순환계질환 치료 — 이 담보가 순환계에서 가장 넓게 받아내는 축이라 금빛으로 세운다.
+   미가입 카드까지 금테를 두르면 강조가 무의미해지므로 가입한 카드에만 건다. */
+.ccc.hi:not(.off){border:1.5px solid #D9B45B;background:linear-gradient(180deg,#FFFCF2 0%,#FFFFFF 62%);
+  box-shadow:0 1px 3px rgba(160,120,20,.13)}
+.ccc.hi:not(.off) .ccc-rows{border-top-color:#EBDCB4}
+/* 좁은 칸(중환자실)은 글자 크기를 한 단 낮춰 넘치지 않게 */
+.ccc.sm{padding:11px 10px}
+.ccc.sm .ccc-amt{font-size:15px}
+.ccc.sm .ccc-note{font-size:9.4px;line-height:1.5}
+
 @media(max-width:640px){
-  .ccg.g3,.ccg.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ccg.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ccg.gact{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ccgrps{grid-template-columns:1fr}
 }
 

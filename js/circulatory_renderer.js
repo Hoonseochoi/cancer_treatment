@@ -200,11 +200,13 @@ function maxHtml(policy) {
 }
 
 // 카드 한 장. 미가입이면 회색으로 비활성화한다.
-// rows = 카드 안에 나열할 세부 담보 [{n, v}] — 이 금액이 어디서 나왔는지 보여주는 근거다.
+// rows = 카드 안에 나열할 세부 담보 [{n, v, sub}] — 이 금액이 어디서 나왔는지 보여주는 근거다.
+//        sub는 한도·보장주기처럼 담보명만으로는 안 보이는 조건을 담보명 아래 작게 붙인다.
+// cls = 카드에 덧붙일 클래스(hi=금빛 강조, sm=좁은 칸용 축소).
 function ccCard(o) {
     const on = o.v > 0;
     const rows = (o.rows || []).filter(r => r.v > 0);
-    return `<div class="ccc${on ? '' : ' off'}" style="--ink:${on ? o.ink : 'var(--cc-off)'}">
+    return `<div class="ccc${o.cls ? ' ' + o.cls : ''}${on ? '' : ' off'}" style="--ink:${on ? o.ink : 'var(--cc-off)'}">
         <div class="ccc-h">
           <span class="ccc-ico">${o.icon || ''}</span>
           <span class="ccc-n">${o.name}</span>
@@ -212,7 +214,7 @@ function ccCard(o) {
         <p class="ccc-amt">${on ? ccW(o.v) : '미가입'}</p>
         ${o.kcd ? `<p class="ccc-kcd">${o.kcd}</p>` : ''}
         ${rows.length ? `<ul class="ccc-rows">${rows.map(r =>
-            `<li><span>${r.n}</span><b>${ccW(r.v)}</b></li>`).join('')}</ul>` : ''}
+            `<li><span>${r.n}${r.sub ? `<em>${r.sub}</em>` : ''}</span><b>${ccW(r.v)}</b></li>`).join('')}</ul>` : ''}
         ${o.note ? `<p class="ccc-note">${o.note}</p>` : ''}
       </div>`;
 }
@@ -228,18 +230,33 @@ function ccCardsHtml(policy, tongName) {
         const it = jFlat.find(x => x.n.startsWith(key));
         return it ? (policy.통합.type === 'std' ? it.std : it.stdL) || 0 : 0;
     };
+    // 통합치료비는 연 한도 안에서만 지급되고, 수술만 회당·나머지는 연 1회한이다.
+    // 담보명만 적으면 이 조건이 안 보여서 금액을 오해하기 쉬워, 행마다 같이 붙인다.
+    const capTxt = policy.통합
+        ? `연 ${ccW(policy.통합.type === 'std' ? CIRCULATORY_DATA.CAP.std : CIRCULATORY_DATA.CAP.lite)} 한도`
+        : '';
     const ACTS = [
-        { k: '수술', icon: '<i class="cci cci-scalpel"></i>', ink: 'var(--brain-2)' },
-        { k: '혈전용해', icon: '<i class="cci cci-drop"></i>', ink: 'var(--heart-2)' },
-        { k: '혈전제거', icon: '<i class="cci cci-pulse"></i>', ink: 'var(--outer)' }
+        { k: '수술', icon: '<i class="cci cci-scalpel"></i>', ink: 'var(--brain-2)', cyc: '매회보장' },
+        { k: '혈전용해', icon: '<i class="cci cci-drop"></i>', ink: 'var(--heart-2)', cyc: '연 1회보장' },
+        { k: '혈전제거', icon: '<i class="cci cci-pulse"></i>', ink: 'var(--outer)', cyc: '연 1회보장' }
     ];
     const actHtml = ACTS.map(a => ccCard({
-        name: a.k, v: policy.surgTreat[a.k] || 0, ink: a.ink, icon: a.icon,
+        name: a.k, v: policy.surgTreat[a.k] || 0, ink: a.ink, icon: a.icon, cls: 'hi',
         rows: [
             { n: '특정순환계 특정치료비', v: policy.치료비 },
-            { n: `통합치료비${tongName ? '(' + tongName + ')' : ''}`, v: jVal(a.k) }
+            {
+                n: `특정순환계 통합치료비${tongName ? '(' + tongName + ')' : ''}`,
+                sub: [capTxt, a.cyc].filter(Boolean).join(' · '),
+                v: jVal(a.k)
+            }
         ]
-    })).join('');
+    })).join('')
+        // 중환자실은 치료행위에 딸려 나오는 보조 담보라, 같은 줄에 좁은 칸으로 붙인다.
+        + ccCard({
+            name: '중환자실 치료비', v: policy.중환자실, ink: 'var(--warn)', cls: 'hi sm',
+            icon: '<i class="cci cci-bed"></i>',
+            note: '왼쪽 세 치료로 중환자실 입원 시'
+        });
 
     // 질환별 진단비 — 어떤 담보가 합쳐진 값인지 카드 안에 그대로 편다.
     // 뇌 계열 / 심장 계열을 각각 색 테두리 상자로 묶어, 어느 장기 쪽 보장인지 한눈에 갈리게 한다.
@@ -259,30 +276,13 @@ function ccCardsHtml(policy, tongName) {
     const heartDx = CIRCULATORY_DATA.DX.filter(d => !/뇌/.test(d.k));
     const dxHtml = dxGroup('brain', '뇌 계열', brainDx) + dxGroup('heart', '심장 계열', heartDx);
 
-    const sxMap = { 입원: policy.sx.입원, 종5: policy.sx.종5, 대질병: policy.sx.대질병, 종8: policy.sx.종8, 오대: policy.sx.오대 };
-    const sxRows = CIRCULATORY_DATA.SX.map(r => ({ n: r.n, v: sxMap[r.k] }));
-
     return `
     <div class="ccx">
-      <p class="ccx-cap2">치료행위 — 특정순환계질환으로 아래 치료를 받으면 각각 지급됩니다</p>
-      <div class="ccg g3">${actHtml}</div>
+      <p class="ccx-cap2">특정순환계질환 치료 — 이 질환으로 아래 치료를 받으면 각각 지급됩니다</p>
+      <div class="ccg gact">${actHtml}</div>
 
       <p class="ccx-cap2">질환별 진단비 — 진단만으로 지급되는 담보입니다</p>
       <div class="ccgrps">${dxHtml}</div>
-
-      <p class="ccx-cap2">수술비 · 중환자실</p>
-      <div class="ccg g2">
-        ${ccCard({
-            name: '수술비', v: policy.surgSum, ink: 'var(--brain-2)',
-            icon: '<i class="cci cci-scalpel"></i>', rows: sxRows,
-            note: policy.surgSum > 0 ? '수술 시 치료행위 금액에 더해 함께 지급됩니다' : ''
-        })}
-        ${ccCard({
-            name: '중환자실 입원지원금', v: policy.중환자실, ink: 'var(--warn)',
-            icon: '<i class="cci cci-bed"></i>',
-            note: '수술 · 혈전용해 · 혈전제거로 중환자실에 입원했을 때'
-        })}
-      </div>
     </div>`;
 }
 
@@ -292,11 +292,10 @@ function renderCirculatoryPanel(results) {
     const policy = buildCirculatoryPolicy(results);
     if (!policy) return false;
 
-    // ── 수술비 구성 ──
-    const sxMap = { 입원: policy.sx.입원, 종5: policy.sx.종5, 대질병: policy.sx.대질병, 종8: policy.sx.종8, 오대: policy.sx.오대 };
-    // 개별 수술비 담보는 위 수술비 카드에 이미 펼쳐 두었으므로, 여기서는 합계만 이어 붙인다.
+    // ── 보장금액 합계 ──
+    // 수술비 담보의 개별 내역은 수술비 탭에서 이미 다루므로, 여기서는 합계만 이어 붙인다.
     const sxHtml = (policy.surgSum > 0
-            ? `<div class="sx-sum"><span>수술비 합계</span><span class="num">${ccW(policy.surgSum)}</span></div>`
+            ? `<div class="sx-sum"><span>수술비 합계 <em style="font-style:normal;color:var(--cc-muted)">(1~5종·N대질병 등)</em></span><span class="num">${ccW(policy.surgSum)}</span></div>`
             : '')
         + `<div class="sx-sum" style="border-top:0;padding-top:2px;color:var(--outer)">
        <span>치료행위 합계 <em style="font-style:normal;color:var(--cc-muted)">(수술·혈전용해·혈전제거)</em></span><span class="num">${ccW(policy.treatAll)}</span></div>`
