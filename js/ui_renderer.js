@@ -938,15 +938,20 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null, fo
             }
             /* ── 수술비 태그(질수·1~5종…) 글자가 칩 아래로 밀리던 문제 ──
                html2canvas는 글자 베이스라인을 줄상자 아래쪽에 붙여 그린다. 화면에서는
-               padding 2px + line-height 16.8px로 가운데 오지만, 캡처에서는 위 10.6px /
-               아래 0.5px로 바닥에 붙어 잘려 보였다(실측).
-               위 여백을 0으로 두고 아래 여백을 글자 크기만큼(1em) 주면, 밀려 그려진
-               글자가 정확히 가운데에 온다. 칩 높이는 21px 그대로 유지된다.
-               실측: 위 5.63 / 아래 5.50 (편차 0.06px) */
+               padding 2px + line-height 16.8px로 가운데 오지만, 캡처에서는 바닥에
+               붙어 잘려 보인다.
+
+               후보값을 하나씩 캡처해 재보니 규칙이 분명했다 — 잉크의 절대 위치는
+               line-height에만 좌우되고 padding-bottom과는 무관하다. 아래 여백을
+               늘리면 글자는 그대로 두고 상자만 아래로 커진다. 그래서 균형점은
+                 위여백 = pt + 0.73em,  아래여백 = pb - 0.619em
+               두 값을 같게 놓은 pb = pt + 1.35em 이다.
+               실측(pt 0): pb 1em → 위 7.67 / 아래 4.00 (3.67 어긋남)
+                           pb 1.35em → 위 7.67 / 아래 7.53 (0.14) */
             .sg-chip {
                 line-height: 1 !important;
                 padding-top: 0 !important;
-                padding-bottom: 1em !important;
+                padding-bottom: 1.35em !important;
             }
             span, div, p, b, h1, h2, h3 {
                 line-height: 1.6 !important;
@@ -1330,9 +1335,11 @@ async function renderCoverCanvas(expertName) {
              style="display:block;color:#2C55B8">스마트 가입제안서</span></h1>
           <div style="width:137px;height:8px;background:#2C55B8;margin:69px 0 53px;border-radius:5px"></div>
           <div style="display:flex;gap:18px">
-            ${chips.map(c => `<span style="font-size:28px;font-weight:700;padding:16px 32px;
-               border-radius:52px;background:#EEF2FC;border:3px solid #C9D6F2;color:#24407F;
-               line-height:1">${c}</span>`).join('')}
+            ${/* 아래 여백은 pb = pt + 1.35em 규칙 — html2canvas가 글자를 아래로 밀어 그리는
+                  만큼을 미리 비워 둔다(본문 .sg-chip과 같은 보정). */''}
+            ${chips.map(c => `<span style="font-size:28px;font-weight:700;
+               padding:0 32px 37.8px;border-radius:52px;background:#EEF2FC;
+               border:3px solid #C9D6F2;color:#24407F;line-height:1">${c}</span>`).join('')}
           </div>
         </div>
 

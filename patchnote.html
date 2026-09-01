@@ -208,7 +208,8 @@
     <!-- JUMP PILLS -->
     <div class="jump-wrap">
       <div class="jump-inner">
-        <a class="jump-pill active" href="#v0831">v.0831</a>
+        <a class="jump-pill active" href="#v0901">v.0901</a>
+        <a class="jump-pill" href="#v0831">v.0831</a>
         <a class="jump-pill" href="#v0826">v.0826</a>
         <a class="jump-pill" href="#v0825">v.0825</a>
         <a class="jump-pill" href="#v0706">v.0706</a>
@@ -225,16 +226,77 @@
     <!-- TIMELINE -->
     <div class="timeline">
 
-      <!-- v.0831 -->
-      <div class="v-entry open latest-entry" id="v0831">
+      <!-- v.0901 -->
+      <div class="v-entry open latest-entry" id="v0901">
         <div class="v-dot latest"></div>
         <div class="v-card latest-card">
           <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
             <div class="v-header-left">
               <div class="v-meta">
+                <span class="v-ver">v.0901</span>
+                <span class="v-date">2026.09.01</span>
+                <span class="v-latest-badge">LATEST</span>
+              </div>
+              <div class="v-subtitle">"표지까지 갖춘 한 부의 제안서로"</div>
+              <div class="v-summary">
+                <span class="tag tag-new">NEW</span>
+              </div>
+            </div>
+            <span class="v-chevron">&#9662;</span>
+          </div>
+          <div class="v-body">
+
+            <div class="change-section">
+              <span class="cs-label">PDF 표지 추가</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>전체 PDF 저장에 표지가 생겼어요</strong><br>
+                  이제 <strong>표지 한 장 + 분석 세 장</strong>으로 나옵니다. 표지 가운데에 <strong>&lsquo;OOO님을 위한 / 슈린슈 스마트 가입제안서&rsquo;</strong>가 들어가고, 제안서에서 읽어낸 고객 이름이 그대로 찍혀요. 이름을 찾지 못한 제안서는 &lsquo;고객&rsquo;으로 표기됩니다. 그대로 인쇄해 건네도 되는 형태입니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>모든 장에 머리말과 꼬리말을 넣었어요</strong><br>
+                  위에는 <strong>화면 이름</strong>, 아래에는 <strong>원본 파일 제목과 쪽번호</strong>(02 / 04)가 들어갑니다. 표지와 같은 네이비 테두리를 둘러 네 장이 한 세트로 읽히도록 했어요. 담보가 없어 빠지는 탭이 있으면 쪽번호도 그에 맞춰 매겨집니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>본문은 분석에만 집중하게 정리했어요</strong><br>
+                  파일 정보 카드와 화면 제목 줄이 머리말·꼬리말과 같은 내용을 반복하고 있어서 <strong>PDF 본문에서는 뺐습니다</strong>. 이미지 한 장으로 저장할 때는 예전 그대로 남아요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>파일 용량을 절반으로 줄였어요</strong><br>
+                  화면 캡처가 A4 기준 <strong>460dpi가 넘는 해상도</strong>로 들어가고 있었습니다. 인쇄에도 쓰이지 않는 크기라 300dpi에 맞춰 줄였어요. 네 장 기준 <strong>3.1MB → 1.6MB</strong>로 절반가량 가벼워졌고, 저장은 2초면 끝납니다.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">글자 밀림 수정</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>수술비 태그 숫자가 아래로 밀리던 문제를 고쳤어요</strong><br>
+                  PDF에서 <strong>&lsquo;질수&rsquo;, &lsquo;1종&rsquo;, &lsquo;2종&rsquo;</strong> 같은 태그의 글자가 칩 아래로 흘러내려 잘려 보였습니다. 표지의 <strong>암 치료비 · 수술비 · 뇌·심장</strong> 칩도 같은 증상이 있었고요.<br>
+                  후보값을 하나씩 캡처해 재보니 규칙이 분명했습니다 — 글자의 위치는 줄 높이에만 좌우되고 아래 여백과는 무관해서, 여백을 늘리면 글자는 그대로 두고 상자만 커집니다. 두 값이 맞아떨어지는 지점을 계산해 넣었고, 실측 편차 <strong>3.67px → 0.14px</strong>로 정확히 가운데 옵니다.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0831 -->
+      <div class="v-entry" id="v0831">
+        <div class="v-dot"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
                 <span class="v-ver">v.0831</span>
                 <span class="v-date">2026.08.31</span>
-                <span class="v-latest-badge">LATEST</span>
               </div>
               <div class="v-subtitle">"어느 담보에서 얼마가 나오는지, 카드마다 펼쳐서"</div>
               <div class="v-summary">
