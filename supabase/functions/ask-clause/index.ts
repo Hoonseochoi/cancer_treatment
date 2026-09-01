@@ -35,6 +35,52 @@ const json = (body: unknown, status = 200) =>
 
 const sb = createClient(SB_URL, SB_KEY);
 
+// ── 남용 차단 ──
+// 브라우저에서도 한 번 거르지만 그건 우회할 수 있다. 실제 차단은 여기서 한다.
+// 서버에는 색인이 없어 정규식만 쓰므로, 명백한 것만 막고 애매하면 통과시킨다 —
+// 진짜 약관 질문을 막는 쪽이 잡담 몇 개를 통과시키는 것보다 나쁘다.
+const OTHER_INSURER =
+  /메리츠|현대해상|디비손해|DB손해|KB손해|한화손해|롯데손해|MG손해|농협|NH손해|흥국|AXA|악사|하나손해|캐롯|라이나|AIA|처브|동양생명|교보|신한라이프|삼성생명|미래에셋생명|푸본|ABL|KDB생명/i;
+const GREETING =
+  /^\s*(안녕|하이|헬로|ㅎㅇ|hi|hello|테스트|test|ㅋㅋ+|ㅎㅎ+|\?+|\.+|ㅇㅇ|ㄴㄴ)\s*[!?.~]*\s*$/i;
+const OFFTASK = /(코드|파이썬|자바스크립트|번역|시 ?써|소설|레시피|요리|주식|코인|비트코인|로또|운세|게임|영화 ?추천|노래)/;
+const CHITCHAT = /(날씨|점심|저녁|밥 ?먹|커피|기분|심심|뭐해|뭐할|누구야|이름이|사랑|시간 ?몇|몇 ?시)/i;
+const DOMAIN =
+  /담보|특약|약관|보험|보장|진단비|수술비|치료비|입원|통원|일당|면책|감액|보험금|지급|청구|가입금액|갱신|보장개시|[0-9]\s*종|분류표|별표|암|뇌|심장|수술|시술|질병|상해|후유장해|간병|검사비|지원금|한도|소멸|골절|화상|진단|절제|이식|제거술|성형술|치환/;
+
+function gate(q: string): { kind: string; message: string } | null {
+  if (OTHER_INSURER.test(q)) {
+    return { kind: 'other_insurer',
+      message: '이 도구는 삼성화재 New내돈내삼(1640) 약관만 담고 있어, 다른 보험사 약관은 답해드릴 수 없습니다.' };
+  }
+  if (GREETING.test(q)) {
+    return { kind: 'greeting', message: '약관에서 궁금한 것을 물어봐 주세요.' };
+  }
+  const dom = DOMAIN.test(q);
+  if (!dom && OFFTASK.test(q)) {
+    return { kind: 'offtask', message: '약관에 대한 질문만 답해드릴 수 있어요.' };
+  }
+  if (!dom && CHITCHAT.test(q)) {
+    return { kind: 'chitchat', message: '약관에서 궁금한 것을 물어봐 주세요.' };
+  }
+  return null;
+}
+
+// 캐시 조회 기준. 조사·공백·기호를 털어 "암 진단비 면책기간은?"과 "암진단비 면책 기간"을
+// 같은 질문으로 본다.
+function normalize(q: string): string {
+  return q.toLowerCase()
+    .replace(/[\s　]+/g, '')
+    .replace(/[?!.,·…"'()\[\]{}~\-]/g, '')
+    .replace(/(입니까|인가요|일까요|은요|알려줘|알려주세요|궁금해|해줘|해주세요|되나요|나요|나와|있어|있나|뭐야|뭔가요)$/g, '')
+    .replace(/(은|는|이|가|을|를|의|에|도|만)$/g, '');
+}
+
+async function sha(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
+}
+
 // 모델에게 주는 유일한 도구. 카탈로그에서 고른 특약의 원문을 꺼내 온다.
 const TOOLS = [{
   type: 'function',
@@ -135,11 +181,44 @@ serve(async (req) => {
     hint = body.hint ?? null;
     const history = Array.isArray(body.history) ? body.history.slice(-4) : [];
     if (!question) return json({ error: '질문이 비어 있습니다.' }, 400);
-    if (question.length > 500) return json({ error: '질문이 너무 깁니다.' }, 400);
+    if (question.length > 300) return json({ error: '질문이 너무 깁니다.' }, 400);
 
-    const userMsg = hint
+    // ── 1. 걸러내기 (모델을 부르지 않는다) ──
+    const blocked = gate(question);
+    if (blocked) {
+      await sb.from('chat_logs').insert({
+        session_id: sessionId, question, blocked: true,
+        block_kind: blocked.kind, latency_ms: Date.now() - t0,
+      });
+      return json({ blocked: true, kind: blocked.kind, answer: blocked.message });
+    }
+
+    // ── 2. 같은 질문을 이미 받았나 ──
+    const norm = normalize(question);
+    const qHash = await sha(norm);
+    const { data: sim } = await sb.rpc('match_cached_question', { q: norm });
+    const best = Array.isArray(sim) ? sim[0] : null;
+
+    // 아주 비슷하면 그대로 돌려준다. 모델을 부르지 않아 즉시 나오고 비용도 없다.
+    if (best && best.sim >= 0.90) {
+      await sb.rpc('touch_cache', { h: await sha(normalize(best.question)) });
+      await sb.from('chat_logs').insert({
+        session_id: sessionId, question, answer: best.answer,
+        cards: best.cards ?? [], cache_sim: best.sim, latency_ms: Date.now() - t0,
+      });
+      return json({ answer: best.answer, cards: best.cards ?? [], cached: true, sim: best.sim });
+    }
+
+    // 어중간하게 비슷하면 답을 재활용하지 않고 참고로만 넘긴다.
+    // 비슷해 보여도 담보가 다르면 답이 달라지기 때문이다.
+    const prior = best && best.sim >= 0.72
+      ? `\n\n[비슷한 이전 질문]\nQ: ${best.question}\nA: ${String(best.answer).slice(0, 700)}\n` +
+        `(같은 질문인지 확인하고, 다르면 무시하고 새로 답하세요)`
+      : '';
+
+    const userMsg = (hint
       ? `${question}\n\n[검색 힌트]\n${JSON.stringify(hint)}`
-      : question;
+      : question) + prior;
 
     const messages: Record<string, unknown>[] = [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -179,10 +258,17 @@ serve(async (req) => {
     }
 
     const latency = Date.now() - t0;
+    if (answer) {
+      await sb.from('clause_cache').upsert({
+        q_hash: qHash, question, norm, answer,
+        cards: [...new Set(usedNos)], model: MODEL, tokens_in: tin, used_at: new Date().toISOString(),
+      }, { onConflict: 'q_hash' });
+    }
     await sb.from('chat_logs').insert({
       session_id: sessionId, question, answer,
       cited: [...new Set(cited)], cards: [...new Set(usedNos)],
       hint, model: MODEL, tokens_in: tin, tokens_out: tout, latency_ms: latency,
+      cache_sim: best?.sim ?? null,
     });
 
     return json({ answer, cited: [...new Set(cited)], cards: [...new Set(usedNos)],

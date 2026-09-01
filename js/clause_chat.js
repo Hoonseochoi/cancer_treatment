@@ -164,12 +164,12 @@ async function ask(preset) {
     $('send').disabled = true;
     bubble('me', esc(text).replace(/\n/g, '<br>'));
 
-    const slot = bubble('ai', '<div class="think"><i></i><i></i><i></i></div>');
-
     // 규칙 검색이 만든 힌트. 답을 정하는 게 아니라 모델이 첫 시도에 맞출 확률을 올린다.
-    let hint = null;
+    // 색인이 무언가 찾았는지는 "약관 질문인가"를 가리는 데도 쓴다.
+    let hint = null, found = false;
     try {
         const r = clauseSearch(text, 6);
+        found = r.cards.length > 0 || r.terms.length > 0;
         hint = {
             담보: r.cards.map(c => `${c.card.n} ${c.card.t}`),
             분류표: r.terms.slice(0, 6).map(t =>
@@ -178,6 +178,18 @@ async function ask(preset) {
         };
         if (!hint.담보.length && !hint.분류표.length) hint = null;
     } catch (e) { /* 힌트는 없어도 답변은 가능하다 */ }
+
+    // 약관과 무관한 질문은 여기서 끊는다. 서버도 다시 보지만, 부르지 않고 끝내면
+    // 즉시 답이 나오고 호출 비용도 들지 않는다.
+    const blocked = (typeof clauseGate === 'function') ? clauseGate(text, found) : null;
+    if (blocked) {
+        bubble('ai', `<div class="err">${blocked.message}</div>`);
+        busy = false; grow(box);
+        $('scroll').scrollTop = $('scroll').scrollHeight;
+        return;
+    }
+
+    const slot = bubble('ai', '<div class="think"><i></i><i></i><i></i></div>');
 
     try {
         const res = await fetch(CHAT_FN, {
@@ -196,8 +208,12 @@ async function ask(preset) {
         } else if (!res.ok || !data.answer) {
             slot.innerHTML = `<div class="err">${esc(data.error || '답변을 만들지 못했습니다.')}
                 ${data.detail ? `<br><small>${esc(String(data.detail).slice(0, 160))}</small>` : ''}</div>`;
+        } else if (data.blocked) {
+            slot.innerHTML = `<div class="err">${data.answer}</div>`;
         } else {
-            slot.innerHTML = md(data.answer) + (data.cards?.length
+            slot.innerHTML = md(data.answer) + (data.cached
+                ? '<p style="margin-top:8px;font-size:11px;color:var(--faint)">이전에 받은 같은 질문의 답변입니다.</p>'
+                : '') + (data.cards?.length
                 ? `<div class="cite"><b>근거</b>${data.cards.map(n => `<span>${esc(n)}</span>`).join('')}</div>`
                 : '');
             history.push({ role: 'user', content: text });
