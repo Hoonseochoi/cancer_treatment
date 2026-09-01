@@ -12,15 +12,41 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { SYSTEM_PROMPT as BUILT_PROMPT } from './system_prompt.ts';
 
 const OPENROUTER_KEY = Deno.env.get('OPENROUTER_API_KEY');
 const MODEL = Deno.env.get('CLAUSE_MODEL') ?? 'deepseek/deepseek-chat';
 const SB_URL = Deno.env.get('SUPABASE_URL')!;
 const SB_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-// 지침과 담보 카탈로그는 함수와 함께 배포된다(scripts/build_clause_index.py가 생성).
-// 환경변수를 두면 그쪽이 이긴다 — 배포 없이 급히 문구를 고쳐야 할 때를 위한 뒷문이다.
-const SYSTEM_PROMPT = Deno.env.get('CLAUSE_SYSTEM_PROMPT') || BUILT_PROMPT;
+// 지침과 담보 카탈로그(6천 자)는 사이트에서 가져온다.
+// 함수에 넣어 두면 문구 한 줄 고칠 때마다 재배포해야 하고, Secret에 넣으면
+// 대시보드에 6천 자를 붙여 넣어야 하는 데다 git으로도 관리되지 않는다.
+// 이렇게 두면 prompts/clause_system.md를 고쳐 push하는 것으로 끝난다.
+const PROMPT_URL = Deno.env.get('CLAUSE_PROMPT_URL') ??
+  'https://surinsur.com/prompts/clause_system.md';
+const PROMPT_OVERRIDE = Deno.env.get('CLAUSE_SYSTEM_PROMPT') ?? '';
+
+// 인스턴스가 살아 있는 동안만 들고 있는다. 프롬프트를 고치면 잠시 뒤 자연히 갈린다.
+let _prompt = '';
+let _promptAt = 0;
+const PROMPT_TTL = 10 * 60 * 1000;
+
+async function systemPrompt(): Promise<string> {
+  if (PROMPT_OVERRIDE) return PROMPT_OVERRIDE;
+  const now = Date.now();
+  if (_prompt && now - _promptAt < PROMPT_TTL) return _prompt;
+  try {
+    const res = await fetch(PROMPT_URL, { headers: { 'Cache-Control': 'no-cache' } });
+    if (!res.ok) throw new Error(`프롬프트 ${res.status}`);
+    const text = (await res.text()).trim();
+    if (text.length < 500) throw new Error('프롬프트가 너무 짧습니다');
+    _prompt = text;
+    _promptAt = now;
+  } catch (e) {
+    // 가져오지 못했는데 예전 것이 남아 있으면 그걸 쓴다. 아무것도 없을 때만 실패시킨다.
+    if (!_prompt) throw e;
+  }
+  return _prompt;
+}
 // 유료 기능이라 아는 사람만 쓴다. 코드를 브라우저에 두면 소스 보기로 그대로 읽히므로
 // 검증은 여기서만 한다 — 프런트는 입력값을 넘길 뿐 정답을 모른다.
 const ACCESS_CODE = Deno.env.get('CLAUSE_ACCESS_CODE') ?? '';
@@ -69,14 +95,25 @@ function gate(q: string): { kind: string; message: string } | null {
   return null;
 }
 
-// 캐시 조회 기준. 조사·공백·기호를 털어 "암 진단비 면책기간은?"과 "암진단비 면책 기간"을
-// 같은 질문으로 본다.
+// 캐시 조회 기준.
+// 어절별 조사 제거를 시도했다가 되돌렸다. '했을'의 '을'은 조사가 아니라 어미라
+// 함께 잘려, 띄어쓰기가 다르면 오히려 결과가 갈렸다("했을때" vs "했 때").
+// 공백과 기호만 털고 문장 끝 말투만 정리한다.
+const TAIL = /(입니까|인가요|일까요|은요|알려줘|알려주세요|궁금해요|궁금해|해줘|해주세요|되나요|되요|돼요|나요|나와요|나와|있어요|있어|있나요|있나|뭐야|뭔가요|어떤가요)$/;
+
 function normalize(q: string): string {
   return q.toLowerCase()
-    .replace(/[\s　]+/g, '')
     .replace(/[?!.,·…"'()\[\]{}~\-]/g, '')
-    .replace(/(입니까|인가요|일까요|은요|알려줘|알려주세요|궁금해|해줘|해주세요|되나요|나요|나와|있어|있나|뭐야|뭔가요)$/g, '')
-    .replace(/(은|는|이|가|을|를|의|에|도|만)$/g, '');
+    .replace(/[\s\u3000]+/g, '')
+    .replace(TAIL, '');
+}
+
+// 숫자는 담보를 가른다. "2-109 면책"과 "2-110 면책"은 글자로는 거의 같지만
+// 완전히 다른 특약이라, 캐시를 그대로 돌려주면 틀린 답을 준다.
+// 실측에서 trigram 유사도만으로는 같은 질문과 다른 질문의 구간이 겹쳤다
+// (같은 질문 0.29~0.83 / 다른 질문 0.25~0.47). 그래서 숫자가 다르면 재활용하지 않는다.
+function digitsOf(s: string): string {
+  return (s.match(/\d+/g) ?? []).join(',');
 }
 
 async function sha(s: string): Promise<string> {
@@ -112,7 +149,7 @@ const TOOLS = [{
 }];
 
 // 원문이 길어 통째로 넘기면 답변 여지가 줄어든다. 섹션당 상한을 두고 자른다.
-const MAX_CHARS = 2600;
+const MAX_CHARS = 1800;
 
 async function readClause(args: { no: string[]; section: string[] }) {
   const nos = (args.no ?? []).slice(0, 4);
@@ -152,7 +189,7 @@ async function callModel(messages: unknown[]) {
     body: JSON.stringify({
       model: MODEL, messages, tools: TOOLS, tool_choice: 'auto',
       temperature: 0.2,        // 약관 인용이라 흔들리면 안 된다
-      max_tokens: 1200,
+      max_tokens: 900,
     }),
   });
   if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 300)}`);
@@ -202,8 +239,10 @@ serve(async (req) => {
     const { data: sim } = await sb.rpc('match_cached_question', { q: norm });
     const best = Array.isArray(sim) ? sim[0] : null;
 
-    // 아주 비슷하면 그대로 돌려준다. 모델을 부르지 않아 즉시 나오고 비용도 없다.
-    if (best && best.sim >= 0.90) {
+    // 아주 비슷하고 숫자도 같으면 그대로 돌려준다. 모델을 부르지 않아 즉시 나오고
+    // 비용도 없다. 숫자가 다르면(2-109 vs 2-110) 아무리 비슷해도 새로 답한다.
+    const sameDigits = best ? digitsOf(question) === digitsOf(best.question) : false;
+    if (best && best.sim >= 0.80 && sameDigits) {
       await sb.rpc('touch_cache', { h: await sha(normalize(best.question)) });
       await sb.from('chat_logs').insert({
         session_id: sessionId, question, answer: best.answer,
@@ -214,7 +253,7 @@ serve(async (req) => {
 
     // 어중간하게 비슷하면 답을 재활용하지 않고 참고로만 넘긴다.
     // 비슷해 보여도 담보가 다르면 답이 달라지기 때문이다.
-    const prior = best && best.sim >= 0.72
+    const prior = best && best.sim >= 0.60
       ? `\n\n[비슷한 이전 질문]\nQ: ${best.question}\nA: ${String(best.answer).slice(0, 700)}\n` +
         `(같은 질문인지 확인하고, 다르면 무시하고 새로 답하세요)`
       : '';
@@ -224,16 +263,17 @@ serve(async (req) => {
       : question) + prior;
 
     const messages: Record<string, unknown>[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: await systemPrompt() },
       ...history,
       { role: 'user', content: userMsg },
     ];
 
-    // 도구 왕복. 모델이 원문을 더 달라고 하면 최대 세 번까지 받아 준다.
+    // 도구 왕복. 한 번 읽고 답하는 것이 보통이라 두 번이면 충분하다 —
+    // 왕복이 늘수록 앞선 메시지가 통째로 다시 실려 토큰과 대기 시간이 함께 뛴다.
     let answer = '', cited: string[] = [], usedNos: string[] = [];
     let tin = 0, tout = 0;
 
-    for (let hop = 0; hop < 3; hop++) {
+    for (let hop = 0; hop < 2; hop++) {
       const out = await callModel(messages);
       const msg = out.choices?.[0]?.message;
       tin += out.usage?.prompt_tokens ?? 0;
