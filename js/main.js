@@ -359,6 +359,10 @@ async function processFile(file) {
         document.getElementById('progress-section').classList.add('hidden');
         // 수술비 백과사전이 "이 고객 가입금액으로 얼마"까지 보여줄 수 있도록 남겨둔다.
         window.__lastResults = results;
+        // PDF 표지가 "OOO님을 위한"을 찍으려면 이름이 밖에서도 보여야 한다.
+        // 제안서에서 못 찾으면 위쪽에서 이미 '고객'으로 채워져 있다.
+        window.__customerName = customerName;
+        window.__insurerKey = insurer;
         renderResults(results, customerName, insurer, samsungMeta);
         if (results.length > 0) {
             showToast(`${results.length}개의 항목을 추출했습니다.`, false);

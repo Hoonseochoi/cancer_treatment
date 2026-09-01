@@ -773,7 +773,9 @@ const CAPTURE_VIEW_TITLE = {
 
 // forceView가 주어지면 클론 안에서 해당 탭을 강제로 켠다(라이브 DOM은 건드리지 않음).
 // null이면 지금 화면에 켜져 있는 탭을 그대로 캡처한다.
-function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) {
+// forPdf: 전체 PDF 저장 경로. 파일 제목과 화면 이름은 PDF 머리말·꼬리말이 이미 갖고
+// 있으므로 본문에서는 뺀다(이미지 단독 저장에서는 그대로 남긴다).
+function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null, forPdf = false }) {
     return {
         // 브라우저 창 크기와 무관하게 항상 같은(데스크톱) 레이아웃으로 찍는다.
         // 창이 좁으면 카드가 1열로 쌓여 세로로 길쭉한 이미지가 나오고,
@@ -805,6 +807,14 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
                 if (hdr) hdr.textContent = CAPTURE_VIEW_TITLE[forceView] || hdr.textContent;
             }
 
+            // PDF는 머리말에 같은 제목을 이미 찍으므로 본문 제목 줄은 통째로 접는다.
+            // (제목 줄에는 빨간 바와 토글도 같이 있어, h2만 숨기면 바가 홀로 남는다)
+            // forceView 유무와 무관하게 적용해야 하므로 위 블록 밖에 둔다.
+            if (forPdf) {
+                const hdrEl = clonedDoc.getElementById('result-header');
+                if (hdrEl && hdrEl.parentElement) hdrEl.parentElement.style.display = 'none';
+            }
+
             // 1. main의 모든 자식을 돌며 지정한 섹션 외에는 모두 숨김
             const allowedIds = ['file-info', 'insight-section', 'summary-section'];
             Array.from(cloneMain.children).forEach(child => {
@@ -819,11 +829,16 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null }) 
             const summary = clonedDoc.getElementById('summary-section');
 
             if (fileInfo) {
-                fileInfo.style.display = 'flex';
-                fileInfo.classList.remove('hidden');
-                fileInfo.style.marginBottom = '24px';
-                const resetBtn = fileInfo.querySelector('#reset-btn');
-                if (resetBtn) resetBtn.style.display = 'none';
+                if (forPdf) {
+                    // 같은 정보가 PDF 꼬리말에 들어가므로 본문에서는 통째로 뺀다.
+                    fileInfo.style.display = 'none';
+                } else {
+                    fileInfo.style.display = 'flex';
+                    fileInfo.classList.remove('hidden');
+                    fileInfo.style.marginBottom = '24px';
+                    const resetBtn = fileInfo.querySelector('#reset-btn');
+                    if (resetBtn) resetBtn.style.display = 'none';
+                }
             }
             // 수술비·뇌심 탭이 켜져 있으면 암 인사이트 카드는 캡처에서 뺀다.
             // (암 5년 금액이 뇌심 금액처럼 읽히는 것을 막는다)
@@ -1255,6 +1270,164 @@ window.exportAsImage = async function () {
 };
 
 // ── 전체 PDF 저장 ──
+// ── PDF 표지 ──
+// 표지는 jsPDF 벡터로 그리지 않는다 — 기본 폰트에 한글이 없어 고객 이름을 못 찍는다.
+// 화면과 같은 웹폰트로 A4 비율 div를 만들어 html2canvas로 찍는 편이 결과가 일정하다.
+const COVER_W = 1240;                                   // 캡처 기준 폭
+const COVER_H = Math.round(COVER_W * 297 / 210);        // A4 세로 비율
+
+const PDF_NAVY = '#0F1E42';
+const PDF_NAVY_RGB = { r: 15, g: 30, b: 66 };
+
+function coverViewChips() {
+    return availableCaptureViews()
+        .map(v => ({ cancer: '암 치료비', surgery: '수술비', circulatory: '뇌·심장' })[v])
+        .filter(Boolean);
+}
+
+function coverDateText() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}. ${p(d.getMonth() + 1)}. ${p(d.getDate())}`;
+}
+
+// 표지를 화면 밖에 만들어 캡처하고 지운다. 실제 레이아웃이 잡혀야 html2canvas가
+// 계산된 스타일을 제대로 복사하므로 display:none이 아니라 화면 밖으로 밀어 둔다.
+async function renderCoverCanvas(expertName) {
+    const customer = (window.__customerName || '고객').trim() || '고객';
+    const chips = coverViewChips();
+
+    const host = document.createElement('div');
+    host.style.cssText =
+        `position:fixed;left:-99999px;top:0;width:${COVER_W}px;height:${COVER_H}px;` +
+        `z-index:-1;pointer-events:none;background:#fff`;
+    host.innerHTML = `
+      <div style="width:${COVER_W}px;height:${COVER_H}px;position:relative;overflow:hidden;
+                  background:#fff;border:24px solid ${PDF_NAVY};box-sizing:border-box;
+                  font-family:'Noto Sans KR',sans-serif">
+        <!-- 연한 글로우 — 종이에 옅게 번지는 정도로만 -->
+        <div style="position:absolute;width:1480px;height:1480px;right:-530px;bottom:-610px;
+             border-radius:50%;background:radial-gradient(circle,rgba(58,98,205,.16) 0%,
+             rgba(58,98,205,.07) 40%,transparent 68%)"></div>
+        <div style="position:absolute;right:-290px;bottom:-290px;width:925px;height:925px;
+             border-radius:50%;border:4px solid rgba(58,98,205,.16)"></div>
+        <div style="position:absolute;right:-443px;bottom:-443px;width:1268px;height:1268px;
+             border-radius:50%;border:3px solid rgba(58,98,205,.10)"></div>
+
+        <div style="position:absolute;top:0;left:0;right:0;height:164px;padding:0 84px;
+             display:flex;align-items:center;justify-content:space-between;
+             border-bottom:3px solid #D5DDEE;box-sizing:border-box">
+          <span style="font:800 33px 'Outfit',sans-serif;letter-spacing:.22em;color:${PDF_NAVY}">SUR&middot;INSUR</span>
+          <span style="font:500 25px 'Outfit',sans-serif;letter-spacing:.14em;color:#8592AD">SMART PROPOSAL</span>
+        </div>
+
+        <div style="position:absolute;left:84px;right:84px;top:50%;transform:translateY(-50%)">
+          <img src="surinsur.png" style="height:118px;object-fit:contain;display:block;margin-bottom:90px">
+          <p style="margin:0 0 29px;font-size:40px;color:#5A6B8C;font-weight:500">
+            <b style="font-weight:800;color:${PDF_NAVY};font-size:50px">${customer}</b> 님을 위한</p>
+          <h1 style="margin:0;font-size:92px;font-weight:900;letter-spacing:-.04em;
+                     line-height:1.26;color:${PDF_NAVY}">슈린슈<span
+             style="display:block;color:#2C55B8">스마트 가입제안서</span></h1>
+          <div style="width:137px;height:8px;background:#2C55B8;margin:69px 0 53px;border-radius:5px"></div>
+          <div style="display:flex;gap:18px">
+            ${chips.map(c => `<span style="font-size:28px;font-weight:700;padding:16px 32px;
+               border-radius:52px;background:#EEF2FC;border:3px solid #C9D6F2;color:#24407F;
+               line-height:1">${c}</span>`).join('')}
+          </div>
+        </div>
+
+        <div style="position:absolute;bottom:0;left:0;right:0;height:142px;padding:0 84px;
+             display:flex;align-items:center;justify-content:space-between;
+             border-top:3px solid #D5DDEE;box-sizing:border-box">
+          <span style="font:500 25px 'Outfit',sans-serif;letter-spacing:.14em;color:#8592AD">SURINSUR.COM</span>
+          <span style="font:500 25px 'Outfit',sans-serif;letter-spacing:.1em;color:#8592AD">${expertName ? expertName + ' &middot; ' : ''}${coverDateText()}</span>
+        </div>
+      </div>`;
+    document.body.appendChild(host);
+    try {
+        // 로고가 실제로 그려진 뒤에 찍는다 — 캐시돼 있어도 decode를 한 번 기다린다.
+        const img = host.querySelector('img');
+        if (img && !img.complete) await new Promise(r => { img.onload = img.onerror = r; });
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        return await html2canvas(host.firstElementChild, {
+            scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false,
+            width: COVER_W, height: COVER_H, windowWidth: COVER_W, windowHeight: COVER_H
+        });
+    } finally {
+        host.remove();
+    }
+}
+
+// 화면 캡처는 scale 3으로 찍어 A4에 넣으면 460dpi가 넘는다. 인쇄에 쓰이지도 않는
+// 해상도라 파일만 무거워지므로, PDF에 넣기 직전에 300dpi에 맞춰 줄인다.
+// (이미지 단독 저장 경로는 손대지 않는다 — 화면에서 확대해 보는 용도라 원본이 낫다)
+const PDF_DPI = 300;
+function downscaleForPdf(canvas, widthMm) {
+    const target = Math.round(widthMm / 25.4 * PDF_DPI);
+    if (canvas.width <= target) return canvas;
+    const out = document.createElement('canvas');
+    out.width = target;
+    out.height = Math.round(canvas.height * (target / canvas.width));
+    const cx = out.getContext('2d');
+    cx.imageSmoothingEnabled = true;
+    cx.imageSmoothingQuality = 'high';
+    cx.drawImage(canvas, 0, 0, out.width, out.height);
+    return out;
+}
+
+// 본문 페이지의 프레임·머리말·꼬리말. 표지와 같은 방식(HTML → 캡처)으로 만든다.
+// jsPDF 벡터로 그리면 기본 폰트에 한글이 없어 파일 제목과 화면 이름을 찍을 수 없다.
+// 치수는 표지와 같은 1240px(=A4 210mm) 좌표계를 쓰되, 머리말·꼬리말만 낮춰 본문 자리를 넓힌다.
+const PAGE_BORDER = 24;   // 표지와 같은 테두리 두께
+const PAGE_HEAD = 112;
+const PAGE_FOOT = 104;
+const PAGE_PAD = 40;      // 테두리 안쪽 좌우 여백
+
+async function renderPageChromeCanvas({ title, fileTitle, pageNo, pageTotal }) {
+    const host = document.createElement('div');
+    host.style.cssText =
+        `position:fixed;left:-99999px;top:0;width:${COVER_W}px;height:${COVER_H}px;` +
+        `z-index:-1;pointer-events:none;background:#fff`;
+    host.innerHTML = `
+      <div style="width:${COVER_W}px;height:${COVER_H}px;position:relative;overflow:hidden;
+                  background:#fff;border:${PAGE_BORDER}px solid ${PDF_NAVY};box-sizing:border-box;
+                  font-family:'Noto Sans KR',sans-serif">
+        <div style="position:absolute;top:0;left:0;right:0;height:${PAGE_HEAD}px;padding:0 ${PAGE_PAD}px;
+             display:flex;align-items:center;justify-content:space-between;
+             border-bottom:3px solid #D5DDEE;box-sizing:border-box">
+          <span style="font:800 27px 'Outfit',sans-serif;letter-spacing:.22em;color:${PDF_NAVY}">SUR&middot;INSUR</span>
+          <span style="font-size:29px;font-weight:800;color:${PDF_NAVY};letter-spacing:-.02em">${title || ''}</span>
+        </div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:${PAGE_FOOT}px;padding:0 ${PAGE_PAD}px;
+             display:flex;align-items:center;justify-content:space-between;gap:40px;
+             border-top:3px solid #D5DDEE;box-sizing:border-box">
+          <span style="font-size:23px;font-weight:500;color:#8592AD;letter-spacing:-.01em;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${fileTitle || ''}</span>
+          <span style="font:600 23px 'Outfit',sans-serif;letter-spacing:.1em;color:#8592AD;
+                flex-shrink:0">${String(pageNo).padStart(2, '0')} / ${String(pageTotal).padStart(2, '0')}</span>
+        </div>
+      </div>`;
+    document.body.appendChild(host);
+    try {
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        return await html2canvas(host.firstElementChild, {
+            scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false,
+            width: COVER_W, height: COVER_H, windowWidth: COVER_W, windowHeight: COVER_H
+        });
+    } finally {
+        host.remove();
+    }
+}
+
+// 위 픽셀 치수를 A4 mm로 옮긴 본문 배치 상자.
+function pageContentBox(PW, PH) {
+    const k = PW / COVER_W;                       // px → mm
+    const x = (PAGE_BORDER + PAGE_PAD) * k;
+    const top = (PAGE_BORDER + PAGE_HEAD) * k;
+    const bot = (PAGE_BORDER + PAGE_FOOT) * k;
+    return { x, y: top, w: PW - x * 2, h: PH - top - bot };
+}
+
 // 암 / 수술비 / 뇌·심장 탭을 각각 한 장씩 담아 A4 세로 PDF로 내보낸다.
 // 담보가 없어 렌더링되지 않은 탭은 자동으로 건너뛴다(예: 수술비 담보가 없는 제안서 → 2장).
 window.exportAllAsPdf = async function () {
@@ -1298,33 +1471,54 @@ window.exportAllAsPdf = async function () {
         // 캡처 배경색 — 남는 자리를 이 색으로 채워 흰 여백처럼 보이지 않게 한다.
         const bg = captureBgColor();
 
+        const pageTotal = views.length + 1;   // 표지 + 본문
+
+        // ── 표지 ──
+        if (btnLabel) btnLabel.textContent = '표지 만드는 중…';
+        const cover = await renderCoverCanvas(assets.captureExpertName);
+        // 표지는 A4 비율로 만들었으므로 여백 없이 그대로 채운다.
+        pdf.addImage(downscaleForPdf(cover, PW).toDataURL('image/jpeg', 0.92), 'JPEG',
+                     0, 0, PW, PH, undefined, 'FAST');
+
+        // ── 본문 ──
+        // 표지와 같은 방식으로 만든 프레임을 페이지에 깔고, 그 안쪽에 화면을 앉힌다.
+        // (프레임을 먼저 깔아야 본문 이미지가 머리말·꼬리말 위를 덮지 않는다)
+        const box = pageContentBox(PW, PH);
+        const fileTitle = captureBaseName();
+
         for (let i = 0; i < views.length; i++) {
             const v = views[i];
             if (btnLabel) btnLabel.textContent = `저장 중… ${i + 1}/${views.length}`;
             await activateView(v);
-            const canvas = await html2canvas(target, buildCaptureOptions(assets));
+            const canvas = await html2canvas(target, buildCaptureOptions({ ...assets, forPdf: true }));
 
-            if (i > 0) pdf.addPage();
+            pdf.addPage();
 
-            // 페이지 전체를 배경색으로 먼저 칠한다. 화면은 A4보다 세로로 길어
-            // 비율을 지키면 위아래 또는 좌우에 자리가 남는데, 흰색으로 두면
-            // 인쇄물에서 테두리처럼 보인다.
+            const chrome = await renderPageChromeCanvas({
+                title: CAPTURE_VIEW_TITLE[v] || '',
+                fileTitle, pageNo: i + 2, pageTotal
+            });
+            pdf.addImage(downscaleForPdf(chrome, PW).toDataURL('image/jpeg', 0.92), 'JPEG',
+                         0, 0, PW, PH, undefined, 'FAST');
+
+            // 본문 자리에 배경색을 깔아 남는 여백이 흰 띠로 보이지 않게 한다.
             pdf.setFillColor(bg.r, bg.g, bg.b);
-            pdf.rect(0, 0, PW, PH, 'F');
+            pdf.rect(box.x, box.y, box.w, box.h, 'F');
 
-            // 여백 0 기준으로 페이지에 꽉 채운다(비율 유지 — 늘리거나 자르지 않는다).
-            const ratio = Math.min(PW / canvas.width, PH / canvas.height);
+            // 프레임 안쪽에 비율 유지로 앉힌다(늘리거나 자르지 않는다).
+            const ratio = Math.min(box.w / canvas.width, box.h / canvas.height);
             const w = canvas.width * ratio;
             const h = canvas.height * ratio;
+            const shot = downscaleForPdf(canvas, w);
 
             pdf.addImage(
-                canvas.toDataURL('image/jpeg', 0.92), 'JPEG',
-                (PW - w) / 2, (PH - h) / 2, w, h, undefined, 'FAST'
+                shot.toDataURL('image/jpeg', 0.9), 'JPEG',
+                box.x + (box.w - w) / 2, box.y + (box.h - h) / 2, w, h, undefined, 'FAST'
             );
         }
 
         pdf.save(`${captureBaseName()} 분석 보고서.pdf`);
-        console.log(`[export] PDF ${views.length}장 저장 완료`);
+        console.log(`[export] PDF ${views.length + 1}장(표지 포함) 저장 완료`);
     } catch (err) {
         console.error('PDF Export Error:', err);
         alert(`PDF 저장 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'} `);
