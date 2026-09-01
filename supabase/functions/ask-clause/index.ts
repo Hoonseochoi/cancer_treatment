@@ -110,12 +110,40 @@ async function readClause(args: { no: string[]; section: string[] }) {
     .in('section', secs.length ? secs : ['담보정의', '보상범위'])
     .limit(14);
   if (error) return { error: error.message };
-  if (!data?.length) {
+
+  const rows = data ?? [];
+
+  // 특약의 '분류표' 대목은 [[별표-…]] 링크 목록일 뿐이라 등급이 없다.
+  // 실측: "1~8종에서 몇 종?"에 모델이 2-109의 분류표를 요청했지만 174자짜리
+  // 링크만 돌아왔고, 등급을 알 길이 없자 근거 없이 "6종"이라고 지어냈다.
+  // 링크를 따라 별표 본문까지 가져다줘야 한다 — 모델은 별표 번호를 모른다.
+  const wantTable = !secs.length || secs.includes('분류표');
+  if (wantTable) {
+    const links = new Set<string>();
+    rows.filter((r) => r.section === '분류표').forEach((r) => {
+      for (const m of String(r.content).matchAll(/\[\[별표-([^\]|#]+)/g)) {
+        links.add(m[1].trim());
+      }
+    });
+    const already = new Set(rows.map((r) => r.no));
+    const todo = [...links].filter((x) => !already.has(x)).slice(0, 3);
+    if (todo.length) {
+      const { data: tbl } = await sb
+        .from('clause_chunks')
+        .select('id,no,title,section,content')
+        .in('no', todo)
+        .eq('section', '분류표')
+        .limit(10);
+      (tbl ?? []).forEach((r) => rows.push(r));
+    }
+  }
+
+  if (!rows.length) {
     return { found: false, note: `${nos.join(', ')}의 ${secs.join('/')} 대목을 찾지 못했습니다.` };
   }
   return {
     found: true,
-    clauses: data.map((r) => ({
+    clauses: rows.map((r) => ({
       id: r.id, no: r.no, title: r.title, section: r.section,
       content: r.content.length > MAX_CHARS
         ? r.content.slice(0, MAX_CHARS) + '\n…(이하 생략)'

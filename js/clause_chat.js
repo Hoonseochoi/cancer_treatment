@@ -170,11 +170,20 @@ async function ask(preset) {
 
     // 규칙 검색이 만든 힌트. 답을 정하는 게 아니라 모델이 첫 시도에 맞출 확률을 올린다.
     // 색인이 무언가 찾았는지는 "약관 질문인가"를 가리는 데도 쓴다.
+    //
+    // 이어지는 질문은 주어가 빠진다 — "1~5종, 1~8종에서 몇 종이야?"에는 무엇에 대한
+    // 물음인지가 없다. 그대로 검색하면 아무것도 안 걸리고, 힌트 없이 넘어간 모델이
+    // 등급을 지어내는 일이 벌어졌다(실측: 하지정맥류를 6종이라고 답했다. 실제로는 1종).
+    // 그래서 직전 질문을 앞에 붙여 함께 검색한다.
     let hint = null, found = false;
     try {
+        const prevQ = [...history].reverse().find(m => m.role === 'user');
+        const searchText = prevQ ? prevQ.content + ' ' + text : text;
         // 후보를 넉넉히 넘긴다. 모델이 카탈로그로 걸러내므로, 적게 주는 것보다
         // 넉넉히 주고 고르게 하는 편이 빠뜨림이 적다.
-        const r = clauseSearch(text, 12);
+        let r = clauseSearch(searchText, 12);
+        // 이어 붙인 쪽이 빈손이면 이번 질문만으로 다시 본다
+        if (!r.cards.length && !r.terms.length && prevQ) r = clauseSearch(text, 12);
         found = r.cards.length > 0 || r.terms.length > 0;
         hint = {
             담보: r.cards.map(c => `${c.card.n} ${c.card.t}`),

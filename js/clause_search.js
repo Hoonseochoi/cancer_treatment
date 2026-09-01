@@ -200,9 +200,23 @@ function clauseSearch(q, limit) {
     const kws = clKeywords(q, drop);
 
     const forms = new Map();
-    kws.forEach(k => clVariants(k).forEach((w, form) => {
+    const put = (form, w) => {
         if (!forms.has(form) || forms.get(form) < w) forms.set(form, w);
-    }));
+    };
+    kws.forEach(k => clVariants(k).forEach((w, form) => put(form, w)));
+
+    // 띄어쓰기 없이 몰아 쓴 입력을 건진다.
+    // "하지정맥류수술하면받을수있는"은 어절 하나라 사전에 그대로 걸리지 않는다.
+    // 실측: 띄어 쓴 "하지정맥류 수술"은 F252(1종)를 찾는데, 붙여 쓰면 못 찾았다.
+    // 아는 낱말이 어절 안에 박혀 있으면 꺼내 쓴다 — 세 글자 이상만 본다.
+    // ('위'·'간' 같은 한두 글자를 넣으면 아무 데나 걸린다)
+    const KNOWN = Object.keys(CL_SYNONYM).filter(k => k.length >= 3);
+    kws.forEach(k => {
+        if (k.length < 5) return;
+        KNOWN.forEach(known => {
+            if (k.includes(known)) clVariants(known).forEach((w, form) => put(form, w * 0.95));
+        });
+    });
     // 흔한 낱말만 부분일치를 막는다. 길이로 자르면 '유방암 → 유방'처럼 어간이
     // 두 글자로 줄어든 경우를 통째로 놓친다('유방'은 별표에 19건뿐이라 안전하고,
     // '수술'은 수백 건이라 빈도로 자동 배제된다).
