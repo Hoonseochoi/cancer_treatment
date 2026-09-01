@@ -155,10 +155,11 @@ async function searchClause(args: { q: string; kind?: string; cls?: string }) {
   return {
     searched: terms, hits: found.size, shown: ranked.length,
     note: '맞은 낱말이 많은 순입니다. 물음에 맞는 번호를 골라 read_clause로 원문을 읽으세요.',
+    // 담보마다 한 줄. 배열을 늘어놓으면 스무 건에 2,800자가 되는데, 정작 고르는 데
+    // 필요한 것은 이름과 '이름에 몇 개 맞았나'뿐이다.
     results: ranked.map(({ e, all }) => ({
-      no: e.no, title: e.title, 맞은낱말: all,
-      이름에: [...e.inTitle], 본문에: [...e.inBody],
-      sections: [...e.secs],
+      no: e.no, title: e.title,
+      맞음: `${all}개${e.inTitle.size ? ` (이름에 ${[...e.inTitle].join('·')})` : ''}`,
     })),
   };
 }
