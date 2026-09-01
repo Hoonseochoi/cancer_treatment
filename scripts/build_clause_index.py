@@ -186,6 +186,26 @@ def main():
                     'id': f'{cid}-t{n}', 'card': cid,
                     'sec': '분류표',
                     'text': f'[{title}] {i + 1}~{i + len(part)}행\n' + '\n'.join(lines)})
+
+            # 표로 정리되지 않는 대목이 통째로 사라진다. 별표16 주2)의 '보장하지
+            # 않는 ADRG' 목록(F172 스텐트 등)이 그렇고, 별표17은 파싱이 거의
+            # 실패해 28,296자 중 26자만 남았다 — 1~5종 등급표가 사실상 없었다.
+            # 실측: "심장 스텐트 몇 종?"에 모델이 제외 대상인 줄 모른 채
+            # "분류표에 포함된 경우 지급된다"고 안내했다.
+            # 원문을 그대로 잘라 함께 넣는다. 검색으로 닿을 수 있어야 한다.
+            raw_body = re.sub(r'^---.*?---\s*', '', text, flags=re.S).strip()
+            buf, n = [], 0
+            for line in raw_body.split('\n'):
+                buf.append(line)
+                if sum(len(x) for x in buf) >= 1800:
+                    n += 1
+                    chunks.append({'id': f'{cid}-r{n}', 'card': cid, 'sec': '분류표 원문',
+                                   'text': f'[{title}] 원문 {n}\n' + '\n'.join(buf)})
+                    buf = []
+            if buf:
+                n += 1
+                chunks.append({'id': f'{cid}-r{n}', 'card': cid, 'sec': '분류표 원문',
+                               'text': f'[{title}] 원문 {n}\n' + '\n'.join(buf)})
         else:
             parts = re.split(r'^## ', text, flags=re.M)
             for i, p in enumerate(parts[1:], 1):
@@ -271,6 +291,9 @@ def main():
     guide_path = os.path.join('prompts', 'clause_system.md')
     if os.path.exists(guide_path):
         guide = io.open(guide_path, encoding='utf-8').read()
+        # 카탈로그 절과 그 뒤는 매번 새로 쓴다. 그래서 손으로 적은 지침은 반드시
+        # '## 담보 카탈로그' 앞에 두어야 한다 — 뒤에 적으면 다음 빌드에 지워진다.
+        # 실측: 파일 끝에 붙인 '약관 찾는 법' 72줄이 통째로 날아갔다.
         head = guide.split('## 담보 카탈로그')[0]
         full = head + '## 담보 카탈로그\n\n' + \
             '`주제/담보분류` 아래에 `특약번호 담보명` 형식입니다. `+n`은 갱신형·추가가입용 등\n' + \

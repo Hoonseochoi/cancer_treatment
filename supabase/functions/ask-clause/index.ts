@@ -237,8 +237,11 @@ async function readClause(args: { no: string[]; section: string[] }) {
         .from('clause_chunks')
         .select('id,no,title,section,content')
         .in('no', todo)
-        .eq('section', '분류표')
-        .limit(10);
+        // '분류표'만 가져오면 보장에서 빠지는 항목을 영영 못 본다. 별표16 주2)의
+        // 제외 ADRG 목록(F172 스텐트 등)이 거기 있다 — 실측: 심장 스텐트가
+        // 제외 대상인 줄 모른 채 "분류표에 포함된 경우 지급된다"고 안내했다.
+        .in('section', ['분류표', '분류표 원문', '보장제외 ADRG'])
+        .limit(14);
       (tbl ?? []).forEach((r) => rows.push(r));
     }
   }
