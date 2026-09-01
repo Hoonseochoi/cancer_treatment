@@ -16,6 +16,12 @@
   refs    특약 ↔ 별표 참조 그래프       — 2홉 추적용
   terms   별표 표의 (항목명, 코드, 종)  — 시술·질환명으로 별표를 찍는 역인덱스
   chunks  ## 섹션 단위 본문             — 근거로 인용할 원문
+  catalog 담보 한눈에 보기 목록          — 모델이 직접 읽고 무엇을 볼지 고르는 지도
+
+catalog를 따로 두는 이유 ─ 검색 규칙을 아무리 손봐도 질문 유형마다 예외가 생긴다.
+규칙으로 답을 정하는 대신 모델에게 "약관에 무엇이 있는지"를 통째로 보여 주고 직접
+고르게 하는 편이 낫다. 220개 계열 5천 자면 시스템 프롬프트에 상주시킬 만하고,
+고정 접두사라 프롬프트 캐시도 걸린다. 규칙 검색은 판단자가 아니라 힌트 제공자로 남는다.
 """
 import os, re, io, json, glob, hashlib, collections
 
@@ -148,6 +154,57 @@ def main():
             json.dumps(v, ensure_ascii=False, separators=(',', ':')))
         print(f'  {k:8} {len(v):>6}건  {os.path.getsize(p)/1024:>7.0f} KB  {p}')
 
+    # ── 모델용 담보 카탈로그 ──
+    # 주제(암/뇌심/상해/…) → 담보분류 → 계열 순으로 접는다. 괄호 설명과 변형
+    # (갱신형·추가가입용)은 지운다 — 343개를 220개로 줄여야 프롬프트에 들어간다.
+    TOPIC = [
+        ('암', r'암|종양|신생물|항암|백혈병|림프종'),
+        ('뇌심', r'뇌|심장|심근|순환계|혈관|졸중|부정맥|허혈|혈전'),
+        ('상해', r'상해|골절|화상|외상|재해|교통'),
+        ('여성소아', r'여성|유방|자궁|난소|임신|출산|분만|산모|신생아|소아|어린이'),
+        ('남성', r'전립선|남성'),
+        ('근골격', r'관절|척추|디스크|추간판|근골격'),
+        ('안이비', r'백내장|망막|녹내장|안과|중이|비염|부비동'),
+        ('소화기', r'위|대장|간|담|췌장|용종|소화'),
+        ('신장', r'신장|투석|요로|방광'),
+    ]
+
+    def topic_of(t):
+        for name, pat in TOPIC:
+            if re.search(pat, t):
+                return name
+        return '기타'
+
+    def short(t):
+        t = re.sub(r'\[[^\]]*\]', '', t)
+        t = re.sub(r'^[0-9-]+\s*', '', t)
+        t = re.sub(r'\((추가가입용|갱신형)\)', '', t)
+        t = re.sub(r'\([^)]*\)', '', t)
+        return re.sub(r'\s+', ' ', t).strip()
+
+    def numkey(no):
+        return [int(x) if x.isdigit() else 999 for x in str(no or '9').split('-')]
+
+    fam = collections.OrderedDict()
+    for c in sorted((c for c in cards if c['kind'] == 'clause'),
+                    key=lambda c: numkey(c['no'])):
+        nm = short(c['title'])
+        fam.setdefault((topic_of(nm), c['cls'] or '기타', nm), []).append(c['no'])
+
+    lines, cur = [], None
+    for (tp, cls, nm), nos in sorted(fam.items(),
+                                     key=lambda x: (x[0][0], x[0][1], numkey(x[1][0]))):
+        head = f'{tp}/{cls}'
+        if head != cur:
+            lines.append(f'#{head}')
+            cur = head
+        lines.append(f'{nos[0]} {nm}' + (f'+{len(nos)-1}' if len(nos) > 1 else ''))
+    catalog = '\n'.join(lines)
+    cp = os.path.join(OUT_DIR, 'clause_catalog.txt')
+    io.open(cp, 'w', encoding='utf-8').write(catalog)
+    print(f'  {"catalog":8} {len(fam):>6}계열 {os.path.getsize(cp)/1024:>7.0f} KB  {cp}'
+          f'  (~{len(catalog)/1.7:.0f} 토큰)')
+
     # ── 브라우저용 경량 인덱스 ──
     # 본문(chunks.text)은 빼고 검색에 필요한 것만 싣는다. 본문은 Supabase에서
     # 고른 것만 가져온다 — 5MB를 전부 내려받게 할 이유가 없다.
@@ -181,3 +238,40 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+def emit_seed_sql():
+    """clause_chunks 적재용 SQL. 본문이 5MB라 파일로 떨어뜨려 psql/대시보드로 넣는다."""
+    cards = {c['id']: c for c in json.loads(
+        io.open(os.path.join(OUT_DIR, 'clause_cards.json'), encoding='utf-8').read())}
+    chunks = json.loads(io.open(
+        os.path.join(OUT_DIR, 'clause_chunks.json'), encoding='utf-8').read())
+
+    # 모델이 고르는 이름과 저장된 섹션명을 맞춰 둔다(프롬프트에 쓰는 짧은 이름).
+    SEC_ALIAS = {
+        '담보정의': '담보정의',
+        '보상범위 (지급사유·세부규정)': '보상범위',
+        '면책·감액 핵심 (자동 추출)': '면책',
+        '보상하지 않는 범위': '면책',
+        '소멸·한도 등': '한도',
+        '관련 분류표': '분류표',
+        '분류표 개요': '분류표',
+    }
+    q = lambda v: "'" + str(v).replace("'", "''") + "'"
+    out = ["-- 자동 생성 — scripts/build_clause_index.py",
+           "begin;", "truncate clause_chunks;"]
+    for ch in chunks:
+        c = cards[ch['card']]
+        out.append(
+            "insert into clause_chunks (id,card_id,no,title,section,cls,content) values (" +
+            ",".join([q(ch['id']), q(ch['card']), q(c['no']), q(c['title']),
+                      q(SEC_ALIAS.get(ch['sec'], ch['sec'])), q(c['cls']),
+                      q(ch['text'])]) + ");")
+    out.append("commit;")
+    p = os.path.join(OUT_DIR, 'clause_chunks.sql')
+    io.open(p, 'w', encoding='utf-8').write("\n".join(out))
+    print(f'  {"seed sql":8} {len(chunks):>6}행  {os.path.getsize(p)/1024/1024:>6.1f} MB  {p}')
+
+
+if __name__ == '__main__':
+    emit_seed_sql()
