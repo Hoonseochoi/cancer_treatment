@@ -22,6 +22,31 @@ const CL_CLS_HINT = [
     ['지원금', ['지원금']]
 ];
 
+// "면책 알려줘"의 '면책'은 담보 이름이 아니라 어느 대목을 읽을지를 가리킨다.
+// 검색어로 남겨 두면 담보명의 '(1년감액)'과 맞아떨어져, 진단비를 물었는데
+// 수술비 특약이 올라오는 일이 벌어진다(실측). 그래서 의도로 떼어 낸다.
+const CL_SEC_HINT = [
+    // 면책·감액에 보상범위를 함께 넣는 이유: 볼트의 '면책·감액 핵심'은 자동 추출이라
+    // 빠지는 게 있다. 실측 — 암 진단비(2-10)의 90일 보장개시일 규정은 그 섹션에 없고
+    // '보상범위(지급사유·세부규정)' 제1조 ②항에 있다. 면책만 읽으면 정작 면책기간을
+    // 못 찾는다.
+    ['면책', ['면책', '보상하지 않', '안 나오는', '지급하지 않'],
+        ['면책·감액 핵심 (자동 추출)', '보상하지 않는 범위', '보상범위 (지급사유·세부규정)']],
+    ['감액', ['감액', '깎이', '삭감'],
+        ['면책·감액 핵심 (자동 추출)', '보상범위 (지급사유·세부규정)']],
+    ['지급', ['지급사유', '언제 나오', '보장범위', '보상범위', '얼마'],
+        ['보상범위 (지급사유·세부규정)']],
+    ['정의', ['정의', '무슨 뜻', '뭐야', '무엇'],
+        ['담보정의']],
+    ['한도', ['한도', '소멸', '몇 번', '횟수'],
+        ['소멸·한도 등']],
+    ['분류표', ['분류표', '코드', '몇종', '몇 종'],
+        ['관련 분류표']]
+];
+
+// 상해 특약과 질병 특약은 번호대가 다르다(1-…/2-…). 질문에 드러나면 그쪽만 본다.
+const CL_SCOPE = [['질병', /^2-/], ['상해', /^1-/]];
+
 const CL_STOP = new Set(('그리고 어떤 어떤게 있어 있나요 알려줘 뭐야 무엇 뭔가 받을 수 있는 하면 ' +
     '했을 경우 담보 담보들 해당 관련 얼마 나와 나오나요 인가요 있습니까 뭐가 어떻게 ' +
     '무슨 언제 어디 얼마나 대해 대한 관해').split(' '));
@@ -44,11 +69,16 @@ function clDice(a, b) {
 // 조사·군더더기를 떼고 명사 덩어리만 남긴다(형태소 분석기 없이).
 // drop에는 담보 종류를 나타내는 말이 들어온다 — 이미 분류 필터로 반영했는데
 // 검색어로도 남겨 두면 이름에 '수술비'가 든 특약이 전부 만점을 받아 상위를 독식한다.
+// 담보명에 실제로 쓰이는 한 글자 말. '암 진단비'의 '암'을 길이로 잘라 버리면
+// 정작 핵심어가 사라진다.
+const CL_ONE = new Set(['암', '뇌', '폐', '간', '위', '눈', '뼈', '귀', '코']);
+
 function clKeywords(q, drop) {
     return q.replace(/[?!.,]/g, ' ').split(/\s+/).map(w => w
         .replace(/(을|를|이|가|은|는|도|만|에|의|로|으로|와|과|들|에서|한테|까지|부터)$/, '')
         .replace(/(했을|하면|받으면|받을|나오는|되는)$/, ''))
-        .filter(w => w.length >= 2 && !CL_STOP.has(w) && !(drop && drop.has(w)));
+        .filter(w => (w.length >= 2 || CL_ONE.has(w))
+            && !CL_STOP.has(w) && !(drop && drop.has(w)));
 }
 
 // 약관은 '혈전제거술'을 '경피적 뇌혈관 수술(혈전제거의 경우)'처럼 풀어 쓴다.
@@ -87,7 +117,18 @@ function clauseSearch(q, limit) {
 
     const hint = CL_CLS_HINT.find(([, pats]) => pats.some(p => q.includes(p)));
     const cls = hint ? hint[0] : null;
-    const drop = new Set(hint ? hint[1] : []);
+
+    const secHits = CL_SEC_HINT.filter(([, pats]) => pats.some(p => q.includes(p)));
+    const wantSecs = [...new Set(secHits.flatMap(h => h[2]))];
+    const scope = CL_SCOPE.find(([w]) => q.includes(w));
+
+    // 분류·섹션·범위를 가리킨 말은 검색어에서 뺀다 — 이미 필터로 반영했다
+    const drop = new Set([
+        ...(hint ? hint[1] : []),
+        ...secHits.flatMap(h => h[1]),
+        ...secHits.map(h => h[0]),
+        ...(scope ? [scope[0]] : [])
+    ]);
     const kws = clKeywords(q, drop);
 
     const forms = [...new Set(kws.flatMap(k => [...clVariants(k)]))];
@@ -133,7 +174,9 @@ function clauseSearch(q, limit) {
         const tb = clBigrams(c.t);
         let s = 0;
         kb.forEach(([k, b, exact]) => {
-            if (exact && c.t.includes(k)) s = Math.max(s, 0.85);
+            // 한 글자 핵심어는 바이그램이 성립하지 않아 유사도가 늘 0에 가깝다.
+            // 담보명에 대해서는 빈도와 무관하게 부분일치를 허용해야 '암 진단비'가 잡힌다.
+            if ((exact || CL_ONE.has(k)) && c.t.includes(k)) s = Math.max(s, 0.85);
             s = Math.max(s, clDice(b, tb));
         });
         if (s >= 0.4) bump(c.i, s, '담보명');
@@ -141,7 +184,9 @@ function clauseSearch(q, limit) {
 
     const pack = (minScore, keepCls) => Object.entries(cand)
         .map(([id, e]) => ({ card: cardById[id], score: +e.score.toFixed(3), via: [...e.via].slice(0, 3) }))
-        .filter(r => r.card && r.score >= minScore && (!keepCls || !cls || r.card.c === cls))
+        .filter(r => r.card && r.score >= minScore
+            && (!keepCls || !cls || r.card.c === cls)
+            && (!scope || scope[1].test(String(r.card.n || ''))))
         .sort((a, b) => b.score - a.score || String(a.card.n).localeCompare(String(b.card.n)))
         .slice(0, limit);
 
@@ -150,10 +195,66 @@ function clauseSearch(q, limit) {
     // 빈손으로 돌려보내느니 필터를 풀어 한 번 더 본다 — 무엇이 완화됐는지는 표시한다.
     let cards = pack(0.4, true), relaxed = false;
     if (!cards.length) { cards = pack(0.3, true); relaxed = !!cards.length; }
+
+    // "질병 수술비의 면책 알려줘"처럼 분류와 범위만으로 지정한 질문은 검색할 낱말이
+    // 남지 않는다(분류·범위·의도를 모두 떼어 냈으니 당연하다). 이때는 찾을 게 없는
+    // 것이 아니라 조건에 맞는 담보 전체가 답이므로, 필터만으로 목록을 만든다.
+    let listed = false;
+    if (!cards.length && (cls || scope)) {
+        cards = IDX.cards
+            .filter(c => c.k === 'c'
+                && (!cls || c.c === cls)
+                && (!scope || scope[1].test(String(c.n || ''))))
+            .map(c => ({ card: c, score: 0, via: ['분류'] }))
+            .sort((a, b) => String(a.card.n).localeCompare(String(b.card.n), 'ko', { numeric: true }))
+            .slice(0, limit);
+        listed = !!cards.length;
+    }
     if (!cards.length && cls) { cards = pack(0.3, false); relaxed = !!cards.length; }
 
+    // 고른 담보에서 실제로 읽을 대목. 의도가 없으면 담보정의·보상범위를 기본으로 둔다.
+    const secWanted = wantSecs.length ? wantSecs
+        : ['담보정의', '보상범위 (지급사유·세부규정)'];
+    // ── 같은 담보의 변형을 하나로 묶는다 ──
+    // 2-10 암 진단비 / 2-11 갱신형 / 2-12 10대 주요암 / 2-13 갱신형처럼, 이름만
+    // 다르고 본문이 사실상 같은 특약이 줄줄이 있다. 넷을 다 읽히면 같은 조항을 네 번
+    // 넘기게 되어 토큰만 먹고 답도 흐려진다. 대표 하나만 남기고 변형은 이름만 달아 둔다.
+    const famKey = t => t.replace(/\[[^\]]*\]/g, '')
+        .replace(/\((추가가입용|갱신형)\)/g, '')
+        .replace(/^[0-9-]+\s*/, '').replace(/\s+/g, '');
+    const fam = new Map();
+    cards.forEach(r => {
+        const k = famKey(r.card.t);
+        const cur = fam.get(k);
+        if (!cur) fam.set(k, { ...r, variants: [] });
+        else cur.variants.push(r.card.n);
+    });
+    cards = [...fam.values()];
+
+    // 담보 순위대로 돌면서 담보당 몇 개씩만 가져온다. 앞 담보가 섹션을 다 차지해
+    // 뒤 담보가 통째로 빠지는 일을 막는다.
+    // 무엇을 읽을지 지목하지 않은 질문("어떤 담보가 있어?")은 목록이 답이라
+    // 원문을 적게 가져간다.
+    const PER_CARD = wantSecs.length ? 2 : 1;
+    const MAX_READ = wantSecs.length ? 6 : 4;
+    const secOf = {};
+    (IDX.secs || []).forEach(x => (secOf[x.c] || (secOf[x.c] = [])).push(x));
+    const read = [];
+    for (const r of cards) {
+        if (read.length >= MAX_READ) break;
+        const picked = (secOf[r.card.i] || [])
+            .filter(x => secWanted.includes(x.s))
+            .sort((a, b) => secWanted.indexOf(a.s) - secWanted.indexOf(b.s))
+            .slice(0, PER_CARD);
+        picked.forEach(x => {
+            if (read.length < MAX_READ)
+                read.push({ id: x.i, card: x.c, sec: x.s, title: r.card.t, no: r.card.n });
+        });
+    }
+
     return {
-        cls, kws, relaxed,
+        cls, kws, relaxed, listed, scope: scope ? scope[0] : null,
+        intent: secHits.map(h => h[0]), read,
         terms: hitTerms.slice(0, 10).map(h => ({
             name: h.t.r || h.t.t, code: h.t.c, tier: h.t.g || '',
             table: cardById[h.t.b] ? cardById[h.t.b].t : '', s: +h.s.toFixed(2)

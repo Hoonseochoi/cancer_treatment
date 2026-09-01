@@ -148,6 +148,32 @@ def main():
             json.dumps(v, ensure_ascii=False, separators=(',', ':')))
         print(f'  {k:8} {len(v):>6}건  {os.path.getsize(p)/1024:>7.0f} KB  {p}')
 
+    # ── 브라우저용 경량 인덱스 ──
+    # 본문(chunks.text)은 빼고 검색에 필요한 것만 싣는다. 본문은 Supabase에서
+    # 고른 것만 가져온다 — 5MB를 전부 내려받게 할 이유가 없다.
+    # secs(어느 담보에 어느 섹션이 있는지)는 넣는다. "면책 알려줘" 같은 질문은
+    # 담보를 찾는 게 아니라 그 담보의 특정 섹션을 읽는 일이라, 이 목록이 있어야
+    # 무엇을 가져올지 정할 수 있다.
+    c2 = [{'i': c['id'], 'k': c['kind'][0], 'n': c['no'], 'c': c['cls'],
+           't': c['title'], 'p': c['page']} for c in cards]
+    t2 = []
+    for t in terms:
+        row = {'t': t['t'], 'c': t['code'], 'b': t['table']}
+        if t['tier']: row['g'] = t['tier']
+        if t['raw'] != t['t']: row['r'] = t['raw']
+        t2.append(row)
+    s2 = [{'i': ch['id'], 'c': ch['card'], 's': ch['sec']} for ch in chunks]
+
+    js = ('// 자동 생성 — scripts/build_clause_index.py\n'
+          '// 약관 검색용 경량 인덱스(본문 제외). 본문은 Supabase clause_chunks에서 가져온다.\n'
+          'const CLAUSE_INDEX = ' + json.dumps(
+              {'cards': c2, 'terms': t2, 'refmap': refmap, 'secs': s2},
+              ensure_ascii=False, separators=(',', ':')) + ';\n')
+    jp = os.path.join('js', 'clause_index_data.js')
+    io.open(jp, 'w', encoding='utf-8').write(js)
+    print(f'  {"front":8} {len(c2)+len(t2)+len(s2):>6}건  '
+          f'{os.path.getsize(jp)/1024:>7.0f} KB  {jp}')
+
     print(f'\n특약 {sum(1 for c in cards if c["kind"]=="clause")} · '
           f'별표 {sum(1 for c in cards if c["kind"]=="table")} · '
           f'참조 {sum(len(v) for v in refmap.values())}개 링크')
