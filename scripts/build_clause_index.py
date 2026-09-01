@@ -205,6 +205,27 @@ def main():
     print(f'  {"catalog":8} {len(fam):>6}계열 {os.path.getsize(cp)/1024:>7.0f} KB  {cp}'
           f'  (~{len(catalog)/1.7:.0f} 토큰)')
 
+    # ── Edge Function이 쓸 시스템 프롬프트 ──
+    # 환경변수(Secret)로 넣으면 6천 자를 대시보드에 붙여 넣어야 하고 git으로도
+    # 관리되지 않는다. 함수와 같이 배포되는 파일로 두면 프롬프트를 고칠 때마다
+    # 배포만 다시 하면 된다.
+    guide_path = os.path.join('prompts', 'clause_system.md')
+    if os.path.exists(guide_path):
+        guide = io.open(guide_path, encoding='utf-8').read()
+        head = guide.split('## 담보 카탈로그')[0]
+        full = head + '## 담보 카탈로그\n\n' + \
+            '`주제/담보분류` 아래에 `특약번호 담보명` 형식입니다. `+n`은 갱신형·추가가입용 등\n' + \
+            '같은 계열 변형이 n개 더 있다는 뜻입니다.\n\n' + catalog + '\n'
+        io.open(guide_path, 'w', encoding='utf-8').write(full)
+
+        ts = ('// 자동 생성 — scripts/build_clause_index.py\n'
+              '// 원본: prompts/clause_system.md (여기서 고치지 말 것)\n'
+              'export const SYSTEM_PROMPT = ' + json.dumps(full, ensure_ascii=False) + ';\n')
+        tp = os.path.join('supabase', 'functions', 'ask-clause', 'system_prompt.ts')
+        os.makedirs(os.path.dirname(tp), exist_ok=True)
+        io.open(tp, 'w', encoding='utf-8').write(ts)
+        print(f'  {"prompt":8} {len(full):>6}자   {os.path.getsize(tp)/1024:>7.0f} KB  {tp}')
+
     # ── 브라우저용 경량 인덱스 ──
     # 본문(chunks.text)은 빼고 검색에 필요한 것만 싣는다. 본문은 Supabase에서
     # 고른 것만 가져온다 — 5MB를 전부 내려받게 할 이유가 없다.

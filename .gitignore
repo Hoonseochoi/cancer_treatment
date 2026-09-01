@@ -21,3 +21,6 @@ disclosure/config.js
 
 # 약관 인덱스 빌드 산출물 — scripts/build_clause_index.py 로 재생성
 db/
+
+# Edge Function 비밀값 — 절대 커밋하지 않는다
+supabase/functions/.env

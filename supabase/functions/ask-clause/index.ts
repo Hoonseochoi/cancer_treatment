@@ -12,12 +12,15 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SYSTEM_PROMPT as BUILT_PROMPT } from './system_prompt.ts';
 
 const OPENROUTER_KEY = Deno.env.get('OPENROUTER_API_KEY');
 const MODEL = Deno.env.get('CLAUSE_MODEL') ?? 'deepseek/deepseek-chat';
 const SB_URL = Deno.env.get('SUPABASE_URL')!;
 const SB_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const SYSTEM_PROMPT = Deno.env.get('CLAUSE_SYSTEM_PROMPT') ?? '';
+// 지침과 담보 카탈로그는 함수와 함께 배포된다(scripts/build_clause_index.py가 생성).
+// 환경변수를 두면 그쪽이 이긴다 — 배포 없이 급히 문구를 고쳐야 할 때를 위한 뒷문이다.
+const SYSTEM_PROMPT = Deno.env.get('CLAUSE_SYSTEM_PROMPT') || BUILT_PROMPT;
 // 유료 기능이라 아는 사람만 쓴다. 코드를 브라우저에 두면 소스 보기로 그대로 읽히므로
 // 검증은 여기서만 한다 — 프런트는 입력값을 넘길 뿐 정답을 모른다.
 const ACCESS_CODE = Deno.env.get('CLAUSE_ACCESS_CODE') ?? '';
