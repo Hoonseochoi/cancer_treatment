@@ -202,7 +202,7 @@ serve(async (req) => {
   if (!OPENROUTER_KEY) return json({ error: 'OPENROUTER_API_KEY가 설정되지 않았습니다.' }, 500);
 
   const t0 = Date.now();
-  let question = '', sessionId = '', hint: unknown = null;
+  let question = '', sessionId = '', hint: unknown = null, isTest = false;
 
   try {
     const body = await req.json();
@@ -219,6 +219,7 @@ serve(async (req) => {
     question = String(body.question ?? '').trim();
     sessionId = String(body.session_id ?? 'anon');
     hint = body.hint ?? null;
+    isTest = body.test === true;
     const history = Array.isArray(body.history) ? body.history.slice(-4) : [];
     if (!question) return json({ error: '질문이 비어 있습니다.' }, 400);
     if (question.length > 300) return json({ error: '질문이 너무 깁니다.' }, 400);
@@ -227,7 +228,7 @@ serve(async (req) => {
     const blocked = gate(question);
     if (blocked) {
       await sb.from('chat_logs').insert({
-        session_id: sessionId, question, blocked: true,
+        session_id: sessionId, question, blocked: true, is_test: isTest,
         block_kind: blocked.kind, latency_ms: Date.now() - t0,
       });
       return json({ blocked: true, kind: blocked.kind, answer: blocked.message });
@@ -245,7 +246,7 @@ serve(async (req) => {
     if (best && best.sim >= 0.80 && sameDigits) {
       await sb.rpc('touch_cache', { h: await sha(normalize(best.question)) });
       await sb.from('chat_logs').insert({
-        session_id: sessionId, question, answer: best.answer,
+        session_id: sessionId, question, answer: best.answer, is_test: isTest,
         cards: best.cards ?? [], cache_sim: best.sim, latency_ms: Date.now() - t0,
       });
       return json({ answer: best.answer, cards: best.cards ?? [], cached: true, sim: best.sim });
@@ -262,8 +263,9 @@ serve(async (req) => {
       ? `${question}\n\n[검색 힌트]\n${JSON.stringify(hint)}`
       : question) + prior;
 
+    const sysPrompt = await systemPrompt();
     const messages: Record<string, unknown>[] = [
-      { role: 'system', content: await systemPrompt() },
+      { role: 'system', content: sysPrompt },
       ...history,
       { role: 'user', content: userMsg },
     ];
@@ -272,8 +274,13 @@ serve(async (req) => {
     // 왕복이 늘수록 앞선 메시지가 통째로 다시 실려 토큰과 대기 시간이 함께 뛴다.
     let answer = '', cited: string[] = [], usedNos: string[] = [];
     let tin = 0, tout = 0;
+    // 무엇을 어떻게 골랐는지 남긴다. 답이 이상할 때 힌트가 빗나간 건지,
+    // 모델이 엉뚱한 대목을 읽은 건지 구분하려면 이 기록이 있어야 한다.
+    const trace: Record<string, unknown>[] = [];
+    let hops = 0, evidenceChars = 0;
 
     for (let hop = 0; hop < 2; hop++) {
+      hops = hop + 1;
       const out = await callModel(messages);
       const msg = out.choices?.[0]?.message;
       tin += out.usage?.prompt_tokens ?? 0;
@@ -289,6 +296,14 @@ serve(async (req) => {
         try { args = JSON.parse(call.function.arguments || '{}'); }
         catch { args = { no: [], section: [] }; }
         const result = await readClause(args);
+        const chars = result.found
+          ? result.clauses.reduce((n, c) => n + c.content.length, 0) : 0;
+        evidenceChars += chars;
+        trace.push({
+          hop: hops, no: args.no ?? [], section: args.section ?? [],
+          found: !!result.found, chars,
+          got: result.found ? result.clauses.map((c) => `${c.no}/${c.section}`) : [],
+        });
         if (result.found) {
           cited.push(...result.clauses.map((c) => c.id));
           usedNos.push(...(args.no ?? []));
@@ -301,25 +316,50 @@ serve(async (req) => {
     }
 
     const latency = Date.now() - t0;
-    if (answer) {
+
+    // 근거를 못 찾고 답한 것은 캐시에 넣지 않는다. 넣어 두면 잘못된 답이 계속
+    // 재사용된다 — 실측: 별표를 못 읽어 "확인할 수 없다"고 한 답이 캐시에 남아,
+    // 원인을 고친 뒤에도 같은 답이 그대로 나왔다.
+    const grounded = usedNos.length > 0 && evidenceChars >= 200 &&
+      !/확인할 수 없|찾지 못|제공해 주시면|알 수 없습니다/.test(answer);
+
+    if (answer && grounded) {
       await sb.from('clause_cache').upsert({
         q_hash: qHash, question, norm, answer,
         cards: [...new Set(usedNos)], model: MODEL, tokens_in: tin, used_at: new Date().toISOString(),
       }, { onConflict: 'q_hash' });
     }
+    // 힌트가 실제로 도움이 됐는지 — 규칙 검색이 넘긴 후보와 모델이 고른 담보가 겹쳤는가.
+    const hintCards: string[] = Array.isArray((hint as { 담보?: string[] })?.담보)
+      ? (hint as { 담보: string[] }).담보.map((x) => String(x).split(' ')[0])
+      : [];
+    const picked = [...new Set(usedNos)];
+    const hintHit = hintCards.length && picked.length
+      ? picked.some((p) => hintCards.includes(p))
+      : null;
+
     await sb.from('chat_logs').insert({
-      session_id: sessionId, question, answer,
-      cited: [...new Set(cited)], cards: [...new Set(usedNos)],
-      hint, model: MODEL, tokens_in: tin, tokens_out: tout, latency_ms: latency,
+      session_id: sessionId, question, answer, is_test: isTest,
+      cited: [...new Set(cited)], cards: picked,
+      hint, hint_cards: hintCards, hint_hit: hintHit,
+      hops, tool_calls: trace, evidence_chars: evidenceChars,
+      prompt_chars: sysPrompt.length,
+      model: MODEL, tokens_in: tin, tokens_out: tout, latency_ms: latency,
       cache_sim: best?.sim ?? null,
     });
 
-    return json({ answer, cited: [...new Set(cited)], cards: [...new Set(usedNos)],
-                  tokens: { in: tin, out: tout }, latency_ms: latency });
+    return json({
+      answer, cited: [...new Set(cited)], cards: picked,
+      tokens: { in: tin, out: tout }, latency_ms: latency,
+      ...(isTest ? { trace: { hops, tool_calls: trace, hint_cards: hintCards,
+                              hint_hit: hintHit, evidence_chars: evidenceChars,
+                              prompt_chars: sysPrompt.length,
+                              cache_sim: best?.sim ?? null } } : {}),
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await sb.from('chat_logs').insert({
-      session_id: sessionId, question, error: message,
+      session_id: sessionId, question, error: message, is_test: isTest,
       model: MODEL, latency_ms: Date.now() - t0,
     }).catch(() => {});
     return json({ error: '답변을 만들지 못했습니다.', detail: message }, 500);

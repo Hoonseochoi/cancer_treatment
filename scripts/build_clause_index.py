@@ -119,7 +119,8 @@ def main():
         # 본문 청크 — ## 섹션 단위. 별표는 표가 본체라 통째로 두면 너무 커서
         # 표 행은 terms로 따로 뽑고, 청크는 앞부분 설명만 남긴다.
         if kind == 'table':
-            for clean, raw, code, tier in parse_tables(text):
+            rows = parse_tables(text)
+            for clean, raw, code, tier in rows:
                 terms.append({'t': clean, 'raw': raw, 'code': code,
                               'tier': tier, 'table': cid})
             head = re.split(r'\n\|', text, 1)[0]
@@ -127,6 +128,18 @@ def main():
             if body:
                 chunks.append({'id': cid + '-0', 'card': cid,
                                'sec': '분류표 개요', 'text': body[:2000]})
+            # 표 자체도 청크로 남긴다. 예전에는 terms로만 뽑고 본문에서 뺐는데,
+            # 그러면 모델이 read_clause로 등급표를 읽을 방법이 아예 없어진다.
+            # 실측: "백내장은 몇 종?"에 모델이 분류표를 요청했지만 87자짜리 링크
+            # 목록만 돌아와 "별표 내용을 확인할 수 없다"고 답했다.
+            for n, i in enumerate(range(0, len(rows), 80), 1):
+                part = rows[i:i + 80]
+                lines = [f'{raw} | {code}' + (f' | {tier}종' if tier else '')
+                         for clean, raw, code, tier in part]
+                chunks.append({
+                    'id': f'{cid}-t{n}', 'card': cid,
+                    'sec': '분류표',
+                    'text': f'[{title}] {i + 1}~{i + len(part)}행\n' + '\n'.join(lines)})
         else:
             parts = re.split(r'^## ', text, flags=re.M)
             for i, p in enumerate(parts[1:], 1):

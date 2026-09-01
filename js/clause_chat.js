@@ -8,6 +8,10 @@
 const CHAT_FN = 'https://omgwvnibssizmhovporl.supabase.co/functions/v1/ask-clause';
 const SB_ANON = (typeof SUPABASE_KEY !== 'undefined') ? SUPABASE_KEY : '';
 
+// ?test=1 로 들어오면 답변 아래에 토큰·왕복·힌트 적중을 같이 띄운다.
+// 어떤 질문이 비싼지, 힌트가 빗나갔는지 눈으로 보고 고치기 위한 것이다.
+const TEST_MODE = new URLSearchParams(location.search).get('test') === '1';
+
 let accessCode = sessionStorage.getItem('sr_code') || '';
 let history = [];                 // 모델에 넘길 최근 대화 (2턴만)
 let busy = false;
@@ -196,7 +200,7 @@ async function ask(preset) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SB_ANON}` },
             body: JSON.stringify({
-                question: text, history, hint,
+                question: text, history, hint, test: TEST_MODE,
                 session_id: sessionId, access_code: accessCode
             })
         });
@@ -215,7 +219,7 @@ async function ask(preset) {
                 ? '<p style="margin-top:8px;font-size:11px;color:var(--faint)">이전에 받은 같은 질문의 답변입니다.</p>'
                 : '') + (data.cards?.length
                 ? `<div class="cite"><b>근거</b>${data.cards.map(n => `<span>${esc(n)}</span>`).join('')}</div>`
-                : '');
+                : '') + traceHtml(data);
             history.push({ role: 'user', content: text });
             history.push({ role: 'assistant', content: data.answer });
             history = history.slice(-4);           // 최근 2턴만 — 토큰을 아낀다
@@ -227,4 +231,32 @@ async function ask(preset) {
         grow(box);
         $('scroll').scrollTop = $('scroll').scrollHeight;
     }
+}
+
+
+// ── 테스트 모드 표시 ──
+// 답이 이상할 때 무엇 때문인지 바로 보이게 한다. 힌트가 빗나갔는지, 모델이 엉뚱한
+// 대목을 읽었는지, 원문을 얼마나 실어 보냈는지가 한 줄에 다 있어야 고칠 수 있다.
+function traceHtml(data) {
+    if (!TEST_MODE) return '';
+    const t = data.trace;
+    const el = [];
+    if (data.cached) {
+        el.push(`캐시 재사용 · 유사도 ${data.sim ?? '-'}`);
+    } else if (t) {
+        el.push(`입력 ${(data.tokens?.in ?? 0).toLocaleString()} · 출력 ${(data.tokens?.out ?? 0).toLocaleString()} 토큰`);
+        el.push(`지침 ${t.prompt_chars.toLocaleString()}자 · 원문 ${t.evidence_chars.toLocaleString()}자`);
+        el.push(`왕복 ${t.hops}회 · ${data.latency_ms}ms`);
+        if (t.hint_hit === true) el.push('힌트 적중');
+        else if (t.hint_hit === false) el.push(`<b style="color:#B4392F">힌트 빗나감</b> (${(t.hint_cards || []).join(', ') || '없음'})`);
+        (t.tool_calls || []).forEach(c => {
+            el.push(`읽음: ${(c.no || []).join(',')} / ${(c.section || []).join(',')}` +
+                    (c.found ? ` → ${c.chars.toLocaleString()}자` : ' → <b style="color:#B4392F">못 찾음</b>'));
+        });
+    } else {
+        return '';
+    }
+    return `<div style="margin-top:10px;padding:9px 12px;border:1px dashed var(--line);
+        border-radius:10px;background:var(--panel);font-size:11px;line-height:1.85;color:var(--muted)">
+        <b style="color:var(--ink-2)">TEST</b> ${el.join(' · ')}</div>`;
 }
