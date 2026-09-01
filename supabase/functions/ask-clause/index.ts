@@ -182,16 +182,21 @@ serve(async (req) => {
     }
 
     // ── 2. 같은 질문을 이미 받았나 ──
+    const sysPrompt = await systemPrompt();
+    // 지침이 바뀌면 이전 답은 더 이상 그 지침의 산물이 아니다. 캐시 키에 지침
+    // 지문을 섞어 두면 프롬프트를 고치는 것만으로 캐시가 자연히 갈린다 —
+    // 실측: 지침을 고친 뒤에도 예전 답이 그대로 나와 고친 효과가 보이지 않았다.
+    const promptTag = (await sha(sysPrompt)).slice(0, 8);
     const norm = normalize(question);
-    const qHash = await sha(norm);
-    const { data: sim } = await sb.rpc('match_cached_question', { q: norm });
+    const qHash = await sha(promptTag + '|' + norm);
+    const { data: sim } = await sb.rpc('match_cached_question', { q: promptTag + '|' + norm });
     const best = Array.isArray(sim) ? sim[0] : null;
 
     // 아주 비슷하고 숫자도 같으면 그대로 돌려준다. 모델을 부르지 않아 즉시 나오고
     // 비용도 없다. 숫자가 다르면(2-109 vs 2-110) 아무리 비슷해도 새로 답한다.
     const sameDigits = best ? digitsOf(question) === digitsOf(best.question) : false;
     if (best && best.sim >= 0.80 && sameDigits) {
-      await sb.rpc('touch_cache', { h: await sha(normalize(best.question)) });
+      await sb.rpc('touch_cache', { h: await sha(promptTag + '|' + normalize(best.question)) });
       await sb.from('chat_logs').insert({
         session_id: sessionId, question, answer: best.answer, is_test: isTest,
         cards: best.cards ?? [], cache_sim: best.sim, latency_ms: Date.now() - t0,
@@ -210,7 +215,6 @@ serve(async (req) => {
       ? `${question}\n\n[검색 힌트]\n${JSON.stringify(hint)}`
       : question) + prior;
 
-    const sysPrompt = await systemPrompt();
     const messages: Record<string, unknown>[] = [
       { role: 'system', content: sysPrompt },
       ...history,
@@ -273,7 +277,7 @@ serve(async (req) => {
 
     if (answer && grounded) {
       await sb.from('clause_cache').upsert({
-        q_hash: qHash, question, norm, answer,
+        q_hash: qHash, question, norm: promptTag + '|' + norm, answer,
         cards: [...new Set(usedNos)], model: MODEL, tokens_in: tin, used_at: new Date().toISOString(),
       }, { onConflict: 'q_hash' });
     }
