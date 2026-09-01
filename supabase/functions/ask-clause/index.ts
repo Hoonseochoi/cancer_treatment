@@ -179,10 +179,11 @@ const READ_TOOL = {
   },
 };
 
-// 실험 모드에서는 검색까지 모델이 한다. 규칙 힌트를 미리 떠먹여 주는 지금 방식과
-// 견주려고 요청 단위로 가른다 — 켜고 끄는 데 배포가 필요 없고, 실서비스는 그대로 둔다.
-const READ_ONLY = [READ_TOOL];
-const READ_AND_SEARCH = [SEARCH_TOOL, READ_TOOL];
+// 힌트와 검색을 함께 준다. 힌트(규칙이 미리 찾아 준 후보)가 맞으면 한두 번에 끝나
+// 빠르고, 빗나가면 모델이 스스로 찾아 들어간다. 규칙만 쓰던 때는 힌트가 빗나가면
+// 답도 함께 빗나갔고(하지정맥류 담보 하나만 찾고 '6종'을 지어냄), 그때마다 규칙에
+// 케이스를 더해야 했다. 이제 규칙은 틀려도 되는 길잡이다.
+const TOOLS = [SEARCH_TOOL, READ_TOOL];
 
 // 원문 상한. 토큰을 아끼려고 1,500자로 조였더니 조항이 중간에 잘려 모델이
 // 확인할 근거가 모자랐다. 약관 섹션은 대부분 2,000~2,500자라 3,000자면
@@ -253,7 +254,8 @@ async function callModel(messages: unknown[], tools: unknown[]) {
       'X-Title': 'Surinsur AI',
     },
     body: JSON.stringify({
-      model: MODEL, messages, tools, tool_choice: 'auto',
+      model: MODEL, messages,
+      ...(Array.isArray(tools) && tools.length ? { tools, tool_choice: 'auto' } : {}),
       temperature: 0.2,        // 약관 인용이라 흔들리면 안 된다
       max_tokens: 1800,        // 담보를 여럿 나열하면 답이 길어진다
     }),
@@ -269,7 +271,7 @@ serve(async (req) => {
 
   const t0 = Date.now();
   let question = '', sessionId = '', hint: unknown = null, isTest = false;
-  let letSearch = false;
+  let noCache = false;
 
   try {
     const body = await req.json();
@@ -287,8 +289,8 @@ serve(async (req) => {
     sessionId = String(body.session_id ?? 'anon');
     hint = body.hint ?? null;
     isTest = body.test === true;
-    // 모델이 스스로 약관을 뒤지게 하는 실험 경로
-    letSearch = body.model_search === true;
+    // 견주어 볼 때 캐시가 걸리면 고친 효과가 보이지 않는다
+    noCache = body.no_cache === true || body.model_search === true;
     // 채팅이라 이어서 묻는 게 보통이다. 두 턴만 남기면 세 번째 질문에서 앞이 잘려
     // 무엇을 이야기하던 중인지 모르게 된다.
     const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
@@ -315,7 +317,7 @@ serve(async (req) => {
     const qHash = await sha(promptTag + '|' + norm);
     // 실험 경로는 캐시를 지나친다. 두 방식을 견주는 자리에서 캐시가 걸리면
     // 실험이 지금 방식의 답을 그대로 되돌려줘 비교 자체가 무의미해진다.
-    const { data: sim } = letSearch
+    const { data: sim } = noCache
       ? { data: null }
       : await sb.rpc('match_cached_question', { q: promptTag + '|' + norm });
     const best = Array.isArray(sim) ? sim[0] : null;
@@ -358,13 +360,15 @@ serve(async (req) => {
     // 모델이 엉뚱한 대목을 읽은 건지 구분하려면 이 기록이 있어야 한다.
     const trace: Record<string, unknown>[] = [];
     let hops = 0, evidenceChars = 0;
+    // 이미 한 조회는 다시 하지 않는다. 모델은 자기가 방금 읽은 것을 잊고 맴돈다 —
+    // 실측: 같은 read_clause를 여섯 번 되풀이하며 토큰이 256K까지 불었고 답은 없었다.
+    const done = new Set<string>();
 
-    // 스스로 찾으려면 훑고 → 읽고 → 다른 말로 다시, 세 번으론 모자란다.
-    const MAX_HOP = letSearch ? 6 : 3;
-    const tools = letSearch ? READ_AND_SEARCH : READ_ONLY;
+    // 훑고 → 읽고 → 모자라면 다른 말로 다시. 세 번으론 모자라다.
+    const MAX_HOP = 5;
     for (let hop = 0; hop < MAX_HOP; hop++) {
       hops = hop + 1;
-      const out = await callModel(messages, tools);
+      const out = await callModel(messages, TOOLS);
       const msg = out.choices?.[0]?.message;
       tin += out.usage?.prompt_tokens ?? 0;
       tout += out.usage?.completion_tokens ?? 0;
@@ -378,9 +382,14 @@ serve(async (req) => {
         let args: { no: string[]; section: string[] };
         try { args = JSON.parse(call.function.arguments || '{}'); }
         catch { args = { no: [], section: [] }; }
-        const result = call.function.name === 'search_clause'
-          ? await searchClause(args as unknown as { q: string; kind?: string; cls?: string })
-          : await readClause(args);
+        const key = call.function.name + '|' + JSON.stringify(args);
+        const result = done.has(key)
+          ? { repeat: true, note: '이미 같은 것을 조회했습니다. 앞서 받은 내용을 그대로 쓰세요. ' +
+              '더 볼 것이 있으면 다른 낱말이나 다른 번호로 물으시고, 충분하면 이제 답하세요.' }
+          : call.function.name === 'search_clause'
+            ? await searchClause(args as unknown as { q: string; kind?: string; cls?: string })
+            : await readClause(args);
+        done.add(key);
         const chars = result.clauses
           ? result.clauses.reduce((n, c) => n + c.content.length, 0)
           : JSON.stringify(result).length;
@@ -404,6 +413,15 @@ serve(async (req) => {
       }
     }
 
+    // 왕복을 다 쓰고도 답이 없으면 도구 없이 한 번 더 부른다. 그냥 두면 빈손으로
+    // 끝난다 — 근거는 이미 메시지에 다 실려 있으니 정리만 하면 된다.
+    if (!answer) {
+      const out = await callModel(messages, []);
+      tin += out.usage?.prompt_tokens ?? 0;
+      tout += out.usage?.completion_tokens ?? 0;
+      answer = out.choices?.[0]?.message?.content ?? '';
+    }
+
     const latency = Date.now() - t0;
 
     // 근거를 못 찾고 답한 것은 캐시에 넣지 않는다. 넣어 두면 잘못된 답이 계속
@@ -412,7 +430,7 @@ serve(async (req) => {
     const grounded = usedNos.length > 0 && evidenceChars >= 200 &&
       !/확인할 수 없|찾지 못|제공해 주시면|알 수 없습니다/.test(answer);
 
-    if (answer && grounded && !letSearch) {
+    if (answer && grounded && !noCache) {
       await sb.from('clause_cache').upsert({
         q_hash: qHash, question, norm: promptTag + '|' + norm, answer,
         cards: [...new Set(usedNos)], model: MODEL, tokens_in: tin, used_at: new Date().toISOString(),
