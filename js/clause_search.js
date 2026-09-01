@@ -304,7 +304,8 @@ function clauseSearch(q, limit) {
         if (c.k !== 'c') return;                       // clause만
         const tb = clBigrams(c.t);
         const ctT = clTight(c.t);
-        let s = 0, hits = 0;
+        let s = 0;
+        const matched = [];
         kb.forEach(([k, b, exact, w]) => {
             // 한 글자 핵심어는 바이그램이 성립하지 않아 유사도가 늘 0에 가깝다.
             // 담보명에 대해서는 빈도와 무관하게 부분일치를 허용해야 '암 진단비'가 잡힌다.
@@ -316,13 +317,19 @@ function clauseSearch(q, limit) {
             // 담김비율은 검색어가 충분히 길 때만(바이그램 4개 이상) 쓴다.
             hit = Math.max(hit, clDice(b, tb) * w);
             if (b.size >= 4) hit = Math.max(hit, clHas(b, tb) * 0.88 * w);
-            if (hit >= 0.4) hits++;
+            if (hit >= 0.4) matched.push(k.length);
             s = Math.max(s, hit);
         });
-        // 낱말이 여럿 맞으면 더 올린다. 최고점만 보면 '암 통합치료비'를 물었을 때
-        // 둘 다 맞는 26-1-66과 '통합치료비'만 맞는 1-36(상해)이 같은 점수가 되고,
-        // 동점자가 많으면 번호순으로 잘려 정작 찾던 담보가 사라진다(실측).
-        if (hits > 1) s = Math.min(1, s + (hits - 1) * 0.07);
+        // 낱말이 여럿 맞으면 더 올리되, 긴 낱말에 더 무게를 준다.
+        // 개수만 세면 '통합치료비'가 맞은 담보와 '치료비'만 맞은 담보가 같아진다 —
+        // 실측: "순환계통합치료비"에 순환계 담보 일곱 개가 모두 만점을 받아, 정작
+        // 지목한 통합치료비(28-1-53·55)가 다른 것들 사이에 묻혔다.
+        // 상한을 두지 않는다. 1을 넘어도 정렬에만 쓰인다.
+        if (matched.length > 1) {
+            const top = Math.max(...matched);
+            const rest = matched.reduce((a, n) => a + n, 0) - top;
+            s += Math.max(0, rest - 2) * 0.03;
+        }
         if (s >= 0.4) bump(c.i, s, '담보명');
     });
 
