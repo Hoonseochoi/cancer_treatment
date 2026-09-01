@@ -154,7 +154,8 @@ async function searchClause(args: { q: string; kind?: string; cls?: string }) {
   // (18건에 3,500자), 정작 답은 read_clause로 읽은 원문에서 나온다.
   return {
     searched: terms, hits: found.size, shown: ranked.length,
-    note: '맞은 낱말이 많은 순입니다. 물음에 맞는 번호를 골라 read_clause로 원문을 읽으세요.',
+    note: '맞은 낱말이 많은 순입니다. **이 목록만으로는 답할 수 없습니다** — ' +
+          '어느 특약에 있는지만 알려줍니다. 번호를 골라 read_clause로 원문을 읽으세요.',
     // 담보마다 한 줄. 배열을 늘어놓으면 스무 건에 2,800자가 되는데, 정작 고르는 데
     // 필요한 것은 이름과 '이름에 몇 개 맞았나'뿐이다.
     results: ranked.map(({ e, all }) => ({
@@ -417,7 +418,26 @@ serve(async (req) => {
       if (!msg) throw new Error('모델 응답이 비어 있습니다.');
 
       const calls = msg.tool_calls ?? [];
-      if (!calls.length) { answer = msg.content ?? ''; break; }
+      if (!calls.length) {
+        // 원문을 한 번도 읽지 않고 답하려 들면 되돌린다. search_clause는 어디에
+        // 있는지만 알려줄 뿐이라, 그것만 보고 답하면 "확인이 필요합니다"만
+        // 되뇌는 답이 나온다 — 실측: 스텐트 질문에 450자짜리 이름 목록만 받고
+        // 여섯 담보 전부를 "확인이 필요합니다"로 넘겼다.
+        const readAny = trace.some((t) => t.tool === 'read_clause' && t.found);
+        if (!readAny && hop < MAX_HOP - 1) {
+          messages.push(msg);
+          messages.push({
+            role: 'user',
+            content: '아직 약관 원문을 읽지 않았습니다. 검색 결과는 어느 특약에 ' +
+              '있는지만 알려줄 뿐입니다. 관련 있는 특약번호를 골라 read_clause로 ' +
+              '원문을 읽고, 거기 적힌 것으로 답하세요. ' +
+              '"확인이 필요합니다"로 넘기지 말고 직접 확인해서 답하세요.',
+          });
+          continue;
+        }
+        answer = msg.content ?? '';
+        break;
+      }
 
       messages.push(msg);
       for (const call of calls) {
