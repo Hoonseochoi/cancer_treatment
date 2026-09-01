@@ -204,9 +204,11 @@ async function ask(preset) {
     try {
         // 지금까지 이야기한 낱말을 앞에 붙여 함께 찾는다.
         const carry = topic.words.join(' ');
-        let r = clauseSearch(carry ? carry + ' ' + text : text, 12);
+        // 8개면 충분하다. 더 넘기면 같은 계열이 줄줄이 딸려와, 지목한 담보 하나를
+        // 물었는데도 계열 전체를 설명하는 답이 나온다(실측: 순환계 통합치료비).
+        let r = clauseSearch(carry ? carry + ' ' + text : text, 8);
         // 이어 붙인 쪽이 빈손이면 이번 질문만으로 다시 본다
-        if (!r.cards.length && !r.terms.length && carry) r = clauseSearch(text, 12);
+        if (!r.cards.length && !r.terms.length && carry) r = clauseSearch(text, 8);
         found = r.cards.length > 0 || r.terms.length > 0;
         mergeTopic(r, text);
 
