@@ -368,9 +368,17 @@ function clauseSearch(q, limit) {
         /수술|시술|절제|제거|이식|치환|성형|봉합|접합|절개/.test(q);
     if (asksSurgery) {
         const have = new Set(cards.map(r => r.card.n));
-        const want = scope === CL_SCOPE[1] ? CL_SURG_BASE.상해
-            : scope === CL_SCOPE[0] ? CL_SURG_BASE.질병
-            : [...CL_SURG_BASE.질병, ...CL_SURG_BASE.상해];
+        // 상해 수술비는 사고로 다친 경우다. 병명을 말한 물음에 얹으면
+        // "상해로 인한 하지정맥류 수술 시 적용됩니다" 같은 억지 답이 나온다(실측).
+        // 다친 것을 가리키는 말이 있을 때만 상해군을 얹는다.
+        const hurt = scope === CL_SCOPE[1] ||
+            /사고|다[치친쳐쳤]|골절|낙상|외상|화상|교통|넘어져|부딪/.test(q);
+        const want = hurt ? [...CL_SURG_BASE.상해, ...CL_SURG_BASE.질병]
+            : CL_SURG_BASE.질병;
+
+        // 다쳤다는 말이 없으면 상해 담보는 후보에서 뺀다. 기본군으로 얹지 않아도
+        // '상해 1~8종 수술비'가 '수술비'라는 낱말에 걸려 점수로 올라온다.
+        if (!hurt) cards = cards.filter(r => !/^1-/.test(r.card.n));
         const byNo = {};
         IDX.cards.forEach(c => { if (c.k === 'c') byNo[c.n] = c; });
         want.forEach(no => {
