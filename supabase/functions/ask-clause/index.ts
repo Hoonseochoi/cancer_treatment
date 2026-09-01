@@ -195,7 +195,9 @@ serve(async (req) => {
     sessionId = String(body.session_id ?? 'anon');
     hint = body.hint ?? null;
     isTest = body.test === true;
-    const history = Array.isArray(body.history) ? body.history.slice(-4) : [];
+    // 채팅이라 이어서 묻는 게 보통이다. 두 턴만 남기면 세 번째 질문에서 앞이 잘려
+    // 무엇을 이야기하던 중인지 모르게 된다.
+    const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
     if (!question) return json({ error: '질문이 비어 있습니다.' }, 400);
     if (question.length > 300) return json({ error: '질문이 너무 깁니다.' }, 400);
 

@@ -13,7 +13,28 @@ const SB_ANON = (typeof SUPABASE_KEY !== 'undefined') ? SUPABASE_KEY : '';
 const TEST_MODE = new URLSearchParams(location.search).get('test') === '1';
 
 let accessCode = sessionStorage.getItem('sr_code') || '';
-let history = [];                 // 모델에 넘길 최근 대화 (2턴만)
+let history = [];                 // 모델에 넘길 최근 대화
+
+// 이 대화에서 무엇을 이야기하고 있는지. 채팅은 이어서 묻는 게 보통인데
+// ("하지정맥류 담보 알려줘" → "1~8종에서 몇 종이야?"), 매 질문을 따로 다루면
+// 두 번째 물음에는 주어가 없어 아무것도 못 찾는다.
+// 대화에서 나온 병명·수술명·담보를 쌓아 두고 힌트에 함께 넘긴다.
+let topic = { terms: [], cards: [], words: [] };
+
+function mergeTopic(r, text) {
+    const keep = (arr, add, n) => [...new Set([...add, ...arr])].slice(0, n);
+    if (r.terms?.length) {
+        topic.terms = keep(topic.terms,
+            r.terms.slice(0, 6).map(t => `${t.code}${t.tier ? ' ' + t.tier + '종' : ''} ${t.name}`), 10);
+    }
+    if (r.cards?.length) {
+        topic.cards = keep(topic.cards, r.cards.map(c => `${c.card.n} ${c.card.t}`), 12);
+    }
+    // 병명·수술명으로 보이는 낱말만 남긴다(색인에 걸린 것 = 약관에 있는 말)
+    if (r.kws?.length && (r.terms?.length || r.cards?.length)) {
+        topic.words = keep(topic.words, r.kws.filter(w => w.length >= 3), 8);
+    }
+}
 let busy = false;
 const sessionId = (() => {
     let s = sessionStorage.getItem('sr_sid');
@@ -74,6 +95,7 @@ function onKey(e) {
 
 function resetChat() {
     history = [];
+    topic = { terms: [], cards: [], words: [] };
     $('thread').innerHTML = '';
     $('thread').appendChild(helloBlock());
 }
@@ -177,20 +199,24 @@ async function ask(preset) {
     // 그래서 직전 질문을 앞에 붙여 함께 검색한다.
     let hint = null, found = false;
     try {
-        const prevQ = [...history].reverse().find(m => m.role === 'user');
-        const searchText = prevQ ? prevQ.content + ' ' + text : text;
-        // 후보를 넉넉히 넘긴다. 모델이 카탈로그로 걸러내므로, 적게 주는 것보다
-        // 넉넉히 주고 고르게 하는 편이 빠뜨림이 적다.
-        let r = clauseSearch(searchText, 12);
+        // 지금까지 이야기한 낱말을 앞에 붙여 함께 찾는다.
+        const carry = topic.words.join(' ');
+        let r = clauseSearch(carry ? carry + ' ' + text : text, 12);
         // 이어 붙인 쪽이 빈손이면 이번 질문만으로 다시 본다
-        if (!r.cards.length && !r.terms.length && prevQ) r = clauseSearch(text, 12);
+        if (!r.cards.length && !r.terms.length && carry) r = clauseSearch(text, 12);
         found = r.cards.length > 0 || r.terms.length > 0;
+        mergeTopic(r, text);
+
         hint = {
             담보: r.cards.map(c => `${c.card.n} ${c.card.t}`),
             분류표: r.terms.slice(0, 10).map(t =>
                 `${t.code}${t.tier ? ` ${t.tier}종` : ''} ${t.name}`),
             읽을대목: [...new Set(r.read.map(x => x.sec))]
         };
+        // 이번 검색이 부실해도 대화에서 쌓인 것이 있으면 함께 넘긴다.
+        if (topic.words.length) hint.대화주제 = topic.words;
+        if (!hint.분류표.length && topic.terms.length) hint.분류표 = topic.terms;
+        if (!hint.담보.length && topic.cards.length) hint.담보 = topic.cards;
         if (!hint.담보.length && !hint.분류표.length) hint = null;
     } catch (e) { /* 힌트는 없어도 답변은 가능하다 */ }
 
@@ -232,8 +258,13 @@ async function ask(preset) {
                 ? `<div class="cite"><b>근거</b>${data.cards.map(n => `<span>${esc(n)}</span>`).join('')}</div>`
                 : '') + traceHtml(data);
             history.push({ role: 'user', content: text });
-            history.push({ role: 'assistant', content: data.answer });
-            history = history.slice(-4);           // 최근 2턴만 — 토큰을 아낀다
+            // 답변 전문을 그대로 쌓으면 서너 번만 주고받아도 토큰이 크게 뛴다.
+            // 뒤에서 참조하는 건 대개 어떤 담보를 이야기했는지라 앞부분이면 충분하다.
+            history.push({
+                role: 'assistant',
+                content: data.answer.length > 600 ? data.answer.slice(0, 600) + ' …' : data.answer
+            });
+            history = history.slice(-6);           // 최근 3턴
         }
     } catch (e) {
         slot.innerHTML = `<div class="err">연결에 실패했습니다. 잠시 후 다시 시도해 주세요.</div>`;
