@@ -65,8 +65,94 @@ const json = (body: unknown, status = 200) =>
 
 const sb = createClient(SB_URL, SB_KEY);
 
-// 모델에게 주는 유일한 도구. 카탈로그에서 고른 특약의 원문을 꺼내 온다.
-const TOOLS = [{
+// 모델이 스스로 약관을 뒤질 수 있게 하는 도구 — grep에 해당한다.
+// 지금까지는 브라우저 쪽 규칙이 미리 찾아 힌트로 떠먹여 줬는데, 그 규칙이
+// 524줄까지 불어났다. 검색을 모델에게 돌려주면 그 규칙이 필요 없어지는지 재본다.
+const SEARCH_TOOL = {
+  type: 'function',
+  function: {
+    name: 'search_clause',
+    description:
+      '약관 전문을 낱말로 찾는다(grep과 같다). 담보명·병명·수술명·약제명·조문 표현 무엇이든 된다. ' +
+      '결과가 없거나 엉뚱하면 다른 말로 다시 불러라 — 약관은 일상어와 다르게 쓴다' +
+      '(백내장→수정체, 맹장→충수, 하지정맥류→정맥류, 키트루다→펨브롤리주맙). ' +
+      '띄어쓰기로 나눈 낱말이 모두 든 대목을 찾는다("순환계 통합치료비" → 둘 다 든 곳). ' +
+      '결과가 0이면 낱말을 하나만 남겨 다시 불러라 — 붙여 쓰면 못 찾는다. ' +
+      '무엇이 있는지 모를 때 먼저 이것으로 훑고, 번호를 알아낸 뒤 read_clause로 원문을 읽어라.',
+    parameters: {
+      type: 'object',
+      properties: {
+        q: { type: 'string', description: '찾을 낱말. 짧을수록 넓게 걸린다.' },
+        kind: {
+          type: 'string', enum: ['담보', '분류표', '전체'],
+          description: '담보=특약 본문, 분류표=별표(등급·코드), 전체=둘 다. 기본 전체',
+        },
+        cls: {
+          type: 'string',
+          description: '담보분류로 좁히기(수술비·진단비·치료비·입원일당 등). 생략 가능',
+        },
+      },
+      required: ['q'],
+    },
+  },
+};
+
+async function searchClause(args: { q: string; kind?: string; cls?: string }) {
+  const q = String(args.q ?? '').trim();
+  if (q.length < 2) return { error: '두 글자 이상으로 찾아 주세요.' };
+
+  // 낱말로 나눠 모두 든 대목을 찾는다(grep의 여러 패턴 AND에 해당).
+  // 통짜로 찾으면 약관의 띄어쓰기에 걸려 헛돈다 — 실측: '순환계통합치료비' 0건,
+  // 약관에는 '특정순환계질환 통합치료비'로 적혀 있다.
+  const words = q.split(/\s+/).filter((w) => w.length >= 2).slice(0, 4);
+  const terms = words.length ? words : [q];
+
+  let sel = sb.from('clause_chunks').select('no,title,section,cls,content');
+  for (const w of terms) sel = sel.ilike('content', `%${w}%`);
+  if (args.kind === '담보') sel = sel.neq('section', '분류표');
+  else if (args.kind === '분류표') sel = sel.eq('section', '분류표');
+  if (args.cls) sel = sel.eq('cls', args.cls);
+
+  const { data, error } = await sel.limit(40);
+  if (error) return { error: error.message };
+  if (!data?.length) {
+    // 무엇을 어떻게 바꿔 보라고 짚어 준다. 그냥 '없다'고만 하면 모델이 같은 검색을
+    // 되풀이하며 맴돈다 — 실측: 여섯 번 중 세 번이 같은 낱말이었다.
+    const hint = terms.length > 1
+      ? `낱말 하나만 남겨 다시 찾아보세요(예: '${terms[0]}').`
+      : '약관에서 쓰는 다른 말로 바꿔 보세요(백내장→수정체, 하지정맥류→정맥류).';
+    return { hits: 0, searched: terms, note: `찾지 못했습니다. ${hint}` };
+  }
+
+  // grep -o 처럼 걸린 자리만 잘라 보여준다. 본문 전체는 read_clause로 따로 읽는다.
+  const seen = new Map<string, { no: string; title: string; sections: Set<string>; snips: string[] }>();
+  for (const r of data) {
+    const key = r.no ?? r.title;
+    if (!seen.has(key)) {
+      seen.set(key, { no: r.no, title: r.title, sections: new Set(), snips: [] });
+    }
+    const e = seen.get(key)!;
+    e.sections.add(r.section);
+    if (e.snips.length < 2) {
+      const i = r.content.indexOf(terms[0]);
+      if (i >= 0) {
+        e.snips.push(r.content.slice(Math.max(0, i - 60), i + 110).replace(/\n+/g, ' '));
+      }
+    }
+  }
+  const rows = [...seen.values()].slice(0, 18);
+  return {
+    hits: seen.size,
+    shown: rows.length,
+    results: rows.map((e) => ({
+      no: e.no, title: e.title,
+      sections: [...e.sections], snippet: e.snips[0] ?? '',
+    })),
+  };
+}
+
+// 카탈로그에서 고른 특약의 원문을 꺼내 온다.
+const READ_TOOL = {
   type: 'function',
   function: {
     name: 'read_clause',
@@ -91,7 +177,12 @@ const TOOLS = [{
       required: ['no', 'section'],
     },
   },
-}];
+};
+
+// 실험 모드에서는 검색까지 모델이 한다. 규칙 힌트를 미리 떠먹여 주는 지금 방식과
+// 견주려고 요청 단위로 가른다 — 켜고 끄는 데 배포가 필요 없고, 실서비스는 그대로 둔다.
+const READ_ONLY = [READ_TOOL];
+const READ_AND_SEARCH = [SEARCH_TOOL, READ_TOOL];
 
 // 원문 상한. 토큰을 아끼려고 1,500자로 조였더니 조항이 중간에 잘려 모델이
 // 확인할 근거가 모자랐다. 약관 섹션은 대부분 2,000~2,500자라 3,000자면
@@ -152,7 +243,7 @@ async function readClause(args: { no: string[]; section: string[] }) {
   };
 }
 
-async function callModel(messages: unknown[]) {
+async function callModel(messages: unknown[], tools: unknown[]) {
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -162,7 +253,7 @@ async function callModel(messages: unknown[]) {
       'X-Title': 'Surinsur AI',
     },
     body: JSON.stringify({
-      model: MODEL, messages, tools: TOOLS, tool_choice: 'auto',
+      model: MODEL, messages, tools, tool_choice: 'auto',
       temperature: 0.2,        // 약관 인용이라 흔들리면 안 된다
       max_tokens: 1800,        // 담보를 여럿 나열하면 답이 길어진다
     }),
@@ -178,6 +269,7 @@ serve(async (req) => {
 
   const t0 = Date.now();
   let question = '', sessionId = '', hint: unknown = null, isTest = false;
+  let letSearch = false;
 
   try {
     const body = await req.json();
@@ -195,6 +287,8 @@ serve(async (req) => {
     sessionId = String(body.session_id ?? 'anon');
     hint = body.hint ?? null;
     isTest = body.test === true;
+    // 모델이 스스로 약관을 뒤지게 하는 실험 경로
+    letSearch = body.model_search === true;
     // 채팅이라 이어서 묻는 게 보통이다. 두 턴만 남기면 세 번째 질문에서 앞이 잘려
     // 무엇을 이야기하던 중인지 모르게 된다.
     const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
@@ -219,7 +313,11 @@ serve(async (req) => {
     const promptTag = (await sha(sysPrompt)).slice(0, 8);
     const norm = normalize(question);
     const qHash = await sha(promptTag + '|' + norm);
-    const { data: sim } = await sb.rpc('match_cached_question', { q: promptTag + '|' + norm });
+    // 실험 경로는 캐시를 지나친다. 두 방식을 견주는 자리에서 캐시가 걸리면
+    // 실험이 지금 방식의 답을 그대로 되돌려줘 비교 자체가 무의미해진다.
+    const { data: sim } = letSearch
+      ? { data: null }
+      : await sb.rpc('match_cached_question', { q: promptTag + '|' + norm });
     const best = Array.isArray(sim) ? sim[0] : null;
 
     // 아주 비슷하고 숫자도 같으면 그대로 돌려준다. 모델을 부르지 않아 즉시 나오고
@@ -261,9 +359,12 @@ serve(async (req) => {
     const trace: Record<string, unknown>[] = [];
     let hops = 0, evidenceChars = 0;
 
-    for (let hop = 0; hop < 3; hop++) {
+    // 스스로 찾으려면 훑고 → 읽고 → 다른 말로 다시, 세 번으론 모자란다.
+    const MAX_HOP = letSearch ? 6 : 3;
+    const tools = letSearch ? READ_AND_SEARCH : READ_ONLY;
+    for (let hop = 0; hop < MAX_HOP; hop++) {
       hops = hop + 1;
-      const out = await callModel(messages);
+      const out = await callModel(messages, tools);
       const msg = out.choices?.[0]?.message;
       tin += out.usage?.prompt_tokens ?? 0;
       tout += out.usage?.completion_tokens ?? 0;
@@ -277,14 +378,20 @@ serve(async (req) => {
         let args: { no: string[]; section: string[] };
         try { args = JSON.parse(call.function.arguments || '{}'); }
         catch { args = { no: [], section: [] }; }
-        const result = await readClause(args);
-        const chars = result.found
-          ? result.clauses.reduce((n, c) => n + c.content.length, 0) : 0;
+        const result = call.function.name === 'search_clause'
+          ? await searchClause(args as unknown as { q: string; kind?: string; cls?: string })
+          : await readClause(args);
+        const chars = result.clauses
+          ? result.clauses.reduce((n, c) => n + c.content.length, 0)
+          : JSON.stringify(result).length;
         evidenceChars += chars;
         trace.push({
-          hop: hops, no: args.no ?? [], section: args.section ?? [],
-          found: !!result.found, chars,
-          got: result.found ? result.clauses.map((c) => `${c.no}/${c.section}`) : [],
+          hop: hops, tool: call.function.name,
+          no: args.no ?? [], q: (args as { q?: string }).q ?? null,
+          section: args.section ?? [],
+          found: !!(result.found || result.hits), chars,
+          got: result.clauses ? result.clauses.map((c) => `${c.no}/${c.section}`)
+             : (result.results ?? []).map((r: { no: string }) => r.no),
         });
         if (result.found) {
           cited.push(...result.clauses.map((c) => c.id));
@@ -305,7 +412,7 @@ serve(async (req) => {
     const grounded = usedNos.length > 0 && evidenceChars >= 200 &&
       !/확인할 수 없|찾지 못|제공해 주시면|알 수 없습니다/.test(answer);
 
-    if (answer && grounded) {
+    if (answer && grounded && !letSearch) {
       await sb.from('clause_cache').upsert({
         q_hash: qHash, question, norm: promptTag + '|' + norm, answer,
         cards: [...new Set(usedNos)], model: MODEL, tokens_in: tin, used_at: new Date().toISOString(),
