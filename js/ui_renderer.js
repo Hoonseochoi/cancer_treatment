@@ -1290,15 +1290,9 @@ function coverViewChips() {
         .filter(Boolean);
 }
 
-function coverDateText() {
-    const d = new Date();
-    const p = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}. ${p(d.getMonth() + 1)}. ${p(d.getDate())}`;
-}
-
 // 표지를 화면 밖에 만들어 캡처하고 지운다. 실제 레이아웃이 잡혀야 html2canvas가
 // 계산된 스타일을 제대로 복사하므로 display:none이 아니라 화면 밖으로 밀어 둔다.
-async function renderCoverCanvas(expertName) {
+async function renderCoverCanvas() {
     const customer = (window.__customerName || '고객').trim() || '고객';
     const chips = coverViewChips();
 
@@ -1343,11 +1337,31 @@ async function renderCoverCanvas(expertName) {
           </div>
         </div>
 
+        ${/* 상품설명서 고지 — 꼬리말 바로 위, 본문과는 떨어뜨려 배치한다.
+              여러 줄 본문이라 html2canvas가 글자를 아래로 미는 만큼 아래 여백을 넉넉히 둔다. */''}
+        <div style="position:absolute;left:84px;right:84px;bottom:190px;
+             padding:24px 30px 58px;background:#F6F8FC;border-left:6px solid #C9D6F2;
+             border-radius:0 12px 12px 0;box-sizing:border-box">
+          <p style="margin:0;font-size:19px;line-height:1.85;color:#6B7690;letter-spacing:-.01em;
+             font-weight:400;word-break:keep-all">
+            <strong style="color:#3F4A66;font-weight:700">&#12300;가입제안서&#12301;</strong>는 보험계약체결 권유단계의 편의를 위해
+            상품설명서의 일부를 요약한 것입니다. 따라서 최종 권유단계에서는 반드시 상품설명서 전체를 제공받고
+            설명을 들으시기 바랍니다. 또한 이 자료는 상품운영기준, 인수지침 등이 적용되지 않은
+            <strong style="color:#3F4A66;font-weight:700">단순 안내용</strong>이며, 회사의 승인 이후에 최종적으로
+            보험계약사항이 확정됩니다.
+          </p>
+        </div>
+
         <div style="position:absolute;bottom:0;left:0;right:0;height:142px;padding:0 84px;
              display:flex;align-items:center;justify-content:space-between;
              border-top:3px solid #D5DDEE;box-sizing:border-box">
-          <span style="font:500 25px 'Outfit',sans-serif;letter-spacing:.14em;color:#8592AD">SURINSUR.COM</span>
-          <span style="font:500 25px 'Outfit',sans-serif;letter-spacing:.1em;color:#8592AD">${expertName ? expertName + ' &middot; ' : ''}${coverDateText()}</span>
+          <span style="font:500 25px 'Outfit',sans-serif;letter-spacing:.14em;color:#8592AD;
+                flex-shrink:0">SURINSUR.COM</span>
+          ${/* 공식 자료가 아니라는 점을 표지에서 먼저 밝힌다. 아래 여백은 밀림 보정. */''}
+          <span style="font-size:17px;line-height:1.6;color:#95A0B8;letter-spacing:-.01em;
+                text-align:right;max-width:640px;word-break:keep-all;padding-bottom:10px">본
+            스마트가입제안서는 보험사의 공식자료가 아니며, 가입제안서를 재구성하여
+            설명에 이해를 돕기 위한 참고자료입니다.</span>
         </div>
       </div>`;
     document.body.appendChild(host);
@@ -1408,7 +1422,7 @@ async function renderPageChromeCanvas({ title, fileTitle, pageNo, pageTotal }) {
         <div style="position:absolute;bottom:0;left:0;right:0;height:${PAGE_FOOT}px;padding:0 ${PAGE_PAD}px;
              display:flex;align-items:center;justify-content:space-between;gap:40px;
              border-top:3px solid #D5DDEE;box-sizing:border-box">
-          <span style="font-size:23px;font-weight:500;color:#8592AD;letter-spacing:-.01em;
+          <span style="font-size:16px;font-weight:500;color:#8592AD;letter-spacing:-.01em;
                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${fileTitle || ''}</span>
           <span style="font:600 23px 'Outfit',sans-serif;letter-spacing:.1em;color:#8592AD;
                 flex-shrink:0">${String(pageNo).padStart(2, '0')} / ${String(pageTotal).padStart(2, '0')}</span>
@@ -1482,7 +1496,7 @@ window.exportAllAsPdf = async function () {
 
         // ── 표지 ──
         if (btnLabel) btnLabel.textContent = '표지 만드는 중…';
-        const cover = await renderCoverCanvas(assets.captureExpertName);
+        const cover = await renderCoverCanvas();
         // 표지는 A4 비율로 만들었으므로 여백 없이 그대로 채운다.
         pdf.addImage(downscaleForPdf(cover, PW).toDataURL('image/jpeg', 0.92), 'JPEG',
                      0, 0, PW, PH, undefined, 'FAST');
