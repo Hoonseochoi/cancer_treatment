@@ -30,9 +30,12 @@ function mergeTopic(r, text) {
     if (r.cards?.length) {
         topic.cards = keep(topic.cards, r.cards.map(c => `${c.card.n} ${c.card.t}`), 12);
     }
-    // 병명·수술명으로 보이는 낱말만 남긴다(색인에 걸린 것 = 약관에 있는 말)
+    // 병명·수술명만 남긴다. 무엇을 묻는지("면책기간", "몇종이야")는 주제가 아니라
+    // 그때그때의 물음이라, 쌓아 두면 다음 검색을 흐린다.
+    const ASK = /면책|감액|지급|보장|한도|소멸|분류표|몇종|종류|얼마|금액|기간|조건|정의|담보|특약|알려|궁금/;
     if (r.kws?.length && (r.terms?.length || r.cards?.length)) {
-        topic.words = keep(topic.words, r.kws.filter(w => w.length >= 3), 8);
+        topic.words = keep(topic.words,
+            r.kws.filter(w => w.length >= 3 && !ASK.test(w)), 6);
     }
 }
 let busy = false;
