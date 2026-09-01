@@ -108,6 +108,17 @@ function clDocFreq(IDX, form) {
     return n;
 }
 
+// 어떤 수술이든 함께 검토되는 담보들.
+// 수술비는 하나만 나오는 게 아니라 질병수술비 · 1~5종 · 1~8종 · N대질병이 겹쳐 지급된다.
+// 그런데 검색은 질병명이 걸린 담보 하나만 집어내기 쉽다 — 실측: "하지정맥류 수술비"에
+// I83이 62대생활질병 분류표에 걸려 111대질병 수술비(2-124) 하나만 나왔고, 정작
+// 1~8종(정맥류 절제술)과 질병 입원·통원 수술비가 빠졌다.
+// 수술 이야기가 나오면 이 기본군을 후보에 얹어, 모델이 빠뜨리지 않게 한다.
+const CL_SURG_BASE = {
+    질병: ['2-101', '2-104', '2-107', '2-108', '2-109', '2-112'],
+    상해: ['1-24', '1-26', '1-27', '1-28', '1-29']
+};
+
 function clauseSearch(q, limit) {
     limit = limit || 8;
     const IDX = CLAUSE_INDEX;
@@ -211,6 +222,23 @@ function clauseSearch(q, limit) {
         listed = !!cards.length;
     }
     if (!cards.length && cls) { cards = pack(0.3, false); relaxed = !!cards.length; }
+
+    // 수술 질문이면 기본 수술비 담보군을 얹는다(이미 들어 있으면 건너뛴다).
+    const asksSurgery = cls === '수술비' ||
+        /수술|시술|절제|제거|이식|치환|성형|봉합|접합|절개/.test(q);
+    if (asksSurgery) {
+        const have = new Set(cards.map(r => r.card.n));
+        const want = scope === CL_SCOPE[1] ? CL_SURG_BASE.상해
+            : scope === CL_SCOPE[0] ? CL_SURG_BASE.질병
+            : [...CL_SURG_BASE.질병, ...CL_SURG_BASE.상해];
+        const byNo = {};
+        IDX.cards.forEach(c => { if (c.k === 'c') byNo[c.n] = c; });
+        want.forEach(no => {
+            if (have.has(no) || !byNo[no]) return;
+            cards.push({ card: byNo[no], score: 0.35, via: ['수술비 공통'], base: true });
+        });
+        cards = cards.slice(0, Math.max(limit, 8));
+    }
 
     // 고른 담보에서 실제로 읽을 대목. 의도가 없으면 담보정의·보상범위를 기본으로 둔다.
     const secWanted = wantSecs.length ? wantSecs
