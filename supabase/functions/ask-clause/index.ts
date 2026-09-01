@@ -18,6 +18,9 @@ const MODEL = Deno.env.get('CLAUSE_MODEL') ?? 'deepseek/deepseek-chat';
 const SB_URL = Deno.env.get('SUPABASE_URL')!;
 const SB_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const SYSTEM_PROMPT = Deno.env.get('CLAUSE_SYSTEM_PROMPT') ?? '';
+// 유료 기능이라 아는 사람만 쓴다. 코드를 브라우저에 두면 소스 보기로 그대로 읽히므로
+// 검증은 여기서만 한다 — 프런트는 입력값을 넘길 뿐 정답을 모른다.
+const ACCESS_CODE = Deno.env.get('CLAUSE_ACCESS_CODE') ?? '';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -117,6 +120,16 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+
+    // 입장 확인. 채팅 창을 열 때 한 번 부르고, 이후 모든 질문에도 함께 온다.
+    if (ACCESS_CODE) {
+      const given = String(body.access_code ?? '');
+      if (given !== ACCESS_CODE) {
+        return json({ error: '이용 코드가 올바르지 않습니다.', code: 'AUTH' }, 401);
+      }
+    }
+    if (body.verify_only) return json({ ok: true });
+
     question = String(body.question ?? '').trim();
     sessionId = String(body.session_id ?? 'anon');
     hint = body.hint ?? null;

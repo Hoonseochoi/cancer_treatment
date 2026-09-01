@@ -412,6 +412,10 @@
                           <button onclick="openSurgeryDict()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#0B6B7A,#14B8A6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">1~8종 검색</button>
                           <span aria-label="새 소식" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#0B6B7A,#14B8A6);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(11,107,122,0.35);pointer-events:none;">NEW</span>
                         </span>
+                        <span style="position:relative;display:inline-block;animation:aboutFloat 4.6s ease-in-out infinite;animation-delay:1.6s;line-height:1;">
+                          <button onclick="openClauseChat()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#0F1E42,#2C55B8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">슈린슈 AI</button>
+                          <span aria-label="유료 기능" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#0F1E42,#2C55B8);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(15,30,66,0.35);pointer-events:none;">PRO</span>
+                        </span>
                     </div><!-- end left-group -->
                     <!-- RIGHT: Manager Badge -->
                     <div style="display:flex;align-items:center;gap:18px;">
@@ -846,7 +850,8 @@
 
     <!-- ── ABOUT MODAL ── -->
     <style>
-      #about-modal-overlay {
+      #about-modal-overlay,
+      #chat-modal-overlay {
         position: fixed; inset: 0; z-index: 99999;
         background: rgba(0,0,0,0.55);
         backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
@@ -854,7 +859,8 @@
         opacity: 0; pointer-events: none;
         transition: opacity 0.3s ease;
       }
-      #about-modal-overlay.modal-open {
+      #about-modal-overlay.modal-open,
+      #chat-modal-overlay.modal-open {
         opacity: 1; pointer-events: all;
       }
       #about-modal-panel {
@@ -867,7 +873,8 @@
         transform: scale(0.94) translateY(24px);
         transition: transform 0.38s cubic-bezier(0.34,1.3,0.64,1);
       }
-      #about-modal-overlay.modal-open #about-modal-panel {
+      #about-modal-overlay.modal-open #about-modal-panel,
+      #chat-modal-overlay.modal-open #about-modal-panel {
         transform: scale(1) translateY(0);
       }
       #about-modal-close {
@@ -879,7 +886,8 @@
         transition: background 0.2s;
       }
       #about-modal-close:hover { background: rgba(0,0,0,0.16); }
-      #about-modal-iframe { width: 100%; height: 100%; border: none; display: block; }
+      #about-modal-iframe,
+      #chat-modal-iframe { width: 100%; height: 100%; border: none; display: block; }
     </style>
 
     <!-- ── 1~8종 수술 검색 ── -->
@@ -915,6 +923,14 @@
       </div>
     </div>
 
+    <!-- 슈린슈 AI(약관 검색) — 모달을 닫아도 iframe을 살려 둬 대화가 초기화되지 않는다 -->
+    <div id="chat-modal-overlay" onclick="handleChatOverlayClick(event)">
+      <div id="about-modal-panel">
+        <button id="about-modal-close" onclick="closeClauseChat()">✕</button>
+        <iframe id="chat-modal-iframe" src="" title="슈린슈 AI 약관 검색"></iframe>
+      </div>
+    </div>
+
     <div id="about-modal-overlay" onclick="handleModalOverlayClick(event)">
       <div id="about-modal-panel">
         <button id="about-modal-close" onclick="closeAboutModal()">✕</button>
@@ -923,6 +939,24 @@
     </div>
 
     <script>
+      // 약관 검색은 대화가 이어져야 해서, 오버레이만 여닫고 iframe은 그대로 둔다.
+      function openClauseChat() {
+        var overlay = document.getElementById('chat-modal-overlay');
+        var iframe  = document.getElementById('chat-modal-iframe');
+        if (!iframe.src || iframe.src === window.location.href) {
+          iframe.src = 'chat.html';
+        }
+        overlay.classList.add('modal-open');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeClauseChat() {
+        document.getElementById('chat-modal-overlay').classList.remove('modal-open');
+        document.body.style.overflow = '';
+      }
+      function handleChatOverlayClick(e) {
+        if (e.target && e.target.id === 'chat-modal-overlay') closeClauseChat();
+      }
+
       function openAboutModal() {
         var overlay = document.getElementById('about-modal-overlay');
         var iframe  = document.getElementById('about-modal-iframe');
