@@ -47,6 +47,57 @@ const CL_SEC_HINT = [
 // 상해 특약과 질병 특약은 번호대가 다르다(1-…/2-…). 질문에 드러나면 그쪽만 본다.
 const CL_SCOPE = [['질병', /^2-/], ['상해', /^1-/]];
 
+// 사람들이 쓰는 말과 약관 용어가 갈리는 자리를 잇는다.
+// 약관 표에 대응이 실린 것(키트루다↔펨브롤리주맙)은 별칭으로 자동으로 이어지므로,
+// 여기에는 표로는 이을 수 없는 것만 적는다.
+// 값은 약관에 실제로 적힌 말이어야 한다 — 짐작으로 넣으면 엉뚱한 담보를 물어 온다.
+const CL_SYNONYM = {
+    '하지정맥류': ['정맥류'],
+    '정맥류': ['정맥류'],
+    '스텐트': ['스텐트'],
+    '백내장': ['수정체', '백내장'],
+    '대장용종': ['결장경', '폴립'],
+    '용종': ['폴립'],
+    '디스크': ['추간판'],
+    '허리디스크': ['추간판'],
+    '목디스크': ['추간판', '경추'],
+    '맹장': ['충수'],
+    '맹장염': ['충수'],
+    '담석': ['담낭'],
+    '치질': ['치핵'],
+    '축농증': ['부비동'],
+    '오십견': ['회전근개', '견부'],
+    '중이염': ['고실', '유양돌기'],
+    '비염': ['비중격', '비갑개'],
+    '자궁근종': ['평활근종', '자궁'],
+    '근종': ['평활근종'],
+    '물혹': ['낭종'],
+    '탈장': ['탈장'],
+    '제왕절개': ['제왕절개분만'],
+    '심근경색': ['심근경색', '관상동맥'],
+    '뇌경색': ['뇌경색', '뇌혈관'],
+    '뇌출혈': ['두개내', '출혈'],
+    '치매': ['치매', '인지'],
+    '전립선비대': ['전립선'],
+    '갑상선결절': ['갑상선'],
+    '유방암': ['유방'],
+    '위암': ['위'],
+    '대장암': ['결장', '직장'],
+    '폐암': ['폐'],
+    '간암': ['간'],
+    '췌장암': ['췌장'],
+    '자궁경부암': ['자궁경부'],
+    '난소암': ['난소'],
+    '전립선암': ['전립선'],
+    '갑상선암': ['갑상선'],
+    '신장암': ['신장', '신'],
+    '방광암': ['방광'],
+    '식도암': ['식도'],
+    '담도암': ['담관', '담낭'],
+    '혈액암': ['백혈병', '림프종'],
+    '뇌종양': ['두개내', '뇌']
+};
+
 const CL_STOP = new Set(('그리고 어떤 어떤게 있어 있나요 알려줘 뭐야 무엇 뭔가 받을 수 있는 하면 ' +
     '했을 경우 담보 담보들 해당 관련 얼마 나와 나오나요 인가요 있습니까 뭐가 어떻게 ' +
     '무슨 언제 어디 얼마나 대해 대한 관해').split(' '));
@@ -83,14 +134,20 @@ function clKeywords(q, drop) {
 
 // 약관은 '혈전제거술'을 '경피적 뇌혈관 수술(혈전제거의 경우)'처럼 풀어 쓴다.
 // 끝의 술/수술/시술을 떼어 낸 어간까지 넣어야 이런 표기에 닿는다.
+// 낱말 하나를 여러 형태로 펼치되, 원래 낱말과 파생형에 다른 무게를 준다.
+// 동의어를 같은 무게로 두면 원래 말이 밀린다 — 실측: '백내장'에 '수정체'를
+// 같은 무게로 얹었더니 "후발성 백내장 수술"(정답)보다 "전안부 관통상 수술
+// (수정체 수술 동반)"이 위로 올라왔다. 사람이 쓴 말이 언제나 먼저다.
 function clVariants(k) {
-    const v = new Set([k]);
+    const out = new Map([[k, 1]]);
+    const add = (x, w) => { if (x && !out.has(x)) out.set(x, w); };
+    (CL_SYNONYM[k] || []).forEach(x => add(x, 0.82));
     ['수술', '시술', '술'].forEach(suf => {
-        if (k.endsWith(suf) && k.length > suf.length + 1) v.add(k.slice(0, -suf.length));
+        if (k.endsWith(suf) && k.length > suf.length + 1) add(k.slice(0, -suf.length), 0.95);
     });
     // 별표는 부위로 등재돼 있다 — '유방암'은 없고 '유방재건술·유방절제술'만 있다.
-    if (k.length >= 3 && k.endsWith('암')) v.add(k.slice(0, -1));
-    return v;
+    if (k.length >= 3 && k.endsWith('암')) add(k.slice(0, -1), 0.9);
+    return out;
 }
 
 // 흔한 낱말은 부분일치를 막는다.
@@ -142,21 +199,29 @@ function clauseSearch(q, limit) {
     ]);
     const kws = clKeywords(q, drop);
 
-    const forms = [...new Set(kws.flatMap(k => [...clVariants(k)]))];
+    const forms = new Map();
+    kws.forEach(k => clVariants(k).forEach((w, form) => {
+        if (!forms.has(form) || forms.get(form) < w) forms.set(form, w);
+    }));
     // 흔한 낱말만 부분일치를 막는다. 길이로 자르면 '유방암 → 유방'처럼 어간이
     // 두 글자로 줄어든 경우를 통째로 놓친다('유방'은 별표에 19건뿐이라 안전하고,
     // '수술'은 수백 건이라 빈도로 자동 배제된다).
-    const kb = forms.map(k => [k, clBigrams(k),
-        k.length >= 2 && clDocFreq(IDX, k) <= COMMON]);
+    const kb = [...forms].map(([k, w]) => [k, clBigrams(k),
+        k.length >= 2 && clDocFreq(IDX, k) <= COMMON, w]);
 
     // ── B. 별표 매칭 ──
     const hitTerms = [], tableScore = {};
     IDX.terms.forEach(t => {
-        const tb = clBigrams(t.t);
+        // 별칭도 같이 본다. 약관은 '펨브롤리주맙'이라 적지만 사람들은 '키트루다'라
+        // 부르고, 그 대응이 약관 표 안에 이미 들어 있다.
+        const names = t.a ? [t.t, ...t.a] : [t.t];
         let s = 0;
-        kb.forEach(([k, b, exact]) => {
-            if (exact && (t.t.includes(k) || k.includes(t.t))) s = 1;
-            else s = Math.max(s, clDice(b, tb));
+        names.forEach(nm => {
+            const tb = clBigrams(nm);
+            kb.forEach(([k, b, exact, w]) => {
+                if (exact && (nm.includes(k) || k.includes(nm))) s = Math.max(s, w);
+                else s = Math.max(s, clDice(b, tb) * w);
+            });
         });
         if (s >= 0.62) {
             hitTerms.push({ s, t });
@@ -184,11 +249,11 @@ function clauseSearch(q, limit) {
         if (c.k !== 'c') return;                       // clause만
         const tb = clBigrams(c.t);
         let s = 0;
-        kb.forEach(([k, b, exact]) => {
+        kb.forEach(([k, b, exact, w]) => {
             // 한 글자 핵심어는 바이그램이 성립하지 않아 유사도가 늘 0에 가깝다.
             // 담보명에 대해서는 빈도와 무관하게 부분일치를 허용해야 '암 진단비'가 잡힌다.
-            if ((exact || CL_ONE.has(k)) && c.t.includes(k)) s = Math.max(s, 0.85);
-            s = Math.max(s, clDice(b, tb));
+            if ((exact || CL_ONE.has(k)) && c.t.includes(k)) s = Math.max(s, 0.85 * w);
+            s = Math.max(s, clDice(b, tb) * w);
         });
         if (s >= 0.4) bump(c.i, s, '담보명');
     });

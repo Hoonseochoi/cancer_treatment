@@ -32,6 +32,9 @@ OUT_DIR = "db"
 COL_NAME = ('분류항목', '수술 및 시술명', '시술명', '항목', '질병명', '분류')
 COL_CODE = ('분류번호', '수술 시술 코드', '코드', '번호')
 COL_TIER = ('수술 시술 종류', '종류', '종')
+# 같은 것을 달리 부르는 이름이 들어 있는 열. 사람들이 쓰는 말(키트루다)에서
+# 약관 용어(펨브롤리주맙)로 건너가는 다리가 된다.
+COL_ALIAS = ('의약품명', '상품명', '제품명', '성분명', '영문', '약칭', '별칭', '이명')
 
 
 def fm(text, key):
@@ -45,40 +48,81 @@ def slug(path):
 
 
 def parse_tables(text):
-    """마크다운 표에서 (항목명, 코드, 종)을 뽑는다.
-    별표마다 열 구성이 달라(4열 별표16 / 2열 나머지) 헤더를 보고 위치를 정한다."""
-    rows, ci = [], None
+    """마크다운 표에서 (대표명, 원문, 코드, 종, 별칭들)을 뽑는다.
+
+    표 구성이 별표마다 다르다.
+      4열  구분 | 수술 및 시술명 | 수술 시술 코드 | 종        (별표16)
+      2열  분류항목 | 분류번호                              (KCD 목록)
+      3열  작용기전 분류 | 성분명 | 의약품명                 (항암제 — 코드가 없다)
+
+    코드 열이 없다고 건너뛰면 안 된다. 항암제 표에는 "펨브롤리주맙 | 키트루다주"처럼
+    성분명과 상품명이 나란히 있어, 사람들이 실제로 부르는 이름(키트루다)으로 약관을
+    찾아갈 수 있는 유일한 통로다. 실측: 이 표를 놓쳐 "키트루다"가 색인에 0건이었다.
+    그래서 코드는 있으면 쓰고, 없으면 한글 셀들을 서로의 별칭으로 묶는다.
+    """
+    rows, head = [], None
     for line in text.split('\n'):
         if not line.lstrip().startswith('|'):
-            ci = None
+            head = None
             continue
         cells = [c.strip() for c in line.strip().strip('|').split('|')]
         if all(re.fullmatch(r':?-{2,}:?', c) for c in cells if c):
             continue                                    # 구분선
-        head = {'name': None, 'code': None, 'tier': None}
+
+        # 헤더 행인가
+        idx = {'name': None, 'code': None, 'tier': None, 'alias': []}
         for i, c in enumerate(cells):
-            if any(k in c for k in COL_NAME) and head['name'] is None: head['name'] = i
-            if any(k in c for k in COL_CODE) and head['code'] is None: head['code'] = i
-            if any(k in c for k in COL_TIER) and head['tier'] is None: head['tier'] = i
-        if head['name'] is not None and head['code'] is not None:
-            ci = head                                   # 헤더 행
+            if any(k in c for k in COL_NAME) and idx['name'] is None: idx['name'] = i
+            elif any(k in c for k in COL_CODE) and idx['code'] is None: idx['code'] = i
+            elif any(k in c for k in COL_TIER) and idx['tier'] is None: idx['tier'] = i
+            elif any(k in c for k in COL_ALIAS): idx['alias'].append(i)
+        if idx['name'] is not None:
+            head = idx
             continue
-        if ci is None:
+        if head is None:
             continue
-        try:
-            name = cells[ci['name']]
-            code = cells[ci['code']]
-        except IndexError:
+
+        raw = cells[head['name']] if head['name'] < len(cells) else ''
+        # 이름 칸이 비어 있는 행이 흔하다 — 앞 열이 병합돼 첫 칸만 채우는 표가 많다.
+        # 실측: 별표9의 "|  | 펨브롤리주맙 | 키트루다주 |"가 이래서 통째로 빠졌고,
+        # 그 바람에 "키트루다"로는 약관에 닿을 길이 없었다.
+        # 이름 칸이 비면 그 행에서 처음 나오는 한글 칸을 대표로 삼는다.
+        used = head['name']
+        if not raw.strip():
+            for i, c in enumerate(cells):
+                if i in (head['code'], head['tier']) or not c.strip():
+                    continue
+                if re.search(r'[가-힣]', c):
+                    raw, used = c, i
+                    break
+        # 앞머리 번호("29. ", "자-195 ")는 검색에 방해만 되므로 뗀다
+        clean = re.sub(r'^\s*(\d+\.|[가-힣]-\d+(-\d+)?)\s*', '', raw).strip()
+        clean = re.sub(r'\s*[A-Za-z][A-Za-z\s-]{3,}$', '', clean).strip()   # 영문 성분명 꼬리
+        if not clean or not re.search(r'[가-힣]', clean):
             continue
-        # 앞머리 번호("29. ", "자-195 ")는 검색에 방해만 되므로 떼되 원문도 남긴다
-        clean = re.sub(r'^\s*(\d+\.|[가-힣]-\d+(-\d+)?)\s*', '', name).strip()
-        if not clean or not code or not re.search(r'[가-힣]', clean):
-            continue
+
+        code = ''
+        if head['code'] is not None and head['code'] < len(cells):
+            code = cells[head['code']].strip()
         tier = ''
-        if ci['tier'] is not None and ci['tier'] < len(cells):
-            t = cells[ci['tier']].strip()
+        if head['tier'] is not None and head['tier'] < len(cells):
+            t = cells[head['tier']].strip()
             if re.fullmatch(r'\d', t): tier = t
-        rows.append((clean, name.strip(), code.strip(), tier))
+
+        # 별칭 열이 헤더로 표시돼 있지 않아도, 남는 한글 칸은 사실상 다른 이름이다.
+        alias_idx = head['alias'] or [i for i in range(len(cells))
+                                      if i not in (used, head['code'], head['tier'])]
+        alias = []
+        for i in alias_idx:
+            if i != used and i < len(cells):
+                a = re.sub(r'\([^)]*\)', '', cells[i]).strip()
+                a = re.sub(r'\s*[A-Za-z][A-Za-z\s-]{3,}$', '', a).strip()   # 영문 성분명 꼬리 제거
+                if a and re.search(r'[가-힣]', a) and a != clean:
+                    alias.append(a)
+
+        if not code and not alias:
+            continue                                    # 코드도 별칭도 없으면 둘 게 없다
+        rows.append((clean, raw.strip(), code, tier, alias))
     return rows
 
 
@@ -120,9 +164,10 @@ def main():
         # 표 행은 terms로 따로 뽑고, 청크는 앞부분 설명만 남긴다.
         if kind == 'table':
             rows = parse_tables(text)
-            for clean, raw, code, tier in rows:
-                terms.append({'t': clean, 'raw': raw, 'code': code,
-                              'tier': tier, 'table': cid})
+            for clean, raw, code, tier, alias in rows:
+                row = {'t': clean, 'raw': raw, 'code': code, 'tier': tier, 'table': cid}
+                if alias: row['alias'] = alias
+                terms.append(row)
             head = re.split(r'\n\|', text, 1)[0]
             body = re.sub(r'^---.*?---\s*', '', head, flags=re.S).strip()
             if body:
@@ -135,7 +180,8 @@ def main():
             for n, i in enumerate(range(0, len(rows), 80), 1):
                 part = rows[i:i + 80]
                 lines = [f'{raw} | {code}' + (f' | {tier}종' if tier else '')
-                         for clean, raw, code, tier in part]
+                         + (f' | {"/".join(alias)}' if alias else '')
+                         for clean, raw, code, tier, alias in part]
                 chunks.append({
                     'id': f'{cid}-t{n}', 'card': cid,
                     'sec': '분류표',
@@ -246,6 +292,7 @@ def main():
         row = {'t': t['t'], 'c': t['code'], 'b': t['table']}
         if t['tier']: row['g'] = t['tier']
         if t['raw'] != t['t']: row['r'] = t['raw']
+        if t.get('alias'): row['a'] = t['alias']
         t2.append(row)
     s2 = [{'i': ch['id'], 'c': ch['card'], 's': ch['sec']} for ch in chunks]
 
