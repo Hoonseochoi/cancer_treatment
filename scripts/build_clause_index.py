@@ -198,6 +198,17 @@ def main():
             # "분류표에 포함된 경우 지급된다"고 안내했다.
             # 원문을 그대로 잘라 함께 넣는다. 검색으로 닿을 수 있어야 한다.
             raw_body = re.sub(r'^---.*?---\s*', '', text, flags=re.S).strip()
+
+            # 「보장하지 않는 ADRG」는 따로 뽑아 둔다. 표에 코드가 실려 있다고
+            # 지급되는 것이 아니라서, 종을 답할 때 늘 함께 봐야 한다.
+            # 원문 청크에 섞어 두면 스무 개 중 하나로 묻혀 놓치게 된다 —
+            # 실측: 스텐트(F172)가 제외인데 "분류표에 포함되면 지급"이라 답했다.
+            mx = re.search(r'주2\)[^\n]*보장하지 않습니다', raw_body)
+            if mx:
+                chunks.append({
+                    'id': f'{cid}-excl', 'card': cid, 'sec': '보장제외 ADRG',
+                    'text': f'[{title}] 보장하지 않는 ADRG 목록\n'
+                            + raw_body[mx.start():mx.start() + 4500]})
             buf, n = [], 0
             for line in raw_body.split('\n'):
                 buf.append(line)
@@ -391,6 +402,17 @@ def emit_seed_sql():
     p = os.path.join(OUT_DIR, 'clause_chunks.sql')
     io.open(p, 'w', encoding='utf-8').write("\n".join(out))
     print(f'  {"seed sql":8} {len(chunks):>6}행  {os.path.getsize(p)/1024/1024:>6.1f} MB  {p}')
+
+    # REST로 올릴 때 쓴다. psql이 없고 대시보드에 6MB를 붙여 넣기도 어려워,
+    # scripts/load_chunks.py가 이 파일을 배치로 나눠 보낸다.
+    rows = [{'id': ch['id'], 'card_id': ch['card'], 'no': cards[ch['card']]['no'],
+             'title': cards[ch['card']]['title'],
+             'section': SEC_ALIAS.get(ch['sec'], ch['sec']),
+             'cls': cards[ch['card']]['cls'], 'content': ch['text']}
+            for ch in chunks]
+    pj = os.path.join(OUT_DIR, 'clause_chunks.json')
+    io.open(pj, 'w', encoding='utf-8').write(json.dumps(rows, ensure_ascii=False))
+    print(f'  {"seed json":8} {len(rows):>5}행  {os.path.getsize(pj)/1024/1024:>6.1f} MB  {pj}')
 
 
 if __name__ == '__main__':

@@ -24,3 +24,4 @@ db/
 
 # Edge Function 비밀값 — 절대 커밋하지 않는다
 supabase/functions/.env
+db/clause_chunks.json
