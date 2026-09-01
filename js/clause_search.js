@@ -52,6 +52,22 @@ const CL_SCOPE = [['질병', /^2-/], ['상해', /^1-/]];
 // 여기에는 표로는 이을 수 없는 것만 적는다.
 // 값은 약관에 실제로 적힌 말이어야 한다 — 짐작으로 넣으면 엉뚱한 담보를 물어 온다.
 const CL_SYNONYM = {
+    // 담보 이름을 이루는 말들. 뜻을 바꾸려는 게 아니라, 붙여 쓴 문장에서 꺼내
+    // 쓰려고 올려 둔다("암통합치료비의면책…" 한 덩어리에서 '통합치료비'를 집어낸다).
+    '통합치료비': ['통합치료비'],
+    '순환계': ['특정순환계질환', '순환계'],
+    '특정치료비': ['특정치료비'],
+    '진단비': ['진단비'],
+    '수술비': ['수술비'],
+    '치료비': ['치료비'],
+    '입원일당': ['입원일당'],
+    '통원일당': ['통원일당'],
+    '간병인': ['간병인'],
+    '지원금': ['지원금'],
+    '검사비': ['검사비'],
+    '회복지원금': ['회복지원금'],
+    '입원지원금': ['입원지원금'],
+
     '하지정맥류': ['정맥류'],
     '정맥류': ['정맥류'],
     '스텐트': ['스텐트'],
@@ -102,6 +118,11 @@ const CL_STOP = new Set(('그리고 어떤 어떤게 있어 있나요 알려줘 
     '했을 경우 담보 담보들 해당 관련 얼마 나와 나오나요 인가요 있습니까 뭐가 어떻게 ' +
     '무슨 언제 어디 얼마나 대해 대한 관해').split(' '));
 
+// 사람은 "암통합치료비"라 붙여 쓰고 약관은 "암 통합치료비"라 띄어 쓴다.
+// 글자만 보면 서로 다른 말이 되어 버려, 실재하는 담보(26-1-66 등 8개)를 통째로
+// 놓쳤다. 견줄 때는 양쪽에서 공백을 턴다.
+const clTight = s => (s || '').replace(/[\s·]/g, '');
+
 function clBigrams(s) {
     const t = (s || '').replace(/[\s()·,\-\[\]/]/g, '');
     const out = new Set();
@@ -115,6 +136,18 @@ function clDice(a, b) {
     let n = 0;
     a.forEach(g => { if (b.has(g)) n++; });
     return (2 * n) / (a.size + b.size);
+}
+
+// 검색어가 상대 이름에 얼마나 담겼는가. 담보명을 견줄 때는 이쪽이 맞다.
+// Dice는 두 이름의 길이를 함께 나누므로 짧은 이름이 유리해진다 — 실측:
+// "순환계통합치료비"를 물었는데 "상해 통합치료비"(짧음)가 "특정순환계질환
+// 통합치료비"(정답, 김)보다 높은 점수를 받았다. 담보명은 길고 수식어가 많아
+// 검색어가 그 안에 얼마나 들어 있는지로 재야 한다.
+function clHas(a, b) {
+    if (!a.size || !b.size) return 0;
+    let n = 0;
+    a.forEach(g => { if (b.has(g)) n++; });
+    return n / a.size;
 }
 
 // 조사·군더더기를 떼고 명사 덩어리만 남긴다(형태소 분석기 없이).
@@ -210,12 +243,18 @@ function clauseSearch(q, limit) {
     // 실측: 띄어 쓴 "하지정맥류 수술"은 F252(1종)를 찾는데, 붙여 쓰면 못 찾았다.
     // 아는 낱말이 어절 안에 박혀 있으면 꺼내 쓴다 — 세 글자 이상만 본다.
     // ('위'·'간' 같은 한두 글자를 넣으면 아무 데나 걸린다)
-    const KNOWN = Object.keys(CL_SYNONYM).filter(k => k.length >= 3);
+    // 손으로 적은 동의어 + 담보명에서 자동으로 모은 낱말.
+    // 뒤엣것이 있어야 담보가 늘어도 목록을 따라 고치지 않는다.
+    const KNOWN = [...Object.keys(CL_SYNONYM), ...(IDX.words || [])]
+        .filter(k => k.length >= 3);
     kws.forEach(k => {
-        if (k.length < 5) return;
+        if (k.length < 4) return;
         KNOWN.forEach(known => {
             if (k.includes(known)) clVariants(known).forEach((w, form) => put(form, w * 0.95));
         });
+        // 담보 이름 앞에 붙는 한 글자 구분(암·뇌·간…)도 살린다.
+        // "암통합치료비"에서 '통합치료비'만 꺼내면 상해 통합치료비와 구분이 안 된다.
+        CL_ONE.forEach(one => { if (k.includes(one)) put(one, 0.9); });
     });
     // 흔한 낱말만 부분일치를 막는다. 길이로 자르면 '유방암 → 유방'처럼 어간이
     // 두 글자로 줄어든 경우를 통째로 놓친다('유방'은 별표에 19건뿐이라 안전하고,
@@ -232,8 +271,10 @@ function clauseSearch(q, limit) {
         let s = 0;
         names.forEach(nm => {
             const tb = clBigrams(nm);
+            const nmT = clTight(nm);
             kb.forEach(([k, b, exact, w]) => {
-                if (exact && (nm.includes(k) || k.includes(nm))) s = Math.max(s, w);
+                const kT = clTight(k);
+                if (exact && (nmT.includes(kT) || kT.includes(nmT))) s = Math.max(s, w);
                 else s = Math.max(s, clDice(b, tb) * w);
             });
         });
@@ -262,13 +303,26 @@ function clauseSearch(q, limit) {
     IDX.cards.forEach(c => {
         if (c.k !== 'c') return;                       // clause만
         const tb = clBigrams(c.t);
-        let s = 0;
+        const ctT = clTight(c.t);
+        let s = 0, hits = 0;
         kb.forEach(([k, b, exact, w]) => {
             // 한 글자 핵심어는 바이그램이 성립하지 않아 유사도가 늘 0에 가깝다.
             // 담보명에 대해서는 빈도와 무관하게 부분일치를 허용해야 '암 진단비'가 잡힌다.
-            if ((exact || CL_ONE.has(k)) && c.t.includes(k)) s = Math.max(s, 0.85 * w);
-            s = Math.max(s, clDice(b, tb) * w);
+            let hit = 0;
+            if ((exact || CL_ONE.has(k)) && ctT.includes(clTight(k))) hit = 0.85 * w;
+            // Dice와 담김비율을 함께 본다. Dice만 쓰면 짧은 담보명이 유리해
+            // "순환계통합치료비"에 "상해 통합치료비"가 먼저 오고, 담김비율만 쓰면
+            // 한두 글자짜리 낱말이 아무 이름에나 100%로 담겨 엉뚱한 담보가 올라온다.
+            // 담김비율은 검색어가 충분히 길 때만(바이그램 4개 이상) 쓴다.
+            hit = Math.max(hit, clDice(b, tb) * w);
+            if (b.size >= 4) hit = Math.max(hit, clHas(b, tb) * 0.88 * w);
+            if (hit >= 0.4) hits++;
+            s = Math.max(s, hit);
         });
+        // 낱말이 여럿 맞으면 더 올린다. 최고점만 보면 '암 통합치료비'를 물었을 때
+        // 둘 다 맞는 26-1-66과 '통합치료비'만 맞는 1-36(상해)이 같은 점수가 되고,
+        // 동점자가 많으면 번호순으로 잘려 정작 찾던 담보가 사라진다(실측).
+        if (hits > 1) s = Math.min(1, s + (hits - 1) * 0.07);
         if (s >= 0.4) bump(c.i, s, '담보명');
     });
 

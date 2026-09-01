@@ -296,10 +296,28 @@ def main():
         t2.append(row)
     s2 = [{'i': ch['id'], 'c': ch['card'], 's': ch['sec']} for ch in chunks]
 
+    # ── 담보 이름을 이루는 낱말 ──
+    # 사람들은 "암통합치료비"라고 붙여 쓰는데 약관은 "암 통합치료비"라 띄어 쓴다.
+    # 붙여 쓴 덩어리에서 낱말을 꺼내려면 무엇이 낱말인지 알아야 하는데, 그 목록을
+    # 손으로 관리하면 담보가 늘 때마다 빠뜨린다. 담보명이 이미 공백으로 나뉘어
+    # 있으므로 거기서 그대로 모은다.
+    tok = collections.Counter()
+    for c in cards:
+        if c['kind'] != 'clause':
+            continue
+        name = re.sub(r'\[[^\]]*\]', ' ', c['title'])
+        name = re.sub(r'^[0-9-]+', ' ', name)
+        for w in re.split(r'[\s()·,~/]+', name):
+            w = re.sub(r'^\d+', '', w).strip()
+            if 2 <= len(w) <= 8 and re.fullmatch(r'[가-힣]+', w):
+                tok[w] += 1
+    # 한 담보에만 나오는 말은 덩어리에서 꺼낼 일이 드물고, 목록만 불린다.
+    words = sorted(w for w, n in tok.items() if n >= 2)
+
     js = ('// 자동 생성 — scripts/build_clause_index.py\n'
           '// 약관 검색용 경량 인덱스(본문 제외). 본문은 Supabase clause_chunks에서 가져온다.\n'
           'const CLAUSE_INDEX = ' + json.dumps(
-              {'cards': c2, 'terms': t2, 'refmap': refmap, 'secs': s2},
+              {'cards': c2, 'terms': t2, 'refmap': refmap, 'secs': s2, 'words': words},
               ensure_ascii=False, separators=(',', ':')) + ';\n')
     jp = os.path.join('js', 'clause_index_data.js')
     io.open(jp, 'w', encoding='utf-8').write(js)
