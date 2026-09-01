@@ -29,7 +29,9 @@ VAULT = "/Users/hoons/Documents/Obsidian Vault/내돈내삼약관"
 OUT_DIR = "db"
 
 # 표 헤더에 이 말이 있으면 그 열을 그렇게 읽는다.
-COL_NAME = ('분류항목', '수술 및 시술명', '시술명', '항목', '질병명', '분류')
+# '수술명'이 빠져 있어 별표17(1~5종 수술종류표)의 헤더를 못 알아봤고, 표 118줄이
+# 통째로 버려졌다 — 28,296자 중 26자만 색인에 남아 1~5종 등급표가 사실상 없었다.
+COL_NAME = ('분류항목', '수술 및 시술명', '수술명', '시술명', '항목', '질병명', '분류')
 COL_CODE = ('분류번호', '수술 시술 코드', '코드', '번호')
 COL_TIER = ('수술 시술 종류', '종류', '종')
 # 같은 것을 달리 부르는 이름이 들어 있는 열. 사람들이 쓰는 말(키트루다)에서
@@ -120,8 +122,10 @@ def parse_tables(text):
                 if a and re.search(r'[가-힣]', a) and a != clean:
                     alias.append(a)
 
-        if not code and not alias:
-            continue                                    # 코드도 별칭도 없으면 둘 게 없다
+        # 종만 적힌 표가 있다. 별표17이 그렇다 — 코드 열 없이 수술명과 종만 있어,
+        # 코드나 별칭을 요구하면 99행이 전부 버려진다.
+        if not code and not alias and not tier:
+            continue                                    # 코드·별칭·종이 다 없으면 둘 게 없다
         rows.append((clean, raw.strip(), code, tier, alias))
     return rows
 
