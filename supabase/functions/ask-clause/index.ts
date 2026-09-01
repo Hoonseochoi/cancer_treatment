@@ -76,8 +76,9 @@ const SEARCH_TOOL = {
       '약관 전문을 낱말로 찾는다(grep과 같다). 담보명·병명·수술명·약제명·조문 표현 무엇이든 된다. ' +
       '결과가 없거나 엉뚱하면 다른 말로 다시 불러라 — 약관은 일상어와 다르게 쓴다' +
       '(백내장→수정체, 맹장→충수, 하지정맥류→정맥류, 키트루다→펨브롤리주맙). ' +
-      '띄어쓰기로 나눈 낱말이 모두 든 대목을 찾는다("순환계 통합치료비" → 둘 다 든 곳). ' +
-      '결과가 0이면 낱말을 하나만 남겨 다시 불러라 — 붙여 쓰면 못 찾는다. ' +
+      '낱말을 띄어 쓰면 따로따로 찾아 많이 맞은 담보 순으로 돌려준다 — ' +
+      '"암 통합 치료비"처럼 물음의 핵심 낱말을 나열해 부르는 것이 가장 잘 걸린다. ' +
+      '이름만 돌려주므로, 번호를 골라 read_clause로 원문을 읽어야 답할 수 있다. ' +
       '무엇이 있는지 모를 때 먼저 이것으로 훑고, 번호를 알아낸 뒤 read_clause로 원문을 읽어라.',
     parameters: {
       type: 'object',
@@ -101,52 +102,63 @@ async function searchClause(args: { q: string; kind?: string; cls?: string }) {
   const q = String(args.q ?? '').trim();
   if (q.length < 2) return { error: '두 글자 이상으로 찾아 주세요.' };
 
-  // 낱말로 나눠 모두 든 대목을 찾는다(grep의 여러 패턴 AND에 해당).
-  // 통짜로 찾으면 약관의 띄어쓰기에 걸려 헛돈다 — 실측: '순환계통합치료비' 0건,
-  // 약관에는 '특정순환계질환 통합치료비'로 적혀 있다.
-  const words = q.split(/\s+/).filter((w) => w.length >= 2).slice(0, 4);
+  // 낱말을 따로따로 찾아, 담보마다 몇 개가 맞았는지로 줄을 세운다.
+  // 모두 든 대목만 찾으면(AND) 하나라도 어긋나는 순간 0건이 된다 —
+  // 실측: '순환계 통합치료비'가 0건이었다. 약관은 '특정순환계질환 통합치료비'다.
+  // 따로 찾으면 '순환계' 맞고 '통합치료비' 맞아 두 개짜리로 살아남는다.
+  const words = q.split(/\s+/).map((w) => w.trim()).filter((w) => w.length >= 2).slice(0, 5);
   const terms = words.length ? words : [q];
 
-  let sel = sb.from('clause_chunks').select('no,title,section,cls,content');
-  for (const w of terms) sel = sel.ilike('content', `%${w}%`);
-  if (args.kind === '담보') sel = sel.neq('section', '분류표');
-  else if (args.kind === '분류표') sel = sel.eq('section', '분류표');
-  if (args.cls) sel = sel.eq('cls', args.cls);
+  type Hit = { no: string; title: string; secs: Set<string>; inTitle: Set<string>; inBody: Set<string> };
+  const found = new Map<string, Hit>();
 
-  const { data, error } = await sel.limit(40);
-  if (error) return { error: error.message };
-  if (!data?.length) {
-    // 무엇을 어떻게 바꿔 보라고 짚어 준다. 그냥 '없다'고만 하면 모델이 같은 검색을
-    // 되풀이하며 맴돈다 — 실측: 여섯 번 중 세 번이 같은 낱말이었다.
-    const hint = terms.length > 1
-      ? `낱말 하나만 남겨 다시 찾아보세요(예: '${terms[0]}').`
-      : '약관에서 쓰는 다른 말로 바꿔 보세요(백내장→수정체, 하지정맥류→정맥류).';
-    return { hits: 0, searched: terms, note: `찾지 못했습니다. ${hint}` };
-  }
+  for (const w of terms) {
+    let sel = sb.from('clause_chunks').select('no,title,section,cls')
+      .or(`title.ilike.%${w}%,content.ilike.%${w}%`);
+    if (args.kind === '담보') sel = sel.neq('section', '분류표');
+    else if (args.kind === '분류표') sel = sel.eq('section', '분류표');
+    if (args.cls) sel = sel.eq('cls', args.cls);
 
-  // grep -o 처럼 걸린 자리만 잘라 보여준다. 본문 전체는 read_clause로 따로 읽는다.
-  const seen = new Map<string, { no: string; title: string; sections: Set<string>; snips: string[] }>();
-  for (const r of data) {
-    const key = r.no ?? r.title;
-    if (!seen.has(key)) {
-      seen.set(key, { no: r.no, title: r.title, sections: new Set(), snips: [] });
-    }
-    const e = seen.get(key)!;
-    e.sections.add(r.section);
-    if (e.snips.length < 2) {
-      const i = r.content.indexOf(terms[0]);
-      if (i >= 0) {
-        e.snips.push(r.content.slice(Math.max(0, i - 60), i + 110).replace(/\n+/g, ' '));
+    const { data, error } = await sel.limit(300);
+    if (error) return { error: error.message };
+    for (const r of (data ?? [])) {
+      const key = r.no || r.title;
+      if (!found.has(key)) {
+        found.set(key, { no: r.no, title: r.title, secs: new Set(), inTitle: new Set(), inBody: new Set() });
       }
+      const e = found.get(key)!;
+      e.secs.add(r.section);
+      if ((r.title ?? '').includes(w)) e.inTitle.add(w); else e.inBody.add(w);
     }
   }
-  const rows = [...seen.values()].slice(0, 18);
+
+  if (!found.size) {
+    return {
+      hits: 0, searched: terms,
+      note: '찾지 못했습니다. 약관에서 쓰는 다른 말로 바꿔 보세요' +
+            '(백내장→수정체, 맹장→충수, 하지정맥류→정맥류, 키트루다→펨브롤리주맙).',
+    };
+  }
+
+  // 이름에 든 낱말을 본문보다 무겁게 친다. '통합치료비'가 이름에 있는 담보와
+  // 본문 어딘가에 스친 담보는 물음에 대한 값이 다르다.
+  const ranked = [...found.values()]
+    .map((e) => ({
+      e, n: e.inTitle.size * 2 + e.inBody.size,
+      all: e.inTitle.size + e.inBody.size,
+    }))
+    .sort((x, y) => y.n - x.n || y.all - x.all)
+    .slice(0, 20);
+
+  // 이름만 돌려준다. 발췌를 함께 실으면 토큰의 대부분을 발췌가 먹는데
+  // (18건에 3,500자), 정작 답은 read_clause로 읽은 원문에서 나온다.
   return {
-    hits: seen.size,
-    shown: rows.length,
-    results: rows.map((e) => ({
-      no: e.no, title: e.title,
-      sections: [...e.sections], snippet: e.snips[0] ?? '',
+    searched: terms, hits: found.size, shown: ranked.length,
+    note: '맞은 낱말이 많은 순입니다. 물음에 맞는 번호를 골라 read_clause로 원문을 읽으세요.',
+    results: ranked.map(({ e, all }) => ({
+      no: e.no, title: e.title, 맞은낱말: all,
+      이름에: [...e.inTitle], 본문에: [...e.inBody],
+      sections: [...e.secs],
     })),
   };
 }
