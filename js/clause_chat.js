@@ -172,11 +172,13 @@ async function ask(preset) {
     // 색인이 무언가 찾았는지는 "약관 질문인가"를 가리는 데도 쓴다.
     let hint = null, found = false;
     try {
-        const r = clauseSearch(text, 6);
+        // 후보를 넉넉히 넘긴다. 모델이 카탈로그로 걸러내므로, 적게 주는 것보다
+        // 넉넉히 주고 고르게 하는 편이 빠뜨림이 적다.
+        const r = clauseSearch(text, 12);
         found = r.cards.length > 0 || r.terms.length > 0;
         hint = {
             담보: r.cards.map(c => `${c.card.n} ${c.card.t}`),
-            분류표: r.terms.slice(0, 6).map(t =>
+            분류표: r.terms.slice(0, 10).map(t =>
                 `${t.code}${t.tier ? ` ${t.tier}종` : ''} ${t.name}`),
             읽을대목: [...new Set(r.read.map(x => x.sec))]
         };

@@ -12,6 +12,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { gate, normalize, digitsOf, sha } from './gate.ts';
 
 const OPENROUTER_KEY = Deno.env.get('OPENROUTER_API_KEY');
 const MODEL = Deno.env.get('CLAUSE_MODEL') ?? 'deepseek/deepseek-chat';
@@ -64,8 +65,6 @@ const json = (body: unknown, status = 200) =>
 
 const sb = createClient(SB_URL, SB_KEY);
 
-import { gate, normalize, digitsOf, sha } from './gate.ts';
-
 // 모델에게 주는 유일한 도구. 카탈로그에서 고른 특약의 원문을 꺼내 온다.
 const TOOLS = [{
   type: 'function',
@@ -73,13 +72,14 @@ const TOOLS = [{
     name: 'read_clause',
     description:
       '약관 원문을 가져온다. 담보를 특정했으면 답하기 전에 반드시 호출할 것. ' +
+      '수술비는 여러 담보가 겹쳐 지급되므로 해당하는 특약을 한 번에 넣어 확인하라. ' +
       '면책·감액을 물었다면 section에 면책과 보상범위를 함께 넣어라 — ' +
       '보장개시일과 감액 규정은 보상범위 제1조에 있는 경우가 많다.',
     parameters: {
       type: 'object',
       properties: {
         no: {
-          type: 'array', items: { type: 'string' }, maxItems: 4,
+          type: 'array', items: { type: 'string' }, maxItems: 8,
           description: '카탈로그의 특약번호. 예: ["2-109","1-28"]',
         },
         section: {
@@ -93,11 +93,13 @@ const TOOLS = [{
   },
 }];
 
-// 원문이 길어 통째로 넘기면 답변 여지가 줄어든다. 섹션당 상한을 두고 자른다.
-const MAX_CHARS = 1800;
+// 원문 상한. 토큰을 아끼려고 1,500자로 조였더니 조항이 중간에 잘려 모델이
+// 확인할 근거가 모자랐다. 약관 섹션은 대부분 2,000~2,500자라 3,000자면
+// 사실상 전문이 넘어간다. 답이 맞는 편이 비용보다 먼저다.
+const MAX_CHARS = 3000;
 
 async function readClause(args: { no: string[]; section: string[] }) {
-  const nos = (args.no ?? []).slice(0, 4);
+  const nos = (args.no ?? []).slice(0, 8);
   const secs = (args.section ?? []).slice(0, 5);
   if (!nos.length) return { error: '특약번호가 비어 있습니다.' };
 
@@ -106,7 +108,7 @@ async function readClause(args: { no: string[]; section: string[] }) {
     .select('id,no,title,section,content')
     .in('no', nos)
     .in('section', secs.length ? secs : ['담보정의', '보상범위'])
-    .limit(12);
+    .limit(14);
   if (error) return { error: error.message };
   if (!data?.length) {
     return { found: false, note: `${nos.join(', ')}의 ${secs.join('/')} 대목을 찾지 못했습니다.` };
@@ -134,7 +136,7 @@ async function callModel(messages: unknown[]) {
     body: JSON.stringify({
       model: MODEL, messages, tools: TOOLS, tool_choice: 'auto',
       temperature: 0.2,        // 약관 인용이라 흔들리면 안 된다
-      max_tokens: 900,
+      max_tokens: 1800,        // 담보를 여럿 나열하면 답이 길어진다
     }),
   });
   if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 300)}`);
@@ -215,8 +217,9 @@ serve(async (req) => {
       { role: 'user', content: userMsg },
     ];
 
-    // 도구 왕복. 한 번 읽고 답하는 것이 보통이라 두 번이면 충분하다 —
-    // 왕복이 늘수록 앞선 메시지가 통째로 다시 실려 토큰과 대기 시간이 함께 뛴다.
+    // 도구 왕복. 두 번으로 묶었더니 모델이 한 번 읽고 부족해도 더 못 물었다.
+    // 수술비처럼 담보가 여럿 겹치는 질문은 나눠 확인해야 해서 세 번까지 열어 둔다.
+    // 왕복마다 앞선 메시지가 다시 실리는 비용은 있지만, 반쪽짜리 답보다 낫다.
     let answer = '', cited: string[] = [], usedNos: string[] = [];
     let tin = 0, tout = 0;
     // 무엇을 어떻게 골랐는지 남긴다. 답이 이상할 때 힌트가 빗나간 건지,
@@ -224,7 +227,7 @@ serve(async (req) => {
     const trace: Record<string, unknown>[] = [];
     let hops = 0, evidenceChars = 0;
 
-    for (let hop = 0; hop < 2; hop++) {
+    for (let hop = 0; hop < 3; hop++) {
       hops = hop + 1;
       const out = await callModel(messages);
       const msg = out.choices?.[0]?.message;
