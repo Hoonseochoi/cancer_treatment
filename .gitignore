@@ -18,3 +18,6 @@ analyzer-next/
 
 # 알릴의무(disclosure) 도구 - Gemini API 키 (절대 커밋 금지)
 disclosure/config.js
+
+# 약관 인덱스 빌드 산출물 — scripts/build_clause_index.py 로 재생성
+db/
