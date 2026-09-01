@@ -389,7 +389,11 @@ function clauseSearch(q, limit) {
             if (have.has(no) || !byNo[no]) return;
             cards.push({ card: byNo[no], score: 0.35, via: ['수술비 공통'], base: true });
         });
-        cards = cards.slice(0, Math.max(limit, 8));
+        // 기본군 여섯 개가 통째로 들어가므로 자리를 넉넉히 둔다. 여덟 개로 자르면
+        // 이름이 스친 담보(2-61 '2대 주요기관…', 3-1 '중증질환…')가 앞자리를 먹고
+        // 정작 1~5종·1~8종이 밀린다 — 실측: 스텐트 질문에서 2-112가 빠져
+        // "2-123에서만 보장됩니다"라고 단정했다. 실제로는 1~5종 3종으로도 받는다.
+        cards = cards.slice(0, Math.max(limit, 12));
     }
 
     // 고른 담보에서 실제로 읽을 대목. 의도가 없으면 담보정의·보상범위를 기본으로 둔다.
