@@ -223,13 +223,33 @@ async function readClause(args: { no: string[]; section: string[] }) {
   // 링크만 돌아왔고, 등급을 알 길이 없자 근거 없이 "6종"이라고 지어냈다.
   // 링크를 따라 별표 본문까지 가져다줘야 한다 — 모델은 별표 번호를 모른다.
   const wantTable = !secs.length || secs.includes('분류표');
+
+  // 종수술비를 읽을 때는 '보장하지 않는 ADRG' 목록을 늘 딸려 보낸다.
+  // 모델이 section을 '담보정의','보상범위'로 못박으면 별표 추적이 꺼져,
+  // 스텐트처럼 제외된 수술도 "분류표에 포함되면 지급"이라고 답하게 된다(실측).
+  // 표 전체(2만 자)가 아니라 제외 목록(2천 자)만 붙이므로 부담이 적다.
+  const GRADE_CARDS = ['2-109', '2-110', '2-112', '2-113', '1-28', '1-29'];
+  if (!wantTable && nos.some((n) => GRADE_CARDS.includes(n))) {
+    const { data: ex } = await sb
+      .from('clause_chunks').select('id,no,title,section,content')
+      .eq('section', '보장제외 ADRG').limit(2);
+    (ex ?? []).forEach((r) => rows.push(r));
+  }
   if (wantTable) {
     const links = new Set<string>();
-    rows.filter((r) => r.section === '분류표').forEach((r) => {
-      for (const m of String(r.content).matchAll(/\[\[별표-([^\]|#]+)/g)) {
-        links.add(m[1].trim());
-      }
-    });
+    // 별표 링크는 특약의 '분류표' 대목에만 있다. 모델이 담보정의·보상범위만
+    // 요청하면 이미 가져온 rows에 링크가 없어 별표까지 가지 못한다 — 실측:
+    // "심장 스텐트 수술비"에 본문만 읽고 "분류표에 해당하는 경우 지급"이라고
+    // 답했다. 실제로는 F172가 제외 대상이다. 링크는 따로 찾아 온다.
+    const { data: tsec } = await sb
+      .from('clause_chunks').select('no,content')
+      .in('no', nos).eq('section', '분류표').limit(10);
+    [...rows, ...(tsec ?? [])].filter((r) => r.section === '분류표' || !r.section)
+      .forEach((r) => {
+        for (const m of String(r.content).matchAll(/\[\[별표-([^\]|#]+)/g)) {
+          links.add(m[1].trim());
+        }
+      });
     const already = new Set(rows.map((r) => r.no));
     const todo = [...links].filter((x) => !already.has(x)).slice(0, 3);
     if (todo.length) {
@@ -249,6 +269,12 @@ async function readClause(args: { no: string[]; section: string[] }) {
   if (!rows.length) {
     return { found: false, note: `${nos.join(', ')}의 ${secs.join('/')} 대목을 찾지 못했습니다.` };
   }
+  // 보장에서 빠지는 항목을 맨 앞에 둔다. 뒤에 묻히면 모델이 표에서 코드를 찾은
+  // 것에 만족하고 제외 여부를 뒤집어 읽는다 — 실측: 제외 목록을 받고도
+  // "F172는 보장제외 대상이 아니므로 지급 대상"이라고 답했다.
+  rows.sort((a, b) =>
+    (b.section === '보장제외 ADRG' ? 1 : 0) - (a.section === '보장제외 ADRG' ? 1 : 0));
+
   return {
     found: true,
     clauses: rows.map((r) => ({
