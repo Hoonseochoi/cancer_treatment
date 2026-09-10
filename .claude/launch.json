@@ -1,8 +1,11 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "surinsur", "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "http-server", "-p", "8899", "-c-1", "--silent"],
-      "port": 8899 }
+    {
+      "name": "가입제안서",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "5500", "."],
+      "port": 5500
+    }
   ]
 }
