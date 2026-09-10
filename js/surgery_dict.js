@@ -67,8 +67,17 @@ const DICT_SYNONYM = {
     '다초점렌즈': ['수정체'],
     '다초점': ['수정체'],
     '대장용종': ['결장경', '폴립'],
+    // '대장내시경'은 약관에서 '결장경'이다. 동의어가 없으면 '내시경'만 부분일치해
+    // 소장내시경·위내시경이 올라온다(실측). 사람들이 실제로 쓰는 말이라 꼭 필요하다.
+    '대장내시경': ['결장경'],
+    '대장경': ['결장경'],
+    '에스결장경': ['구불결장경'],
     '위용종': ['위내시경', '폴립'],
-    '용종': ['폴립'],
+    '위내시경': ['위내시경'],
+    // '폴립'은 별표16 항목명에는 없고 수가코드명에만 있는데, 부비동(비용종)에도
+    // 걸린다. '용종'이라고만 하면 대개 대장·위를 뜻하므로 둘을 함께 올린다.
+    '용종': ['폴립', '결장경', '위내시경'],
+    '폴립': ['폴립', '결장경', '위내시경'],
     '디스크': ['추간판'],
     '허리디스크': ['추간판'],
     '목디스크': ['추간판', '경추'],
@@ -191,9 +200,19 @@ const DICT_SYNONYM = {
 // 동의어 사전에 없는 말은 원문 그대로만 찾는다 — 임의로 잘라 붙이지 않는다.
 function dictExpand(q) {
     const raw = q.trim().replace(/\s+/g, ' ');
+    // 띄어쓰기를 지우고도 대본다. 사전 키는 붙여 쓴 형태라 "대장 용종"처럼 띄면
+    // 하나도 걸리지 않았다 — 실측: "대장용종"은 결장경을 찾는데 "대장 용종"은
+    // 구강·인두 수술이 1위였다.
+    const tight = raw.replace(/\s+/g, '');
     const out = [raw];
-    Object.keys(DICT_SYNONYM).forEach(k => {
-        if (raw.includes(k)) DICT_SYNONYM[k].forEach(s => out.push(s));
+    if (tight !== raw) out.push(tight);
+    // 긴 키부터 보고, 맞으면 그 자리를 지운다. 그러지 않으면 '위용종'이 '용종'에도
+    // 걸려 결장경까지 딸려온다 — 실측: "위용종"의 1위가 결장경이었다.
+    let rest = tight;
+    Object.keys(DICT_SYNONYM).sort((a, b) => b.length - a.length).forEach(k => {
+        if (!rest.includes(k)) return;
+        DICT_SYNONYM[k].forEach(s => out.push(s));
+        rest = rest.split(k).join('');
     });
     return [...new Set(out)].filter(Boolean);
 }
