@@ -651,7 +651,12 @@ strong {
 .sg-chip.sg-none{background:var(--sg-off);color:#fff}
 .sg-chip.sg-warn{background:var(--sg-note-bg);color:var(--sg-note-ink);border:1px solid var(--sg-note-line)}
 
-.sg-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:start}
+.sg-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:start}
+/* 열 수는 실측으로 정했다. 패널 폭 1024px에서 목록 높이는
+   2열 1,384px · 3열 949px · 4열 1,090px —
+   4열은 칸이 256px까지 좁아져 수술명과 금액이 줄바꿈되고, 카드마다 한 줄씩 키가 커져
+   오히려 길어진다. 940px 아래로는 3열이 2열보다 길어지므로 그때 2열로 내린다. */
+@media (max-width:940px){ .sg-list{grid-template-columns:repeat(2,minmax(0,1fr))} }
 /* 펼친 행은 두 칸을 모두 차지해 상세 내역이 눌리지 않게 한다 */
 .sg-row[data-open="true"]{grid-column:1 / -1}
 .sg-row{border:1px solid var(--sg-line);border-radius:14px;background:var(--sg-surface);
