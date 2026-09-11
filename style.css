@@ -1345,3 +1345,32 @@ body.samsung-theme #summary-grid .premium-card .border-dashed{
 .sf-peek i{width:5px;height:5px;border-radius:50%;background:var(--sf-muted);
   font-style:normal;flex:none}
 .sf-peek[data-open="true"] i{background:var(--sf-blue)}
+
+/* ══════════════════════════════════════════════════════════
+   PDF 전용 — A4 한 장에, 읽을 수 있는 크기로
+   화면 폭 그대로 A4에 앉히면 본문이 4.6pt가 된다(약관 깨알글씨가 8pt).
+   캡처 폭을 좁혀 배율을 키우면 글자는 커지지만 한 장 한도도 같이 줄어드므로,
+   그만큼 담는 양을 줄여야 한다. 화면에서는 전부 보이고 인쇄에서만 줄인다.
+   ══════════════════════════════════════════════════════════ */
+body[data-print] .sf-peek{display:none}
+body[data-print] .sf-cov li:nth-child(n+10){display:none}
+body[data-print] .sf-src .row:nth-child(n+3){display:none}
+body[data-print] #summary-grid > .grid > .premium-card:nth-child(n+7){display:none}
+body[data-print] #summary-grid .premium-card{padding:12px 14px}
+body[data-print] #summary-grid .premium-card .w-20{width:52px;height:52px}
+body[data-print] .sf-cov{padding:10px 16px 8px;margin-bottom:12px}
+body[data-print] .sf-cov-hd{margin-bottom:7px}
+body[data-print] .sf-cov li{padding:3px 0}
+body[data-print] .sf-case{margin-top:10px}
+body[data-print] .sf-case-hd{padding:7px 16px}
+body[data-print] .sf-flow{padding:11px 14px}
+body[data-print] #summary-grid > .grid{gap:10px}
+body[data-print] #summary-grid > .text-lg{margin-bottom:10px}
+/* 수술비 — 작은 칸은 절반만, 접힌 상세는 아예 빼고 */
+body[data-print] #surgery-panel .sg-mini:nth-child(n+22){display:none}
+body[data-print] #surgery-panel .sg-d{display:none!important}
+body[data-print] #surgery-panel .sg-disc{display:none}
+body[data-print] #surgery-panel .sg-hot-legend{display:none}
+/* 뇌·심장 — 확인 사항은 인쇄본에서 뺀다(표지 고지로 갈음) */
+body[data-print] #circulatory-panel .cc-disc,
+body[data-print] #circulatory-panel .cc-src{display:none}

@@ -111,6 +111,15 @@ const ONCE_ONLY_KEYS = new Set([
     "정위방사선치료비"   // 미래에셋생명 항암정위방사선치료특약 (SBRT)
 ]);
 
+// ── 이름 줄이기 ──
+// html2canvas는 text-overflow:ellipsis를 그리지 않는다. 화면에서 말줄임으로
+// 접히던 담보명이 인쇄본에서는 그대로 흘러나와 금액과 겹친다(실측).
+// CSS에 맡기지 않고 글자 수로 미리 잘라 둔다 — 화면과 인쇄가 같아진다.
+function clipName(s, n) {
+    const t = String(s || '').replace(/\s+/g, ' ').trim();
+    return t.length > n ? t.slice(0, n - 1) + '…' : t;
+}
+
 // ── 약관이 정한 지급 주기 조회 ──
 // 제안서 담보명에는 주기가 없다(실측: 담보 34개 전부 무표기). 약관 본문의
 // "최초 1회에 한하여" 같은 문장에서 뽑아 둔 사전(clause_cycle_data.js)을 본다.

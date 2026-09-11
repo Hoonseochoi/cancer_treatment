@@ -283,7 +283,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             const own = [...used.entries()];
             if (own.length) {
                 const lis = own.slice(0, 15).map(([nm, v]) =>
-                    `<li class="${v ? '' : 'off'}"><span title="${nm}">${nm}</span>` +
+                    `<li class="${v ? '' : 'off'}"><span title="${nm}">${clipName(nm, 26)}</span>` +
                     `<b>${v ? formatKoAmount(v) : '—'}</b></li>`).join('');
                 const box = document.createElement('div');
                 box.className = 'sf-cov';
@@ -378,7 +378,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 srcMap.forEach((e, srcName) => {
                     rows += `
                         <div class="row${e.total ? '' : ' zero'}">
-                            <span class="nm2" title="${srcName}">${srcName}</span>
+                            <span class="nm2" title="${srcName}">${clipName(srcName, 14)}</span>
                             <span class="amt2">${formatKoAmount(e.total)}</span>
                             <span class="c2">${CYC_SHORT[e.cycle] || ''}</span>
                         </div>`;
@@ -876,7 +876,11 @@ const CAPTURE_KR_FONT = "'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR',
 // 대체 폰트로 바꾸면서 이 비율만큼 크기를 줄여야 글자가 고리 밖으로 넘치지 않는다.
 const DONGLE_SCALE = 0.68;
 // 캡처는 항상 이 폭의 데스크톱 레이아웃으로 그린다(실제 창 크기와 무관).
-const CAPTURE_WIDTH = 1280;
+// A4 본문 188.3mm에 맞춰 앉힐 때의 배율을 정한다.
+// 1280이면 1px=0.147mm라 11px 본문이 4.6pt로 눌린다(약관 깨알글씨가 8pt).
+// 860이면 1px=0.219mm, 같은 11px이 6.8pt가 된다. 대신 한 장 한도가 1715→1152px로
+// 줄어드는 만큼 인쇄본에서는 담는 양을 줄인다(body[data-print] 규칙).
+const CAPTURE_WIDTH = 860;
 
 // ── 캡처 공통 준비 ──
 // 이미지 저장과 전체 PDF 저장이 완전히 같은 렌더링 경로를 쓰도록,
@@ -946,6 +950,9 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null, fo
         logging: true,
         onclone: (clonedDoc) => {
             console.log('Clone created successfully');
+            // 인쇄본에서만 담는 양을 줄인다. 화면은 건드리지 않는다 —
+            // 클론에만 표를 세우므로 사용자가 보는 화면은 그대로다.
+            if (forPdf) clonedDoc.body.setAttribute('data-print', '');
             const cloneMain = clonedDoc.querySelector('main');
             if (!cloneMain) return;
 

@@ -271,7 +271,7 @@ function ccCardsHtml(policy, tongName) {
           ${o.cyc ? `<span class="sf-cyc ${o.badge || 'yr'}">${o.cyc}</span>` : ''}</div>
         <div class="v">${v > 0 ? ccW(v) : '미가입'}</div>
         ${live.length ? `<div class="sf-src">${live.map(r =>
-            `<div class="row"><span class="nm2" title="${r.n}">${r.n}</span>` +
+            `<div class="row"><span class="nm2" title="${r.n}">${clipName(r.n, 14)}</span>` +
             `<span class="amt2">${ccW(r.v)}</span></div>`).join('')}</div>` : ''}
       </div>`;
     };
@@ -367,7 +367,7 @@ function renderCirculatoryPanel(results) {
         <div class="sf-cov-hd"><span class="t">가입한 담보 쉽게보기</span>
           <span class="n">뇌·심장 ${covList.length}개</span></div>
         <ul>${covList.map(x =>
-            `<li class="${x.v ? '' : 'off'}"><span title="${x.nm}">${x.nm}</span>` +
+            `<li class="${x.v ? '' : 'off'}"><span title="${x.nm}">${clipName(x.nm, 26)}</span>` +
             `<b>${x.v ? formatKoAmount(x.v) : '—'}</b></li>`).join('')}</ul>
       </div>` : '';
 

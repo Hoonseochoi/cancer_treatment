@@ -205,7 +205,7 @@ function renderSurgeryPanel(results) {
         const inlineSrc = (s.hot && s.hot <= 6 && groups.length && hi > 0) ? `
             <div class="sf-src" style="margin:0 15px 13px;padding-top:9px">
               ${groups[0].rows.filter(x => x.on).slice(0, 4).map(x =>
-                  `<div class="row"><span class="nm2" title="${x.k}">${x.k}</span>` +
+                  `<div class="row"><span class="nm2" title="${x.k}">${clipName(x.k, 14)}</span>` +
                   `<span class="amt2">${fmt(x.v)}</span></div>`).join('')}
             </div>` : '';
         const detail = groups.map(g => `
@@ -227,7 +227,7 @@ function renderSurgeryPanel(results) {
         // 손해율 상위가 아닌 수술은 이름과 금액만 작은 칸으로 — 지면과 같은 구성이다.
         // 전부 같은 크기로 벌리면 정작 상담에서 자주 나오는 수술이 묻힌다.
         if (!s.hot && !none) {
-            return `<div class="sg-mini"><span class="n3" title="${s.name}">${s.name}</span>` +
+            return `<div class="sg-mini"><span class="n3" title="${s.name}">${clipName(s.name, 20)}</span>` +
                    `<span class="a3">${lo === hi ? fmt(lo) : fmt(lo) + '~' + fmt(hi)}</span></div>`;
         }
 
@@ -283,7 +283,7 @@ function renderSurgeryPanel(results) {
         <div class="sf-cov-hd"><span class="t">가입한 담보 쉽게보기</span>
           <span class="n">수술비 ${covList.length}개</span></div>
         <ul>${covList.map(x =>
-            `<li class="${x.v ? '' : 'off'}"><span title="${x.nm}">${x.nm}</span>` +
+            `<li class="${x.v ? '' : 'off'}"><span title="${x.nm}">${clipName(x.nm, 26)}</span>` +
             `<b>${x.v ? formatKoAmount(x.v) : '—'}</b></li>`).join('')}</ul>
       </div>` : '';
 
