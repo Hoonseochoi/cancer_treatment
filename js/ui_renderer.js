@@ -237,30 +237,31 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             .sort((a, b) => MAIN_CARD_KEYS.indexOf(a[0]) - MAIN_CARD_KEYS.indexOf(b[0]));
         const otherItems = allItems.filter(([name]) => !MAIN_CARD_KEYS.includes(name));
 
-        // ── 진단비 띠 ──
-        // 진단비는 "얼마 나오나"만 알면 되는 정보라 카드로 벌릴 값어치가 없다.
-        // 한 줄로 접고 그 자리를 치료비 카드에 넘긴다 — 정작 설명이 필요한 쪽은
-        // 어느 담보에서 얼마가 겹쳐 나오는지다.
+        // ── 가입한 담보 쉽게보기 ──
+        // 제안서에 적힌 담보를 그대로 먼저 보여준다. 아래 카드들은 이 담보들이
+        // 실제 상황에서 어떻게 쓰이는지를 푸는 자리다. 설계사가 "가입하신 건
+        // 이것들입니다"로 시작해 "이렇게 나옵니다"로 넘어갈 수 있게.
         if (insurer === 'samsung') {
-            const diag = (results || []).filter(r =>
-                r && /진단비/.test(r.name || '') &&
-                !/뇌|심장|순환계|상해|치매|간병|허혈|부정맥/.test(r.name || ''));
-            if (diag.length) {
-                const tot = diag.reduce((n, r) => n + parseKoAmount(r.amount), 0);
-                const lis = diag.slice(0, 6).map(r => {
-                    const nm = (r.name || '')
-                        .replace(/\s*\([^)]*\)\s*/g, ' ')
-                        .replace(/진단비.*$/, '진단비').trim();
-                    const v = parseKoAmount(r.amount);
-                    return `<li class="${v ? '' : 'off'}">${nm}<b>${formatKoAmount(v)}</b></li>`;
-                }).join('');
-                const bar = document.createElement('div');
-                bar.className = 'sf-diag';
-                bar.innerHTML =
-                    `<div class="lb">진단 확정 시<em>최초 1회 · 중복 지급</em></div>` +
-                    `<ul>${lis}</ul>` +
-                    `<div class="tot">${formatKoAmount(tot)}</div>`;
-                summaryGrid.appendChild(bar);
+            // 아래 카드가 실제로 쓰는 담보만 싣는다. 제안서 전체를 긁어오면
+            // 상해 1~5종처럼 암과 무관한 담보가 섞인다(실측).
+            const used = new Map();
+            mainItems.forEach(([, d]) => (d.items || []).forEach(it => {
+                const src = (it.source || '').trim();
+                if (!src || used.has(src)) return;
+                const hit = (results || []).find(r => (r.name || '').trim() === src);
+                used.set(src, hit ? parseKoAmount(hit.amount) : 0);
+            }));
+            const own = [...used.entries()];
+            if (own.length) {
+                const lis = own.slice(0, 15).map(([nm, v]) =>
+                    `<li class="${v ? '' : 'off'}"><span title="${nm}">${nm}</span>` +
+                    `<b>${v ? formatKoAmount(v) : '—'}</b></li>`).join('');
+                const box = document.createElement('div');
+                box.className = 'sf-cov';
+                box.innerHTML =
+                    `<div class="sf-cov-hd"><span class="t">가입한 담보 쉽게보기</span>` +
+                    `<span class="n">${own.length}개</span></div><ul>${lis}</ul>`;
+                summaryGrid.appendChild(box);
             }
         }
 

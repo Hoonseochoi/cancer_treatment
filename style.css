@@ -1194,3 +1194,22 @@ body.samsung-theme #summary-grid .premium-card .border-dashed{
 #circulatory-panel .cc-max,
 #circulatory-panel .ccc-amt{font-family:'Plus Jakarta Sans','Outfit',sans-serif;
   letter-spacing:-.04em}
+
+/* ── 가입한 담보 쉽게보기 ──
+   제안서에 적힌 담보를 그대로 먼저 보여주고, 아래 카드들이 그 담보가 실제
+   상황에서 어떻게 쓰이는지를 푼다. */
+.sf-cov{padding:16px 20px 13px;border-radius:var(--sf-r);
+  background:var(--sf-wash);border:1px solid var(--sf-rule);margin-bottom:18px}
+.sf-cov-hd{display:flex;align-items:baseline;gap:12px;margin-bottom:11px}
+.sf-cov-hd .t{font-size:14px;font-weight:700;color:var(--sf-ink);letter-spacing:-.02em}
+.sf-cov-hd .n{font-size:11.5px;font-weight:600;color:var(--sf-muted);margin-left:auto}
+.sf-cov ul{margin:0;padding:0;list-style:none;display:grid;
+  grid-template-columns:repeat(3,1fr);gap:2px 28px}
+.sf-cov li{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  font-size:12px;color:var(--sf-ink-2);padding:5px 0;border-bottom:1px dotted var(--sf-rule)}
+.sf-cov li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sf-cov li b{flex:none;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;color:var(--sf-ink);
+  font-variant-numeric:tabular-nums;letter-spacing:-.03em;white-space:nowrap}
+.sf-cov li.off,.sf-cov li.off b{color:var(--sf-muted)}
+@media (max-width:900px){ .sf-cov ul{grid-template-columns:repeat(2,1fr);gap:2px 18px} }
+@media (max-width:560px){ .sf-cov ul{grid-template-columns:1fr} }

@@ -19,6 +19,8 @@ function buildCirculatoryPolicy(results) {
     const all = results || [];
     const circ = all.filter(r => r && r.kind === 'circulatory');
     if (!circ.length) return null;
+    // '가입한 담보 쉽게보기'에 그대로 싣기 위해 원본을 들고 간다
+    const _raw = circ;
 
     const norm = s => (s || '').replace(/\s+/g, '');
     // kind 태그가 누락된 담보 보완용으로 전체 results에서도 재검색한다.
@@ -150,6 +152,7 @@ function buildCirculatoryPolicy(results) {
     p.treatSum = p.treatAll;                     // 치료행위 최대 합
     p.maxTotal = p.treatAll + p.surgSum;         // 세 행위 + 수술비
     p.ringTotal = p.maxTotal;                    // 질환 카드에 싣는 금액 = 최대 보장금액
+    p._raw = _raw;
     return p;
 }
 
@@ -329,7 +332,23 @@ function renderCirculatoryPanel(results) {
         return `<div class="ci${hit ? ' hit' : ''}"><span>${i + 1}. ${n}</span><b>${c}</b></div>`;
     }).join('');
 
+    // ── 가입한 담보 쉽게보기 ──
+    const covList = (policy._raw || [])
+        .map(r => ({ nm: (r.name || '').trim(), v: parseKoAmount(r.amount) }))
+        .filter(x => x.nm)
+        .sort((a, b) => b.v - a.v)
+        .slice(0, 15);
+    const covHtml = covList.length ? `
+      <div class="sf-cov">
+        <div class="sf-cov-hd"><span class="t">가입한 담보 쉽게보기</span>
+          <span class="n">뇌·심장 ${covList.length}개</span></div>
+        <ul>${covList.map(x =>
+            `<li class="${x.v ? '' : 'off'}"><span title="${x.nm}">${x.nm}</span>` +
+            `<b>${x.v ? formatKoAmount(x.v) : '—'}</b></li>`).join('')}</ul>
+      </div>` : '';
+
     host.innerHTML = `
+    ${covHtml}
     <div class="cc-card">
       <h2>치료비 · 수술비 보장 구조</h2>
       <p class="sub">카드 큰 금액은 <strong>그 항목으로 검토 가능한 금액</strong>이고, 아래 목록은 그 금액을 이루는 <strong>세부 담보</strong>입니다. 회색으로 흐린 카드는 가입되지 않은 담보입니다.</p>

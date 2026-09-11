@@ -252,11 +252,28 @@ function renderSurgeryPanel(results) {
         })
         .filter(Boolean);
 
+    // ── 가입한 담보 쉽게보기 ──
+    // 아래 수술 카드들이 어느 담보에서 나오는지를 먼저 보여준다.
+    const covList = (policy._raw || [])
+        .map(r => ({ nm: (r.name || '').trim(), v: parseKoAmount(r.amount) }))
+        .filter(x => x.nm)
+        .sort((a, b) => b.v - a.v)
+        .slice(0, 15);
+    const covHtml = covList.length ? `
+      <div class="sf-cov">
+        <div class="sf-cov-hd"><span class="t">가입한 담보 쉽게보기</span>
+          <span class="n">수술비 ${covList.length}개</span></div>
+        <ul>${covList.map(x =>
+            `<li class="${x.v ? '' : 'off'}"><span title="${x.nm}">${x.nm}</span>` +
+            `<b>${x.v ? formatKoAmount(x.v) : '—'}</b></li>`).join('')}</ul>
+      </div>` : '';
+
     host.innerHTML = `
       <div class="sg-head">
         <h3>수술비 검토</h3>
         <p>가입한 수술비 담보 기준으로 각 수술에서 검토 가능한 금액입니다.</p>
       </div>
+      ${covHtml}
       ${topList.length ? `
       <div class="sg-top5">
         <div class="sg-top5-head">많이 하는 수술 TOP ${topList.length} · 연간 검토 가능 금액</div>
