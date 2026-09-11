@@ -482,6 +482,51 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             mainGrid.appendChild(card);
         });
 
+        // ── 사례로 보는 보장 ──
+        // "5년간 최대 ○○원"을 대신한다. 진단→수술→치료→입원을 실제 담보 금액으로
+        // 밟아 합계에 닿으므로 가정이 낄 자리가 없다.
+        if (insurer === 'samsung') {
+            const pick = re => {
+                const hit = [...summaryMap.entries()].find(([k]) => re.test(k));
+                return hit ? hit[1].totalMin : 0;
+            };
+            const diagSum = (results || [])
+                .filter(r => r && /진단비/.test(r.name || '') &&
+                    !/뇌|심장|순환계|허혈|부정맥|치매|간병|납입/.test(r.name || ''))
+                .reduce((n, r) => n + parseKoAmount(r.amount), 0);
+            const surgery = pick(/암수술비|암 수술비/);
+            const drug = pick(/표적항암|항암약물/);
+            const stayRow = (results || []).find(r => /암.*입원일당|입원일당.*암/.test(r.name || ''));
+            const stay = stayRow ? parseKoAmount(stayRow.amount) * 20 : 0;
+
+            const steps = [
+                diagSum && { s: '진단', a: diagSum, d: '진단비 합계' },
+                surgery && { s: '수술', a: surgery, d: '암 수술비' },
+                drug && { s: '항암약물', a: drug, d: '연 1회 한도' },
+                stay && { s: '입원 20일', a: stay, d: '1일당 기준' }
+            ].filter(Boolean);
+
+            if (steps.length >= 2) {
+                const tot = steps.reduce((n, x) => n + x.a, 0);
+                const box = document.createElement('div');
+                box.className = 'sf-case';
+                box.style.setProperty('--sf-case-accent', '#D64535');
+                box.style.setProperty('--sf-case-soft', '#FDF2F0');
+                box.innerHTML =
+                    `<div class="sf-case-hd"><span class="t">사례로 보는 보장</span>` +
+                    `<span class="d">암 진단 후 수술 · 항암치료 · 20일 입원</span></div>` +
+                    `<div class="sf-flow">` +
+                    steps.map((x, i) =>
+                        (i ? '<div class="arw">→</div>' : '') +
+                        `<div class="step"><div class="s">${x.s}</div>` +
+                        `<div class="a">${formatKoAmount(x.a)}</div>` +
+                        `<div class="d">${x.d}</div></div>`).join('') +
+                    `<div class="sum"><div class="s">합계</div>` +
+                    `<div class="a">${formatKoAmount(tot)}</div></div></div>`;
+                summaryGrid.appendChild(box);
+            }
+        }
+
         // ── 기타 담보 패널 렌더링 ──
         const walletOthers      = (insurer === 'heungkuk') ? (window._heungkukWalletOthers      || null) : null;
         const sanggup2Others    = (insurer === 'heungkuk') ? (window._heungkukSanggup2Others    || null) : null;

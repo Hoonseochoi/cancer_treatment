@@ -347,8 +347,54 @@ function renderCirculatoryPanel(results) {
             `<b>${x.v ? formatKoAmount(x.v) : '—'}</b></li>`).join('')}</ul>
       </div>` : '';
 
+    // ── 통합치료비가 덮는 범위 ──
+    // 이 담보의 값어치는 금액이 아니라 범위다. 특정치료비Ⅲ는 수술·혈전용해·혈전제거
+    // 셋뿐이지만, 통합치료비는 검사부터 재활까지 한 담보로 덮는다. 게다가
+    // 상급종합병원으로 제한하지 않는다 — 상담에서 가장 크게 먹히는 대목이라 위에 둔다.
+    const spanHtml = policy.통합 ? `
+      <div class="sf-span">
+        <div class="path">
+          <span class="st">검사</span><span class="sep">▸</span>
+          <span class="st">약물</span><span class="sep">▸</span>
+          <span class="st">치료</span><span class="sep">▸</span>
+          <span class="st">수술</span><span class="sep">▸</span>
+          <span class="st">재활</span>
+          <span class="tail">전 과정을 한 담보로</span>
+        </div>
+        <div class="hosp"><em>모든 종합병원</em>에서 보장</div>
+      </div>` : '';
+
+    // ── 사례로 보는 보장 ──
+    // 통합치료비의 값어치는 '수술 매회'에 있다. 재발해 다시 수술하는 경로를
+    // 밟아 보이면 그 뜻이 저절로 드러난다.
+    const cw = n => (n > 0 ? formatKoAmount(n) : '0원');
+    const tong = policy.통합;
+    const caseSteps = [];
+    const heartDx = Math.max(policy.own?.허혈성 || 0, policy.own?.심근경색 || 0,
+                             policy.sum?.허혈성 || 0, 0);
+    if (heartDx) caseSteps.push({ s: '진단', a: heartDx, d: '심장 계열 진단비' });
+    if (tong) {
+        const op = tong.type === 'std' ? 2000 : 1000;
+        caseSteps.push({ s: '수술', a: op, d: '통합치료비' });
+        caseSteps.push({ s: '중환자실', a: tong.type === 'std' ? 500 : 200, d: '연 1회' });
+        caseSteps.push({ s: '재수술', a: op, d: '수술은 매회 보장' });
+    }
+    const caseHtml = caseSteps.length >= 3 ? `
+      <div class="sf-case" style="--sf-case-accent:#C2436B;--sf-case-soft:#FCF0F4">
+        <div class="sf-case-hd"><span class="t">사례로 보는 보장</span>
+          <span class="d">심장질환 수술 후 1년 뒤 재발로 재수술</span></div>
+        <div class="sf-flow">
+          ${caseSteps.map((x, i) => (i ? '<div class="arw">→</div>' : '') +
+            `<div class="step"><div class="s">${x.s}</div>` +
+            `<div class="a">${cw(x.a)}</div><div class="d">${x.d}</div></div>`).join('')}
+          <div class="sum"><div class="s">합계</div>
+            <div class="a">${cw(caseSteps.reduce((n, x) => n + x.a, 0))}</div></div>
+        </div>
+      </div>` : '';
+
     host.innerHTML = `
     ${covHtml}
+    ${spanHtml}
     <div class="cc-card">
       <h2>치료비 · 수술비 보장 구조</h2>
       <p class="sub">카드 큰 금액은 <strong>그 항목으로 검토 가능한 금액</strong>이고, 아래 목록은 그 금액을 이루는 <strong>세부 담보</strong>입니다. 회색으로 흐린 카드는 가입되지 않은 담보입니다.</p>
@@ -375,7 +421,9 @@ function renderCirculatoryPanel(results) {
       <b>반드시 확인해 주세요</b>
       <p>${CIRCULATORY_DATA.DISC}</p>
     </div>
-    <p class="cc-src">${CIRCULATORY_DATA.SRC}</p>`;
+    <p class="cc-src">${CIRCULATORY_DATA.SRC}</p>
+    ${caseHtml}
+  `;
 
     // onclick 대입 방식 — addEventListener는 재분석 시 핸들러가 중첩된다(수술비 때와 동일).
     host.onclick = e => {

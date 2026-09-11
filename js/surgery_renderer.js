@@ -223,6 +223,14 @@ function renderSurgeryPanel(results) {
         // 질병수술비조차 분쟁이 된다(하이푸 등). 금액은 보여주되 반드시 짚어준다.
         const noTier = s.variants.every(v => v.g5 == null && v.g8 == null);
         const none = hi === 0;   // 표준 수술비로는 지급되지 않는 시술
+
+        // 손해율 상위가 아닌 수술은 이름과 금액만 작은 칸으로 — 지면과 같은 구성이다.
+        // 전부 같은 크기로 벌리면 정작 상담에서 자주 나오는 수술이 묻힌다.
+        if (!s.hot && !none) {
+            return `<div class="sg-mini"><span class="n3" title="${s.name}">${s.name}</span>` +
+                   `<span class="a3">${lo === hi ? fmt(lo) : fmt(lo) + '~' + fmt(hi)}</span></div>`;
+        }
+
         return `<div class="sg-row${s.hot ? ' hot' : ''}${none ? ' none' : ''}" data-open="false">
             <button class="sg-btn" aria-expanded="false">
               <span class="sg-l">
