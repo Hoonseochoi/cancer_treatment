@@ -198,6 +198,16 @@ function renderSurgeryPanel(results) {
         const g8 = [...new Set(s.variants.map(v => v.g8))].filter(g => g != null).sort((a, b) => a - b);
 
         const groups = groupVariantsByAmount(cs);
+        // ── 담보 내역 ──
+        // 많이 하는 수술은 어느 담보에서 얼마가 겹쳐 나오는지를 펴 둔다.
+        // 접어 두면 설계사가 펴 보지 않아 "수술 한 번에 담보 셋이 겹친다"는
+        // 이 도구의 핵심을 정작 설명하지 못한다. 아래쪽 수술은 접어 둔다.
+        const inlineSrc = (s.hot && s.hot <= 6 && groups.length && hi > 0) ? `
+            <div class="sf-src" style="margin:0 15px 13px;padding-top:9px">
+              ${groups[0].rows.filter(x => x.on).slice(0, 4).map(x =>
+                  `<div class="row"><span class="nm2" title="${x.k}">${x.k}</span>` +
+                  `<span class="amt2">${fmt(x.v)}</span></div>`).join('')}
+            </div>` : '';
         const detail = groups.map(g => `
             <div class="sg-v">
               <div class="sg-vh"><span>${g.label}</span><b>${fmt(g.total)}</b></div>
@@ -233,6 +243,7 @@ function renderSurgeryPanel(results) {
                   : `<b>${lo === hi ? fmt(lo) : fmt(lo) + '~' + fmt(hi)}</b>
                      <em>검토 가능${groups.length > 1 ? ` · 술기에 따라 ${groups.length}구간` : ''}</em>`}</span>
             </button>
+            ${inlineSrc}
             <div class="sg-d">${detail}
               ${s.note ? `<div class="sg-note"><b>확인 포인트</b>${s.note}</div>` : ''}
             </div></div>`;
