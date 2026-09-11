@@ -208,7 +208,8 @@
     <!-- JUMP PILLS -->
     <div class="jump-wrap">
       <div class="jump-inner">
-        <a class="jump-pill active" href="#v0901">v.0901</a>
+        <a class="jump-pill active" href="#v0911">v.0911</a>
+        <a class="jump-pill" href="#v0901">v.0901</a>
         <a class="jump-pill" href="#v0831">v.0831</a>
         <a class="jump-pill" href="#v0826">v.0826</a>
         <a class="jump-pill" href="#v0825">v.0825</a>
@@ -226,16 +227,145 @@
     <!-- TIMELINE -->
     <div class="timeline">
 
-      <!-- v.0901 -->
-      <div class="v-entry open latest-entry" id="v0901">
+      <!-- v.0911 -->
+      <div class="v-entry open latest-entry" id="v0911">
         <div class="v-dot latest"></div>
         <div class="v-card latest-card">
           <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
             <div class="v-header-left">
               <div class="v-meta">
+                <span class="v-ver">v.0911</span>
+                <span class="v-date">2026.09.11</span>
+                <span class="v-latest-badge">LATEST</span>
+              </div>
+              <div class="v-subtitle">"건네도 되는 한 부로"</div>
+              <div class="v-summary">
+                <span class="tag tag-new">NEW</span>
+              </div>
+            </div>
+            <span class="v-chevron">&#9662;</span>
+          </div>
+          <div class="v-body">
+
+            <div class="change-section">
+              <span class="cs-label">PDF를 다시 만들었어요</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>PDF 글씨가 두 배 커졌어요</strong><br>
+                  그동안 PDF 본문이 <strong>4.6pt</strong>였습니다. 약관 깨알글씨가 8pt, 신문 본문이 9pt인 걸 생각하면 각주보다도 작았어요. 화면에 보이는 걸 사진 찍듯 담아 A4에 맞춰 줄이다 보니 그렇게 됐습니다.<br>
+                  이제 <strong>A4 종이 크기에 직접 그립니다</strong>. 본문 <strong>10pt</strong>, 인쇄 품질 300dpi예요. 그대로 출력해 건네셔도 됩니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>「한장요약」이 생겼어요</strong><br>
+                  표지 다음 장에 <strong>암 · 뇌·심장 · 다빈도 수술 · 월 보험료</strong>를 한 장에 담았습니다. 고객이 가장 먼저 보는 장이고, 여기서 전체 그림이 잡힙니다.<br>
+                  PDF는 이제 <strong>표지 · 한장요약 · 암 · 수술비 · 뇌·심장</strong> 다섯 장입니다.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">담보가 어디서 나오는지 보여요</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>「가입한 담보 쉽게보기」</strong><br>
+                  각 장 맨 위에 <strong>제안서에 적힌 담보를 그대로</strong> 보여드립니다. "가입하신 건 이것들입니다"로 시작해서, 아래 카드로 "실제로는 이렇게 나옵니다"로 넘어가실 수 있어요. 가입하지 않은 담보는 회색으로 남겨 보장 공백이 눈에 띕니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>카드 안에 담보 내역을 펼쳤어요</strong><br>
+                  예전에는 접혀 있어서 눌러야 보였습니다. 접혀 있으면 잘 안 누르게 되고, 그러면 정작 <strong>"수술 한 번에 담보 셋이 겹쳐 나온다"</strong>는 걸 설명하지 못하죠.<br>
+                  이제 백내장 수술 카드를 보면 <strong>질병 입원 수술비 40만 · 1~5종 30만 · 62대생활질병 10만</strong>이 그대로 보입니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>「사례로 보는 보장」</strong><br>
+                  <strong>진단 → 수술 → 항암치료 → 입원</strong>을 시간 순으로 밟아 합계를 보여드립니다. 가정으로 부풀린 숫자가 아니라 실제 담보 금액만 더한 값이에요.<br>
+                  뇌·심장은 <strong>재발해서 다시 수술하는</strong> 경우를 넣었습니다. "수술은 매회 보장"이 왜 중요한지가 숫자로 드러납니다.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">언제 얼마나 받는지</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>담보마다 지급 주기를 표시해요</strong><br>
+                  <strong>'표적항암 4,100만원'</strong>만 적혀 있으면 그게 한 번 받는 돈인지 해마다 받는 돈인지 알 수 없습니다. 그런데 제안서에는 주기가 안 적혀 있어요 — 담보 34개를 확인해보니 하나도 없었습니다.<br>
+                  <strong>약관에서 273개 담보의 주기를 읽어왔습니다.</strong> 색으로 값어치가 읽히게 했어요 — <strong>매회</strong>(금색, 횟수 제한 없음) · <strong>연간 1회</strong>(파랑) · <strong>최초 1회</strong>(테두리만). 섞여 있으면 <strong>최초 1회 100만 + 연간 1회 1,000만</strong>처럼 쪼개서 보여드립니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-new">NEW</span>
+                  <p class="change-text"><strong>통합치료비는 「모든 종합병원」을 강조했어요</strong><br>
+                  이 담보의 값어치는 금액이 아니라 <strong>범위</strong>입니다. 특정치료비Ⅲ는 수술·혈전용해·혈전제거 셋뿐이지만, 통합치료비는 <strong>검사부터 재활까지</strong> 전 과정을 덮고 상급종합병원으로 제한하지도 않습니다. 가입돼 있으면 맨 위에 띠로 띄웁니다.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">디자인</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>세 화면이 한 얼굴이 됐어요</strong><br>
+                  암·수술비·뇌심장이 <strong>삼성화재 CI 색</strong>(로고 파랑)과 같은 모서리·그림자·활자를 씁니다. 색만 갈아끼워 어느 장인지 구분돼요. 넘겨봐도 한 권으로 읽힙니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>수술비 목록이 3열이 됐어요</strong><br>
+                  "너무 길다"는 말씀에 재봤습니다. 2열은 1,384px, <strong>3열은 949px</strong>, 4열은 1,090px이었어요 — 4열은 칸이 좁아져 글자가 줄바꿈되면서 <strong>오히려 길어집니다</strong>. 3열로 갔고, 자주 하는 수술이 아닌 건 이름과 금액만 작은 칸에 담았습니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-improve">IMPROVE</span>
+                  <p class="change-text"><strong>추정 보장금액은 접어뒀어요</strong><br>
+                  반복 담보를 기간으로 곱한 <strong>참고값</strong>이라 고객에게 그대로 건네기엔 무리가 있었습니다. 기본은 접혀 있고, 필요하실 때 <strong>「추정 보장금액 보기」</strong>를 누르면 펼쳐집니다. 펴둔 채로 저장하면 PDF에도 실려요.<br>
+                  기간은 5년에서 <strong>10년</strong>으로 바꿨고, 출처가 불분명하던 문구는 뺐습니다.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="change-section">
+              <span class="cs-label">잘못 나오던 것들</span>
+              <div class="change-list">
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>뇌·심장 치료비가 0원으로 나오던 문제</strong><br>
+                  <strong>「혈전용해치료비(급성심근경색증)」</strong>처럼 치료 하나만 따로 파는 담보가 있습니다. 그런 제안서에서 치료비가 통째로 0원이었어요 — 각각 1,000만원씩 가입돼 있는데도요.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>대장·위 용종에서 위내시경이 빠져 있었어요</strong><br>
+                  담보 이름이 <strong>「대장·위 용종 절제」</strong>인데 위내시경 코드가 통째로 없었습니다. 실무에서 가장 흔한 <strong>당일퇴원</strong>도 빠져 있었고요. 약관에는 여덟 항목이 모두 1종으로 실려 있어 전부 채웠습니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>띄어쓰기 하나에 검색이 깨지던 문제</strong><br>
+                  <strong>「대장용종」</strong>은 찾는데 <strong>「대장 용종」</strong>은 엉뚱한 결과가 나왔습니다. <strong>「대장내시경」</strong>은 소장·위내시경을 주고 있었고요. 이제 다 제대로 찾습니다.</p>
+                </div>
+                <div class="change-item">
+                  <span class="tag tag-fix">FIX</span>
+                  <p class="change-text"><strong>PDF에서 담보명이 금액 위에 겹쳐 찍히던 문제</strong><br>
+                  화면에서는 말줄임(…)으로 접히던 긴 담보명이, PDF에서는 그대로 흘러나와 금액 위에 포개졌습니다. 수술 카드의 순위 번호가 카드 밖으로 튀어나오던 것도 함께 고쳤어요.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- v.0901 -->
+      <div class="v-entry" id="v0901">
+        <div class="v-dot"></div>
+        <div class="v-card">
+          <div class="v-header" onclick="toggleEntry(this.closest('.v-entry'))">
+            <div class="v-header-left">
+              <div class="v-meta">
                 <span class="v-ver">v.0901</span>
                 <span class="v-date">2026.09.01</span>
-                <span class="v-latest-badge">LATEST</span>
               </div>
               <div class="v-subtitle">"약관을 물어볼 자리가 생겼습니다"</div>
               <div class="v-summary">
