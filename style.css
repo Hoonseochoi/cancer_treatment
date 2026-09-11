@@ -639,10 +639,10 @@ strong {
    테두리와 금액 색으로 나머지와 확실히 구분한다. */
 .sg-row.hot{border-color:var(--sg-accent);box-shadow:0 0 0 1px var(--sg-accent),0 4px 14px rgba(11,107,122,.10)}
 .sg-row.hot .sg-money b{color:var(--sg-accent)}
-.sg-rank{display:inline-flex;align-items:center;justify-content:center;
-  width:17px;height:17px;margin-right:6px;border-radius:5px;
+.sg-rank{display:flex;align-items:center;justify-content:center;flex:none;
+  width:17px;height:17px;border-radius:5px;
   background:var(--sg-accent);color:#fff;font-style:normal;
-  font-size:10px;font-weight:800;line-height:1;vertical-align:1px}
+  font-size:10px;font-weight:800;line-height:1}
 /* 표준 수술비로는 지급되지 않는 시술(하이푸 등) */
 .sg-row.none{border-color:var(--sg-line);box-shadow:none;background:var(--sg-surface-2)}
 .sg-row.none .sg-name{color:var(--sg-muted)}
@@ -668,7 +668,11 @@ strong {
   align-items:center;gap:14px;flex-wrap:wrap}
 .sg-btn:focus-visible{outline:2px solid var(--sg-accent);outline-offset:-2px}
 .sg-l{display:flex;flex-direction:column;gap:7px;min-width:0}
-.sg-name{font-size:14.5px;font-weight:700;color:var(--sg-ink);letter-spacing:-.01em}
+/* 순위 뱃지를 인라인으로 흘리면 html2canvas가 baseline을 달리 잡아 캡처에서
+   카드 밖으로 튀어나온다(.sg-chip 글자 밀림과 같은 뿌리). 줄 자체를 flex로 두면
+   baseline 계산이 끼어들 자리가 없어 화면과 인쇄가 같아진다. */
+.sg-name{display:flex;align-items:center;gap:6px;
+  font-size:14.5px;font-weight:700;color:var(--sg-ink);letter-spacing:-.01em}
 .sg-tags{display:flex;flex-wrap:wrap;gap:4px}
 .sg-chip{font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:5px;
   background:var(--sg-chip);color:var(--sg-chip-ink);line-height:1.6}
@@ -1090,3 +1094,103 @@ strong {
 .sf-brk .r{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .sf-brk b{font-weight:800;color:var(--sf-ink-2);font-variant-numeric:tabular-nums;
   letter-spacing:-.02em}
+
+/* ── 담보 내역 ──
+   이 카드의 금액이 제안서의 어느 담보에서 나오는지 한 줄씩 적는다.
+   접어두면 설계사가 펴 보지 않아 "어디서 나온 돈인지"를 설명하지 못한다. */
+.sf-src{margin-top:10px;padding-top:8px;border-top:1px solid var(--sf-rule-2)}
+.sf-src .row{display:flex;align-items:baseline;gap:8px;padding:3px 0;font-size:11.5px;
+  color:var(--sf-ink-2);line-height:1.5}
+.sf-src .row + .row{border-top:1px dotted var(--sf-rule-2)}
+.sf-src .nm2{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sf-src .amt2{font-weight:800;color:var(--sf-ink);font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;white-space:nowrap}
+.sf-src .c2{font-size:10px;font-weight:800;color:var(--sf-muted);white-space:nowrap;
+  min-width:30px;text-align:right}
+.sf-src .row.zero .amt2{color:var(--sf-muted)}
+
+/* ══════════════════════════════════════════════════════════
+   지면과 같은 얼굴로 — 암 담보 카드
+   A4 지면 시안(삼성화재 CI 블루, 라운드, Plus Jakarta Sans)을 화면에도 그대로
+   가져온다. 화면과 인쇄가 따로 놀면 설계사가 화면에서 설명하고 건넨 종이가
+   다르게 보인다.
+   ══════════════════════════════════════════════════════════ */
+body.samsung-theme #summary-grid .premium-card{
+  border:1px solid var(--sf-rule);
+  border-radius:var(--sf-r-lg);
+  box-shadow:var(--sf-shadow);
+  background:#fff;
+}
+body.samsung-theme #summary-grid .premium-card:hover{
+  transform:none;
+  border-color:#C9D6F5;
+  box-shadow:0 2px 4px rgba(0,60,220,.06), 0 10px 26px rgba(0,60,220,.08);
+}
+/* 카드 안 활자 — 지면과 같은 위계 */
+body.samsung-theme #summary-grid .premium-card h4{
+  font-size:14px;font-weight:700;color:var(--sf-ink);letter-spacing:-.02em;
+}
+body.samsung-theme #summary-grid .premium-card .font-outfit{
+  font-family:'Plus Jakarta Sans','Outfit',sans-serif;
+  letter-spacing:-.045em;font-weight:800;color:var(--sf-blue);
+}
+/* 점선 구분 — 지면에서는 실선 한 겹이면 충분하다 */
+body.samsung-theme #summary-grid .premium-card .border-dashed{
+  border-style:solid;border-color:var(--sf-rule-2);
+}
+
+/* 진단비 띠 — 금액만 알면 되는 것은 한 줄로 접는다 */
+.sf-diag{display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:14px 20px;border-radius:var(--sf-r);
+  background:var(--sf-wash);border:1px solid var(--sf-rule);margin-bottom:18px}
+.sf-diag .lb{font-size:13px;font-weight:700;color:var(--sf-ink);white-space:nowrap;
+  letter-spacing:-.02em}
+.sf-diag .lb em{font-style:normal;display:block;font-size:11px;font-weight:600;
+  color:var(--sf-muted);margin-top:2px}
+.sf-diag ul{flex:1;margin:0;padding:0;list-style:none;display:flex;gap:20px;flex-wrap:wrap}
+.sf-diag li{font-size:12.5px;color:var(--sf-ink-2);white-space:nowrap}
+.sf-diag li b{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;color:var(--sf-ink);
+  font-variant-numeric:tabular-nums;letter-spacing:-.03em;margin-left:6px}
+.sf-diag li.off b{color:var(--sf-muted)}
+.sf-diag .tot{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;
+  letter-spacing:-.045em;color:var(--sf-blue);font-variant-numeric:tabular-nums;white-space:nowrap}
+@media (max-width:640px){
+  .sf-diag{gap:10px;padding:12px 14px}
+  .sf-diag ul{gap:12px}
+}
+
+/* ══════════════════════════════════════════════════════════
+   지면과 같은 얼굴로 — 수술비 · 뇌·심장
+   세 화면이 A4 지면 시안과 같은 라운드·그림자·활자를 쓴다.
+   색만 갈아끼워 어느 장인지 구분한다(암 붉은색 / 수술비 청록 / 뇌 파랑 · 심장 자홍).
+   ══════════════════════════════════════════════════════════ */
+#surgery-panel{
+  --sg-accent:#0E8C93; --sg-accent-soft:#EDF8F8;
+  --sg-line:var(--sf-rule); --sg-surface-2:var(--sf-wash);
+  --sg-ink:var(--sf-ink); --sg-ink-2:var(--sf-ink-2); --sg-muted:var(--sf-muted);
+}
+#surgery-panel .sg-row{border-radius:var(--sf-r-lg);box-shadow:var(--sf-shadow)}
+#surgery-panel .sg-row:hover{box-shadow:0 2px 4px rgba(14,140,147,.07),0 10px 26px rgba(14,140,147,.09)}
+#surgery-panel .sg-money b{font-family:'Plus Jakarta Sans','Outfit',sans-serif;
+  font-weight:800;letter-spacing:-.045em}
+#surgery-panel .sg-name{letter-spacing:-.02em;font-weight:700}
+#surgery-panel .sg-chip{border-radius:99px;padding:2px 8px}
+#surgery-panel .sg-rank{border-radius:7px}
+#surgery-panel .sg-top5{border-radius:var(--sf-r);border-color:var(--sf-rule)}
+#surgery-panel .sg-top5-item{border-radius:9px}
+#surgery-panel .sg-v{border-radius:11px;border-color:var(--sf-rule)}
+#surgery-panel .sg-disc{border-radius:var(--sf-r)}
+
+#circulatory-panel{
+  --cc-line:var(--sf-rule); --cc-surface-2:var(--sf-wash);
+  --cc-ink:var(--sf-ink); --cc-ink-2:var(--sf-ink-2); --cc-muted:var(--sf-muted);
+  --cc-shadow:var(--sf-shadow);
+}
+#circulatory-panel .cc-card{border-radius:var(--sf-r-lg)}
+#circulatory-panel .ccc,
+#circulatory-panel .ccx,
+#circulatory-panel .sx{border-radius:var(--sf-r)}
+#circulatory-panel b,
+#circulatory-panel .cc-max,
+#circulatory-panel .ccc-amt{font-family:'Plus Jakarta Sans','Outfit',sans-serif;
+  letter-spacing:-.04em}

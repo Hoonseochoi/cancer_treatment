@@ -237,6 +237,33 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             .sort((a, b) => MAIN_CARD_KEYS.indexOf(a[0]) - MAIN_CARD_KEYS.indexOf(b[0]));
         const otherItems = allItems.filter(([name]) => !MAIN_CARD_KEYS.includes(name));
 
+        // ── 진단비 띠 ──
+        // 진단비는 "얼마 나오나"만 알면 되는 정보라 카드로 벌릴 값어치가 없다.
+        // 한 줄로 접고 그 자리를 치료비 카드에 넘긴다 — 정작 설명이 필요한 쪽은
+        // 어느 담보에서 얼마가 겹쳐 나오는지다.
+        if (insurer === 'samsung') {
+            const diag = (results || []).filter(r =>
+                r && /진단비/.test(r.name || '') &&
+                !/뇌|심장|순환계|상해|치매|간병|허혈|부정맥/.test(r.name || ''));
+            if (diag.length) {
+                const tot = diag.reduce((n, r) => n + parseKoAmount(r.amount), 0);
+                const lis = diag.slice(0, 6).map(r => {
+                    const nm = (r.name || '')
+                        .replace(/\s*\([^)]*\)\s*/g, ' ')
+                        .replace(/진단비.*$/, '진단비').trim();
+                    const v = parseKoAmount(r.amount);
+                    return `<li class="${v ? '' : 'off'}">${nm}<b>${formatKoAmount(v)}</b></li>`;
+                }).join('');
+                const bar = document.createElement('div');
+                bar.className = 'sf-diag';
+                bar.innerHTML =
+                    `<div class="lb">진단 확정 시<em>최초 1회 · 중복 지급</em></div>` +
+                    `<ul>${lis}</ul>` +
+                    `<div class="tot">${formatKoAmount(tot)}</div>`;
+                summaryGrid.appendChild(bar);
+            }
+        }
+
         // 메인 카드 그리드 (summaryGrid는 wrapper, 카드는 inner div에)
         const mainGrid = document.createElement('div');
         mainGrid.className = "grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6";
@@ -303,7 +330,31 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
 
             let subItemsHtml = '';
 
-            if (['samsung', 'meritz'].includes(insurer) && dedupedItems.length > 0) {
+            if (insurer === 'samsung' && dedupedItems.length > 0) {
+                // ── 담보 내역 ──
+                // 제안서의 어느 담보가 이 금액을 만드는지 한 줄씩 적는다.
+                // 예전에는 details로 접어 두었는데, 접혀 있으면 설계사가 펴 보지 않아
+                // 정작 "어디서 나온 돈인지"를 고객에게 설명하지 못했다.
+                const CYC_SHORT = { '최초1회': '최초', '연간1회': '연간', '매회': '매회', '일당': '일당' };
+                const srcMap = new Map();
+                dedupedItems.forEach(sub => {
+                    const src = sub.source || '';
+                    if (!srcMap.has(src)) srcMap.set(src, { total: 0, cycle: sub.cycle || '' });
+                    const e = srcMap.get(src);
+                    e.total += parseKoAmount(sub.amount);
+                    if (!e.cycle && sub.cycle) e.cycle = sub.cycle;
+                });
+                let rows = '';
+                srcMap.forEach((e, srcName) => {
+                    rows += `
+                        <div class="row${e.total ? '' : ' zero'}">
+                            <span class="nm2" title="${srcName}">${srcName}</span>
+                            <span class="amt2">${formatKoAmount(e.total)}</span>
+                            <span class="c2">${CYC_SHORT[e.cycle] || ''}</span>
+                        </div>`;
+                });
+                subItemsHtml = `<div class="sf-src">${rows}</div>`;
+            } else if (insurer === 'meritz' && dedupedItems.length > 0) {
                 // 삼성화재: source(담보명) 기준 그룹핑 → 접기/펼치기
                 const srcMap = new Map();
                 dedupedItems.forEach(sub => {
@@ -415,10 +466,9 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                     return `<img src="${iconPath}" class="w-full h-full object-contain" ${style} alt="${name} icon">`;
                 })()}
                         </div>
-                        <div class="text-right pt-1 flex-1">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">COVERAGE TOTAL</p>
+                        <div class="text-right pt-1 flex-1 flex flex-col items-end gap-1">
+                            ${cycBadge || '<span></span>'}
                             ${totalHtml}
-                            ${cycBadge ? `<div class="mt-1.5">${cycBadge}</div>` : ''}
                         </div>
                     </div>
                     <div class="h-px w-full bg-gray-50 border-t border-dashed border-gray-100"></div>
