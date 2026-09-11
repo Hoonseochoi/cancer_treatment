@@ -106,8 +106,11 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         // 최초 1회 담보: ×1, 반복 보장 담보: ×5
         const repeatableMin = grandTotalMin - onceOnlyTotalMin;
         const repeatableMax = grandTotalMax - onceOnlyTotalMax;
-        const total5Min = repeatableMin * 5 + onceOnlyTotalMin;
-        const total5Max = repeatableMax * 5 + onceOnlyTotalMax;
+        // 반복 담보는 해마다 다시 받을 수 있으므로 기간을 곱하고, 최초 1회 담보는
+        // 한 번뿐이라 그대로 더한다. 기간은 10년 기준.
+        const YEARS = 10;
+        const total5Min = repeatableMin * YEARS + onceOnlyTotalMin;
+        const total5Max = repeatableMax * YEARS + onceOnlyTotalMax;
 
         let total5Display = formatKoAmount(total5Min);
         if (total5Min !== total5Max) {
@@ -157,7 +160,16 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             `;
         }
 
+        // 추정 보장금액은 기본으로 접어 둔다. 반복 담보를 10년으로 곱한 참고값이라
+        // 고객에게 그대로 건네기엔 무리가 있다. 설계사가 펴 두면 PDF에도 그대로
+        // 실린다 — html2canvas는 감춘 요소를 찍지 않는다.
         insightSection.innerHTML = `
+            <div class="sf-peek" data-open="false">
+              <button type="button" data-peek aria-expanded="false">
+                <i></i><span>추정 보장금액 보기</span>
+              </button>
+            </div>
+            <div data-peek-body hidden>
             <div class="premium-card rounded-3xl p-4 sm:p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
                 <!-- Background Decoration -->
                 <div class="absolute -right-4 -top-4 w-32 h-32 bg-red-500/5 rounded-full blur-3xl group-hover:bg-red-500/10 transition-colors"></div>
@@ -172,11 +184,11 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                     </div>
                     <div class="text-center sm:text-left flex-1">
                         <p class="text-gray-500 text-[13px] font-bold mb-1 opacity-80">
-                            🛡️ <span class="text-gray-400">${insurer === 'db' ? 'DB손보 마스코트' : insurer === 'heungkuk' ? '흥국화재 마스코트' : insurer === 'mirae' ? '미래에셋생명 AI' : '보험전문가'} <b class="text-gray-600">${expertName}</b>의 insight : 전문 통계에 의하면 암치료는 5년정도 받는대요 !</span>
+                            🛡️ <span class="text-gray-400">${insurer === 'db' ? 'DB손보 마스코트' : insurer === 'heungkuk' ? '흥국화재 마스코트' : insurer === 'mirae' ? '미래에셋생명 AI' : '보험전문가'} <b class="text-gray-600">${expertName}</b>의 insight</span>
                         </p>
                         <h3 class="text-sm sm:text-xl font-medium text-gray-800 leading-relaxed">
                             <span class="font-black text-red-600 underline decoration-red-200 underline-offset-4">${customerName}</span>님이 
-                            <span class="font-bold text-gray-900 mx-1">5년간</span> 보장받을 수 있는 
+                            <span class="font-bold text-gray-900 mx-1">10년간</span> 보장받을 수 있는 
                             <span class="font-black text-gray-900 border-b-2 border-red-500/30">암 치료비</span>는 최대
                         </h3>
                         <div class="mt-2 flex items-baseline gap-2 justify-center sm:justify-start">
@@ -186,7 +198,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                             <span class="text-gray-400 text-xs font-bold ml-1">입니다.</span>
                         </div>
                         <p class="text-[10px] text-gray-400 mt-3 font-medium tracking-tight leading-tight break-keep">
-                            * 반복보장 담보 ×5 + 최초1회 담보 ×1로 산출한 참고값입니다. 실제 보장금액과 상이합니다.
+                            * 반복보장 담보 ×10 + 최초1회 담보 ×1로 산출한 참고값입니다. 실제 보장금액과 상이합니다.
                         </p>
                     </div>
                     ${scoreBoxHtml}
@@ -196,7 +208,24 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                     * 국내 암 치료 통계 경향성을 반영한 추정 점수이며, 실제 보장 결과와 다를 수 있습니다.
                 </p>` : ''}
             </div>
+            </div>
         `;
+
+        // 토글 — onclick 대입으로 재분석 시 핸들러가 겹치지 않게 한다
+        const peekBtn = insightSection.querySelector('[data-peek]');
+        const peekBody = insightSection.querySelector('[data-peek-body]');
+        const peekWrap = insightSection.querySelector('.sf-peek');
+        if (peekBtn && peekBody) {
+            peekBtn.onclick = () => {
+                const willOpen = peekBody.hidden;
+                peekBody.hidden = !willOpen;
+                peekWrap.dataset.open = String(willOpen);
+                peekBtn.setAttribute('aria-expanded', String(willOpen));
+                peekBtn.querySelector('span').textContent =
+                    willOpen ? '추정 보장금액 숨기기' : '추정 보장금액 보기';
+            };
+        }
+
         insightSection.classList.remove('hidden');
     }
     // 2. Render Summary Grid
