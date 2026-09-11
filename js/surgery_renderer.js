@@ -293,18 +293,6 @@ function renderSurgeryPanel(results) {
         <p>가입한 수술비 담보 기준으로 각 수술에서 검토 가능한 금액입니다.</p>
       </div>
       ${covHtml}
-      ${topList.length ? `
-      <div class="sg-top5">
-        <div class="sg-top5-head">많이 하는 수술 TOP ${topList.length} · 연간 검토 가능 금액</div>
-        <div class="sg-top5-grid">
-          ${topList.map(t => `
-          <div class="sg-top5-item">
-            <span class="t5n">${t.name}</span>
-            <b class="num">${t.lo === t.hi ? fmt(t.lo) : fmt(t.lo) + '~' + fmt(t.hi)}</b>
-          </div>`).join('')}
-        </div>
-        <p class="sg-top5-note">수술비는 진단비와 달리 <strong>최초 1회한이 아니라</strong> 수술받을 때마다 검토됩니다(질병수술비는 매회지급, 1~5종은 동일사고당 1회). 위 금액은 <strong>해당 수술 1회 기준</strong>이며, 아래 목록에서 ${SURGERY_DATA.length}종 전체와 술기별 상세를 확인하실 수 있습니다.</p>
-      </div>` : ''}
       <p class="sg-hot-legend"><i>1</i>~<i>9</i> 번호가 붙은 항목은 <strong>보험사 손해율이 급등한 수술</strong>입니다. 청구가 많은 만큼 상담에서도 가장 자주 나옵니다.</p>
       <div class="sg-list">${cards}</div>
       <div class="sg-disc" data-open="false">

@@ -428,32 +428,22 @@ function renderCirculatoryPanel(results) {
     ${spanHtml}
     <div class="cc-card">
       <h2>치료비 · 수술비 보장 구조</h2>
-      <p class="sub">카드 큰 금액은 <strong>그 항목으로 검토 가능한 금액</strong>이고, 아래 목록은 그 금액을 이루는 <strong>세부 담보</strong>입니다. 회색으로 흐린 카드는 가입되지 않은 담보입니다.</p>
-
       ${ccCardsHtml(policy, tongName)}
       ${journeySection}
-      <div class="codes" data-cc="codes" data-open="false">
-        <h4>특정순환계질환 분류표 · ${CIRCULATORY_DATA.CODES.length}개 항목</h4>
-        <p>[별표-질병관련55] 특정순환계질환Ⅱ 기준이며, <strong>Ⅱ와 Ⅲ의 보장 범위는 동일</strong>합니다
-           (가입 담보는 특정치료비Ⅲ). 제9차 개정 한국표준질병·사인분류(통계청 고시 제2025-299호) 중 아래 질병을 말합니다.
-           <strong style="color:var(--brain-2)">파란 항목</strong>이 위 카드에 나온 뇌·심장 계열입니다.</p>
-        <div class="code-grid">${codesHtml}</div>
-      </div>
-      <div class="trap-box">${CIRCULATORY_DATA.TRAP}</div>
     </div>
 
     <div class="cc-card">
       <h2>보장금액 합계</h2>
-      <p class="sub">위 카드 금액을 합쳐, 한 번의 사고에서 검토 가능한 금액을 정리한 것입니다.</p>
       <div class="sx">${sxHtml}</div>
     </div>
+
+    ${caseHtml}
 
     <div class="cc-disc">
       <b>반드시 확인해 주세요</b>
       <p>${CIRCULATORY_DATA.DISC}</p>
     </div>
     <p class="cc-src">${CIRCULATORY_DATA.SRC}</p>
-    ${caseHtml}
   `;
 
     // onclick 대입 방식 — addEventListener는 재분석 시 핸들러가 중첩된다(수술비 때와 동일).
