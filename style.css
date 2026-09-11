@@ -1049,3 +1049,44 @@ strong {
 .cci-bed{color:var(--warn);-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 18V7m0 6h18v5M7 11h2'/%3E%3Cpath d='M21 18v-5a3 3 0 0 0-3-3h-7'/%3E%3C/svg%3E");
   mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 18V7m0 6h18v5M7 11h2'/%3E%3Cpath d='M21 18v-5a3 3 0 0 0-3-3h-7'/%3E%3C/svg%3E")}
 
+
+/* ══════════════════════════════════════════════════════════
+   삼성화재 스마트가입제안서 — 공통 토큰
+   색은 삼성화재 CI에서 직접 뽑았다(로고 #003CDC, 표지 #00B0E0).
+   암·수술비·뇌심장 세 화면이 이 한 벌을 함께 쓴다.
+   ══════════════════════════════════════════════════════════ */
+:root{
+  --sf-blue:#003CDC;
+  --sf-cyan:#00B0E0;
+  --sf-ink:#0F1626;
+  --sf-ink-2:#4B5768;
+  --sf-muted:#8D97A8;
+  --sf-rule:#E4E8F0;
+  --sf-rule-2:#F0F3F8;
+  --sf-wash:#F7F9FD;
+  --sf-gold:#A8874B;
+  --sf-r:14px;
+  --sf-r-lg:20px;
+  --sf-shadow:0 1px 2px rgba(15,22,38,.04), 0 6px 16px rgba(15,22,38,.05);
+}
+
+/* ── 지급 주기 뱃지 ──
+   제안서에는 주기가 적혀 있지 않아 약관에서 읽어 온다(clause_cycle_data.js).
+   횟수 제한이 없는 '매회'가 가장 값어치가 크므로 금색을, 해마다 받는 '연간'에
+   파랑을, 한 번뿐인 '최초'에 테두리만 준다 — 색만 봐도 순서가 읽히게. */
+.sf-cyc{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.01em;
+  padding:2px 8px;border-radius:99px;line-height:1.5;
+  background:var(--sf-rule-2);color:var(--sf-ink-2);white-space:nowrap}
+.sf-cyc.ev{background:var(--sf-gold);color:#fff}
+.sf-cyc.yr{background:var(--sf-blue);color:#fff}
+.sf-cyc.on{background:transparent;color:var(--sf-muted);box-shadow:inset 0 0 0 1px var(--sf-rule)}
+.sf-cyc.mix{background:var(--sf-ink);color:#fff}
+
+/* ── 주기별 소계 ──
+   한 카드에 주기가 섞여 있으면 무엇이 얼마인지 쪼개 보여준다.
+   '표적항암 2,000만원'만 적으면 그게 한 번인지 해마다인지 알 수 없다. */
+.sf-brk{margin-top:8px;padding-top:7px;border-top:1px solid var(--sf-rule-2);
+  font-size:11px;line-height:1.85;color:var(--sf-muted)}
+.sf-brk .r{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sf-brk b{font-weight:800;color:var(--sf-ink-2);font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em}

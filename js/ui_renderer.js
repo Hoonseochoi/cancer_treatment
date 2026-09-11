@@ -357,6 +357,37 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 return map[name] || ICON_A_B64;
             };
 
+            // ── 지급 주기 ──
+            // 제안서에는 주기가 없어 약관에서 읽어 둔 사전을 쓴다(clause_cycle_data.js).
+            // 한 카드에 주기가 섞이는 경우가 흔하다 — '암 수술비'에는 최초 1회만 주는
+            // 최초수술비와 수술마다 주는 수술비가 함께 들어간다. 그럴 때 합계만 적으면
+            // 그게 한 번인지 매번인지 알 수 없어, 주기별로 쪼개 보여준다.
+            const CYC_META = {
+                '매회':   { label: '매회',     cls: 'ev', short: '매회' },
+                '연간1회': { label: '연간 1회', cls: 'yr', short: '연간' },
+                '최초1회': { label: '최초 1회', cls: 'on', short: '최초' },
+                '일당':   { label: '1일당',    cls: '',   short: '일당' }
+            };
+            // 시간 흐름대로 적는다 — 처음 한 번 받고, 그다음 해마다 받는 순서.
+            const CYC_ORDER = ['최초1회', '연간1회', '매회', '일당'];
+            const cycSum = {};
+            dedupedItems.forEach(sub => {
+                const c = sub.cycle;
+                if (!c || !CYC_META[c]) return;
+                cycSum[c] = (cycSum[c] || 0) + parseKoAmount(sub.amount);
+            });
+            const cycKeys = CYC_ORDER.filter(k => cycSum[k] > 0);
+            let cycBadge = '', cycBreak = '';
+            if (cycKeys.length === 1) {
+                const m = CYC_META[cycKeys[0]];
+                cycBadge = `<span class="sf-cyc ${m.cls}">${m.label}</span>`;
+            } else if (cycKeys.length > 1) {
+                cycBadge = `<span class="sf-cyc mix">${cycKeys.map(k => CYC_META[k].short).join('+')}</span>`;
+                cycBreak = '<div class="sf-brk">' + cycKeys.map(k =>
+                    `<div class="r"><span>${CYC_META[k].label}</span><b>${formatKoAmount(cycSum[k])}</b></div>`
+                ).join('') + '</div>';
+            }
+
             const iconPath = getSummaryIcon(name);
 
             // Staggered Two-Line Display Logic
@@ -387,11 +418,13 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         <div class="text-right pt-1 flex-1">
                             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">COVERAGE TOTAL</p>
                             ${totalHtml}
+                            ${cycBadge ? `<div class="mt-1.5">${cycBadge}</div>` : ''}
                         </div>
                     </div>
                     <div class="h-px w-full bg-gray-50 border-t border-dashed border-gray-100"></div>
                 <div class="flex-1">
                     <h4 class="text-sm font-black text-gray-800 mb-1 leading-tight">${name}</h4>
+                    ${cycBreak}
                     <div class="sub-items-container">${subItemsHtml}</div>
                 </div>
             </div>`;

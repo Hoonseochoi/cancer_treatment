@@ -617,6 +617,9 @@ function calculateHierarchicalSummarySamsung(results) {
                     amount: det.amount,
                     maxAmount: det.maxAmount,
                     source: item.name,
+                    // 약관이 정한 지급 주기(최초 1회 / 연간 1회 / 매회 / 1일당).
+                    // 제안서에는 적혀 있지 않아 clause_cycle_data.js에서 읽는다.
+                    cycle: typeof clauseCycleOf === 'function' ? clauseCycleOf(item.name) : '',
                     hiddenInDetail: det.hiddenInDetail,
                     sub: det.sub,
                     비급여: det.비급여 || false,
