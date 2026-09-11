@@ -317,6 +317,54 @@ def main():
 
         print(f'  {"prompt":8} {len(full):>6}자   prompts/clause_system.md (사이트에서 함수가 읽어 간다)')
 
+    # ── 담보별 지급 주기 사전 ──
+    # 제안서에는 주기가 적혀 있지 않다(실측: 담보 34개 전부 무표기). 약관 본문에는
+    # "최초 1회에 한하여" 같은 문장으로 들어 있어, 그것을 읽어 사전으로 만든다.
+    # analyzer의 ONCE_ONLY_KEYS는 카드 이름 일곱 개를 손으로 적어 둔 것이라
+    # '항암방사선·약물 치료비Ⅲ'처럼 빠지는 담보가 있었다.
+    CYCLE_RULES = [
+        ('최초1회', re.compile(r'최초\s*1회')),
+        ('연간1회', re.compile(r'연간\s*1회|연\s*1회')),
+        ('매회',   re.compile(r'수술\s*1회당|1회당')),
+        ('일당',   re.compile(r'1일당')),
+    ]
+    by_id = {c['id']: c for c in cards}
+    cyc_src = collections.defaultdict(list)
+    for ch in chunks:
+        c = by_id.get(ch['card'])
+        if not c:
+            continue
+        if not c['no'] or not re.match(r'^[0-9]', c['no']):
+            continue
+        if ch['sec'] in ('보상범위 (지급사유·세부규정)', '담보정의', '소멸·한도 등'):
+            cyc_src[c['no']].append(ch['text'])
+
+    def norm_cov(t):
+        t = re.sub(r'^[0-9][0-9-]*\s*', '', t or '')      # 앞 번호
+        t = re.sub(r'\[[^\]]*\]', '', t)                  # [건강] [갱신형]
+        return re.sub(r'\s+', '', t).strip()
+
+    cycles = {}
+    for no, texts in cyc_src.items():
+        body = ' '.join(texts)
+        kind = next((k for k, rx in CYCLE_RULES if rx.search(body)), '')
+        if not kind:
+            continue
+        card = next((c for c in cards if c['no'] == no), None)
+        if not card:
+            continue
+        key = norm_cov(card['title'])
+        if key:
+            cycles.setdefault(key, {'cycle': kind, 'no': no})
+    pc = os.path.join('js', 'clause_cycle_data.js')
+    io.open(pc, 'w', encoding='utf-8').write(
+        '// 자동 생성 — scripts/build_clause_index.py\n'
+        '// 담보명(공백·번호·태그 제거) → 약관이 정한 지급 주기\n'
+        'const CLAUSE_CYCLE = ' + json.dumps(cycles, ensure_ascii=False) + ';\n')
+    dist = collections.Counter(v['cycle'] for v in cycles.values())
+    print(f'  {"cycle":8} {len(cycles):>6}건  {os.path.getsize(pc)/1024:>6.1f} KB  {pc}')
+    print('           ', ' · '.join(f'{k} {n}' for k, n in dist.most_common()))
+
     # ── 브라우저용 경량 인덱스 ──
     # 본문(chunks.text)은 빼고 검색에 필요한 것만 싣는다. 본문은 Supabase에서
     # 고른 것만 가져온다 — 5MB를 전부 내려받게 할 이유가 없다.

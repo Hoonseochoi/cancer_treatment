@@ -111,6 +111,37 @@ const ONCE_ONLY_KEYS = new Set([
     "정위방사선치료비"   // 미래에셋생명 항암정위방사선치료특약 (SBRT)
 ]);
 
+// ── 약관이 정한 지급 주기 조회 ──
+// 제안서 담보명에는 주기가 없다(실측: 담보 34개 전부 무표기). 약관 본문의
+// "최초 1회에 한하여" 같은 문장에서 뽑아 둔 사전(clause_cycle_data.js)을 본다.
+// 표시 전용이다 — 기존 payFreq·onceOnly 계산에는 손대지 않는다. 사전이 없거나
+// 담보를 못 찾으면 빈 문자열을 돌려주므로 로드 실패에도 안전하다.
+function normCoverageKey(name) {
+    return String(name || '')
+        .replace(/^[0-9][0-9-]*\s*/, '')
+        .replace(/\[[^\]]*\]/g, '')
+        .replace(/\s+/g, '');
+}
+
+function clauseCycleOf(name) {
+    if (typeof CLAUSE_CYCLE === 'undefined' || !CLAUSE_CYCLE || !name) return '';
+    const key = normCoverageKey(name);
+    if (!key) return '';
+    if (CLAUSE_CYCLE[key]) return CLAUSE_CYCLE[key].cycle;
+    // 제안서 담보명이 약관보다 길거나 짧은 경우가 흔하다
+    // (제안서 "종합병원 암 전액본인부담(비급여포함) 통합치료비(표준형,연간1억원한도)"
+    //  ↔ 약관 "종합병원 암 전액본인부담(비급여포함) 통합치료비(표준형, 연간1억원한도)").
+    // 짧은 이름이 아무 데나 걸리지 않도록 여섯 자 이상일 때만 부분 일치를 본다.
+    let best = '';
+    for (const k in CLAUSE_CYCLE) {
+        if (k.length < 6) continue;
+        if (key.indexOf(k) >= 0 || k.indexOf(key) >= 0) {
+            if (k.length > best.length) best = k;
+        }
+    }
+    return best ? CLAUSE_CYCLE[best].cycle : '';
+}
+
 // ── Aggregate Hierarchical Summary Logic ──
 function calculateHierarchicalSummary(results) {
     const summaryMap = new Map();
@@ -289,6 +320,7 @@ function calculateHierarchicalSummary(results) {
                     amount: det.amount,
                     maxAmount: det.maxAmount,
                     source: item.name,
+                    cycle: clauseCycleOf(item.name),
                     hiddenInDetail: det.hiddenInDetail,
                     sub: det.sub, // 전달용 sub 항목 추가
                     payFreq: payFreq,
