@@ -131,6 +131,15 @@ function buildCirculatoryPolicy(results) {
         });
     }
 
+    // 질환별 개별 치료비 담보 — '혈전용해치료비(급성심근경색증)'처럼 행위 하나만
+    // 따로 떼어 파는 담보가 있다. 특정치료비Ⅲ·통합치료비만 보고 있었더니 이런
+    // 제안서에서 치료비가 통째로 0으로 나왔다(실측: 혈전용해·혈전제거 각 1,000만원).
+    const actSum = re => circ.filter(r => re.test(norm(r.name)) && !/통합치료비|특정치료비/.test(norm(r.name)))
+        .reduce((n, r) => n + val(r), 0);
+    p.surgTreat.혈전용해 += actSum(/혈전용해/);
+    p.surgTreat.혈전제거 += actSum(/혈전제거/);
+    p.surgTreat.수술 += actSum(/(순환계|심장|뇌).*수술비|스텐트|관상동맥.*수술/);
+
     p.surgSum = p.sx.입원 + p.sx.종5 + p.sx.대질병 + p.sx.종8 + p.sx.오대;
 
     // ── 대표 금액과 최대 금액을 분리한다 ──
@@ -276,22 +285,30 @@ function ccCardsHtml(policy, tongName) {
       </div>`;
     };
 
+    // 내역은 제안서에 적힌 담보명을 그대로 쓴다. 통칭만 넣어 두면 행위 하나만
+    // 따로 파는 담보('혈전용해치료비(급성심근경색증)')를 가진 제안서에서 빈다.
+    const rawRows = re => (policy._raw || [])
+        .filter(r => re.test((r.name || '').replace(/\s+/g, '')))
+        .map(r => ({ n: (r.name || '').trim(), v: parseKoAmount(r.amount) }))
+        .filter(x => x.v > 0);
+    const withTong = (re, key) => {
+        const rows = rawRows(re);
+        if (policy.통합 && jVal(key)) {
+            rows.push({ n: `특정순환계 통합치료비${tongName ? '(' + tongName + ')' : ''}`,
+                        v: jVal(key) });
+        }
+        return rows;
+    };
     const acts = [
-        act('주요 치료 수술', policy.surgTreat.수술 || 0, [
-            { n: '특정순환계 특정치료비', v: policy.치료비 },
-            { n: `특정순환계 통합치료비${tongName ? '(' + tongName + ')' : ''}`, v: jVal('수술') }
-        ], { lead: true, cyc: '수술 매회', badge: 'ev' }),
-        act('혈전용해치료', policy.surgTreat.혈전용해 || 0, [
-            { n: '특정순환계 특정치료비', v: policy.치료비 },
-            { n: '특정순환계 통합치료비', v: jVal('혈전용해') }
-        ], { cyc: '연 1회' }),
-        act('혈전제거술', policy.surgTreat.혈전제거 || 0, [
-            { n: '특정순환계 특정치료비', v: policy.치료비 },
-            { n: '특정순환계 통합치료비', v: jVal('혈전제거') }
-        ], { cyc: '연 1회' }),
-        act('중환자실 입원', policy.중환자실 || 0, [
-            { n: '특정순환계 중환자실 치료비', v: policy.중환자실 }
-        ], { cyc: '연 1회' })
+        act('주요 치료 수술', policy.surgTreat.수술 || 0,
+            withTong(/특정치료비|순환계.*수술비/, '수술'),
+            { lead: true, cyc: '수술 매회', badge: 'ev' }),
+        act('혈전용해치료', policy.surgTreat.혈전용해 || 0,
+            withTong(/혈전용해|특정치료비/, '혈전용해'), { cyc: '연 1회' }),
+        act('혈전제거술', policy.surgTreat.혈전제거 || 0,
+            withTong(/혈전제거|특정치료비/, '혈전제거'), { cyc: '연 1회' }),
+        act('중환자실 입원', policy.중환자실 || 0,
+            rawRows(/중환자실/), { cyc: '연 1회' })
     ];
     if (policy.통합) {
         acts.push(act('검사 · 영상진단', jVal('MRI') + jVal('CT') + jVal('양전자'), [

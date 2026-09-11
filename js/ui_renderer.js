@@ -33,6 +33,10 @@ function showToast(msg, isError = true) {
 
 // Raw List Renderer (Updated for Hierarchical Summary and Insight Card)
 function renderResults(results, customerName = '고객', insurer = 'meritz', meta = {}) {
+    // PDF 지면이 같은 값을 다시 구하지 않도록 남겨 둔다. 두 번 계산하면
+    // 화면과 인쇄가 어긋나기 시작한다.
+    window.__lastMeta = meta || {};
+    window.__customerName = customerName;
     // ── 흥국화재 전역 상태 초기화 (분석 시작마다 리셋) ──
     window._heungkukSanggup2Others = null;
     window._heungkukWalletOthers = null;
@@ -1672,39 +1676,23 @@ window.exportAllAsPdf = async function () {
         const box = pageContentBox(PW, PH);
         const fileTitle = captureBaseName();
 
-        for (let i = 0; i < views.length; i++) {
-            const v = views[i];
-            if (btnLabel) btnLabel.textContent = `저장 중… ${i + 1}/${views.length}`;
-            await activateView(v);
-            const canvas = await html2canvas(target, buildCaptureOptions({ ...assets, forPdf: true }));
+        // ── 본문은 PDF 전용 지면으로 그린다 ──
+        // 화면을 찍어 A4에 욱여넣던 방식은 본문이 4.6pt로 눌렸다. 지면은 A4 실제
+        // 치수(1240×1754px = 210×297mm)에 활자를 pt로 잡아 따로 그린다.
+        if (btnLabel) btnLabel.textContent = '저장 중… 지면 구성';
+        const sheets = await renderSheetPages(
+            window.__lastResults || [], window.__lastMeta || {}, (window.__customerName || '고객'));
 
+        for (let i = 0; i < sheets.length; i++) {
+            if (btnLabel) btnLabel.textContent = `저장 중… ${i + 1}/${sheets.length}`;
             pdf.addPage();
-
-            const chrome = await renderPageChromeCanvas({
-                title: CAPTURE_VIEW_TITLE[v] || '',
-                fileTitle, pageNo: i + 2, pageTotal
-            });
-            pdf.addImage(downscaleForPdf(chrome, PW).toDataURL('image/jpeg', 0.92), 'JPEG',
+            const c = sheets[i];
+            pdf.addImage(downscaleForPdf(c, PW).toDataURL('image/jpeg', 0.92), 'JPEG',
                          0, 0, PW, PH, undefined, 'FAST');
-
-            // 본문 자리에 배경색을 깔아 남는 여백이 흰 띠로 보이지 않게 한다.
-            pdf.setFillColor(bg.r, bg.g, bg.b);
-            pdf.rect(box.x, box.y, box.w, box.h, 'F');
-
-            // 프레임 안쪽에 비율 유지로 앉힌다(늘리거나 자르지 않는다).
-            const ratio = Math.min(box.w / canvas.width, box.h / canvas.height);
-            const w = canvas.width * ratio;
-            const h = canvas.height * ratio;
-            const shot = downscaleForPdf(canvas, w);
-
-            pdf.addImage(
-                shot.toDataURL('image/jpeg', 0.9), 'JPEG',
-                box.x + (box.w - w) / 2, box.y + (box.h - h) / 2, w, h, undefined, 'FAST'
-            );
         }
 
         pdf.save(`${captureBaseName()} 분석 보고서.pdf`);
-        console.log(`[export] PDF ${views.length + 1}장(표지 포함) 저장 완료`);
+        console.log(`[export] PDF ${sheets.length + 1}장(표지 포함) 저장 완료`);
     } catch (err) {
         console.error('PDF Export Error:', err);
         alert(`PDF 저장 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'} `);
