@@ -1319,3 +1319,12 @@ body.samsung-theme #summary-grid .premium-card .border-dashed{
 @media (max-width:620px){
   #circulatory-panel .cc-dx,#circulatory-panel .cc-acts{grid-template-columns:1fr}
 }
+
+/* ── 섹션 제목 — 세 화면 공통 ── */
+.sf-h3{display:flex;align-items:center;gap:9px;margin:0 0 12px;
+  font-size:15px;font-weight:700;color:var(--sf-ink);letter-spacing:-.025em}
+.sf-h3::before{content:"";width:6px;height:6px;border-radius:50%;
+  background:var(--sf-sec,var(--sf-blue));flex:none}
+.sf-h3 .hint{font-size:11.5px;font-weight:400;color:var(--sf-muted);margin-left:auto;
+  letter-spacing:0}
+#circulatory-panel .ccx{margin-bottom:20px}

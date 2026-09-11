@@ -306,9 +306,9 @@ function ccCardsHtml(policy, tongName) {
 
     return `
     <div class="ccx">
-      <p class="ccx-cap2">진단비 — 범위가 넓은 담보부터</p>
+      <h3 class="sf-h3" style="--sf-sec:#2D6FB8">진단비<span class="hint">범위가 넓은 담보부터</span></h3>
       ${dxHtml}
-      <p class="ccx-cap2">치료비 — 어느 담보에서 얼마가 나오는지${capTxt ? ` · ${capTxt}` : ''}</p>
+      <h3 class="sf-h3" style="--sf-sec:#C2436B">치료비<span class="hint">어느 담보에서 얼마가 나오는지${capTxt ? ` · ${capTxt}` : ''}</span></h3>
       <div class="cc-acts">${acts.join('')}</div>
     </div>`;
 }
@@ -426,16 +426,7 @@ function renderCirculatoryPanel(results) {
     host.innerHTML = `
     ${covHtml}
     ${spanHtml}
-    <div class="cc-card">
-      <h2>치료비 · 수술비 보장 구조</h2>
-      ${ccCardsHtml(policy, tongName)}
-      ${journeySection}
-    </div>
-
-    <div class="cc-card">
-      <h2>보장금액 합계</h2>
-      <div class="sx">${sxHtml}</div>
-    </div>
+    ${ccCardsHtml(policy, tongName)}
 
     ${caseHtml}
 
