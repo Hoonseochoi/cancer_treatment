@@ -445,8 +445,6 @@ function renderCirculatoryPanel(results) {
     ${spanHtml}
     ${ccCardsHtml(policy, tongName)}
 
-    ${caseHtml}
-
     <div class="cc-disc">
       <b>반드시 확인해 주세요</b>
       <p>${CIRCULATORY_DATA.DISC}</p>

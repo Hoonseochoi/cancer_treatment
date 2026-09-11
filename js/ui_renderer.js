@@ -168,12 +168,12 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         // 고객에게 그대로 건네기엔 무리가 있다. 설계사가 펴 두면 PDF에도 그대로
         // 실린다 — html2canvas는 감춘 요소를 찍지 않는다.
         insightSection.innerHTML = `
-            <div class="sf-peek" data-open="false">
-              <button type="button" data-peek aria-expanded="false">
-                <i></i><span>추정 보장금액 보기</span>
+            <div class="sf-peek" data-open="true">
+              <button type="button" data-peek aria-expanded="true">
+                <i></i><span>추정 보장금액 숨기기</span>
               </button>
             </div>
-            <div data-peek-body hidden>
+            <div data-peek-body>
             <div class="premium-card rounded-3xl p-4 sm:p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
                 <!-- Background Decoration -->
                 <div class="absolute -right-4 -top-4 w-32 h-32 bg-red-500/5 rounded-full blur-3xl group-hover:bg-red-500/10 transition-colors"></div>
@@ -515,51 +515,6 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             mainGrid.appendChild(card);
         });
 
-        // ── 사례로 보는 보장 ──
-        // "5년간 최대 ○○원"을 대신한다. 진단→수술→치료→입원을 실제 담보 금액으로
-        // 밟아 합계에 닿으므로 가정이 낄 자리가 없다.
-        if (insurer === 'samsung') {
-            const pick = re => {
-                const hit = [...summaryMap.entries()].find(([k]) => re.test(k));
-                return hit ? hit[1].totalMin : 0;
-            };
-            const diagSum = (results || [])
-                .filter(r => r && /진단비/.test(r.name || '') &&
-                    !/뇌|심장|순환계|허혈|부정맥|치매|간병|납입/.test(r.name || ''))
-                .reduce((n, r) => n + parseKoAmount(r.amount), 0);
-            const surgery = pick(/암수술비|암 수술비/);
-            const drug = pick(/표적항암|항암약물/);
-            const stayRow = (results || []).find(r => /암.*입원일당|입원일당.*암/.test(r.name || ''));
-            const stay = stayRow ? parseKoAmount(stayRow.amount) * 20 : 0;
-
-            const steps = [
-                diagSum && { s: '진단', a: diagSum, d: '진단비 합계' },
-                surgery && { s: '수술', a: surgery, d: '암 수술비' },
-                drug && { s: '항암약물', a: drug, d: '연 1회 한도' },
-                stay && { s: '입원 20일', a: stay, d: '1일당 기준' }
-            ].filter(Boolean);
-
-            if (steps.length >= 2) {
-                const tot = steps.reduce((n, x) => n + x.a, 0);
-                const box = document.createElement('div');
-                box.className = 'sf-case';
-                box.style.setProperty('--sf-case-accent', '#D64535');
-                box.style.setProperty('--sf-case-soft', '#FDF2F0');
-                box.innerHTML =
-                    `<div class="sf-case-hd"><span class="t">사례로 보는 보장</span>` +
-                    `<span class="d">암 진단 후 수술 · 항암치료 · 20일 입원</span></div>` +
-                    `<div class="sf-flow">` +
-                    steps.map((x, i) =>
-                        (i ? '<div class="arw">→</div>' : '') +
-                        `<div class="step"><div class="s">${x.s}</div>` +
-                        `<div class="a">${formatKoAmount(x.a)}</div>` +
-                        `<div class="d">${x.d}</div></div>`).join('') +
-                    `<div class="sum"><div class="s">합계</div>` +
-                    `<div class="a">${formatKoAmount(tot)}</div></div></div>`;
-                summaryGrid.appendChild(box);
-            }
-        }
-
         // ── 기타 담보 패널 렌더링 ──
         const walletOthers      = (insurer === 'heungkuk') ? (window._heungkukWalletOthers      || null) : null;
         const sanggup2Others    = (insurer === 'heungkuk') ? (window._heungkukSanggup2Others    || null) : null;
@@ -897,20 +852,9 @@ async function prepareCaptureAssets() {
     const expertNameEl = document.querySelector('#insight-section b.text-gray-600');
     const captureExpertName = expertNameEl ? expertNameEl.textContent.trim() : '보험전문가';
 
-    // ── QR 코드 사전 생성 (surinsur.com) ──
-    let qrBase64 = '';
-    try {
-        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https%3A%2F%2Fwww.surinsur.com&bgcolor=FFFFFF&color=1A3A8F&margin=2';
-        const qrBlob = await fetch(qrUrl).then(r => r.blob());
-        qrBase64 = await new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(qrBlob);
-        });
-    } catch (e) {
-        console.warn('QR 코드 생성 실패, 생략합니다:', e);
-    }
-    return { captureExpertName, qrBase64 };
+    // QR은 더 이상 싣지 않는다. 외부 요청(api.qrserver.com)도 함께 걷어내
+    // 캡처 시작이 그만큼 빨라진다.
+    return { captureExpertName, qrBase64: '' };
 }
 
 // 현재 켜져 있는 탭 이름
@@ -946,7 +890,9 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null, fo
         // 브라우저 창 크기와 무관하게 항상 같은(데스크톱) 레이아웃으로 찍는다.
         // 창이 좁으면 카드가 1열로 쌓여 세로로 길쭉한 이미지가 나오고,
         // A4에 넣었을 때 좌우가 텅 비어 보인다.
-        windowWidth: CAPTURE_WIDTH,
+        // PDF는 A4에 앉히느라 860px로 좁히지만, 이미지 저장은 화면 그대로가 낫다.
+        // 좁은 폭으로 찍으면 카드 금액이 세로로 눌려 읽기 나빠진다.
+        windowWidth: forPdf ? CAPTURE_WIDTH : 1280,
         scale: 3,
         useCORS: true,
         allowTaint: false, // Set to false to allow export if assets are clean
@@ -997,18 +943,9 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null, fo
             const insight = clonedDoc.getElementById('insight-section');
             const summary = clonedDoc.getElementById('summary-section');
 
-            if (fileInfo) {
-                if (forPdf) {
-                    // 같은 정보가 PDF 꼬리말에 들어가므로 본문에서는 통째로 뺀다.
-                    fileInfo.style.display = 'none';
-                } else {
-                    fileInfo.style.display = 'flex';
-                    fileInfo.classList.remove('hidden');
-                    fileInfo.style.marginBottom = '24px';
-                    const resetBtn = fileInfo.querySelector('#reset-btn');
-                    if (resetBtn) resetBtn.style.display = 'none';
-                }
-            }
+            // 원본 파일명은 캡처에서 뺀다. PDF는 꼬리말이 이미 갖고 있고,
+            // 이미지로 저장해 보낼 때는 고객이 볼 자료라 파일명이 맨 위에 붙을 이유가 없다.
+            if (fileInfo) fileInfo.style.display = 'none';
             // 수술비·뇌심 탭이 켜져 있으면 암 인사이트 카드는 캡처에서 뺀다.
             // (암 5년 금액이 뇌심 금액처럼 읽히는 것을 막는다)
             const capShown = id => {
@@ -1229,20 +1166,6 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null, fo
             if (errorIsland) errorIsland.style.display = 'none';
             const otherPanel = clonedDoc.getElementById('other-panel-container');
             if (otherPanel) otherPanel.style.display = 'none';
-
-            // ── QR 코드를 insight 카드 우측에 주입 (별도 헤더 박스 없이) ──
-            if (insight && qrBase64) {
-                const flexRow = insight.querySelector('.flex');
-                if (flexRow) {
-                    const qrEl = clonedDoc.createElement('div');
-                    qrEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;margin-left:auto;padding-left:16px;';
-                    qrEl.innerHTML = `
-                        <img src="${qrBase64}" style="width:108px;height:108px;border-radius:12px;border:2px solid rgba(255,255,255,0.6);">
-                        <span style="font-size:16px;color:#64748b;font-weight:700;white-space:nowrap;letter-spacing:0.03em;">surinsur.com</span>
-                    `;
-                    flexRow.appendChild(qrEl);
-                }
-            }
 
             // ── 최신 CSS 색상 함수 → rgba 치환 (html2canvas 1.4.1 호환 안전장치) ──
             // html2canvas 1.4.1은 rgb/rgba/hsl/hsla만 파싱한다. color-mix() 등을 쓰면 크롬/엣지의
