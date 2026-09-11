@@ -227,65 +227,89 @@ function ccCard(o) {
 // 특정순환계 치료비는 질환이 아니라 "치료행위"에 붙는 담보라, 하나로 뭉쳐 두는 것보다
 // 행위별로 쪼개는 편이 실제 지급 구조와 맞는다.
 function ccCardsHtml(policy, tongName) {
+    // ── 지면 구성 ──
+    // 진단비는 뇌/심장 두 상자에 목록으로, 치료비는 3열 카드에 담보 내역까지 편다.
+    // 예전에는 질환마다 카드를 하나씩 벌렸는데, 진단비는 "얼마 나오나"만 알면 되는
+    // 정보라 칸을 그만큼 쓸 값어치가 없었다. 그 자리를 치료비가 가져간다.
     const jFlat = policy.통합 ? CIRCULATORY_DATA.JOURNEY.flatMap(g => g.items) : [];
     const jVal = key => {
         if (!policy.통합) return 0;
         const it = jFlat.find(x => x.n.startsWith(key));
         return it ? (policy.통합.type === 'std' ? it.std : it.stdL) || 0 : 0;
     };
-    // 통합치료비는 연 한도 안에서만 지급되고, 수술만 회당·나머지는 연 1회한이다.
-    // 담보명만 적으면 이 조건이 안 보여서 금액을 오해하기 쉬워, 행마다 같이 붙인다.
     const capTxt = policy.통합
         ? `연 ${ccW(policy.통합.type === 'std' ? CIRCULATORY_DATA.CAP.std : CIRCULATORY_DATA.CAP.lite)} 한도`
         : '';
-    const ACTS = [
-        { k: '수술', icon: '<i class="cci cci-scalpel"></i>', ink: 'var(--brain-2)', cyc: '매회보장' },
-        { k: '혈전용해', icon: '<i class="cci cci-drop"></i>', ink: 'var(--heart-2)', cyc: '연 1회보장' },
-        { k: '혈전제거', icon: '<i class="cci cci-pulse"></i>', ink: 'var(--outer)', cyc: '연 1회보장' }
-    ];
-    const actHtml = ACTS.map(a => ccCard({
-        name: a.k, v: policy.surgTreat[a.k] || 0, ink: a.ink, icon: a.icon, cls: 'hi',
-        rows: [
-            { n: '특정순환계 특정치료비', v: policy.치료비 },
-            {
-                n: `특정순환계 통합치료비${tongName ? '(' + tongName + ')' : ''}`,
-                sub: [capTxt, a.cyc].filter(Boolean).join(' · '),
-                v: jVal(a.k)
-            }
-        ]
-    })).join('')
-        // 중환자실은 치료행위에 딸려 나오는 보조 담보라, 같은 줄에 좁은 칸으로 붙인다.
-        + ccCard({
-            name: '중환자실 치료비', v: policy.중환자실, ink: 'var(--warn)', cls: 'hi sm',
-            icon: '<i class="cci cci-bed"></i>',
-            note: '왼쪽 세 치료로 중환자실 입원 시'
-        });
 
-    // 질환별 진단비 — 어떤 담보가 합쳐진 값인지 카드 안에 그대로 편다.
-    // 뇌 계열 / 심장 계열을 각각 색 테두리 상자로 묶어, 어느 장기 쪽 보장인지 한눈에 갈리게 한다.
-    const dxCard = d => ccCard({
-        name: d.k, kcd: d.kcd, v: policy.dx[d.k] || 0, ink: d.c,
-        icon: `<i class="cci ${/뇌/.test(d.k) ? 'cci-brain' : 'cci-heart'}"></i>`,
-        // 담보명에서 카드 제목과 겹치는 앞부분은 떼어낸다("뇌졸중 진단비(1년50%)" → "진단비(1년50%)")
-        rows: (policy.dxParts[d.k] || []).map(x => ({ n: x.name.replace(d.k, '').trim() || x.name, v: x.v })),
-        note: (policy.own[d.k] > 0) ? `이 질환 전용 치료·수술비 ${ccW(policy.own[d.k])} 별도` : ''
-    });
-    const dxGroup = (cls, label, list) => `
-      <section class="ccgrp ${cls}">
-        <h5 class="ccgrp-h">${label}<em>${list.length}개 담보</em></h5>
-        <div class="ccg g2">${list.map(dxCard).join('')}</div>
-      </section>`;
-    const brainDx = CIRCULATORY_DATA.DX.filter(d => /뇌/.test(d.k));
-    const heartDx = CIRCULATORY_DATA.DX.filter(d => !/뇌/.test(d.k));
-    const dxHtml = dxGroup('brain', '뇌 계열', brainDx) + dxGroup('heart', '심장 계열', heartDx);
+    // 진단비 — 뇌 계열 / 심장 계열
+    const dxCol = (cls, label, list) => {
+        const tot = list.reduce((n, d) => n + (policy.dx[d.k] || 0), 0);
+        return `
+      <div class="cc-col ${cls}">
+        <div class="h"><span class="t">${label}</span><span class="v">${ccW(tot)}</span></div>
+        <ul>${list.map(d => {
+            const v = policy.dx[d.k] || 0;
+            return `<li class="${v ? '' : 'off'}"><span>${d.k}` +
+                   `${d.kcd ? `<em>${d.kcd}</em>` : ''}</span>` +
+                   `<b>${v ? ccW(v) : '미가입'}</b></li>`;
+        }).join('')}</ul>
+      </div>`;
+    };
+    const dxHtml = `
+      <div class="cc-dx">
+        ${dxCol('b', '뇌 계열', CIRCULATORY_DATA.DX.filter(d => /뇌/.test(d.k)))}
+        ${dxCol('h2', '심장 계열', CIRCULATORY_DATA.DX.filter(d => !/뇌/.test(d.k)))}
+      </div>`;
+
+    // 치료비 — 치료 행위별로, 어느 담보에서 얼마가 나오는지까지
+    const act = (nm, v, rows, opt) => {
+        const o = opt || {};
+        const live = rows.filter(r => r.v > 0);
+        return `
+      <div class="cc-act${o.lead ? ' lead' : ''}${v > 0 ? '' : ' off'}">
+        <div class="top"><span class="nm">${nm}</span>
+          ${o.cyc ? `<span class="sf-cyc ${o.badge || 'yr'}">${o.cyc}</span>` : ''}</div>
+        <div class="v">${v > 0 ? ccW(v) : '미가입'}</div>
+        ${live.length ? `<div class="sf-src">${live.map(r =>
+            `<div class="row"><span class="nm2" title="${r.n}">${r.n}</span>` +
+            `<span class="amt2">${ccW(r.v)}</span></div>`).join('')}</div>` : ''}
+      </div>`;
+    };
+
+    const acts = [
+        act('주요 치료 수술', policy.surgTreat.수술 || 0, [
+            { n: '특정순환계 특정치료비', v: policy.치료비 },
+            { n: `특정순환계 통합치료비${tongName ? '(' + tongName + ')' : ''}`, v: jVal('수술') }
+        ], { lead: true, cyc: '수술 매회', badge: 'ev' }),
+        act('혈전용해치료', policy.surgTreat.혈전용해 || 0, [
+            { n: '특정순환계 특정치료비', v: policy.치료비 },
+            { n: '특정순환계 통합치료비', v: jVal('혈전용해') }
+        ], { cyc: '연 1회' }),
+        act('혈전제거술', policy.surgTreat.혈전제거 || 0, [
+            { n: '특정순환계 특정치료비', v: policy.치료비 },
+            { n: '특정순환계 통합치료비', v: jVal('혈전제거') }
+        ], { cyc: '연 1회' }),
+        act('중환자실 입원', policy.중환자실 || 0, [
+            { n: '특정순환계 중환자실 치료비', v: policy.중환자실 }
+        ], { cyc: '연 1회' })
+    ];
+    if (policy.통합) {
+        acts.push(act('검사 · 영상진단', jVal('MRI') + jVal('CT') + jVal('양전자'), [
+            { n: 'MRI촬영(급여)', v: jVal('MRI') },
+            { n: 'CT · PET촬영(급여)', v: jVal('CT') + jVal('양전자') }
+        ], { cyc: '각 연 1회' }));
+        acts.push(act('약물 · 재활치료', jVal('항응고') + jVal('항혈소판') + jVal('전문재활'), [
+            { n: '항응고·항혈소판제 치료', v: jVal('항응고') + jVal('항혈소판') },
+            { n: '전문재활치료(급여)', v: jVal('전문재활') }
+        ], { cyc: '연 1회' }));
+    }
 
     return `
     <div class="ccx">
-      <p class="ccx-cap2">특정순환계질환 치료 — 이 질환으로 아래 치료를 받으면 각각 지급됩니다</p>
-      <div class="ccg gact">${actHtml}</div>
-
-      <p class="ccx-cap2">질환별 진단비 — 진단만으로 지급되는 담보입니다</p>
-      <div class="ccgrps">${dxHtml}</div>
+      <p class="ccx-cap2">진단비 — 범위가 넓은 담보부터</p>
+      ${dxHtml}
+      <p class="ccx-cap2">치료비 — 어느 담보에서 얼마가 나오는지${capTxt ? ` · ${capTxt}` : ''}</p>
+      <div class="cc-acts">${acts.join('')}</div>
     </div>`;
 }
 
@@ -370,16 +394,23 @@ function renderCirculatoryPanel(results) {
     const cw = n => (n > 0 ? formatKoAmount(n) : '0원');
     const tong = policy.통합;
     const caseSteps = [];
-    const heartDx = Math.max(policy.own?.허혈성 || 0, policy.own?.심근경색 || 0,
-                             policy.sum?.허혈성 || 0, 0);
+    // 심장 계열 진단비 — dx에 질환별로 들어 있다
+    const heartDx = Math.max(
+        policy.dx?.허혈성심장질환 || 0, policy.dx?.급성심근경색 || 0,
+        policy.dx?.허혈성 || 0, 0);
     if (heartDx) caseSteps.push({ s: '진단', a: heartDx, d: '심장 계열 진단비' });
-    if (tong) {
-        const op = tong.type === 'std' ? 2000 : 1000;
-        caseSteps.push({ s: '수술', a: op, d: '통합치료비' });
-        caseSteps.push({ s: '중환자실', a: tong.type === 'std' ? 500 : 200, d: '연 1회' });
-        caseSteps.push({ s: '재수술', a: op, d: '수술은 매회 보장' });
+
+    // 통합치료비가 있으면 그 지급표를, 없으면 특정치료비Ⅲ 같은 치료행위 담보를 쓴다.
+    // 통합치료비 가입자만 사례를 보는 것은 아니다 — 오히려 그쪽이 더 흔하다.
+    const op = tong ? (tong.type === 'std' ? 2000 : 1000) : (policy.surgTreat?.수술 || 0);
+    const icu = tong ? (tong.type === 'std' ? 500 : 200) : (policy.중환자실 || 0);
+    if (op) {
+        caseSteps.push({ s: '수술', a: op, d: tong ? '통합치료비' : '특정치료비' });
+        if (icu) caseSteps.push({ s: '중환자실', a: icu, d: '연 1회' });
+        caseSteps.push({ s: '재수술', a: op,
+            d: tong ? '수술은 매회 보장' : '재발 시 다시 검토' });
     }
-    const caseHtml = caseSteps.length >= 3 ? `
+    const caseHtml = caseSteps.length >= 2 ? `
       <div class="sf-case" style="--sf-case-accent:#C2436B;--sf-case-soft:#FCF0F4">
         <div class="sf-case-hd"><span class="t">사례로 보는 보장</span>
           <span class="d">심장질환 수술 후 1년 뒤 재발로 재수술</span></div>
