@@ -111,6 +111,18 @@ const ONCE_ONLY_KEYS = new Set([
     "정위방사선치료비"   // 미래에셋생명 항암정위방사선치료특약 (SBRT)
 ]);
 
+// ── 일반암 합계에서 빼는 담보인가 ──
+// 유사암·특정암 전용 담보는 일반암 기준 합계에 넣지 않는다. "유사암 제외"(일반암만)와
+// "유사암 포함"(일반암도 보장)은 일반암 담보다. 제안서마다 공백이 달라("유사암 포함" /
+// "유사암포함") 공백을 지우고 본다 — 붙여 쓴 쪽만 보던 탓에
+// "(체증형,수술시30%)암 수술비(유사암 포함)"가 합계에서 빠졌다(실측).
+function isYusamOrSpecificAmOnlyText(text) {
+    const t = String(text || '').replace(/\s+/g, '');
+    const yusam = t.includes('유사암') && !/유사암Ⅱ?(제외|포함)/.test(t);
+    const specific = t.includes('특정암') && !t.includes('특정암제외');
+    return yusam || specific;
+}
+
 // ── 이름 줄이기 ──
 // html2canvas는 text-overflow:ellipsis를 그리지 않는다. 화면에서 말줄임으로
 // 접히던 담보명이 인쇄본에서는 그대로 흘러나와 금액과 겹친다(실측).

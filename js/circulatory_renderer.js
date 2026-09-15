@@ -13,6 +13,20 @@ function ccW(n) {
     return n.toLocaleString('ko-KR') + '만원';
 }
 
+// 한 번 진단받을 때 받을 수 있는 최대 진단비.
+// 뇌 계열은 범위가 겹친다(뇌혈관질환 ⊃ 뇌졸중 ⊃ 뇌출혈) — 뇌출혈이면 셋 다 나오므로 더한다.
+// 심장 계열은 겹치지 않는다. 허혈성심장질환(I20~I25)·기타 심장부정맥(I49)·
+// 특정3대심장질환(I46.0·I47·I48·I50)은 코드가 달라 한 진단에 같이 나오지 않고,
+// 급성심근경색증(I21~I23)만 허혈성 안에 든다. 전부 더하면 한 번에 받을 수 없는
+// 금액이 된다(실측: 심장 계열 3,500만원 → 실제 최대 2,000만원).
+function circDxBest(dx) {
+    const v = k => (dx && dx[k]) || 0;
+    return {
+        brain: v('뇌혈관질환') + v('뇌졸중') + v('뇌출혈'),
+        heart: Math.max(v('허혈성심장질환') + v('급성심근경색증'), v('기타 심장부정맥'), v('특정3대심장질환'))
+    };
+}
+
 // 제안서에서 추출한 순환계 담보(kind:'circulatory') + 수술비 담보(kind:'surgery')를
 // 뷰에 필요한 금액 묶음으로 정리한다.
 function buildCirculatoryPolicy(results) {
@@ -49,7 +63,10 @@ function buildCirculatoryPolicy(results) {
             .filter(r => d.re.test(norm(r.name)))
             .map(r => ({ name: r.name, v: parseKoAmount(r.amount) }));
     });
-    p.치료비 = val(find(CIRCULATORY_DATA.TREAT_RE));
+    // "특정치료비Ⅲ(중환자실)"도 TREAT_RE에 걸린다. 순서가 바뀐 제안서에서 중환자실 금액을
+    // 치료비로 읽지 않도록 중환자실 담보는 뺀다.
+    p.치료비 = val(circ.find(r => CIRCULATORY_DATA.TREAT_RE.test(norm(r.name)) && !/중환자실/.test(r.name)) ||
+        all.find(r => CIRCULATORY_DATA.TREAT_RE.test(norm(r.name)) && !/중환자실/.test(r.name)));
     p.중환자실 = val(find(CIRCULATORY_DATA.ICU_RE));
 
     // ── 질환 전용 치료비·수술비 ──
@@ -84,6 +101,10 @@ function buildCirculatoryPolicy(results) {
         const n = norm(tongM.name);
         const type = n.includes('실속형') ? 'lite' : 'std';
         p.통합 = { amount, type };
+        // 통합치료비도 중환자실 입원을 준다(표준형 500 / 실속형 200, 연 1회).
+        // 특정치료비Ⅲ(중환자실) 담보만 보고 있어 통합치료비 가입자는 중환자실이 '미가입'으로 나왔다(실측).
+        const icu = CIRCULATORY_DATA.JOURNEY.flatMap(g => g.items).find(x => x.n.startsWith('중환자실'));
+        if (icu) p.중환자실 += (type === 'std' ? icu.std : icu.stdL) || 0;
     }
 
     // 수술비 구성 — 수술비 분석기의 buildSurgeryPolicy를 그대로 재사용해 출처를 일치시킨다.
@@ -251,8 +272,9 @@ function ccCardsHtml(policy, tongName) {
         : '';
 
     // 진단비 — 뇌 계열 / 심장 계열
-    const dxCol = (cls, label, list) => {
-        const tot = list.reduce((n, d) => n + (policy.dx[d.k] || 0), 0);
+    // 머리 금액은 한 번 진단받을 때의 최대치다(circDxBest). 목록 합계가 아니다.
+    const best = circDxBest(policy.dx);
+    const dxCol = (cls, label, list, tot) => {
         return `
       <div class="cc-col ${cls}">
         <div class="h"><span class="t">${label}</span><span class="v">${ccW(tot)}</span></div>
@@ -266,8 +288,8 @@ function ccCardsHtml(policy, tongName) {
     };
     const dxHtml = `
       <div class="cc-dx">
-        ${dxCol('b', '뇌 계열', CIRCULATORY_DATA.DX.filter(d => /뇌/.test(d.k)))}
-        ${dxCol('h2', '심장 계열', CIRCULATORY_DATA.DX.filter(d => !/뇌/.test(d.k)))}
+        ${dxCol('b', '뇌 계열', CIRCULATORY_DATA.DX.filter(d => /뇌/.test(d.k)), best.brain)}
+        ${dxCol('h2', '심장 계열', CIRCULATORY_DATA.DX.filter(d => !/뇌/.test(d.k)), best.heart)}
       </div>`;
 
     // 치료비 — 치료 행위별로, 어느 담보에서 얼마가 나오는지까지
@@ -299,16 +321,18 @@ function ccCardsHtml(policy, tongName) {
         }
         return rows;
     };
+    // '특정치료비Ⅲ(중환자실)'은 이름에 특정치료비가 들어 있어 수술·혈전 칸 내역에
+    // 섞였다(실측). 중환자실 담보는 중환자실 칸에만 싣는다.
     const acts = [
         act('주요 치료 수술', policy.surgTreat.수술 || 0,
-            withTong(/특정치료비|순환계.*수술비/, '수술'),
+            withTong(/^(?!.*중환자실).*(특정치료비|순환계.*수술비)/, '수술'),
             { lead: true, cyc: '수술 매회', badge: 'ev' }),
         act('혈전용해치료', policy.surgTreat.혈전용해 || 0,
-            withTong(/혈전용해|특정치료비/, '혈전용해'), { cyc: '연 1회' }),
+            withTong(/^(?!.*중환자실).*(혈전용해|특정치료비)/, '혈전용해'), { cyc: '연 1회' }),
         act('혈전제거술', policy.surgTreat.혈전제거 || 0,
-            withTong(/혈전제거|특정치료비/, '혈전제거'), { cyc: '연 1회' }),
+            withTong(/^(?!.*중환자실).*(혈전제거|특정치료비)/, '혈전제거'), { cyc: '연 1회' }),
         act('중환자실 입원', policy.중환자실 || 0,
-            rawRows(/중환자실/), { cyc: '연 1회' })
+            withTong(/중환자실/, '중환자실'), { cyc: '연 1회' })
     ];
     if (policy.통합) {
         acts.push(act('검사 · 영상진단', jVal('MRI') + jVal('CT') + jVal('양전자'), [

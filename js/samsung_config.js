@@ -343,10 +343,16 @@ function findSamsungDetails(itemName) {
         return samsungCoverageDetailsMap["암 종합병원 중환자실 입원지원금(연간1회한)"];
     }
 
-    // 6. 암 수술비 단독 (갱신형, 유사암 제외) — "유사암 제외" 명시된 경우만 매핑
+    // 6. 암 수술비 단독 — 일반암이 들어가는 것만 매핑
+    //    "유사암 제외"(일반암만) / "유사암 포함"(일반암+유사암)
+    //    천만안심의 "(체증형,수술시30%)암 수술비(유사암 포함)"가 "유사암 제외"만 보던 조건에
+    //    걸리지 않아 암 수술비 카드에서 통째로 빠졌다(실측). 금액은 1회차(가입금액 100%) 기준.
     // 기타피부암/갑상선암/대장점막내암/제자리암 등 유사암 전용 수술비는 제외
-    if (itemName.includes("수술비") && itemName.includes("암") && itemName.includes("유사암 제외") && !itemName.includes("다빈치") && !itemName.includes("통합치료비")) {
-        return samsungCoverageDetailsMap["암수술비(갱신형)"];
+    const nameNoSp = itemName.replace(/\s+/g, '');
+    const amSurgM = nameNoSp.match(/유사암Ⅱ?(제외|포함)/);
+    if (amSurgM && nameNoSp.includes("수술비") && !nameNoSp.includes("다빈치") && !nameNoSp.includes("통합치료비") && !nameNoSp.includes("특정치료비")) {
+        const base = samsungCoverageDetailsMap["암수술비(갱신형)"];
+        return amSurgM[1] === '포함' ? Object.assign({}, base, { displayName: "암 수술비(유사암 포함)" }) : base;
     }
 
     // 7. 온[ON]통보장(2607.1~) — 그룹형 복합치료 통합보장 계열
@@ -408,14 +414,35 @@ function applySurgeryTiersToCancerSurgery(summaryMap, results) {
     const surg = results.filter(r => r && r.kind === 'surgery');
     if (!surg.length) return;
 
-    const target = summaryMap.get('암수술비');
-    if (!target) return; // 암 수술 담보 자체가 없으면 가산 대상 없음
+    // 암 전용 수술 담보가 없어도 암으로 수술하면 질병 수술비 계열은 나온다.
+    // 예전에는 '암수술비' 카드가 없으면 그냥 돌아가서, 다빈치 수술비만 있는 제안서의
+    // 한장요약 '수술' 칸에 다빈치 금액이 대신 앉았다(실측: 1~5종 5종 2,000만원이 누락).
+    // 암 담보가 하나도 없는 제안서(수술비만 설계)에는 암 카드를 새로 만들지 않는다.
+    let target = summaryMap.get('암수술비');
+    const created = !target;
+    if (created) {
+        if (!summaryMap.size) return;
+        target = { displayName: '암수술비', totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0,
+                   isolatedOnceMin: 0, isolatedOnceMax: 0, items: [], onceOnly: false };
+    }
 
     const pick = re => surg.find(r => re.test((r.name || '').replace(/\s+/g, '')));
     const amt = r => (r ? parseKoAmount(r.amount) : 0);
-    const push = (name, srcName) => {
+    // 술기에 따라 3종 또는 5종 하나만 나오는 담보는 한 줄에 최소~최대로 싣는다.
+    // 두 줄로 따로 넣으면 내역에서 둘을 더해 '수술비 계열 1,330만원'처럼 부풀었다(실측: 실제 330~1,030만원).
+    const push = (name, amount, maxAmount) => {
         if (target.items.some(i => i.name === name)) return;
-        target.items.push({ name, amount: srcName, source: '수술비 계열', surgeryTier: true });
+        target.items.push({ name, amount, ...(maxAmount && maxAmount !== amount ? { maxAmount } : {}),
+                            source: '수술비 계열', surgeryTier: true });
+    };
+    const pushAlt = (label, a, b) => {
+        if (a && b && a !== b) {
+            const [lo, hi] = amt(a) <= amt(b) ? [a, b] : [b, a];
+            push(label, lo.amount, hi.amount);
+        } else {
+            const one = a || b;
+            push(one.name, one.amount);
+        }
     };
 
     let addMin = 0, addMax = 0;
@@ -437,21 +464,21 @@ function applySurgeryTiersToCancerSurgery(summaryMap, results) {
         const lo = amt(j3) || amt(j5);
         const hi = amt(j5) || amt(j3);
         addMin += Math.min(lo, hi); addMax += Math.max(lo, hi);
-        if (j5) push(j5.name, j5.amount);
-        if (j3 && j3 !== j5) push(j3.name, j3.amount);
+        pushAlt('질병 1~5종 수술비(3종~5종)', j3, j5);
     }
 
     // 3) 질병 1~8종 수술비 — 해당 담보가 있는 상품만 (암 주요 절제술 = 7종)
-    const p7 = pick(/질병1[~-]8종수술비\(7종\)/);
-    const p5 = pick(/질병1[~-]8종수술비\(5종\)/);
+    //    이름이 "질병 7종 수술비(시술포함)"인 상품(천만안심)도 같은 1~8종이다.
+    const p7 = pick(/질병(1[~-]8종수술비\(7종\)|7종수술비)/);
+    const p5 = pick(/질병(1[~-]8종수술비\(5종\)|5종수술비\(시술포함\))/);
     if (p7 || p5) {
         const lo = amt(p5) || amt(p7);
         const hi = amt(p7) || amt(p5);
         addMin += Math.min(lo, hi); addMax += Math.max(lo, hi);
-        if (p7) push(p7.name, p7.amount);
-        if (p5 && p5 !== p7) push(p5.name, p5.amount);
+        pushAlt('질병 1~8종 수술비(5종~7종)', p5, p7);
     }
 
+    if (created && (addMin || addMax)) summaryMap.set('암수술비', target);
     if (addMin || addMax) {
         target.isolatedMin += addMin;
         target.isolatedMax += addMax;
@@ -579,15 +606,7 @@ function calculateHierarchicalSummarySamsung(results) {
                 const valMax = det.maxAmount ? parseKoAmount(det.maxAmount) : valMin;
                 // 유사암/특정암 전용 담보는 합산금액에서 제외 (일반암 기준 표기)
                 const sourceText = (item.name || '') + '|' + (det.name || '');
-                const isYusamOnly = sourceText.includes("유사암") &&
-                                    !sourceText.includes("유사암Ⅱ 제외") &&
-                                    !sourceText.includes("유사암Ⅱ제외") &&
-                                    !sourceText.includes("유사암 제외") &&
-                                    !sourceText.includes("유사암제외");
-                const isSpecificAmOnly = sourceText.includes("특정암") &&
-                                         !sourceText.includes("특정암 제외") &&
-                                         !sourceText.includes("특정암제외");
-                if (!isYusamOnly && !isSpecificAmOnly) {
+                if (!isYusamOrSpecificAmOnlyText(sourceText)) {
                     group.totalMin += valMin;
                     group.totalMax += valMax;
                     if (!det._expansion) {
@@ -671,7 +690,11 @@ function calculateHierarchicalSummarySamsung(results) {
             childGroup.totalMax += snap.isolatedMax;
             // 부모 항목도 하위 카드에 추가 (포함관계 출처 표시용)
             snap.items.forEach(pItem => {
-                const isDup = childGroup.items.some(ci => ci.name === pItem.name && ci.source === pItem.source);
+                // 비급여 여부까지 봐야 한다. 통합치료비(종합형)는 같은 이름 '항암방사선치료비'로
+                // 급여분 1,000만원과 비급여분 1,000만원을 따로 준다 — 이름·출처만 보면 하나가
+                // 중복으로 버려져 카드 내역 합이 1,000만원 모자랐다(실측).
+                const isDup = childGroup.items.some(ci => ci.name === pItem.name && ci.source === pItem.source &&
+                    !!ci.비급여 === !!pItem.비급여 && ci.amount === pItem.amount);
                 if (!isDup) childGroup.items.push({ ...pItem, fromParent: true });
             });
         });

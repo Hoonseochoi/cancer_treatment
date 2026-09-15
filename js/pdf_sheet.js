@@ -263,12 +263,12 @@ function covBlock(list, label) {
 function cardBlock(c) {
     const rows = (c.rows || []).filter(r => r.v > 0).slice(0, 3).map(r =>
         `<div class="row"><span class="n2">${sClip(r.n, 14)}</span>` +
-        `<span class="a2">${sFmt(r.v)}</span>` +
+        `<span class="a2">${r.vMax > r.v ? sFmt(r.v).replace(/원$/, '') + '~' + sFmt(r.vMax) : sFmt(r.v)}</span>` +
         `<span class="c2">${r.c || ''}</span></div>`).join('');
     return `<div class="card${c.lead ? ' lead' : ''}${c.v > 0 ? '' : ' off'}">
       <div class="chd">${c.icon ? `<img class="ico" src="${c.icon}" alt="">` : '<span></span>'}
         ${c.cyc ? `<span class="cyc ${c.cycCls || 'yr'}">${c.cyc}</span>` : ''}</div>
-      <div class="v">${c.v > 0 ? sFmt(c.v) : '0원'}</div>
+      <div class="v">${c.v > 0 ? (c.vMax > c.v ? sFmt(c.v).replace(/원$/, '') + '~' + sFmt(c.vMax) : sFmt(c.v)) : '0원'}</div>
       <div class="nm">${sClip(c.nm, 16)}</div>
       ${rows ? `<div class="src">${rows}</div>` : (c.sub ? `<div class="sub">${c.sub}</div>` : '')}
     </div>`;
@@ -307,7 +307,9 @@ function sheetSummary(d) {
          <table><tr><th style="width:20%"></th><th>진단<span>최초 1회</span></th>
            <th>수술<span>매회</span></th><th>항암약물<span>연간 1회</span></th>
            <th>항암방사선<span>연간 1회</span></th></tr>
-           ${row('암 보장', [{ v: s.cancerDx }, { v: s.cancerSx }, { v: s.cancerDrug }, { v: s.cancerRad }])}
+           ${row('암 보장', [{ v: s.cancerDx },
+               { v: s.cancerSx, s: s.cancerSxMax > s.cancerSx ? `최대 ${sFmt(s.cancerSxMax)}` : '' },
+               { v: s.cancerDrug }, { v: s.cancerRad }])}
          </table></div>
        <div><h3>뇌 · 심장 보장<span class="hint">범위가 넓은 담보 기준</span></h3>
          <table><tr><th style="width:20%"></th><th>진단</th><th>치료 · 수술</th>
@@ -358,8 +360,8 @@ function sheetSurgery(d) {
 
 // ── 05 뇌·심장 ──
 function sheetCirc(d) {
-    const col = (cls, label, list) => {
-        const tot = list.reduce((n, x) => n + x.v, 0);
+    // 머리 금액은 한 번 진단받을 때의 최대치(circDxBest) — 목록 합계가 아니다.
+    const col = (cls, label, list, tot) => {
         return `<div class="col ${cls}">
           <div class="ch"><span class="t">${label}</span>
             <span class="v">${tot ? sFmt(tot) : '미가입'}</span></div>
@@ -381,8 +383,8 @@ function sheetCirc(d) {
              <div class="hosp"><em>모든 종합병원</em>에서 보장</div>
            </div>` : ''}
            <div><h3>진단비<span class="hint">범위가 넓은 담보부터</span></h3>
-             <div class="pair">${col('b', '뇌 계열', d.brainDx || [])}
-               ${col('h', '심장 계열', d.heartDx || [])}</div></div>
+             <div class="pair">${col('b', '뇌 계열', d.brainDx || [], d.brainBest || 0)}
+               ${col('h', '심장 계열', d.heartDx || [], d.heartBest || 0)}</div></div>
            <div><h3>치료비<span class="hint">어느 담보에서 얼마가 나오는지</span></h3>
              <div class="cards">${(d.circCards || []).slice(0, 6).map(cardBlock).join('')}</div></div>
            ${caseBlock('사례로 보는 보장', d.circCaseDesc, d.circCase,
@@ -420,31 +422,54 @@ function buildSheetData(results, meta, customerName) {
         const bySrc = new Map();
         const cyc = {};
         (g.items || []).forEach(it => {
+            // 카드 금액(totalMin)에 들어가지 않는 유사암·특정암 전용 담보는 내역에서도 뺀다.
+            // 화면 카드는 이미 거르고 있었는데 인쇄본만 600만원 줄이 남아 합이 안 맞았다(실측).
+            if (isYusamOrSpecificAmOnlyText((it.source || '') + '|' + (it.name || ''))) return;
             const s = (it.source || '').trim();
             if (s) {
-                if (!bySrc.has(s)) bySrc.set(s, { v: 0, c: it.cycle || '' });
+                if (!bySrc.has(s)) bySrc.set(s, { v: 0, vMax: 0, c: it.cycle || '' });
                 bySrc.get(s).v += parseKoAmount(it.amount);
-                if (!usedSrc.has(s)) usedSrc.set(s, 0);
-                usedSrc.set(s, usedSrc.get(s) + parseKoAmount(it.amount));
+                bySrc.get(s).vMax += parseKoAmount(it.maxAmount || it.amount);
+                // '수술비 계열'은 묶음 이름일 뿐 제안서 담보가 아니므로 담보 목록에는 싣지 않는다
+                if (!it.surgeryTier) {
+                    if (!usedSrc.has(s)) usedSrc.set(s, 0);
+                    usedSrc.set(s, usedSrc.get(s) + parseKoAmount(it.amount));
+                }
             }
             if (it.cycle) cyc[it.cycle] = (cyc[it.cycle] || 0) + parseKoAmount(it.amount);
         });
         const keys = ORDER.filter(k => cyc[k] > 0);
         return {
-            nm, v: g.totalMin || 0,
+            // 술기에 따라 1~5종 3종~5종이 갈리는 카드는 범위로 보인다. 최솟값만 찍으면
+            // 내역에 5종 2,000만원이 보이는데 카드는 330만원이라 설명이 안 된다(실측).
+            nm, v: g.totalMin || 0, vMax: g.totalMax || 0,
             icon: (typeof getSheetIcon === 'function') ? getSheetIcon(nm) : '',
             cyc: keys.length === 1 ? CYC[keys[0]][0]
                : keys.length > 1 ? keys.map(k => k.replace(/1회|간/g, '')).join('+') : '',
             cycCls: keys.length === 1 ? CYC[keys[0]][1] : (keys.length > 1 ? 'mix' : 'yr'),
             rows: [...bySrc.entries()].map(([n, o]) =>
-                ({ n, v: o.v, c: o.c ? CYC[o.c][0].replace(' 1회', '') : '' }))
+                ({ n, v: o.v, vMax: o.vMax, c: o.c ? CYC[o.c][0].replace(' 1회', '') : '' }))
         };
     }).sort((a, b) => b.v - a.v);
-    d.cancerCov = [...usedSrc.entries()].map(([nm, v]) => ({ nm, v }));
+    // 금액은 제안서에 적힌 가입금액을 쓴다. 카드마다 쓰인 금액을 더해 두면 한 담보가
+    // 여러 카드에 걸쳐 1억원 담보가 '3억 1,000만원'으로 찍혔다(실측). 화면 목록과 같은 기준이다.
+    d.cancerCov = [...usedSrc.keys()].map(nm => {
+        const hit = R.find(r => r && (r.name || '').trim() === nm);
+        return { nm, v: hit ? val(hit) : 0 };
+    });
 
-    const dxSum = R.filter(r => r && /진단비/.test(r.name || '') &&
-        !/뇌|심장|순환계|허혈|부정맥|치매|간병|납입|상해|골절|화상/.test(r.name || ''))
-        .reduce((n, r) => n + val(r), 0);
+    // 암 한 번 진단받을 때 받는 금액.
+    //  · 유사암 전용 진단비는 뺀다 — 카드와 같은 일반암 기준. 유사암 5종 중 1종만 섞여
+    //    5,000만원이 6,000만원으로 나왔다(실측).
+    //  · 통합암(전이 포함)진단비는 부위별로 11개가 따로 붙지만 진단된 부위 하나만 나온다.
+    //    전부 더해 5억원이 찍혔다(실측) — 부위별 담보는 가장 큰 하나만 센다.
+    //  · 이름에 '뇌'가 든다고 거르면 '뇌암' 부위 담보까지 빠진다. 뇌심 담보는 kind로 거른다.
+    const cancerDx = R.filter(r => r && r.kind !== 'circulatory' && /진단비/.test(r.name || '') &&
+        /암/.test(r.name || '') && !/치매|간병|납입|상해|골절|화상/.test(r.name || '') &&
+        !isYusamOrSpecificAmOnlyText(r.name));
+    const isSiteDx = r => /통합암/.test((r.name || '').replace(/\s+/g, ''));
+    const dxSum = cancerDx.filter(r => !isSiteDx(r)).reduce((n, r) => n + val(r), 0) +
+        Math.max(0, ...cancerDx.filter(isSiteDx).map(val));
     // 칸마다 이름으로 고른다. 금액순 1위를 '수술'로 쓰면 표적항암이 수술 칸에 앉고,
     // 느슨하게 고르면 '다빈치로봇수술비'가 암수술비 자리를 차지한다(실측).
     // 제 이름을 먼저 찾고, 없을 때만 비슷한 것으로 물러선다.
@@ -517,16 +542,18 @@ function buildSheetData(results, meta, customerName) {
                 if (cp.통합 && jV(key)) rows.push({ n: '특정순환계 통합치료비', v: jV(key) });
                 return rows;
             };
+            // '특정치료비Ⅲ(중환자실)'은 이름에 특정치료비가 들어 있어 수술·혈전 칸 내역에
+            // 섞였다(실측). 중환자실 담보는 중환자실 칸에만 싣는다.
             d.circCards = [
                 mk('주요 치료 수술', cp.surgTreat.수술 || 0,
-                   withTong(/특정치료비|순환계.*수술비/, '수술'),
+                   withTong(/^(?!.*중환자실).*(특정치료비|순환계.*수술비)/, '수술'),
                    { lead: true, cyc: '수술 매회', cycCls: 'ev' }),
                 mk('혈전용해치료', cp.surgTreat.혈전용해 || 0,
-                   withTong(/혈전용해|특정치료비/, '혈전용해'), { cyc: '연간 1회' }),
+                   withTong(/^(?!.*중환자실).*(혈전용해|특정치료비)/, '혈전용해'), { cyc: '연간 1회' }),
                 mk('혈전제거술', cp.surgTreat.혈전제거 || 0,
-                   withTong(/혈전제거|특정치료비/, '혈전제거'), { cyc: '연간 1회' }),
+                   withTong(/^(?!.*중환자실).*(혈전제거|특정치료비)/, '혈전제거'), { cyc: '연간 1회' }),
                 mk('중환자실 입원', cp.중환자실 || 0,
-                   rawRows(/중환자실/), { cyc: '연간 1회' })
+                   withTong(/중환자실/, '중환자실'), { cyc: '연간 1회' })
             ];
             if (cp.통합) {
                 d.circCards.push(mk('검사 · 영상진단', jV('MRI') + jV('CT') + jV('양전자'),
@@ -560,9 +587,13 @@ function buildSheetData(results, meta, customerName) {
                 d.circCaseDesc = '급성심근경색으로 혈전 치료를 받은 경우';
             }
 
+            // 한 번 진단받을 때의 최대치 — 서로 겹치지 않는 심장 담보를 더하지 않는다.
+            const dxBest = circDxBest(cp.dx);
+            d.brainBest = dxBest.brain;
+            d.heartBest = dxBest.heart;
             d.summary = {
-                brainDx: d.brainDx.reduce((n, x) => n + x.v, 0),
-                heartDx: d.heartDx.reduce((n, x) => n + x.v, 0),
+                brainDx: dxBest.brain,
+                heartDx: dxBest.heart,
                 _hasCirc: true,
                 circTreat: cp.treatBest || 0, icu: cp.중환자실 || 0,
                 rehab: jV('전문재활')
@@ -572,6 +603,7 @@ function buildSheetData(results, meta, customerName) {
     d.summary = Object.assign({
         cancerDx: dxSum,
         cancerSx: topCard.v,
+        cancerSxMax: topCard.vMax || 0,
         cancerDrug: drug.v,
         cancerRad: rad.v,
         brainDx: 0, heartDx: 0, circTreat: 0, icu: 0, rehab: 0

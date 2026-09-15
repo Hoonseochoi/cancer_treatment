@@ -153,6 +153,12 @@ function extractRawCoveragesSamsung(text) {
     // 온통보장류 그룹 추적: 번호(id)가 있는 줄이 그룹 시작, 이후 번호 없는 연속 줄들은 같은 그룹에 속함
     // (이름 문자열 비교는 원문 공백/문구가 tier별로 미묘하게 달라 신뢰 불가 → 번호 기반 추적이 안전)
     let lastGroupId = null;
+    // 번호도 대괄호 접두어도 없는 담보 줄. 천만안심처럼 번호가 윗줄에 따로 떨어지고
+    // 담보명에 [건강] 같은 접두어가 없는 상품은 이 모양으로만 나온다
+    // ("90" / "뇌혈관질환 진단비 1,000만원 10,290 20년납 20년만기").
+    // 이걸 못 알아봐 111대질병·1~5종 수술비·뇌심 진단비가 통째로 빠졌다(실측: 41건 중 13건만 인식).
+    // 설명문이 섞이지 않도록 "담보명 가입금액(만원·억원) [보험료] [납입기간]"으로 끝나는 줄만 받는다.
+    const TABLE_ROW_RE = /^(?![※*])(?!\d{1,4}\s).+\s(?:\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원)(?:\s+[\d,]+)?(?:\s+\d+년(?:납|갱신).*)?$/;
     // 온[ON]통보장류 그룹의 "공유 보험료": 여러 tier 줄(복합치료 회복지원금Ⅱ 등) + 상해사망 줄이
     // 금액 패턴(원/만원/억원 접미사) 없이 끝까지 이어붙여지다 보니 fallback 파싱에서 금액을 못 찾아
     // 그대로 버려지는데, 그 버려지는 줄 안에 그룹 전체가 공유하는 보험료 숫자(예: "13,800")가
@@ -172,7 +178,8 @@ function extractRawCoveragesSamsung(text) {
 
         // Coverage line signature: leading 번호 + content, OR a [bracket] prefix somewhere
         // (일부 상품은 [갱신형] 등 접두어 없이 "번호 담보명 금액 보험료 기간" 형태로만 표기됨)
-        const looksLikeCoverageLine = /^\s*\d{1,4}\s+\S/.test(trimmed) || trimmed.includes('[');
+        const looksLikeCoverageLine = /^\s*\d{1,4}\s+\S/.test(trimmed) || trimmed.includes('[') ||
+            (lastGroupId !== null && TABLE_ROW_RE.test(trimmed));
         if (!looksLikeCoverageLine) {
             // 온통보장류 그룹의 공유 보험료가 담보명/금액 없이 "13,800"처럼 완전히 단독 줄로
             // 떨어지는 경우, 대괄호도 없고 "번호+공백+내용" 모양도 아니라 looksLikeCoverageLine
@@ -397,7 +404,11 @@ function extractRawCoveragesSamsung(text) {
         const groupPremium = pendingGroupPremium[cur.groupId] || '';
         if (groupLen > 1) {
             const sameAmount = results.slice(i, j).every(r => r.amount === cur.amount);
-            if (sameAmount) {
+            // 온통보장처럼 "복합치료 N회이상" 단계가 한 가입금액을 나눠 쓰는 담보만 접는다.
+            // 금액만 같다고 접으면 유사암 진단비 5종(기타피부암·갑상선암…)이나
+            // 4대특정질병 치료·수술비처럼 서로 다른 담보가 한 건으로 사라진다(실측).
+            const isTierGroup = results.slice(i, j).every(r => /통합보장|복합치료/.test(r.name.replace(/\s+/g, '')));
+            if (sameAmount && isTierGroup) {
                 // 동일 금액 압축: 그룹 전체가 공유하는 보험료 1건을 대표 항목에 그대로 붙인다.
                 const repItem = Object.assign({}, cur, { tierCount: groupLen });
                 if (groupPremium && !repItem.premium) repItem.premium = groupPremium;

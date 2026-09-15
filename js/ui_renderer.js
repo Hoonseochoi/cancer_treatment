@@ -2,17 +2,7 @@ console.log('[ui_renderer] v20260514d 로드됨 ✅');
 // ── 유사암/특정암 전용 서브아이템 판별 (일반암 기준 표기용) ──
 // "유사암 제외", "특정암 제외" 는 일반암이므로 표시 유지
 function isYusamOrSpecificAmOnly(sub) {
-    const text = (sub.source || '') + '|' + (sub.name || '');
-    const isYusaAm = text.includes("유사암") &&
-                     !text.includes("유사암Ⅱ 제외") &&
-                     !text.includes("유사암Ⅱ제외") &&
-                     !text.includes("유사암 제외") &&
-                     !text.includes("유사암제외") &&
-                     !text.includes("유사암포함");  // 유사암포함 = 일반암도 커버하는 통합 담보, 필터 제외
-    const isSpecificAm = text.includes("특정암") &&
-                         !text.includes("특정암 제외") &&
-                         !text.includes("특정암제외");
-    return isYusaAm || isSpecificAm;
+    return isYusamOrSpecificAmOnlyText((sub.source || '') + '|' + (sub.name || ''));
 }
 
 // ── UI Helpers ──
@@ -279,6 +269,11 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             // 상해 1~5종처럼 암과 무관한 담보가 섞인다(실측).
             const used = new Map();
             mainItems.forEach(([, d]) => (d.items || []).forEach(it => {
+                // 카드 금액에 들어가지 않는 유사암·특정암 전용 담보는 싣지 않는다.
+                // 목록에 600만원이 보이는데 어느 카드에도 없으면 설명이 막힌다.
+                if (isYusamOrSpecificAmOnly(it)) return;
+                // '수술비 계열'은 묶음 이름일 뿐 제안서 담보가 아니다 — 목록에 '—'로 떴다
+                if (it.surgeryTier) return;
                 const src = (it.source || '').trim();
                 if (!src || used.has(src)) return;
                 const hit = (results || []).find(r => (r.name || '').trim() === src);
@@ -316,7 +311,8 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             const seenSubKeys = new Set();
             const dedupedItems = data.items.filter(sub => {
                 if (isYusamOrSpecificAmOnly(sub)) return false;
-                const key = sub.name + '|' + sub.amount + '|' + (sub.source || '');
+                // 비급여 여부를 키에 넣는다 — 급여분·비급여분이 이름·금액·출처가 같아 하나로 합쳐졌다.
+                const key = sub.name + '|' + sub.amount + '|' + (sub.source || '') + '|' + (sub.비급여 ? 'B' : '') + '|' + (sub.fromParent ? 'P' : '');
                 if (seenSubKeys.has(key)) return false;
                 seenSubKeys.add(key);
                 return true;
@@ -373,17 +369,22 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 const srcMap = new Map();
                 dedupedItems.forEach(sub => {
                     const src = sub.source || '';
-                    if (!srcMap.has(src)) srcMap.set(src, { total: 0, cycle: sub.cycle || '' });
+                    if (!srcMap.has(src)) srcMap.set(src, { total: 0, max: 0, cycle: sub.cycle || '' });
                     const e = srcMap.get(src);
                     e.total += parseKoAmount(sub.amount);
+                    // 술기에 따라 갈리는 담보(1~5종 3종~5종)는 최대치를 따로 센다
+                    e.max += parseKoAmount(sub.maxAmount || sub.amount);
                     if (!e.cycle && sub.cycle) e.cycle = sub.cycle;
                 });
                 let rows = '';
                 srcMap.forEach((e, srcName) => {
+                    const amtTxt = e.max > e.total
+                        ? formatKoAmount(e.total).replace(/원$/, '') + '~' + formatKoAmount(e.max)
+                        : formatKoAmount(e.total);
                     rows += `
                         <div class="row${e.total ? '' : ' zero'}">
                             <span class="nm2" title="${srcName}">${clipName(srcName, 14)}</span>
-                            <span class="amt2">${formatKoAmount(e.total)}</span>
+                            <span class="amt2">${amtTxt}</span>
                             <span class="c2">${CYC_SHORT[e.cycle] || ''}</span>
                         </div>`;
                 });
