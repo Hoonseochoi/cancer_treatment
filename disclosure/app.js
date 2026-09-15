@@ -260,6 +260,7 @@ if (typeof document !== 'undefined') {
     histories.forEach((h, idx) => {
       const card = document.createElement('div');
       card.className = 'history-card';
+      card.style.animationDelay = `${idx * 40}ms`;
 
       const head = document.createElement('div');
       head.className = 'history-card-head';
@@ -273,6 +274,11 @@ if (typeof document !== 'undefined') {
         badge.textContent = '확인필요';
         head.appendChild(badge);
       }
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-link-danger';
+      delBtn.textContent = '삭제';
+      delBtn.addEventListener('click', () => { histories.splice(idx, 1); renderAll(); });
+      head.appendChild(delBtn);
       card.appendChild(head);
 
       const fields = document.createElement('div');
@@ -294,6 +300,8 @@ if (typeof document !== 'undefined') {
       });
       card.appendChild(fields);
 
+      const toggleRow = document.createElement('div');
+      toggleRow.className = 'history-toggle-row';
       CHECKBOX_FIELDS.forEach(({ key, label: labelText }) => {
         const label = document.createElement('label');
         label.className = 'checkbox-label';
@@ -304,23 +312,22 @@ if (typeof document !== 'undefined') {
         cb.addEventListener('change', () => { h[key] = cb.checked; renderAll(); });
         label.appendChild(document.createTextNode(labelText));
         label.appendChild(cb);
-        fields.appendChild(label);
+        toggleRow.appendChild(label);
       });
-
-      const actions = document.createElement('div');
-      actions.className = 'history-card-actions';
-      const delBtn = document.createElement('button');
-      delBtn.className = 'btn-link-danger';
-      delBtn.textContent = '삭제';
-      delBtn.addEventListener('click', () => { histories.splice(idx, 1); renderAll(); });
-      actions.appendChild(delBtn);
-      card.appendChild(actions);
+      card.appendChild(toggleRow);
 
       container.appendChild(card);
     });
   }
 
+  function updateResultsMode() {
+    const content = document.getElementById('al-content');
+    if (!content) return;
+    content.classList.toggle('landing-mode', histories.length === 0);
+  }
+
   function renderAll() {
+    updateResultsMode();
     renderHistoryList();
     renderClassifyResult();
   }
@@ -558,52 +565,82 @@ if (typeof document !== 'undefined') {
   if (!parseBtn || !historyInput) {
     console.error('필수 DOM 요소를 찾을 수 없습니다: parse-btn 또는 history-input');
   } else {
+    // 채팅 입력창처럼 내용에 맞춰 높이가 자동으로 늘어나게 한다.
+    function autoResize() {
+      historyInput.style.height = 'auto';
+      historyInput.style.height = `${Math.min(historyInput.scrollHeight, 160)}px`;
+      parseBtn.disabled = !historyInput.value.trim();
+    }
+    autoResize();
+    historyInput.addEventListener('input', autoResize);
+
+    // Enter로 전송, Shift+Enter는 줄바꿈 (채팅 입력창과 동일한 동작)
+    historyInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        parseBtn.click();
+      }
+    });
+
+    function setLoading(isLoading) {
+      parseBtn.classList.toggle('is-loading', isLoading);
+      parseBtn.disabled = isLoading;
+      historyInput.disabled = isLoading;
+    }
+
     parseBtn.addEventListener('click', async () => {
       const text = historyInput.value;
+      if (!text.trim()) return;
+
+      setLoading(true);
+
+      const finishWithHistories = (newHistories) => {
+        histories = newHistories;
+        uncheckedKeys.clear();
+        renderAll();
+        historyInput.value = '';
+        autoResize();
+        setLoading(false);
+        const resultsArea = document.getElementById('results-area');
+        if (resultsArea) {
+          setTimeout(() => resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+        }
+      };
+
       const parsed = parseHistoryText(text);
 
       if (parsed.length > 0) {
+        // 짧은 지연을 두어 "정리 중" 상태가 느껴지게 한 뒤 결과로 전환한다.
         // 새로 변환한 결과로 교체한다 — 이전에 표로 변환했던 병력은 비운다.
         // (병력을 계속 추가하고 싶으면 "+ 병력 추가" 버튼을 쓴다.)
-        histories = parsed;
-        uncheckedKeys.clear();
-        renderAll();
+        setTimeout(() => finishWithHistories(parsed), 350);
         return;
       }
 
       // 우리 포맷(🔴...)으로 바로 안 읽히면, 텍스트가 비어있지 않은 경우에만
       // Gemini에게 우리 포맷으로 변환을 맡긴다 (config.js에 키가 있을 때만).
       const hasApiKey = typeof GEMINI_API_KEY !== 'undefined' && GEMINI_API_KEY;
-      if (text.trim() && hasApiKey && typeof convertFreeTextWithGemini === 'function') {
-        parseBtn.disabled = true;
-        parseBtn.textContent = 'AI가 변환 중...';
+      if (hasApiKey && typeof convertFreeTextWithGemini === 'function') {
         try {
           const converted = await convertFreeTextWithGemini(text, GEMINI_API_KEY);
           const aiParsed = parseHistoryText(converted);
           if (aiParsed.length > 0) {
-            // 새로 변환한 결과로 교체한다 — 이전 결과는 비운다.
-            histories = aiParsed;
-            uncheckedKeys.clear();
+            finishWithHistories(aiParsed);
             showToast('AI가 자유양식 병력을 우리 포맷으로 변환했습니다. 결과를 꼭 확인해주세요');
           } else {
             showToast('AI 변환 결과도 인식하지 못했습니다. 빈 행을 추가했습니다');
-            histories.push(emptyHistoryRow());
+            finishWithHistories([...histories, emptyHistoryRow()]);
           }
         } catch (e) {
           console.error('Gemini 변환 실패:', e);
           showToast('AI 변환에 실패했습니다. 빈 행을 추가했습니다');
-          histories.push(emptyHistoryRow());
-        } finally {
-          parseBtn.disabled = false;
-          parseBtn.textContent = 'AI로 고지 미리 확인하기';
+          finishWithHistories([...histories, emptyHistoryRow()]);
         }
-        renderAll();
         return;
       }
 
       showToast('인식된 병력이 없습니다. 빈 행을 추가했습니다');
-      histories.push(emptyHistoryRow());
-      renderAll();
+      finishWithHistories([...histories, emptyHistoryRow()]);
     });
   }
 
@@ -640,6 +677,10 @@ if (typeof document !== 'undefined') {
       histories = [];
       uncheckedKeys.clear();
       renderAll();
+      if (historyInput) {
+        historyInput.value = '';
+        historyInput.style.height = 'auto';
+      }
       showToast('전체 초기화되었습니다');
     });
   }

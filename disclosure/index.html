@@ -21,49 +21,43 @@
     </div>
   </nav>
 
-  <main id="al-content">
-    <section class="hero">
-      <span class="hero-tag">표준알릴의무 작성보조 &gt; 슈린슈 고지도우미</span>
-      <h1 class="hero-title">슈린슈고지 도우미와<br>고지를 쉽게 해봐요!</h1>
-      <p class="hero-sub">병력을 양식없이 원하시는대로 내용만 적어주시면 슈린슈AI가 표준알릴의무에 맞추어서 고지를 도와드려요! 단, 고지에 대한 확인은 직접 하셔야하는거 아시죠 !?</p>
-      <div class="hero-badges">
-        <span class="hero-badge">Q1 3개월 진찰/검사</span>
-        <span class="hero-badge">Q2 상시복용</span>
-        <span class="hero-badge">Q3 1년 재검사</span>
-        <span class="hero-badge">Q4 5년 입원/수술/치료</span>
-        <span class="hero-badge">Q5 11대 질병</span>
+  <main id="al-content" class="landing-mode">
+    <section class="hero" id="landing-hero">
+      <img src="../surinsur.png" alt="슈린슈" class="hero-logo">
+      <h1 class="hero-title">슈린슈 고지도우미</h1>
+      <p class="hero-sub">병력을 형식 없이 적어주시면 표준알릴의무에 맞춰 정리해드려요</p>
+
+      <div class="chat-input-wrap" id="chat-input-wrap">
+        <label for="history-input" class="visually-hidden">병력 입력</label>
+        <textarea id="history-input" class="chat-textarea" rows="1" placeholder="병력을 자유롭게 적어주세요. 예) 24년 1월 고혈압 진단, 현재 약 복용중"></textarea>
+        <button id="parse-btn" type="button" class="chat-send-btn" aria-label="고지 정리하기">
+          <svg class="chat-send-icon" width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M7 12V2M7 2L2.5 6.5M7 2L11.5 6.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <svg class="chat-send-spinner" width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-dasharray="26" stroke-dashoffset="18" />
+          </svg>
+        </button>
       </div>
-      <div class="ce-callout warning">
-        <p>자동분류 결과는 항상 "초안"입니다. 최종 청약서 기재 전 직접 확인이 필수입니다.</p>
-      </div>
+      <p class="hero-disclaimer">자동분류 결과는 항상 "초안"이에요 · 최종 기재 전 직접 확인은 필수입니다</p>
     </section>
 
-    <section class="section" id="step1">
-      <span class="eyebrow">STEP 1 · 병력 입력</span>
-      <h2 class="stitle">병력을 자유롭게 적어주세요</h2>
-      <p class="slead">예시 형식: 🔴진단명/코드 줄 다음 입원/수술/치료·현상태를 적어주세요.</p>
-      <label for="history-input" class="visually-hidden">병력 입력</label>
-      <textarea id="history-input" class="history-textarea" placeholder="🔴고혈압/I10
-입원: 없음
-수술: 없음
-치료/현상태: 24.01.05 진단, 현재 약물치료중"></textarea>
-      <button id="parse-btn" type="button" class="btn-primary">AI로 고지 미리 확인하기</button>
-    </section>
+    <div id="results-area">
+      <section class="section" id="step2">
+        <span class="eyebrow">병력 확인 및 수정</span>
+        <h2 class="stitle">자동 인식 결과예요</h2>
+        <p class="slead">날짜·일수는 직접 확인해주세요.</p>
+        <div id="history-list" class="hier-box"></div>
+        <button id="add-row-btn" class="btn-secondary">+ 병력 추가</button>
+      </section>
 
-    <section class="section" id="step2">
-      <span class="eyebrow">STEP 2 · 병력 확인 및 수정</span>
-      <h2 class="stitle">자동 인식 결과입니다</h2>
-      <p class="slead">날짜·일수는 직접 확인해주세요.</p>
-      <div id="history-list" class="hier-box"></div>
-      <button id="add-row-btn" class="btn-secondary">+ 병력 추가</button>
-    </section>
-
-    <section class="section" id="step3">
-      <span class="eyebrow">STEP 3 · 표준알릴의무 분류결과</span>
-      <h2 class="stitle">문항별 분류결과</h2>
-      <div id="classify-result"></div>
-      <button id="copy-btn" class="btn-primary copy-sticky" type="button">결과 복사</button>
-    </section>
+      <section class="section" id="step3">
+        <span class="eyebrow">표준알릴의무 분류결과</span>
+        <h2 class="stitle">문항별 분류결과</h2>
+        <div id="classify-result"></div>
+        <button id="copy-btn" class="btn-primary copy-sticky" type="button">결과 복사</button>
+      </section>
+    </div>
   </main>
 
   <script src="data.js"></script>
