@@ -101,9 +101,16 @@ function sheetCss() {
       letter-spacing:-.015em}
     .card .sub{font-size:${px(6.5)};color:${C.muted};margin-top:${mm(1)};line-height:1.5}
 
-    .cyc{display:inline-block;font-size:${px(6)};font-weight:700;
-      padding:${mm(0.6)} ${mm(1.8)};border-radius:999px;margin-bottom:${mm(1.6)};
-      background:${C.rule2};color:${C.ink2};white-space:nowrap}
+    /* 높이와 line-height를 같게 고정한다. inline-block에 위아래 padding만 주면
+       html2canvas가 글자를 아래로 내려 그려 뱃지 하단에 붙었다(실측). */
+    .cyc{display:block;flex:none;height:${mm(4.2)};line-height:${mm(4.2)};
+      font-size:${px(6)};font-weight:700;padding:0 ${mm(1.9)};border-radius:999px;
+      margin-bottom:${mm(1.6)};background:${C.rule2};color:${C.ink2};white-space:nowrap}
+    /* 암 9장(3×3) — 한 장에 들어가도록 아이콘·여백을 줄인다 */
+    .cards.c9{gap:${mm(2.8)}}
+    .cards.c9 .card{padding:${mm(3.2)} ${mm(4)} ${mm(2.8)}}
+    .cards.c9 .ico{width:${mm(9.5)};height:${mm(9.5)};margin-bottom:${mm(1)}}
+    .cards.c9 .src{margin-top:${mm(1.4)};padding-top:${mm(1.4)}}
     .cyc.ev{background:${C.gold};color:#fff}
     .cyc.yr{background:var(--ac);color:#fff}
     .cyc.on{background:transparent;color:${C.muted};box-shadow:inset 0 0 0 1px ${C.rule}}
@@ -330,14 +337,29 @@ function sheetSummary(d) {
     sheetFoot('삼성화재 가입제안서 기준 · 0원은 미가입', 2, 5);
 }
 
+// 암 카드 9장 고정 배치 — 1단 표적·면역·다빈치 / 2단 양성자·중입자·세기조절 / 3단 수술·약물·방사선.
+// 금액순으로 늘어놓으면 제안서마다 자리가 바뀌어 설명 동선이 흔들린다.
+// 가입하지 않은 카드도 자리를 지키고 '0원'으로 비워 둔다.
+const CANCER_GRID = [
+    '표적항암약물치료비', '면역항암약물치료비', '다빈치로봇수술비',
+    '양성자방사선치료비', '중입자방사선치료비', '세기조절방사선치료비',
+    '암수술비', '항암약물치료비', '항암방사선치료비'
+];
+function cancerGrid(cards) {
+    const list = cards || [];
+    return CANCER_GRID.map(nm => list.find(c => c.nm === nm) || {
+        nm, v: 0, rows: [], cyc: '',
+        icon: (typeof getSheetIcon === 'function') ? getSheetIcon(nm) : ''
+    });
+}
+
 // ── 03 암 ──
 function sheetCancer(d) {
     return sheetHead(d.who) + sheetTop('삼성화재', '암 치료비', 'Cancer') +
         covBlock(d.cancerCov, '암 관련') +
         `<div class="body">
            <div><h3>치료비<span class="hint">어느 담보에서 얼마가 나오는지</span></h3>
-             <div class="cards">${(d.cancerCards || []).slice(0, 6).map(cardBlock).join('')}</div></div>
-           ${caseBlock('사례로 보는 보장', d.cancerCaseDesc, d.cancerCase)}
+             <div class="cards c9">${cancerGrid(d.cancerCards).map(cardBlock).join('')}</div></div>
          </div>` +
         sheetFoot('삼성화재 가입제안서 기준 · 0원은 미가입', 3, 5);
 }

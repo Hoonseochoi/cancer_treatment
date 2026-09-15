@@ -52,7 +52,11 @@ function extractRawCoveragesSamsung(text) {
     // A coverage line starts with: optional number + [bracket prefix] e.g. "57  [건강]..."
     // OR just a bracket prefix at the start of a line continuing the previous
     const amountPattern = /(?:[0-9,]+\s*(?:억원|만원|억|만|천|백|십|원)\s*)+/;
-    const coverageLineStart = /^\s*\d{1,4}\s+\[/;  // "57  [건강]"
+    // "57  [건강]…" 또는 접두어 없는 "19 종합병원 암 …"(천만안심). 뒤쪽을 모르면 앞 페이지
+    // 머리글("제2026-001호 … [AGSL010_05]")에 이어 붙어 담보가 통째로 버려졌다
+    // (실측: 송지원님 암 전액본인부담 통합치료비 1억원 누락 → 표적 1억1,100만원이 7,100만원으로).
+    const coverageLineStart = /^\s*\d{1,4}\s+[\[가-힣(]/;
+    const pageHeader = /^제\d{4}-\d+호/;
     const bracketPrefixOnly = /^\s*\[[^\]]+\]/;       // "[건강]" at line start (rare)
 
     const mergedLines = [];
@@ -101,7 +105,7 @@ function extractRawCoveragesSamsung(text) {
         } else {
             if (hasAmount) {
                 mergedLines.push(trimmed);
-            } else if (isNewCoverageLine || trimmed.includes('[')) {
+            } else if (isNewCoverageLine || (trimmed.includes('[') && !pageHeader.test(trimmed))) {
                 // Potential start of a coverage line without amount yet — hold it
                 pending = trimmed;
             } else {
@@ -339,6 +343,7 @@ function extractRawCoveragesSamsung(text) {
         // Clean name: strip any remaining bracket prefixes, leading numbers, leading/trailing spaces
         let name = rawName
             .replace(/\[[^\]]+\]\s*/g, '')   // strip all [xxx] prefixes
+            .replace(/^\(최대\d+세\)\s*/, '')   // 윗줄 보험기간 꼬리 "(최대100세)"가 붙어 온 경우
             .replace(/^[\d]+\s+/, '')           // strip leading 번호 if merged in
             .replace(/[.\s]+$/, '')             // trailing dots/spaces
             .trim();
