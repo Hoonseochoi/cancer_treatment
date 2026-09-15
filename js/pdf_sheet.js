@@ -101,11 +101,12 @@ function sheetCss() {
       letter-spacing:-.015em}
     .card .sub{font-size:${px(6.5)};color:${C.muted};margin-top:${mm(1)};line-height:1.5}
 
-    /* 높이와 line-height를 같게 고정한다. inline-block에 위아래 padding만 주면
-       html2canvas가 글자를 아래로 내려 그려 뱃지 하단에 붙었다(실측). */
+    /* 글자가 아래로 밀리던 건 태그 문제가 아니라 캡처 전체의 기준선 측정 오류였다
+       (style.css 'html2canvas 글자 기준선 보정'). 여기서는 높이만 고정한다. */
     .cyc{display:block;flex:none;height:${mm(4.2)};line-height:${mm(4.2)};
       font-size:${px(6)};font-weight:700;padding:0 ${mm(1.9)};border-radius:999px;
       margin-bottom:${mm(1.6)};background:${C.rule2};color:${C.ink2};white-space:nowrap}
+    .cyc .t{font-style:normal}
     /* 암 9장(3×3) — 한 장에 들어가도록 아이콘·여백을 줄인다 */
     .cards.c9{gap:${mm(2.8)}}
     .cards.c9 .card{padding:${mm(3.2)} ${mm(4)} ${mm(2.8)}}
@@ -274,7 +275,7 @@ function cardBlock(c) {
         `<span class="c2">${r.c || ''}</span></div>`).join('');
     return `<div class="card${c.lead ? ' lead' : ''}${c.v > 0 ? '' : ' off'}">
       <div class="chd">${c.icon ? `<img class="ico" src="${c.icon}" alt="">` : '<span></span>'}
-        ${c.cyc ? `<span class="cyc ${c.cycCls || 'yr'}">${c.cyc}</span>` : ''}</div>
+        ${c.cyc ? `<span class="cyc ${c.cycCls || 'yr'}"><i class="t">${c.cyc}</i></span>` : ''}</div>
       <div class="v">${c.v > 0 ? (c.vMax > c.v ? sFmt(c.v).replace(/원$/, '') + '~' + sFmt(c.vMax) : sFmt(c.v)) : '0원'}</div>
       <div class="nm">${sClip(c.nm, 16)}</div>
       ${rows ? `<div class="src">${rows}</div>` : (c.sub ? `<div class="sub">${c.sub}</div>` : '')}
