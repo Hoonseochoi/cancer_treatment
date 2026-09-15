@@ -24,15 +24,15 @@ jobs:
 
       - name: disclosure/config.js 생성 (Secret에서 키 주입)
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           cat > disclosure/config.js << EOF
-          // 이 파일은 배포 시 GitHub Actions가 Secret(GEMINI_API_KEY)으로부터
+          // 이 파일은 배포 시 GitHub Actions가 Secret(OPENROUTER_API_KEY)으로부터
           // 자동 생성합니다. 저장소에는 커밋되지 않습니다 (.gitignore 처리).
-          const GEMINI_API_KEY = '${GEMINI_API_KEY}';
+          const OPENROUTER_API_KEY = '${OPENROUTER_API_KEY}';
 
           if (typeof module !== 'undefined') {
-            module.exports = { GEMINI_API_KEY };
+            module.exports = { OPENROUTER_API_KEY };
           }
           EOF
 

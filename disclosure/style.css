@@ -162,18 +162,7 @@ h2.stitle {
   clip: rect(0,0,0,0); white-space: nowrap;
 }
 
-.hier-box { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
-.history-card {
-  background: #fff; border: 1px solid var(--card-border-strong); border-radius: 18px;
-  padding: 18px 20px; box-shadow: var(--shadow-card);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-  animation: card-in 0.4s var(--ease-spring) backwards;
-}
-.history-card:hover { box-shadow: var(--shadow-card-hover); }
 @keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.history-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-.history-card-title { font-weight: 700; font-size: 0.98rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.review-badge { font-size: 0.6rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: #fff7ed; color: #c2410c; text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0; }
 .history-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .history-fields label { display: flex; flex-direction: column; font-size: 0.7rem; font-weight: 600; color: var(--text-faint); gap: 5px; min-width: 0; }
 .history-fields input, .history-fields select {
@@ -197,7 +186,6 @@ label.checkbox-label {
 label.checkbox-label input[type="checkbox"] { accent-color: var(--navy); margin: 0; }
 label.checkbox-label.checked { background: var(--navy-soft); border-color: var(--navy); color: var(--navy); }
 
-.history-card-actions { margin-top: 12px; text-align: right; }
 .btn-link-danger {
   background: none; border: none; color: var(--text-faint); font-size: 0.76rem;
   font-weight: 600; cursor: pointer; padding: 4px 6px; border-radius: 6px;
@@ -226,12 +214,6 @@ label.checkbox-label.checked { background: var(--navy-soft); border-color: var(-
   transition: text-decoration-color 0.2s;
 }
 .q-item-name:hover { text-decoration-color: var(--text-faint); }
-.q-item-detail {
-  display: none; margin: 0 0 10px 0; padding: 12px 16px;
-  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
-}
-.q-item-detail.open { display: block; animation: card-in 0.25s var(--ease-spring); }
-.q-item-detail-line { font-size: 0.8rem; color: var(--text-muted); line-height: 1.7; }
 .q-empty { font-size: 0.82rem; color: var(--text-faint); padding: 4px 0; }
 .cat-badge { font-size: 0.6rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.3px; }
 .cat-s { background: #eff6ff; color: #1d4ed8; }
@@ -242,7 +224,56 @@ label.checkbox-label.checked { background: var(--navy-soft); border-color: var(-
 .cat-elapsed { background: #eff6ff; color: #1d4ed8; margin-left: auto; }
 .copy-sticky { position: sticky; bottom: 16px; display: block; margin: 24px auto 0; box-shadow: var(--shadow-card-hover); }
 
+/* Results: 분류결과 메인 + 분류 안 된 병력 사이드 */
+#al-content:not(.landing-mode) { max-width: 1120px; }
+.results-grid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 28px; align-items: start; margin-top: 24px; }
+.results-side {
+  position: sticky; top: 84px; max-height: calc(100vh - 100px); overflow-y: auto;
+  background: var(--card-bg); border: 1px solid var(--card-border-strong); border-radius: 18px; padding: 20px 18px;
+}
+.side-title { font-size: 0.98rem; font-weight: 800; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.side-count { font-size: 0.7rem; font-weight: 700; background: #fff; border: 1px solid var(--card-border-strong); border-radius: 99px; padding: 1px 9px; color: var(--text-muted); }
+.side-lead { font-size: 0.76rem; color: var(--text-faint); line-height: 1.6; margin-bottom: 14px; }
+.side-empty { font-size: 0.8rem; color: var(--text-faint); padding: 8px 0 4px; }
+.side-item { background: #fff; border: 1px solid var(--card-border-strong); border-radius: 12px; padding: 4px 12px; margin-bottom: 8px; }
+.side-item .q-item-row { padding: 7px 0; }
+.side-add { width: 100%; margin-top: 6px; }
+
+/* 병력 펼침 버튼 */
+.h-toggle::after { content: '▾'; display: inline-block; margin-left: 5px; font-size: 0.7rem; color: var(--text-faint); transition: transform 0.2s ease; }
+.h-toggle[aria-expanded="true"]::after { transform: rotate(180deg); }
+
+/* 펼친 병력: 고지 체크표시 + 세부 수정 + 원문 */
+.h-detail { display: none; margin: 2px 0 12px; padding: 14px 16px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; }
+.side-item .h-detail { background: #fafafa; padding: 12px; }
+.h-detail.open { display: block; animation: card-in 0.25s var(--ease-spring); }
+.h-detail-label { font-size: 0.66rem; font-weight: 700; letter-spacing: 1px; color: var(--text-faint); margin: 12px 0 6px; }
+.h-detail-label:first-child { margin-top: 0; }
+.disclosure-checks { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.dc-chip {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-size: 0.74rem; font-weight: 700; border-radius: 8px; padding: 6px 0;
+  background: #fff; border: 1px solid var(--card-border-strong); color: var(--text-faint);
+}
+.dc-chip .dc-box { width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid currentColor; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; line-height: 1; }
+.dc-chip.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+.dc-chip.review { background: #fff7ed; border-color: #fdba74; color: #c2410c; }
+.h-note { font-size: 0.76rem; color: var(--text-muted); line-height: 1.6; }
+.h-source {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-all; color: #374151;
+  background: #fff; border: 1px dashed var(--card-border-strong); border-radius: 8px; padding: 8px 10px;
+}
+.h-detail .history-fields { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.h-detail-actions { margin-top: 10px; text-align: right; }
+
+@media (max-width: 900px) {
+  .results-grid { grid-template-columns: 1fr; }
+  .results-side { position: static; max-height: none; }
+}
+
 @media (max-width: 640px) {
+  .disclosure-checks { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   #al-content { padding: 48px 16px 120px; }
   .history-fields { grid-template-columns: 1fr 1fr; }
   .nav-inner { gap: 8px; }

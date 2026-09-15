@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260915b">
 </head>
 <body>
   <nav id="al-nav">
@@ -43,26 +43,29 @@
     </section>
 
     <div id="results-area">
-      <section class="section" id="step2">
-        <span class="eyebrow">병력 확인 및 수정</span>
-        <h2 class="stitle">자동 인식 결과예요</h2>
-        <p class="slead">날짜·일수는 직접 확인해주세요.</p>
-        <div id="history-list" class="hier-box"></div>
-        <button id="add-row-btn" class="btn-secondary">+ 병력 추가</button>
-      </section>
+      <div class="results-grid">
+        <section class="results-main" id="step3">
+          <span class="eyebrow">표준알릴의무 분류결과</span>
+          <h2 class="stitle">문항별 분류결과</h2>
+          <p class="slead">병력명을 누르면 고지 체크표시와 세부 내용이 열려요. 원문과 대조해 확인해주세요.</p>
+          <div id="classify-result"></div>
+          <button id="copy-btn" class="btn-primary copy-sticky" type="button">결과 복사</button>
+        </section>
 
-      <section class="section" id="step3">
-        <span class="eyebrow">표준알릴의무 분류결과</span>
-        <h2 class="stitle">문항별 분류결과</h2>
-        <div id="classify-result"></div>
-        <button id="copy-btn" class="btn-primary copy-sticky" type="button">결과 복사</button>
-      </section>
+        <aside class="results-side" id="unclassified">
+          <h3 class="side-title">분류 안 된 병력 <span id="unclassified-count" class="side-count">0</span></h3>
+          <p class="side-lead">어느 문항에도 해당하지 않는다고 판단한 병력이에요. 지우지 않고 모아뒀으니 전산 입력 전에 한 번 점검해주세요.</p>
+          <div id="unclassified-list"></div>
+          <button id="add-row-btn" class="btn-secondary side-add" type="button">+ 병력 직접 추가</button>
+        </aside>
+      </div>
     </div>
   </main>
 
-  <script src="data.js"></script>
-  <script src="config.js"></script>
-  <script src="ai.js"></script>
-  <script src="app.js"></script>
+  <!-- 배포 후 브라우저가 옛 data.js/ai.js와 새 app.js를 섞어 쓰면 전역 참조가 깨지므로, 스크립트를 바꾸면 v를 올린다 -->
+  <script src="data.js?v=20260915e"></script>
+  <script src="config.js?v=20260915e"></script>
+  <script src="ai.js?v=20260915e"></script>
+  <script src="app.js?v=20260915e"></script>
 </body>
 </html>

@@ -1,116 +1,173 @@
-// 자유양식 병력 텍스트를 우리 파서 포맷(🔴진단명/코드 + 입원/수술/치료현상태)으로
-// 변환하는 Gemini 전처리기. parseHistoryText 자체는 건드리지 않고, 그 앞단에서
-// "우리 포맷이 아닌 것 같은 텍스트"를 우리 포맷으로 바꿔주는 역할만 한다.
+// 자유양식 병력 원문에서 "기록"만 옮겨 적게 하는 LLM 추출기(OpenRouter 경유 DeepSeek).
+// AI는 판단·합산·요약을 하지 않고 기록 줄만 출력한다. 줄번호 검증·병력 묶기·합산·시술 구분·고지 분류는 app.js 규칙이 한다.
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const OPENROUTER_MODEL = 'deepseek/deepseek-v4-flash';
+// 같은 모델도 제공사별 속도 차이가 크다(장문 실측: Parasail·Alibaba ~110tok/s, 기본 라우팅 OpenInference ~20tok/s).
+const OPENROUTER_PROVIDER_ORDER = ['Parasail', 'Alibaba', 'Baidu', 'Novita', 'GMICloud'];
+const BACKUP_PROVIDER_ORDER = ['Alibaba', 'Baidu', 'Parasail', 'Novita', 'GMICloud'];
+// 빠른 제공사도 가끔 수십 초씩 멈춘다. 이 시간 안에 안 끝나면 다른 제공사로 한 번 더 보내 먼저 온 답을 쓴다.
+const BACKUP_AFTER_MS = 8000;
 
-function buildConversionPrompt(rawText) {
-  return `너는 보험 알릴의무 작성 보조 도구의 입력 전처리기다.
-원문은 보험설계사들이 제각각 다른 양식(자유서술형, 글머리기호형 "*[코드] 진단명",
-"**병력**" 블록형, 체크리스트형, 표 형식 등)으로 적은 고객 병력이다. 아래 "원문"에서
-실제 진단/치료 내용만 골라내 다음 형식으로 변환해라. 다른 설명 없이 변환된 텍스트만 출력해라.
+function buildRecordPrompt(numberedText, todayStr, targetText) {
+  return `너는 보험 병력 원문에서 기록을 옮겨 적는 추출기다. 판단·합산·요약·중복제거는 하지 말고 원문 기록을 한 줄에 하나씩 옮겨라. 오늘: ${todayStr}
 
-형식 규칙 (각 줄은 정확히 이 라벨로 시작):
-- "🔴진단명/진단코드" : 병력 한 건의 시작. 진단코드는 점(.) 없이 붙여쓴다(예: K291).
-  원문에 코드가 없으면 진단명으로 추정 가능한 일반적인 ICD-10 코드를 채운다(불확실하면 가장 근접한 코드).
-- "입원:" : 입원 안 했으면 "없음", 입원했으면 "N일". 같은 병력에 입원이 여러 번 있으면
-  일수를 모두 더한 합계로 적는다(예: 3일 입원 + 5일 입원 → "8일"). 응급실 당일 입원도 입원으로 센다.
-- "수술:" : 수술 안 했으면 "없음", 했으면 수술명.
-- "통원:" : 통원 횟수를 알 수 있으면 "N회", 모르면 줄을 생략하거나 "없음".
-  "7회 이상 통원" 같은 표현은 그 숫자 그대로(예: "7회") 적는다.
-- "투약:" : 계속 복용/처방 일수를 알 수 있으면 "N일"(예: "30일 이상 약 처방" → "30일"),
-  모르면 줄을 생략하거나 "없음".
-- "약물:" (선택) : 마약/혈압강하제/신경안정제/수면제/각성제/진통제 등 상시복용 약물명이
-  원문에 적혀 있으면(예: "알레그라정180밀리그람") 약물명을 그대로 적는다. 약물명을 모르면
-  줄을 생략해라.
-- "치료/현상태:" : 반드시 YY.MM.DD 형식의 날짜를 한 번 포함해야 한다. 진단일이
-  "2021-09-10~2026-01-02" 같은 기간이면 더 최근 날짜(2026-01-02)를 쓴다. 진행중인
-  치료라도 날짜 뒤에 "~"를 붙이지 말고 알고 있는 가장 최근 날짜를 그대로 적어라.
-  완치/통원중/투약중 등 현재 상태도 함께 적는다.
-- "비고:" (선택) : 위 줄들에 안 들어가는 추가 정보(최초 진단일이 치료/현상태의 날짜와
-  다를 때 그 시작일, 합병증 여부, 응급실 여부, 부위, 사고 경위 등)를 한 줄로 요약해 적는다.
-  날짜를 추측해서 비고에라도 다른 필드를 오염시키지 말고, 모르면 비고를 생략해라.
-- 병력이 여러 건이면 각 블록을 빈 줄 하나로 구분한다.
-- 사람 이름, 인사말, "병력 각각 기재", 체크리스트 안내문(✅/ㅡ/X 등) 같은 양식 노이즈는
-  전부 무시하고 실제 진단/치료 내용만 변환해라.
-- 날짜나 수치가 불확실하면 추측해서 채우지 말고 해당 줄을 생략해라(추측보다 빈칸이 안전하다).
-- 절대 "진단명", "진단코드", "🔴진단명/진단코드" 같은 라벨 글자 자체를 값으로 출력하지 마라.
-  헤더 줄에는 실제 진단명과 실제 코드만 "/"로 한 번만 구분해 적어라.
+출력 형식(설명·머리말·코드블록 없이 이 줄들만):
+줄번호|코드|진단명|종류|시작일|종료일|수치|상세
 
-예시 1 (자유서술 한 줄형 + 약물명)
-원문: "2025.10.04 기타 지루피부염 (L218) 30일 이상 약 처방 현재 복용X
-알레그라정180밀리그람"
-변환:
-🔴기타 지루피부염/L218
-입원: 없음
-수술: 없음
-투약: 30일
-약물: 알레그라정180밀리그람
-치료/현상태: 25.10.04 진단, 약 처방 후 현재 복용 중단
+- 줄번호: 원문 각 줄 왼쪽에 붙은 번호를 그대로 쓴다(기록 순번이 아니다). 날짜가 적힌 줄의 번호.
+- 코드: 진단코드만 쓴다(사람 이름·날짜 금지). 원문 코드에서 점만 뺀다(M23.2→M232, AE14.41→AE1441). 숫자·앞글자를 바꾸지 마라.
+  원문에 코드가 없으면 추정 코드 앞에 ~를 붙인다(~B07). 모르면 비운다.
+- 진단명: 원문 진단명. 복사하다 글자 중간에 잘못 끼어든 공백만 붙이고("간 세포암종 의"→"간세포암종의") 단어 사이 띄어쓰기는 원문대로 둔다.
+  같은 코드로 앞에서 적었으면 비워도 된다.
+- 종류: 진단|입원|통원|수술|시술|투약|정기|재검 중 하나
+  입원=입원 1건(수치=입원일수) / 통원=통원(수치=횟수·일수)
+  투약=약 처방 기록("마지막처방일 … 30일이상", "N일치 처방" 포함, 수치=처방일수) / 정기=원문에 "정기처방", "계속 복용 중"이라고 적힌 약만
+  수술=원문이 수술이라고 했거나 수술 섹션·수술명 칸에 적힌 것, "~술"로 끝나는 처치 전부(소작술·절제술·봉합술·해제술 포함, 상세=수술명, 수치=횟수)
+  시술=원문이 수술이라 하지 않은 주사·신경차단·물리치료·냉동치료 등(상세=처치명)
+  재검=추가검사·재검사 / 진단=그 밖의 진료·진단·날짜만 있는 기록
+- 투약·정기의 상세에는 약 이름만 쓴다. 약 이름이 없으면 비운다(진단명을 쓰지 마라).
+- 시작일·종료일: YYMMDD. 하루짜리는 시작일만. 연도가 없으면 MMDD("5월 28일"→0528).
+- 수치: 숫자만("30일 이상"→30). 모르면 비운다.
+- "입원x", "입원 X", "입원없음"이면 입원 기록만 만들지 않는다. 같은 줄의 수술·진단 등 다른 기록은 그대로 적는다("수술x"도 같다).
+- 입원이 여러 번이면 합치지 말고 한 줄씩. 똑같은 기록이 반복돼도 반복된 만큼 적는다.
+- 코드·진단명 없이 적힌 수술·처방·최근진료("간이식술", "간약 정기처방")는 원문 맥락상 연결되는 병력의 코드·진단명을 적는다.
+  연결할 병력이 없으면 코드·진단명을 비운다.
+- 고객 이름, 인사, 설계 요청, "입원/통원/처방" 같은 제목 줄은 기록이 아니다. 원문에 없는 내용은 절대 쓰지 마라.
 
-예시 2 (응급실 당일입원)
-원문: "2022.02.12 성적학대 (T742) 응급실 당일 입원"
-변환:
-🔴성적학대/T742
-입원: 1일
-수술: 없음
-치료/현상태: 22.02.12 응급실 당일 입원
-
-예시 3 (글머리기호 + 여러 입원 합산)
-원문: "*[A09.9] 상세불명 기원의 위장염 및 결장염
-[입원 1일] 목포한국병원(22-07-24)
-[입원 1일] 목포한국병원(23-08-23)"
-변환:
-🔴상세불명 기원의 위장염 및 결장염/A099
-입원: 2일
-수술: 없음
-치료/현상태: 23.08.23 입원, 완치
-비고: 22.07.24에도 1일 입원 이력 있음
-
-예시 4 ("**병력**" 블록 + 통원/투약 트리거)
-원문: "**병력 (병력 각각 기재)**
-날짜 : 2023.06.08~2025.08.26
-정확한 진단명 : 상세불명의 급성 기관지염(J209)
-치료내용 : 7회 이상 통원 및 30일 이상 약 처방
-현상태 : 이상없음
-합병증여부 : 없음"
-변환:
-🔴상세불명의 급성 기관지염/J209
-입원: 없음
-수술: 없음
-통원: 7회
-투약: 30일
-치료/현상태: 25.08.26 통원, 이상없음
-비고: 최초 23.06.08부터, 합병증 없음
+예시
+원문:
+6: 김철수 고객님
+7: 2024-3-11 5일
+8: (양방)신 경뿌리병 증을 동반한 요추 추간판장애-AM5116
+9:
+10: 2023-12-01 ~ 2024-05-20/AM5116 통원 14일, 신경차단술 2회
+11: 25.01.21 M50.2 경추간판전위 입원3일 / 수술o 경추유합술
+12: 23.06.02 J209 급성 기관지염 / 입원x / 수술x
+13: 23.01.25 / Z34.83 정상임신 관리 / 입원 X ,자궁경부봉축해제술
+14: 3개월이내 병력 / 8월 2일 허리 진통제 정기처방
+출력:
+7|AM5116|신경뿌리병증을 동반한 요추 추간판장애|입원|240311||5|
+10|AM5116||통원|231201|240520|14|
+10|AM5116||시술|||2|신경차단술
+11|M502|경추간판전위|입원|250121||3|
+11|M502||수술|250121|||경추유합술
+12|J209|급성 기관지염|진단|230602|||
+13|Z3483|정상임신 관리|수술|230125|||자궁경부봉축해제술
+14|AM5116||정기|0802|||진통제
 
 원문:
-${rawText}`;
+${numberedText}${targetText ? `\n\n출력 대상 줄(아래 줄들에 적힌 기록만 출력하고, 나머지 원문은 맥락 참고용):\n${targetText}` : ''}`;
 }
 
-async function convertFreeTextWithGemini(rawText, apiKey) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-  const body = {
-    contents: [{ parts: [{ text: buildConversionPrompt(rawText) }] }],
-  };
+// 긴 원문은 빈 줄 경계로 나눠 동시에 요청한다(출력 토큰 생성이 병목이라 나눈 만큼 빨라진다).
+// 각 요청에는 전체 원문을 맥락으로 주고 자기 범위의 기록만 출력하게 한다. 범위 밖 기록은 app.js가 버린다.
+function splitIntoChunks(lines, maxChunks = 8) {
+  const nonEmpty = lines.filter(l => l.trim()).length;
+  const target = Math.max(14, Math.ceil(nonEmpty / maxChunks));
+  const chunks = [];
+  let from = 1;
+  let count = 0;
+  lines.forEach((line, i) => {
+    if (line.trim()) count++;
+    else if (count >= target) {
+      chunks.push({ from, to: i + 1 });
+      from = i + 2;
+      count = 0;
+    }
+  });
+  if (from <= lines.length) chunks.push({ from, to: lines.length });
+  return chunks.filter(c => lines.slice(c.from - 1, c.to).some(l => l.trim()));
+}
 
-  const res = await fetch(url, {
+async function requestOnce(prompt, apiKey, model, providerOrder, signal) {
+  const request = () => fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    signal,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+      'X-Title': 'Surinsur Disclosure Helper',
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0,
+      max_tokens: 4000,
+      reasoning: { enabled: false },
+      provider: { order: providerOrder, allow_fallbacks: true },
+      messages: [{ role: 'user', content: prompt }],
+    }),
   });
 
+  // 제공사 쪽 일시 속도제한(429)·오류(5xx)는 몇 번 재시도한다.
+  let res = await request();
+  for (let attempt = 1; attempt <= 3 && (res.status === 429 || res.status >= 500); attempt++) {
+    await new Promise(r => setTimeout(r, 1000 * attempt));
+    res = await request();
+  }
   if (!res.ok) {
-    throw new Error(`Gemini API 오류: ${res.status}`);
+    throw new Error(`OpenRouter API 오류: ${res.status} ${await res.text()}`);
   }
-
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error('Gemini 응답에서 변환 결과를 찾을 수 없습니다');
+  const text = data?.choices?.[0]?.message?.content;
+  if (typeof text !== 'string') {
+    throw new Error('OpenRouter 응답에서 결과를 찾을 수 없습니다');
   }
-  return text.trim();
+  return { text, provider: data.provider || '' };
+}
+
+// 첫 요청이 BACKUP_AFTER_MS 안에 안 끝나거나 실패하면 다른 제공사 순서로 한 번 더 보내고, 먼저 성공한 답을 쓴다.
+async function requestCompletion(prompt, apiKey, model) {
+  const controllers = [];
+  let settled = false;
+  let timer;
+  const send = order => {
+    const controller = new AbortController();
+    controllers.push(controller);
+    return requestOnce(prompt, apiKey, model, order, controller.signal);
+  };
+  const primary = send(OPENROUTER_PROVIDER_ORDER);
+  const backup = new Promise((resolve, reject) => {
+    let fired = false;
+    const fire = () => {
+      if (settled || fired) return;
+      fired = true;
+      send(BACKUP_PROVIDER_ORDER).then(resolve, reject);
+    };
+    timer = setTimeout(fire, BACKUP_AFTER_MS);
+    primary.catch(fire);
+  });
+  try {
+    return await Promise.any([primary, backup]);
+  } catch (e) {
+    throw e.errors ? e.errors[0] : e;
+  } finally {
+    settled = true;
+    clearTimeout(timer);
+    controllers.forEach(c => c.abort());
+  }
+}
+
+// onlyLines를 주면(규칙이 찾은 "빠뜨린 줄" 재요청) 그 줄들만 출력 대상으로 한 번 요청한다.
+async function extractRecordsWithAI(rawText, apiKey, { model = OPENROUTER_MODEL, today = new Date().toISOString().slice(0, 10), onlyLines } = {}) {
+  const sourceLines = rawText.split('\n');
+  const numbered = (from, to) => sourceLines.slice(from - 1, to).map((line, i) => `${from + i}: ${line}`).join('\n');
+  const whole = numbered(1, sourceLines.length);
+  const run = async (range, targetText) => {
+    const t0 = Date.now();
+    const { text, provider } = await requestCompletion(buildRecordPrompt(whole, today, targetText), apiKey, model);
+    return { ...range, text, provider, ms: Date.now() - t0 };
+  };
+
+  if (onlyLines) {
+    const targetText = onlyLines.map(n => `${n}: ${sourceLines[n - 1]}`).join('\n');
+    const chunk = await run({ from: Math.min(...onlyLines), to: Math.max(...onlyLines), lines: onlyLines }, targetText);
+    return { chunks: [chunk], sourceLines };
+  }
+  const ranges = splitIntoChunks(sourceLines);
+  const chunks = await Promise.all(ranges.map(range => run(range, ranges.length > 1 ? numbered(range.from, range.to) : '')));
+  return { chunks, sourceLines };
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { buildConversionPrompt, convertFreeTextWithGemini };
+  module.exports = { buildRecordPrompt, splitIntoChunks, extractRecordsWithAI, OPENROUTER_MODEL, OPENROUTER_PROVIDER_ORDER };
 }

@@ -8,6 +8,7 @@ const dataModule = { exports: {} };
 new Function('module', 'exports', dataSrc)(dataModule, dataModule.exports);
 global.Q_DEFS = dataModule.exports.Q_DEFS;
 global.DISEASE_11 = dataModule.exports.DISEASE_11;
+global.DISEASE_11_KEYWORDS = dataModule.exports.DISEASE_11_KEYWORDS;
 global.DISCLOSURE_EXCEPTIONS = dataModule.exports.DISCLOSURE_EXCEPTIONS;
 global.LIGHT_INSURANCE_EXCEPTIONS = dataModule.exports.LIGHT_INSURANCE_EXCEPTIONS;
 
