@@ -544,8 +544,10 @@ strong {
 
 @media (max-width: 640px) {
     .header-logo { height: 54px; }
-    .header-left-group { gap: 10px; }
-    .header-left-group button { font-size: 1rem !important; }
+    /* 메뉴가 늘어 한 줄에 다 안 들어가므로 줄바꿈한다. 윗줄 NEW/PRO 태그(-11px)가 아랫줄과 겹치지 않게 세로 간격을 둔다. */
+    .header-left-group { gap: 18px 10px; flex-wrap: wrap; }
+    .header-left-group button,
+    .header-left-group a { font-size: 1rem !important; }
 
     /* Level-up notification position */
     /* !important needed: element uses Tailwind arbitrary-value classes (top-[100px] right-[30px])

@@ -224,6 +224,30 @@ label.checkbox-label.checked { background: var(--navy-soft); border-color: var(-
 .cat-elapsed { background: #eff6ff; color: #1d4ed8; margin-left: auto; }
 .copy-sticky { position: sticky; bottom: 16px; display: block; margin: 24px auto 0; box-shadow: var(--shadow-card-hover); }
 
+/* 자동고지AI 잠금 화면: 잠겨 있는 동안은 고지도우미 화면을 전부 숨긴다 */
+body.locked #landing-hero,
+body.locked #results-area { display: none !important; }
+body.locked #reset-all-btn { visibility: hidden; }
+body:not(.locked) #lock-screen { display: none; }
+#lock-screen { transition: opacity 0.35s ease, transform 0.35s var(--ease-spring); }
+body.unlocking #lock-screen { opacity: 0; transform: translateY(-10px) scale(0.98); }
+.lock-badge {
+  display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px;
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.4px; color: #fff;
+  background: linear-gradient(90deg, #0F1E42, #2C55B8); border-radius: 99px; padding: 5px 12px;
+  box-shadow: 0 4px 14px rgba(15, 30, 66, 0.25);
+}
+#unlock-input-wrap { align-items: center; }
+.unlock-input { height: 36px; padding: 0; letter-spacing: 1px; }
+.unlock-input::placeholder { letter-spacing: 0; }
+.unlock-message { min-height: 1.3em; margin-top: 12px; font-size: 0.8rem; font-weight: 600; color: #c2410c; }
+.chat-input-wrap.is-error { border-color: #f97316; box-shadow: 0 0 0 3px #ffedd5; animation: unlock-shake 0.35s ease; }
+@keyframes unlock-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
 /* Results: 분류결과 메인 + 분류 안 된 병력 사이드 */
 #al-content:not(.landing-mode) { max-width: 1120px; }
 .results-grid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 28px; align-items: start; margin-top: 24px; }

@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>고지도우미</title>
+  <title>자동고지AI · 슈린슈 고지도우미</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260915b">
+  <link rel="stylesheet" href="style.css?v=20260915f">
 </head>
-<body>
+<!-- 기본은 잠금 상태. gate.js가 저장된 잠금 해제 기록을 확인하면 locked를 뗀다 -->
+<body class="locked">
   <nav id="al-nav">
     <div class="nav-inner">
       <a href="#" class="nav-logo">
@@ -22,6 +23,27 @@
   </nav>
 
   <main id="al-content" class="landing-mode">
+    <section class="hero" id="lock-screen">
+      <img src="../surinsur.png" alt="슈린슈" class="hero-logo">
+      <span class="lock-badge">PRO · 회원 전용</span>
+      <h1 class="hero-title">자동고지AI</h1>
+      <p class="hero-sub">유료 서비스라 일부 회원들에게만 공개됩니다.<br>안내받은 비밀번호를 입력해주세요</p>
+
+      <div class="chat-input-wrap" id="unlock-input-wrap">
+        <label for="unlock-input" class="visually-hidden">비밀번호</label>
+        <input id="unlock-input" class="chat-textarea unlock-input" type="password" autocomplete="current-password" placeholder="비밀번호를 입력해주세요">
+        <button id="unlock-btn" type="button" class="chat-send-btn" aria-label="잠금 해제">
+          <svg class="chat-send-icon" width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M7 12V2M7 2L2.5 6.5M7 2L11.5 6.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <svg class="chat-send-spinner" width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-dasharray="26" stroke-dashoffset="18" />
+          </svg>
+        </button>
+      </div>
+      <p class="unlock-message" id="unlock-message" role="alert"></p>
+    </section>
+
     <section class="hero" id="landing-hero">
       <img src="../surinsur.png" alt="슈린슈" class="hero-logo">
       <h1 class="hero-title">슈린슈 고지도우미</h1>
@@ -63,9 +85,10 @@
   </main>
 
   <!-- 배포 후 브라우저가 옛 data.js/ai.js와 새 app.js를 섞어 쓰면 전역 참조가 깨지므로, 스크립트를 바꾸면 v를 올린다 -->
-  <script src="data.js?v=20260915e"></script>
-  <script src="config.js?v=20260915e"></script>
-  <script src="ai.js?v=20260915e"></script>
-  <script src="app.js?v=20260915e"></script>
+  <script src="gate.js?v=20260915f"></script>
+  <script src="data.js?v=20260915f"></script>
+  <script src="config.js?v=20260915f"></script>
+  <script src="ai.js?v=20260915f"></script>
+  <script src="app.js?v=20260915f"></script>
 </body>
 </html>
