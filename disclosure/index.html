@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260915f">
+  <link rel="stylesheet" href="style.css?v=20260916a">
 </head>
 <!-- 기본은 잠금 상태. gate.js가 저장된 잠금 해제 기록을 확인하면 locked를 뗀다 -->
 <body class="locked">
@@ -61,7 +61,7 @@
           </svg>
         </button>
       </div>
-      <p class="hero-disclaimer">자동분류 결과는 항상 "초안"이에요 · 최종 기재 전 직접 확인은 필수입니다</p>
+      <p class="hero-disclaimer">자동분류 결과는 항상 "초안"이에요 · 최종 기재 전 직접 확인은 필수입니다<br>입력 내용은 서비스 개선을 위해 저장돼요</p>
     </section>
 
     <div id="results-area">
@@ -85,10 +85,11 @@
   </main>
 
   <!-- 배포 후 브라우저가 옛 data.js/ai.js와 새 app.js를 섞어 쓰면 전역 참조가 깨지므로, 스크립트를 바꾸면 v를 올린다 -->
-  <script src="gate.js?v=20260915f"></script>
-  <script src="data.js?v=20260915f"></script>
-  <script src="config.js?v=20260915f"></script>
-  <script src="ai.js?v=20260915f"></script>
-  <script src="app.js?v=20260915f"></script>
+  <script src="gate.js?v=20260916a"></script>
+  <script src="data.js?v=20260916a"></script>
+  <script src="config.js?v=20260916a"></script>
+  <script src="ai.js?v=20260916a"></script>
+  <script src="log.js?v=20260916a"></script>
+  <script src="app.js?v=20260916a"></script>
 </body>
 </html>

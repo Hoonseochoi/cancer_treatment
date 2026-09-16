@@ -1059,12 +1059,21 @@ if (typeof document !== 'undefined') {
         }
       };
 
+      // 잘못 분류된 사례를 되짚으려고 원문·정리결과를 남긴다(익명 기록, log.js가 실패해도 화면은 그대로 진행).
+      const startedAt = Date.now();
+      const logRun = payload => {
+        if (typeof logDisclosureRun === 'function') {
+          logDisclosureRun({ rawText: text, todayStr: TODAY_ISO, latencyMs: Date.now() - startedAt, ...payload });
+        }
+      };
+
       const parsed = parseHistoryText(text);
 
       if (parsed.length > 0) {
         // 짧은 지연을 두어 "정리 중" 상태가 느껴지게 한 뒤 결과로 전환한다.
         // 새로 변환한 결과로 교체한다 — 이전에 표로 변환했던 병력은 비운다.
         // (병력을 계속 추가하고 싶으면 "+ 병력 추가" 버튼을 쓴다.)
+        logRun({ source: 'manual', histories: parsed });
         setTimeout(() => finishWithHistories(parsed), 350);
         return;
       }
@@ -1075,8 +1084,11 @@ if (typeof document !== 'undefined') {
       if (hasApiKey && typeof extractRecordsWithAI === 'function') {
         try {
           // AI는 원문 기록만 옮겨 적고, 병력 묶기·합산·분류는 규칙(recordsToHistories/classifyHistories)이 한다.
-          const extract = onlyLines => extractRecordsWithAI(text, OPENROUTER_API_KEY, { today: TODAY_ISO, onlyLines });
-          const { histories: aiHistories } = await buildHistoriesWithAI(extract, TODAY_ISO);
+          let requests = 0;
+          const extract = onlyLines => extractRecordsWithAI(text, OPENROUTER_API_KEY, { today: TODAY_ISO, onlyLines })
+            .then(out => { requests += out.chunks.length; return out; });
+          const { histories: aiHistories, records, retriedLines, missingLines } = await buildHistoriesWithAI(extract, TODAY_ISO);
+          logRun({ source: 'ai', histories: aiHistories, records, requests, retriedLines, missingLines, model: OPENROUTER_MODEL });
           if (aiHistories.length > 0) {
             finishWithHistories(aiHistories);
             showToast('병력을 정리했어요. 병력명을 눌러 원문과 꼭 대조해주세요');
@@ -1087,6 +1099,7 @@ if (typeof document !== 'undefined') {
           }
         } catch (e) {
           console.error('AI 추출 실패:', e);
+          logRun({ source: 'ai', histories: [], error: String(e && e.message ? e.message : e) });
           setLoading(false);
           showToast('AI 호출에 실패했어요. 입력은 그대로 두었으니 다시 시도해주세요');
         }
