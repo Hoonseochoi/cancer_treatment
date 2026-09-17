@@ -161,7 +161,13 @@ const RECORD_TYPES = ['진단', '입원', '통원', '수술', '시술', '투약'
 
 // 인수지침 24(심사 TIP): 수술이 아닌 시술·보존치료. 이 키워드면 AI가 "수술"로 옮겨도 시술로 본다.
 // 목록에 없는 처치를 AI가 "시술"로 판단한 경우는 놓치지 않게 수술로 두고 "원문 확인" 표시를 붙인다.
-const PROCEDURE_KEYWORDS = ['신경차단', '신경근차단', '경막외', '신경성형', '신경감압', '주사', '물리치료', '도수치료', '체외충격파', '프롤로', '약침', '침치료', '깁스', '보조기', '냉동치료', '압박스타킹'];
+const PROCEDURE_KEYWORDS = ['신경차단', '신경근차단', '경막외', '신경성형', '신경감압', '주사', '물리치료', '도수치료', '체외충격파', '프롤로', '약침', '침치료', '침술', '부항', '깁스', '보조기', '냉동치료', '압박스타킹'];
+
+// "ㄴ투약", "└ 인공수정체삽입술"처럼 위 병력에 딸린 치료 내용을 적는 줄
+const CONTINUATION_LINE_RE = /^\s*(?:ㄴ|└|↳|→|->)/;
+
+// 약물명 칸에 들어와도 약 이름이 아닌 말
+const GENERIC_DRUG_WORDS = ['투약', '약', '처방', '약처방', '복용', '약복용', '정기처방', '정기약처방'];
 
 const compactText = s => (s || '').replace(/[\s.]/g, '').toUpperCase();
 
@@ -182,21 +188,46 @@ function locateRecordLine(r, sourceLines) {
   const dateRes = recordDateRegexes(r);
   const code = normalizeDiseaseCode(r.code.replace(/^~/, ''));
   const checkCode = code.length >= 3;
-  if (!dateRes.length && !checkCode) return r.lineNo;
-  const hasCode = i => checkCode && i >= 0 && i < sourceLines.length && compactText(sourceLines[i]).includes(code);
   const claimed = r.lineNo - 1;
+  const detailToken = compactText(r.detail).length >= 2 ? compactText(r.detail) : '';
+  // 날짜·코드가 원문에 없으면(AI 추정 코드, "약 복용중"처럼 날짜 없는 기록) 진단명이 적힌 가장 가까운 줄로 찾는다
+  const byName = () => {
+    const token = compactText((r.name || '').replace(/\((양방|한방)\)/g, '')) || compactText(r.detail);
+    if (token.length < 2) return r.lineNo;
+    // "당뇨병"은 "당뇨 약 복용중"에도 맞게 끝의 병·증을 뗀 말로도 찾고, 정기(계속 복용) 기록은 "복용중" 줄을 우선한다
+    const stem = token.length >= 3 ? token.replace(/[병증]$/, '') : token;
+    let found = -1;
+    let foundScore = 0;
+    sourceLines.forEach((line, i) => {
+      const text = compactText(line);
+      if (!text.includes(stem)) return;
+      const score = (text.includes(token) ? 2 : 1) + (r.type === '정기' && ONGOING_MEDICATION_RE.test(line) ? 2 : 0);
+      if (score > foundScore || (score === foundScore && Math.abs(i - claimed) < Math.abs(found - claimed))) {
+        found = i;
+        foundScore = score;
+      }
+    });
+    return found >= 0 ? found + 1 : r.lineNo;
+  };
+  if (!dateRes.length && !checkCode) return byName();
+  const hasCode = i => checkCode && i >= 0 && i < sourceLines.length && compactText(sourceLines[i]).includes(code);
   let best = -1;
   let bestScore = 0;
   sourceLines.forEach((line, i) => {
+    if (!line.trim()) return;
     const dateHit = dateRes.some(re => re.test(line));
-    const codeHit = hasCode(i) || (dateRes.length > 0 && (hasCode(i - 1) || hasCode(i + 1)));
-    const score = (dateHit ? 2 : 0) + (codeHit ? 1 : 0);
+    const codeNear = hasCode(i) || hasCode(i - 1) || hasCode(i + 1);
+    const lineHasDate = extractDates(line).length > 0 || MONTH_DAY_RE.test(line);
+    const score = dateRes.length
+      ? (dateHit ? 2 : 0) + (codeNear ? 1 : 0)
+      // 날짜 없이 온 기록("마지막처방일" 줄의 투약)은 코드가 같은/옆 줄에 있으면서 날짜가 적힌 줄을 기록 줄로 본다
+      : (codeNear ? 1 : 0) + (codeNear && lineHasDate ? 1 : 0) + (detailToken && compactText(line).includes(detailToken) ? 3 : 0);
     if (score > bestScore || (score > 0 && score === bestScore && Math.abs(i - claimed) < Math.abs(best - claimed))) {
       best = i;
       bestScore = score;
     }
   });
-  return best >= 0 ? best + 1 : r.lineNo;
+  return best >= 0 ? best + 1 : byName();
 }
 
 // "입원x", "수술 X", "입원없음"이 적힌 줄에서 나온 입원/수술 기록은 AI 오독이므로 버린다.
@@ -214,9 +245,27 @@ function collectRecords(chunks, sourceLines) {
   for (const chunk of chunks) {
     for (const r of parseRecordLines(chunk.text)) {
       const lineNo = locateRecordLine(r, sourceLines);
+      // AI가 날짜를 빼고 옮겼어도 기록 줄에 날짜가 있으면 채운다(날짜가 빠져 3개월·5년 판단이 틀어지는 것 방지)
+      if (!r.start && !r.end && r.type !== '정기') {
+        const lineDates = extractDates(sourceLines[lineNo - 1]);
+        if (lineDates.length) {
+          r.start = lineDates[0].slice(2).replace(/-/g, '');
+          if (lineDates.length > 1) r.end = lineDates[lineDates.length - 1].slice(2).replace(/-/g, '');
+        }
+      }
       const inScope = chunk.lines ? chunk.lines.includes(lineNo) : lineNo >= chunk.from && lineNo <= chunk.to;
       if ((chunks.length > 1 || chunk.lines) && !inScope) continue;
       if (isNegatedRecord(r, sourceLines[lineNo - 1])) continue;
+      // AI가 원문에 없는 일수·횟수를 지어내는 경우가 있어(처방 줄에 "30일" 등), 기록 줄 주변에 그 숫자가 없으면 비우고 표시한다
+      if (r.value !== null && !valueAppearsNear(r.value, lineNo, sourceLines)) {
+        r.value = null;
+        r.valueDoubt = true;
+      }
+      // AI가 날짜 범위만 보고 입원으로 옮기는 경우가 있어, 원문에 입원 근거가 없으면 진단 기록으로 낮추고 표시한다
+      if (r.type === '입원' && !hasAdmissionEvidence(lineNo, sourceLines)) {
+        records.push({ ...r, lineNo, type: '진단', value: null, admissionDoubt: true });
+        continue;
+      }
       records.push({ ...r, lineNo });
     }
   }
@@ -225,6 +274,44 @@ function collectRecords(chunks, sourceLines) {
 
 const CODE_TOKEN_RE = /(?<![A-Za-z0-9])A?[A-Z]\d{2,5}(?!\d)/;
 const MONTH_DAY_RE = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/;
+
+// 날짜·코드가 없어도 병력으로 봐야 하는 문구(계속 복용 약, 진단명 꼴)와, 병력이 아닌 설계 요청 문구
+const MEDICATION_PHRASE_RE = /복용|투약|처방/;
+const ONGOING_MEDICATION_RE = /복용\s*중|정기\s*처방|계속\s*복용/;
+const DISEASE_NAME_RE = /[가-힣](?:염|증|병|암)(?![가-힣])/;
+const REQUEST_PHRASE_RE = /설계|요청|부탁|문의|드립니다|주세요/;
+// 심평원 복사본의 "입원", "(통원)", "처방" 같은 섹션 제목 줄
+const SECTION_HEADER_RE = /^\s*[(\[]?\s*(입원|통원|외래|처방|투약|수술)\s*[)\]]?\s*(?:내역|기록|병력)?\s*:?\s*$/;
+// "최근 3개월 이내 질병/치료 이력", "5년 내 입원 및 수술 이력" 같은 기간 제목 줄
+const HEADING_LINE_RE = /(이내|최근|\d+\s*(?:개월|년)).*(이력|내역|병력)\s*:?\s*$/;
+
+// 기록의 일수·횟수가 원문에 실제로 적혀 있는지: 기록 줄과 한 줄 위, 다음 날짜 줄 전까지의 아래 줄(최대 4줄)
+function valueAppearsNear(value, lineNo, sourceLines) {
+  const re = new RegExp(`(?<!\\d)${value}(?!\\d)`);
+  const text = n => sourceLines[n - 1] || '';
+  if (re.test(text(lineNo)) || re.test(text(lineNo - 1))) return true;
+  for (let n = lineNo + 1; n <= Math.min(lineNo + 4, sourceLines.length); n++) {
+    if (extractDates(text(n)).length || MONTH_DAY_RE.test(text(n))) break;
+    if (re.test(text(n))) return true;
+  }
+  return false;
+}
+
+// 입원 기록의 근거: 그 줄, 다음 날짜 줄 전까지의 아래 줄(최대 4줄), 또는 위쪽에서 가장 가까운 섹션 제목이 "입원"
+function hasAdmissionEvidence(lineNo, sourceLines) {
+  const text = n => sourceLines[n - 1] || '';
+  const mentions = n => /입원/.test(text(n)) && !SECTION_HEADER_RE.test(text(n));
+  if (mentions(lineNo)) return true;
+  for (let n = lineNo + 1; n <= Math.min(lineNo + 4, sourceLines.length); n++) {
+    if (extractDates(text(n)).length || MONTH_DAY_RE.test(text(n))) break;
+    if (mentions(n)) return true;
+  }
+  for (let n = lineNo - 1; n >= 1; n--) {
+    const header = text(n).match(SECTION_HEADER_RE);
+    if (header) return header[1] === '입원';
+  }
+  return false;
+}
 
 // 원문 줄에 적힌 "~술" 처치명(시술 키워드 제외). 진단명의 "수술후"처럼 뒤에 글자가 붙은 것은 제외된다.
 function surgeryWordsIn(line) {
@@ -255,7 +342,11 @@ function findUncoveredLines(records, sourceLines) {
       uncovered.push(n);
       return;
     }
-    if (!CODE_TOKEN_RE.test(line.replace(/\./g, ''))) return;
+    // 날짜·코드가 없어도 "고혈압 / 당뇨 약 복용중"처럼 병력 문구가 있으면 확인 대상(설계 요청 문장은 제외)
+    const hasCode = CODE_TOKEN_RE.test(line.replace(/\./g, ''));
+    const hasHistoryWords = !REQUEST_PHRASE_RE.test(line) && !SECTION_HEADER_RE.test(line) && !HEADING_LINE_RE.test(line)
+      && (MEDICATION_PHRASE_RE.test(line) || DISEASE_NAME_RE.test(line) || DISEASE_11_KEYWORDS.some(k => compactText(line).includes(k)));
+    if (!hasCode && !hasHistoryWords) return;
     // 날짜 없이 진단명·코드만 있는 줄은 이미 잡힌 병력의 코드 줄이거나 기록 줄 바로 옆(진단명 줄)이면 반영된 것으로 본다
     if (codes.some(c => compactText(line).includes(c)) || covered.has(n - 1) || covered.has(n + 1)) return;
     uncovered.push(n);
@@ -273,13 +364,14 @@ function uncoveredLineHistories(lineNos, sourceLines, todayStr) {
     const code = line.replace(/\./g, '').match(CODE_TOKEN_RE);
     return {
       id: nextHistoryId++,
-      진단명: '원문 확인 필요',
+      // 줄 내용을 이름에 넣어 진단명 키워드(고혈압·당뇨·암 등)로 10대질병 확인필요가 걸리게 한다
+      진단명: `원문 확인 필요 — ${line.length > 40 ? `${line.slice(0, 40)}…` : line}`,
       진단코드: code ? normalizeDiseaseCode(code[0]) : '',
       최초진단일: dates[0] || null,
       최근진료일: dates[dates.length - 1] || null,
       입원여부: false, 입원일수: null, 수술여부: false, 수술명: null,
       계속치료일수: null, 계속투약일수: null, 통원횟수: null, 약물명: null,
-      재검사여부: false, 상시복용여부: false,
+      재검사여부: false, 상시복용여부: ONGOING_MEDICATION_RE.test(line),
       현재상태: '',
       비고: 'AI가 이 원문 줄을 옮기지 못했어요. 입원·수술·투약 여부를 직접 확인해 세부 수정에 입력해주세요',
       원본: line,
@@ -288,22 +380,58 @@ function uncoveredLineHistories(lineNos, sourceLines, todayStr) {
   });
 }
 
+// "갑상선암⇥2020-02⇥8⇥3⇥1⇥인심사대상"처럼 탭으로 나뉜 심사 결과표 행. 숫자 칸의 뜻이 확실치 않아 입원·통원·수술은 추정하지 않고
+// 병명과 날짜만 읽어 "치료내용 미상"으로 남긴다 → 기간에 걸리는 문항마다 확인필요로 뜬다(AI에게 맡기면 칸을 뒤섞는다).
+const TABLE_ROW_RE = /^\s*([^\t]*[가-힣][^\t]*?)\s*\t\s*(\d{4})[-./](\d{1,2})(?:[-./](\d{1,2}))?\s*(?:\t|$)/;
+
+function tableRowHistories(sourceLines) {
+  const lines = new Set();
+  const histories = [];
+  sourceLines.forEach((line, i) => {
+    const m = line.match(TABLE_ROW_RE);
+    if (!m || Number(m[3]) < 1 || Number(m[3]) > 12) return;
+    lines.add(i + 1);
+    const [, rawName, year, month, day] = m;
+    const date = `${year}-${month.padStart(2, '0')}-${day ? day.padStart(2, '0') : '01'}`;
+    histories.push({
+      id: nextHistoryId++,
+      진단명: rawName.trim(),
+      진단코드: '',
+      최초진단일: date,
+      최근진료일: date,
+      날짜정밀도: day ? undefined : 'month',
+      입원여부: false, 입원일수: null, 수술여부: false, 수술명: null,
+      계속치료일수: null, 계속투약일수: null, 통원횟수: null, 약물명: null,
+      재검사여부: false, 상시복용여부: false,
+      현재상태: '',
+      비고: `표 형식 행이라 입원·통원·수술은 읽지 않았어요${day ? '' : ' · 날짜는 연·월만 있음'}. 원문의 숫자 칸을 확인해 세부 수정에 입력해주세요`,
+      원본: line.trim(),
+      원문확인필요: true,
+      치료내용미상: true,
+    });
+  });
+  return { lines, histories };
+}
+
 // AI 기록 추출 → 규칙 병합. 빠뜨린 원문 줄은 그 줄만 한 번 더 요청하고, 그래도 없으면 "원문 확인 필요"로 남긴다.
 // extract(onlyLines?)는 { chunks, sourceLines }를 돌려주는 함수(브라우저에선 extractRecordsWithAI, 테스트에선 가짜).
 async function buildHistoriesWithAI(extract, todayStr) {
   const { chunks, sourceLines } = await extract();
-  let records = collectRecords(chunks, sourceLines);
-  const firstMissing = findUncoveredLines(records, sourceLines);
+  // 심사 결과표 행은 규칙으로 읽고, 그 줄에서 나온 AI 기록과 누락 판정은 쓰지 않는다
+  const table = tableRowHistories(sourceLines);
+  const outsideTable = list => list.filter(x => !table.lines.has(typeof x === 'number' ? x : x.lineNo));
+  let records = outsideTable(collectRecords(chunks, sourceLines));
+  const firstMissing = outsideTable(findUncoveredLines(records, sourceLines));
   let missing = firstMissing;
   if (firstMissing.length) {
     const retry = await extract(firstMissing);
-    records = records.concat(collectRecords(retry.chunks, sourceLines));
-    missing = findUncoveredLines(records, sourceLines);
+    records = records.concat(outsideTable(collectRecords(retry.chunks, sourceLines)));
+    missing = outsideTable(findUncoveredLines(records, sourceLines));
   }
   // 기록이 하나라도 나온 줄(수술명만 빠진 줄)은 recordsToHistories의 수술 안전장치가 처리하므로 별도 병력으로 만들지 않는다.
   const leftoverLines = missing.filter(n => !records.some(r => r.lineNo === n));
   return {
-    histories: [...recordsToHistories(records, todayStr, sourceLines), ...uncoveredLineHistories(leftoverLines, sourceLines, todayStr)],
+    histories: [...recordsToHistories(records, todayStr, sourceLines), ...table.histories, ...uncoveredLineHistories(leftoverLines, sourceLines, todayStr)],
     records,
     retriedLines: firstMissing,
     missingLines: missing,
@@ -320,12 +448,16 @@ function parseRecordLines(text) {
   for (const rawLine of (text || '').split('\n')) {
     const line = rawLine.trim();
     if (!/^\d+\s*\|/.test(line)) continue;
-    const [lineNo, rawCode = '', name = '', type = '', start = '', end = '', value = '', ...detail] = line.split('|').map(s => s.trim());
+    let fields = line.split('|').map(s => s.trim());
+    // AI가 코드 칸을 통째로 빼먹은 줄(줄번호|진단명|종류|…)은 칸을 한 칸 밀어 맞춘다
+    if (!RECORD_TYPES.includes(fields[3]) && RECORD_TYPES.includes(fields[2])) fields = [fields[0], '', ...fields.slice(1)];
+    const [lineNo, rawCode = '', name = '', type = '', start = '', end = '', value = '', ...detail] = fields;
     const num = value.match(/\d+/);
+    const count = num && Number(num[0]) > 0 ? Number(num[0]) : null; // "0일"은 의미 없는 값이라 비운다
     // 코드 칸에 사람 이름·날짜 같은 코드 아닌 값이 오면 코드로 쓰지 않는다. 그 외 내용도 전혀 없으면 잡음 줄이라 버린다
     // (날짜가 있던 원문 줄이면 findUncoveredLines가 다시 잡는다).
     const code = /^~?[A-Z]{1,2}\d{2,6}[A-Z]?$/i.test(rawCode.replace(/[.\s]/g, '')) ? rawCode : '';
-    if (!code && !name && !start && !end && !num && !detail.join('').trim()) continue;
+    if (!code && !name && !start && !end && !count && !detail.join('').trim()) continue;
     records.push({
       lineNo: Number(lineNo),
       code,
@@ -333,8 +465,8 @@ function parseRecordLines(text) {
       type: RECORD_TYPES.includes(type) ? type : '진단',
       start,
       end,
-      value: num ? Number(num[0]) : null,
-      detail: detail.join('|').trim(),
+      value: count,
+      detail: detail.filter(Boolean).join(' ').trim(), // AI가 칸을 더 붙여 "||"가 와도 빈 칸은 버린다
     });
   }
   return records;
@@ -360,23 +492,107 @@ function toShortDate(iso) {
   return iso ? iso.slice(2).replace(/-/g, '.') : '';
 }
 
-function recordsToHistories(records, todayStr, sourceLines = []) {
-  const cleanName = n => (n || '').replace(/\((양방|한방)\)/g, '').trim();
-
-  // 코드 없이 이름만 온 기록은 같은 이름의 코드 있는 병력에 붙인다.
-  const codeByName = new Map();
+// 코드·진단명 없이 온 치료내용 기록("ㄴ투약", "ㄴ인공수정체삽입술")을 원문상 바로 위 병력에 붙인다.
+// 빈 줄을 넘어가지는 않는다(떨어진 문단의 처치를 엉뚱한 병력에 붙이지 않게).
+// 위에 병력 줄이 연달아 여러 개면(오른쪽·왼쪽 백내장 뒤의 ㄴ수술) 각 병력에 하나씩 붙인다.
+function linkContinuationRecords(records, sourceLines) {
+  if (!sourceLines.length) return records;
+  const nameOf = n => (n || '').replace(/\((양방|한방)\)/g, '').trim();
+  // "전립선 증식증 / 당뇨 ⏎ 고지혈 / 고혈압 약 복용중"처럼 날짜 없는 병명 목록 끝에 "약 복용중"이 붙으면 그 문단 전체가 계속 복용 약이다.
+  // AI가 그 병들을 진단·투약으로 옮겨도 정기(상시복용)로 바꾸고, 진단명 뒤에 붙은 "약 복용중"은 뗀다.
+  const paragraphOf = n => {
+    let from = n;
+    let to = n;
+    while (from > 1 && (sourceLines[from - 2] || '').trim()) from--;
+    while (to < sourceLines.length && (sourceLines[to] || '').trim()) to++;
+    return sourceLines.slice(from - 1, to);
+  };
+  records = records.map(r => {
+    const ongoing = !r.start && !r.end && ['진단', '투약'].includes(r.type)
+      && paragraphOf(r.lineNo).some(l => ONGOING_MEDICATION_RE.test(l) && !extractDates(l).length);
+    return { ...r, name: (r.name || '').replace(/\s*약?\s*(?:복용|투약)\s*중.*$/, '').trim(), type: ongoing ? '정기' : r.type };
+  });
+  // AI 추정 코드(~)만 있고 진단명이 없는 기록은 기준 병력이 될 수 없다
+  const named = records.filter(r => (r.code && !r.code.startsWith('~')) || nameOf(r.name));
+  const linked = [];
   for (const r of records) {
+    // "수면장애 및 불면증 G47.0 / G47.9"처럼 한 줄에 코드가 여럿이면 AI가 둘째 코드를 따로 옮긴다 → 같은 줄의 앞 병력에 합치고 코드는 비고에 남긴다
+    if (r.code && !r.code.startsWith('~')) {
+      const ownCode = normalizeDiseaseCode(r.code.replace(/^~/, ''));
+      const order = records.indexOf(r);
+      const sibling = named.find(a => records.indexOf(a) < order && a.code && nameOf(a.name) && a.lineNo === r.lineNo
+        && normalizeDiseaseCode(a.code.replace(/^~/, '')) !== ownCode
+        && (!nameOf(r.name) || compactText(nameOf(a.name)) === compactText(nameOf(r.name)))
+        && [r.lineNo - 1, r.lineNo, r.lineNo + 1].some(n => compactText(sourceLines[n - 1]).includes(ownCode)));
+      if (sibling) {
+        linked.push({ ...r, code: sibling.code, name: sibling.name, extraCode: ownCode });
+        continue;
+      }
+    }
+    if ((r.code && !r.code.startsWith('~')) || nameOf(r.name)) {
+      linked.push(r);
+      continue;
+    }
+    // AI가 날짜 줄 번호를 적어도 실제 치료내용은 아래 ㄴ 줄에 있을 수 있어, 상세가 적힌 줄을 찾는다
+    let line = r.lineNo;
+    const detail = compactText(r.detail);
+    for (let n = r.lineNo; detail && n <= Math.min(r.lineNo + 2, sourceLines.length); n++) {
+      if (compactText(sourceLines[n - 1]).includes(detail)) {
+        line = n;
+        break;
+      }
+    }
+    const anchors = [];
+    if (CONTINUATION_LINE_RE.test(sourceLines[line - 1] || '')) {
+      for (let n = line - 1; n >= 1; n--) {
+        const text = sourceLines[n - 1] || '';
+        if (!text.trim() || CONTINUATION_LINE_RE.test(text)) break;
+        anchors.unshift(...named.filter(a => a.lineNo === n));
+      }
+    } else {
+      anchors.push(...named.filter(a => a.lineNo === line));
+    }
+    if (!anchors.length) {
+      linked.push(r);
+      continue;
+    }
+    const attached = new Set();
+    for (const a of anchors) {
+      const key = `${normalizeDiseaseCode(a.code.replace(/^~/, ''))}|${compactText(nameOf(a.name))}`;
+      if (attached.has(key)) continue;
+      attached.add(key);
+      linked.push({ ...r, code: a.code, name: a.name, lineNo: line });
+    }
+  }
+  return linked;
+}
+
+function recordsToHistories(rawRecords, todayStr, sourceLines = []) {
+  const cleanName = n => (n || '').replace(/\((양방|한방)\)/g, '').trim();
+  const records = linkContinuationRecords(rawRecords, sourceLines);
+
+  // AI가 추정한 코드(~)는 서로 다른 병에 같은 코드를 붙이기도 해서(고지혈·고혈압 모두 ~I10) 추정 코드끼리는 진단명까지 같아야 한 병력으로 묶는다.
+  const groupOf = r => {
     const code = normalizeDiseaseCode(r.code.replace(/^~/, ''));
-    if (code && cleanName(r.name)) codeByName.set(cleanName(r.name), code);
+    if (!code) return null;
+    return { key: r.code.startsWith('~') ? `est:${code}:${compactText(cleanName(r.name))}` : code, code };
+  };
+  // 코드 없이 이름만 온 기록은 같은 이름의 코드 있는 병력에 붙인다.
+  const groupByName = new Map();
+  for (const r of records) {
+    const group = groupOf(r);
+    if (group && cleanName(r.name)) groupByName.set(compactText(cleanName(r.name)), group);
   }
 
   const groups = new Map();
   for (const r of records) {
-    const code = normalizeDiseaseCode(r.code.replace(/^~/, '')) || codeByName.get(cleanName(r.name)) || '';
-    const key = code || `name:${cleanName(r.name)}`;
-    if (!groups.has(key)) groups.set(key, { code, records: [], lineNos: new Set(), estimated: true, duplicates: 0, seen: new Map() });
+    const { key, code } = groupOf(r)
+      || groupByName.get(compactText(cleanName(r.name)))
+      || { key: `name:${compactText(cleanName(r.name))}`, code: '' };
+    if (!groups.has(key)) groups.set(key, { code, records: [], lineNos: new Set(), estimated: true, duplicates: 0, seen: new Map(), extraCodes: new Set() });
     const g = groups.get(key);
     g.lineNos.add(r.lineNo);
+    if (r.extraCode) g.extraCodes.add(r.extraCode);
     if (r.code && !r.code.startsWith('~')) g.estimated = false;
     // 내용이 같은 기록: 같은 원문 줄이면 AI가 두 번 적은 것(조용히 무시), 다른 줄이면 원문의 중복기록(비고에 표시).
     // 입원·통원·투약은 상세 문구가 달라도 날짜·수치가 같으면 같은 기록으로 본다(두 번 합산 방지).
@@ -395,9 +611,18 @@ function recordsToHistories(records, todayStr, sourceLines = []) {
   for (const g of groups.values()) {
     const rs = g.records;
     const ofType = t => rs.filter(r => r.type === t);
-    const name = rs.map(r => cleanName(r.name)).find(Boolean) || '';
+    // 같은 코드로 합쳐진 다른 진단명(오른쪽·왼쪽 백내장 등)은 이어 붙여 하나가 사라진 것처럼 보이지 않게 한다
+    const names = [];
+    for (const n of rs.map(r => cleanName(r.name)).filter(Boolean)) {
+      if (!names.some(x => compactText(x) === compactText(n))) names.push(n);
+    }
+    const name = names.join(' · ');
     // 투약·정기의 상세에 AI가 약 이름 대신 진단명을 넣는 경우만 걸러낸다(수술명은 진단명과 같아도 그대로 둔다).
-    const detailOf = r => (['투약', '정기'].includes(r.type) && compactText(r.detail) === compactText(name) ? '' : r.detail);
+    const detailOf = r => {
+      if (!['투약', '정기'].includes(r.type)) return r.detail;
+      const compact = compactText(r.detail);
+      return names.some(n => compactText(n) === compact) || GENERIC_DRUG_WORDS.includes(compact) ? '' : r.detail;
+    };
     const sumValues = list => (list.some(r => r.value !== null) ? list.reduce((s, r) => s + (r.value || 0), 0) : null);
     const range = r => {
       const s = resolveRecordDate(r.start, todayStr);
@@ -442,8 +667,11 @@ function recordsToHistories(records, todayStr, sourceLines = []) {
       doubtfulSurgeries.length && `수술로 처리(AI는 시술로 봄 — 원문 확인) ${doubtfulSurgeries.map(r => withCount(r, '회')).join(', ')}`,
       missedSurgeryWords.length && `원문에 수술명이 있어 수술로 처리(AI 누락 — 원문 확인) ${missedSurgeryWords.join(', ')}`,
       countedDiagnoses.length && `횟수를 통원으로 처리(원문 확인) ${countedDiagnoses.map(r => withCount(r, '회')).join(', ')}`,
+      rs.some(r => r.admissionDoubt) && `원문에 입원 표기가 없어 입원에서 제외(원문 확인) ${rs.filter(r => r.admissionDoubt).map(range).join(', ')}`,
+      rs.some(r => r.valueDoubt) && '원문에 없는 일수·횟수는 뺐어요(원문 확인)',
       regulars.length && `정기처방 ${regulars.map(r => withCount(r, '')).join(', ')}${regularUndated ? '(날짜 미상)' : ''}`,
       g.duplicates && `중복기록 ${g.duplicates}건 제외`,
+      g.extraCodes.size && `같은 줄 추가 코드 ${[...g.extraCodes].join(', ')}`,
       g.code && g.estimated && '코드는 AI 추정',
     ].filter(Boolean);
 
@@ -453,8 +681,14 @@ function recordsToHistories(records, todayStr, sourceLines = []) {
 
     histories.push({
       id: nextHistoryId++,
-      진단명: name || (g.code ? '' : `진단명 미상${unknownDetails ? `(${unknownDetails})` : ''}`),
+      // 코드만 있고 진단명이 없는 기록(추정 코드만 붙은 정기처방 등)도 빈칸으로 보이지 않게 코드·처치명을 붙인다
+      진단명: name || (g.code
+        ? `진단명 미상(${[g.code, unknownDetails].filter(Boolean).join(' · ')})`
+        : `진단명 미상${unknownDetails ? `(${unknownDetails})` : ''}`),
       진단코드: g.code,
+      코드추정: Boolean(g.code && g.estimated),
+      // 진단명·코드·처치명이 전혀 없는 기록(날짜만 있는 줄 등)은 무엇인지 모르므로 확인필요로 둔다
+      원문확인필요: !name && !g.code && !unknownDetails,
       최초진단일: dates[0] || null,
       최근진료일: dates[dates.length - 1] || null,
       입원여부: admissions.length > 0,
@@ -536,6 +770,28 @@ function withinRangeMonths(dateStr, todayStr, minMonths, maxMonths) {
   return days > minMonths * 30.44 && days <= maxMonths * 30.44;
 }
 
+// 연·월까지만 아는 날짜(날짜정밀도 month)는 그 달 1일과 말일로 각각 따져, 결과가 갈리면(기간 경계에 걸치면) null → 확인필요
+function monthRange(isoDate) {
+  const [y, m] = isoDate.split('-').map(Number);
+  return [`${y}-${String(m).padStart(2, '0')}-01`, new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10)];
+}
+
+function withinMonthsFor(h, todayStr, months) {
+  if (h.날짜정밀도 !== 'month' || !h.최근진료일) return withinMonths(h.최근진료일, todayStr, months);
+  const [first, last] = monthRange(h.최근진료일);
+  const a = withinMonths(first, todayStr, months);
+  const b = withinMonths(last, todayStr, months);
+  return a === b ? a : null;
+}
+
+function withinRangeMonthsFor(h, todayStr, minMonths, maxMonths) {
+  if (h.날짜정밀도 !== 'month' || !h.최근진료일) return withinRangeMonths(h.최근진료일, todayStr, minMonths, maxMonths);
+  const [first, last] = monthRange(h.최근진료일);
+  const a = withinRangeMonths(first, todayStr, minMonths, maxMonths);
+  const b = withinRangeMonths(last, todayStr, minMonths, maxMonths);
+  return a === b ? a : null;
+}
+
 function isExceptionDisease(name) {
   if (!name) return false;
   return DISCLOSURE_EXCEPTIONS.some(keyword => name.includes(keyword));
@@ -556,7 +812,7 @@ function classifyHistories(histories, todayStr) {
   for (const h of histories) {
     // Q1: 최근 3개월 진찰/검사
     {
-      const within = withinMonths(h.최근진료일, todayStr, 3);
+      const within = withinMonthsFor(h, todayStr, 3);
       if (within === null) result.Q1.review.push(h);
       else if (within) result.Q1.included.push(h);
     }
@@ -568,37 +824,42 @@ function classifyHistories(histories, todayStr) {
 
     // Q3: 최근 1년 재검사 - 체크 여부로만 판단(원문 자동추출은 1차 범위 제외)
     if (h.재검사여부) {
-      const within = withinMonths(h.최근진료일, todayStr, 12);
+      const within = withinMonthsFor(h, todayStr, 12);
       if (within === null) result.Q3.review.push(h);
       else if (within) result.Q3.included.push(h);
     }
 
     // Q4: 5년 이내 입원/수술/계속 7일↑치료/계속 30일↑투약, 질병종류 무관
     {
-      const within = withinMonths(h.최근진료일, todayStr, 60);
+      const within = withinMonthsFor(h, todayStr, 60);
       const hasQ4Trigger =
         h.입원여부 ||
         h.수술여부 ||
         (h.계속치료일수 !== null && h.계속치료일수 >= 7) ||
         (h.계속투약일수 !== null && h.계속투약일수 >= 30) ||
         (h.입원일수 !== null && h.입원일수 >= 7) ||
-        (h.통원횟수 !== null && h.통원횟수 >= 7); // 같은 질병 7회 이상 통원 (현장 알릴의무 관행 - "계속 치료" 대체 지표)
+        (h.통원횟수 !== null && h.통원횟수 >= 7) || // 같은 질병 7회 이상 통원 (현장 알릴의무 관행 - "계속 치료" 대체 지표)
+        !!h.치료내용미상; // 표 형식 등 치료내용을 읽지 못한 병력은 확인필요로 걸어 둔다
       if (hasQ4Trigger) {
         if (within === null) result.Q4.review.push(h);
         else if (within) result.Q4.included.push(h);
+      } else if (h.상시복용여부) {
+        // 지금 계속 복용 중인 약은 "계속하여 30일 이상 투약"일 가능성이 높지만 일수가 없어 확인필요로 둔다
+        result.Q4.review.push(h);
       }
     }
 
     // Q5: 11대 질병이면 계속성 조건 없이 5년 이내 단발 진료도 포함
-    if (matchesDisease11(h.진단코드, h.진단명)) {
-      const within = withinMonths(h.최근진료일, todayStr, 60);
+    // AI가 추정한 코드는 틀릴 수 있어(고지혈에 I10을 붙이는 등) 10대질병은 원문 코드 또는 진단명으로만 판정한다
+    if (matchesDisease11(h.코드추정 ? '' : h.진단코드, h.진단명)) {
+      const within = withinMonthsFor(h, todayStr, 60);
       if (within === null) result.Q5.review.push(h);
       else if (within) result.Q5.included.push(h);
     }
 
     // Q6: 고지건강체 전용 - 5년 초과~10년 이내(6-10년) 입원/수술. 표준알릴의무 Q1~Q5와 별개 제도.
-    if (h.입원여부 || h.수술여부) {
-      const within = withinRangeMonths(h.최근진료일, todayStr, 60, 120);
+    if (h.입원여부 || h.수술여부 || h.치료내용미상) {
+      const within = withinRangeMonthsFor(h, todayStr, 60, 120);
       if (within === null) result.Q6.review.push(h);
       else if (within) result.Q6.included.push(h);
     }
@@ -665,6 +926,11 @@ if (typeof document !== 'undefined') {
         h[f.key] = f.type === 'number'
           ? (input.value === '' ? null : Number(input.value))
           : (input.value === '' ? (f.type === 'date' ? null : '') : input.value);
+        // 사람이 직접 확인하고 고친 값은 그대로 믿는다: 코드는 원문 코드처럼, 날짜는 일 단위로, 확인필요 표시는 해제
+        if (f.key === '진단코드') h.코드추정 = false;
+        if (f.type === 'date') h.날짜정밀도 = undefined;
+        h.원문확인필요 = false;
+        h.치료내용미상 = false;
         renderAll();
       });
       label.appendChild(input);
@@ -681,7 +947,12 @@ if (typeof document !== 'undefined') {
       cb.type = 'checkbox';
       cb.checked = !!h[key];
       label.classList.toggle('checked', cb.checked);
-      cb.addEventListener('change', () => { h[key] = cb.checked; renderAll(); });
+      cb.addEventListener('change', () => {
+        h[key] = cb.checked;
+        h.원문확인필요 = false;
+        h.치료내용미상 = false;
+        renderAll();
+      });
       label.appendChild(document.createTextNode(labelText));
       label.appendChild(cb);
       toggleRow.appendChild(label);

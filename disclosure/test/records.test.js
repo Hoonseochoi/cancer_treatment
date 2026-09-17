@@ -221,6 +221,57 @@ const TODAY = '2026-09-15';
   console.log('PASS: 원문 처방일수 보완');
 }
 
+// 입원 근거: 같은 줄·다음 날짜 전 아래 줄·위쪽 "입원" 섹션 제목이면 입원 유지, 날짜 범위뿐이면 진단으로 낮춤
+{
+  const source = [
+    '2026-02-02 ~ 2026-02-04',
+    '진단명 : D354 송과선의 양성신생물',
+    '',
+    '입원 2일 (간단검진)',
+    '',
+    '2026-06-20~2026-06-24 좌골신경통,요추부',
+    'ㄴ침술',
+    '',
+    '입원',
+    '2024-6-24 16일',
+    '(양방)엉덩이 2도 화상-AT2420',
+  ];
+  const records = collectRecords([{
+    from: 1,
+    to: source.length,
+    text: '1|D354|송과선의 양성신생물|입원|260202|260204|2|\n6|~M544|좌골신경통,요추부|입원|260620|260624|5|\n10|AT2420|엉덩이 2도 화상|입원|240624||16|',
+  }], source);
+  assert.deepStrictEqual(records.map(r => `${r.lineNo}${r.type}`), ['1입원', '6진단', '10입원']);
+  console.log('PASS: 입원 근거 확인');
+}
+
+// "마지막처방일 2025-1-3 30일이상" 줄의 투약을 AI가 날짜 없이 옮겨도, 코드 옆의 날짜 줄로 찾아 날짜를 채움
+{
+  const { findUncoveredLines } = require('../app.js');
+  const source = [
+    '처방',
+    '마지막처방일 2026-3-15 30일이상',
+    '(양방)신 경뿌리병 증, 요추부-AM5416',
+    '',
+    '마지막처방일 2025-1-3 30일이상',
+    '(양방)관 절통, 골반 부분 및 대 퇴-AM2555',
+  ];
+  const records = collectRecords([{ from: 1, to: source.length, text: '2|AM5416||투약|||30|\n5|AM2555|관절통, 골반 부분 및 대퇴|투약|||30|' }], source);
+  assert.deepStrictEqual(records.map(r => `${r.lineNo}:${r.start}`), ['2:260315', '5:250103']);
+  assert.deepStrictEqual(findUncoveredLines(records, source), [], '"처방" 제목 줄과 기록 줄은 누락으로 보지 않음');
+  const joint = recordsToHistories(records, TODAY, source).find(h => h.진단코드 === 'M2555');
+  assert.strictEqual(joint.최근진료일, '2025-01-03');
+  assert.strictEqual(classifyHistories([joint], TODAY).Q4.included.length, 1);
+  console.log('PASS: 날짜 빠진 처방 기록 줄찾기·날짜 채움');
+}
+
+// 추정 코드만 있고 진단명이 빈 기록도 이름이 빈칸으로 보이지 않음
+{
+  const [h] = recordsToHistories(parseRecordLines('56|~N40||정기|0723|||비뇨기과 약'), TODAY);
+  assert.strictEqual(h.진단명, '진단명 미상(N40 · 비뇨기과 약)');
+  console.log('PASS: 코드만 있는 병력 이름 표시');
+}
+
 // AI가 원문 줄을 빠뜨리면 그 줄만 재요청하고, 그래도 없으면 "원문 확인 필요"로 남기며 분류는 항상 확인필요
 (async () => {
   const source = [
