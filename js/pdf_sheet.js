@@ -311,20 +311,20 @@ function sheetSummary(d) {
          <div class="v">${d.premium ? d.premium.toLocaleString('ko-KR') : '—'}<small>원</small></div></div>
      </div>
      <div class="body" style="gap:${mm(4.5)}">
-       <div><h3>암 보장<span class="hint">진단부터 치료까지</span></h3>
+       ${d.hasCancer ? `<div><h3>암 보장<span class="hint">진단부터 치료까지</span></h3>
          <table><tr><th style="width:20%"></th><th>진단<span>최초 1회</span></th>
            <th>수술<span>매회</span></th><th>항암약물<span>연간 1회</span></th>
            <th>항암방사선<span>연간 1회</span></th></tr>
            ${row('암 보장', [{ v: s.cancerDx },
                { v: s.cancerSx, s: s.cancerSxMax > s.cancerSx ? `최대 ${sFmt(s.cancerSxMax)}` : '' },
                { v: s.cancerDrug }, { v: s.cancerRad }])}
-         </table></div>
-       <div><h3>뇌 · 심장 보장<span class="hint">범위가 넓은 담보 기준</span></h3>
+         </table></div>` : ''}
+       ${s._hasCirc ? `<div><h3>뇌 · 심장 보장<span class="hint">범위가 넓은 담보 기준</span></h3>
          <table><tr><th style="width:20%"></th><th>진단</th><th>치료 · 수술</th>
            <th>중환자실</th><th>재활</th></tr>
            ${row('뇌 계열', [{ v: s.brainDx }, { v: s.circTreat }, { v: s.icu }, { v: s.rehab }])}
            ${row('심장 계열', [{ v: s.heartDx }, { v: s.circTreat }, { v: s.icu }, { v: s.rehab }])}
-         </table></div>
+         </table></div>` : ''}
        ${d.etc && d.etc.length ? `<div><h3>입원 · 기타<span class="hint">그 밖에 가입한 담보</span></h3>
          <table><tr>${d.etc.slice(0,5).map(x => `<th>${sClip(x.nm, 10)}</th>`).join('')}</tr>
            <tr>${d.etc.slice(0,5).map(x => `<td>${sFmt(x.v)}</td>`).join('')}</tr></table></div>` : ''}
@@ -509,6 +509,8 @@ function buildSheetData(results, meta, customerName) {
         drug.v > 0 && { s: '항암약물', a: drug.v, d: '연 1회 한도' }
     ].filter(Boolean);
     d.cancerCaseDesc = '암 진단 후 수술 · 항암치료';
+    // 암 담보가 하나도 없으면 한장요약에서 암 표를 뺀다 — 0원만 늘어선 표가 '암이 잡힌' 것처럼 보였다.
+    d.hasCancer = dxSum > 0 || d.cancerCards.length > 0;
 
     // ── 수술비 ──
     if (typeof buildSurgeryPolicy === 'function' && typeof SURGERY_DATA !== 'undefined') {

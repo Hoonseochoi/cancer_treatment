@@ -367,15 +367,21 @@ function setupSurgeryToggle(results, insurer) {
         return;
     }
 
+    // 암 카드가 한 장도 없으면(수술비만 설계한 간편보험 등) 암 탭을 만들지 않는다.
+    // 예전에는 암 탭이 항상 맨 앞에 기본 선택으로 떠서, 암 담보가 없는 제안서에
+    // '암 치료비는 최대 0원' 카드와 빈 화면이 먼저 보였다(실측: 백정진님 제안서).
+    // PDF·표지는 이 버튼 목록(availableCaptureViews)을 따르므로 함께 빠진다.
+    const hasCancer = !!grid.querySelector('.premium-card');
+    const first = hasCancer ? 'cancer' : (hasSurgery ? 'surgery' : 'circulatory');
+    const btn = (v, label) =>
+        `<button type="button" data-v="${v}" aria-selected="${v === first}">${label}</button>`;
+
     wrap.classList.remove('hidden');
     wrap.innerHTML = `
-      <button type="button" data-v="cancer" aria-selected="true">암 보장</button>
-      ${hasSurgery ? `<button type="button" data-v="surgery" aria-selected="false">수술비 <span class="sg-badge">${count}</span></button>` : ''}
-      ${hasCirc ? `<button type="button" data-v="circulatory" aria-selected="false">뇌·심장 <span class="sg-badge">${ccCount}</span></button>` : ''}`;
-    wrap.onclick = e => {
-        const b = e.target.closest('button[data-v]');
-        if (!b) return;
-        const v = b.dataset.v;
+      ${hasCancer ? btn('cancer', '암 보장') : ''}
+      ${hasSurgery ? btn('surgery', `수술비 <span class="sg-badge">${count}</span>`) : ''}
+      ${hasCirc ? btn('circulatory', `뇌·심장 <span class="sg-badge">${ccCount}</span>`) : ''}`;
+    const show = v => {
         wrap.querySelectorAll('button[data-v]').forEach(x =>
             x.setAttribute('aria-selected', String(x.dataset.v === v)));
         panel.classList.toggle('hidden', v !== 'surgery');
@@ -392,4 +398,9 @@ function setupSurgeryToggle(results, insurer) {
         if (header) header.textContent = v === 'surgery' ? '수술비 한눈에 보기'
             : v === 'circulatory' ? '뇌·심장 한눈에 보기' : '보장 내역 한눈에 보기';
     };
+    wrap.onclick = e => {
+        const b = e.target.closest('button[data-v]');
+        if (b) show(b.dataset.v);
+    };
+    show(first);
 }

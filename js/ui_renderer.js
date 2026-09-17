@@ -223,6 +223,11 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         insightSection.classList.remove('hidden');
     }
     // 2. Render Summary Grid
+    // 먼저 비운다. 암 담보가 없는 제안서는 아래 블록을 건너뛰어, 바로 전에 분석한
+    // 제안서의 암 카드·기타 담보가 그대로 남아 '암이 잡힌' 것처럼 보였다(실측: 송지원 → 백정진).
+    summaryGrid.innerHTML = '';
+    const staleOther = document.getElementById('other-panel-container');
+    if (staleOther) { staleOther.innerHTML = ''; staleOther.classList.add('hidden'); }
     if (summaryMap.size > 0) {
         summaryGrid.innerHTML = '';
         summaryGrid.className = "mb-12";
