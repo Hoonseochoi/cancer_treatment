@@ -686,10 +686,25 @@ function calculateHierarchicalSummarySamsung(results) {
             // (다빈치 수술도 "수술"의 일종이므로, 다빈치 카드의 총 보장액에는 일반 수술비도 포함되어야 함).
             // 단, 담보165처럼 애초에 암 무관 담보가 섞이는 문제는 findSamsungDetails에서 "암" 키워드로
             // 걸러내야 하는 별개의 이슈이며, 여기서 조건을 거는 것으로는 해결되지 않는다.
-            childGroup.totalMin += snap.isolatedMin;
-            childGroup.totalMax += snap.isolatedMax;
+            // 표적·면역·양성자·다빈치는 비급여(전액본인부담) 치료다. 같은 담보 안에서는
+            // 그 담보의 '전액본인부담' 묶음끼리 겹쳐 지급되지만, '특정치료(급여)' 묶음의
+            // 항암약물·방사선·수술은 함께 나오지 않는다.
+            //   종합병원 암 통합치료비(표준형) 지급표
+            //     특정치료(급여)      : 항암약물 1,000
+            //     전액본인부담(비급여): 항암약물 1,000 · 표적 3,000 · 면역 3,000
+            //   → 표적 = 1,000 + 3,000 = 4,000 / 면역 = 1,000 + 3,000 + 3,000 = 7,000
+            // 급여 줄까지 더해 표적이 5,000만원으로 나왔다(실측: 지설아님 제안서).
+            // 다른 담보(특정치료비Ⅱ 등)에서 오는 금액은 별개 특약이라 그대로 더한다.
+            // 이 카드가 '직접' 가진 담보만 본다. 확장(_expansion)으로 딸려온 다른 특약까지
+            // 같은 담보로 치면 그 특약 금액이 통째로 빠진다(실측: 송지원님 표적 1,000만원 누락).
+            const ownSources = new Set(childGroup.items
+                .filter(i => !i.fromParent && !i._expansion).map(i => i.source));
             // 부모 항목도 하위 카드에 추가 (포함관계 출처 표시용)
             snap.items.forEach(pItem => {
+                if (isYusamOrSpecificAmOnlyText((pItem.source || '') + '|' + (pItem.name || ''))) return;
+                if (!pItem.비급여 && ownSources.has(pItem.source)) return;
+                childGroup.totalMin += parseKoAmount(pItem.amount);
+                childGroup.totalMax += parseKoAmount(pItem.maxAmount || pItem.amount);
                 // 비급여 여부까지 봐야 한다. 통합치료비(종합형)는 같은 이름 '항암방사선치료비'로
                 // 급여분 1,000만원과 비급여분 1,000만원을 따로 준다 — 이름·출처만 보면 하나가
                 // 중복으로 버려져 카드 내역 합이 1,000만원 모자랐다(실측).
