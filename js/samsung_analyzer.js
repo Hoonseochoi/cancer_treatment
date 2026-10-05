@@ -123,7 +123,7 @@ function extractRawCoveragesSamsung(text) {
     // 다만 그룹형 통합보장(온통보장류)은 기존 passthrough(기타 사이드바) 흐름을 유지해야 하므로
     // etcWhitelist로 별도 운영한다.
     const cancerWhitelist = [
-        "암", "항암", "중입자", "양성자", "표적", "면역", "다빈치", "로봇", "중환자실", "호르몬",
+        "암", "항암", "중입자", "양성자", "세기조절", "표적", "면역", "다빈치", "로봇", "중환자실", "호르몬",
         "신장질환", "근골격"
     ];
     const etcWhitelist = ["뇌혈관", "허혈성심장", "순환계"];

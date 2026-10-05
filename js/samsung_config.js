@@ -154,6 +154,15 @@ const samsungCoverageDetailsMap = {
         displayName: "항암중입자방사선치료비"
     },
 
+    // 항암 세기조절방사선 치료비 (갱신형 단독 담보)
+    // 카드(세기조절방사선치료비)는 있는데 담보를 읽는 규칙이 없어, 가입했는데도
+    // 카드에 제 금액이 들어가지 않았다(실측: 제안서 5건에서 전부 미인식).
+    "항암 세기조절방사선 치료비": {
+        type: "passthrough",
+        summaryTarget: "세기조절방사선치료비",
+        displayName: "항암세기조절방사선치료비"
+    },
+
     // 담보 104: 하이클래스 암 특정치료비 (비급여 수술+항암방사선+항암약물, 가입금액만큼)
     "하이클래스 암 특정치료비": {
         type: "passthrough-dual",
@@ -312,10 +321,18 @@ function findSamsungDetails(itemName) {
         return samsungCoverageDetailsMap["항암양성자방사선치료비(갱신형)"];
     }
 
+    // 2-4c. 항암 세기조절방사선 치료비 단독 (갱신형)
+    if (itemName.includes("세기조절") && !itemName.includes("통합치료비")) {
+        return samsungCoverageDetailsMap["항암 세기조절방사선 치료비"];
+    }
+
     // 2-5. 항암방사선치료비 단독 (약물 미포함, 특정치료비 아님)
     if ((itemName.includes("항암 방사선 치료비") || itemName.includes("항암방사선치료비")) && !itemName.includes("약물") && !itemName.includes("특정치료비")) {
-        // 기타피부암·갑상선암 전용(이외 없음) = 유사암 담보 → 제외
-        if (itemName.includes("기타피부암") && !itemName.includes("이외")) return null;
+        // 기타피부암·갑상선암 전용 = 유사암 담보 → 제외.
+        // 일반암 담보는 상품마다 "…이외의 암" 또는 "암(기타피부암 및 갑상선암 제외)"으로 적는다.
+        // '이외'만 보던 탓에 "항암 방사선 치료비(암(기타피부암 및 갑상선암 제외))"가
+        // 유사암 전용으로 잘못 걸러졌다(실측: 전은희님 제안서 2,000만원 누락).
+        if (itemName.includes("기타피부암") && !/이외|제외/.test(itemName)) return null;
         return samsungCoverageDetailsMap["항암 방사선 치료비(기타피부암및갑상선암이외의암)"];
     }
 
