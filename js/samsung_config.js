@@ -366,6 +366,15 @@ function findSamsungDetails(itemName) {
         return samsungCoverageDetailsMap["항암 방사선 치료비(기타피부암및갑상선암이외의암)"];
     }
 
+    // 2-6. 항암 부작용·보조 치료비 — 9카드에는 안 들어가고 '이런 담보들도 있어요'로만 보인다.
+    //      매핑이 없어 화면 어디에도 안 뜨던 담보들이다.
+    if (itemName.includes("항암부작용") || itemName.includes("암 합병증") || itemName.includes("암합병증")) {
+        return { type: "passthrough", displayName: "암 합병증·항암부작용 약제 치료비" };
+    }
+    if (itemName.includes("항구토제")) {
+        return { type: "passthrough", displayName: "항구토제 치료비" };
+    }
+
     // 3. 항암호르몬약물허가 / 호르몬약물
     if (itemName.includes("항암호르몬") || itemName.includes("호르몬약물")) {
         if (itemName.includes("유사암")) {

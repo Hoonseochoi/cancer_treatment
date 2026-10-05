@@ -36,6 +36,9 @@ function buildSurgeryPolicy(results) {
         const r = find(new RegExp(k + '수술비'));
         if (r) p.전용[k] = parseKoAmount(r.amount);
     });
+    // 위·십이지장, 대장 양성종양 및 용종 진단비 — 진단비지만 용종을 떼면 함께 나온다.
+    // 수술비 담보가 아니라 지금까지 어느 화면에도 안 잡혔다.
+    p.용종 = val(find(/양성종양및용종진단비/));
     return p;
 }
 
@@ -110,6 +113,11 @@ function calcSurgeryVariant(policy, s, v) {
     if (s.benign && policy.양성[s.benign] != null) {
         rows.push({ k: `통합 양성신생물 수술비(${s.benign})`, s: '가입 후 1년 이내 감액',
                     v: policy.양성[s.benign], on: true });
+    }
+    // 위·십이지장·대장 용종은 떼면서 진단도 함께 붙으므로 용종 진단비가 같이 나온다.
+    if (policy.용종 > 0 && /대장|위·십이지장|식도·결장·항문/.test(s.benign || '')) {
+        rows.push({ k: '위·십이지장, 대장 양성종양 및 용종 진단비', s: '연간 1회한',
+                    v: policy.용종, on: true });
     }
     if (s.special && policy.전용[s.special] != null) {
         rows.push({ k: `${s.special} 수술비`, s: '전용 담보', v: policy.전용[s.special], on: true });
