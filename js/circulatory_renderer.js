@@ -292,6 +292,44 @@ function ccCardsHtml(policy, tongName) {
         ${dxCol('h2', '심장 계열', CIRCULATORY_DATA.DX.filter(d => !/뇌/.test(d.k)), best.heart)}
       </div>`;
 
+    // ── 보장 범위 ──
+    // 치료비 담보가 가장 넓다(특정순환계질환 41개 질환군). 진단비는 그 안의 좁은 범위라
+    // 상자를 겹쳐 그려 "어디까지 덮는지"를 한눈에 보인다. 뇌출혈이면 뇌졸중·뇌혈관질환
+    // 진단비가 함께 나오는 포함관계도 그대로 드러난다.
+    const dxOf = k => (policy.dx[k] || 0);
+    const chain = list => list.reduceRight((inner, d) => `
+        <div class="sc-lv${d.v ? '' : ' off'}">
+          <div class="sc-l"><span class="n">${d.k}</span><em>${d.kcd}</em>
+            <b>${d.v ? ccW(d.v) : '미가입'}</b></div>
+          ${inner}
+        </div>`, '');
+    const pick = k => {
+        const d = CIRCULATORY_DATA.DX.find(x => x.k === k) || { k, kcd: '' };
+        return { k, kcd: d.kcd, v: dxOf(k) };
+    };
+    const brainChain = chain([pick('뇌혈관질환'), pick('뇌졸중'), pick('뇌출혈')]);
+    const heartChain = chain([pick('허혈성심장질환'), pick('급성심근경색증')]);
+    const heartSide = ['기타 심장부정맥', '특정3대심장질환'].map(k => {
+        const d = pick(k);
+        return `<div class="sc-sib${d.v ? '' : ' off'}"><span class="n">${d.k}</span>` +
+               `<em>${d.kcd}</em><b>${d.v ? ccW(d.v) : '미가입'}</b></div>`;
+    }).join('');
+    const outerAmt = policy.통합 ? policy.통합.amount : policy.치료비;
+    const scopeHtml = `
+      <div class="cc-scope">
+        <div class="sc-outer${outerAmt > 0 ? '' : ' off'}">
+          <div class="sc-top"><span class="t">특정순환계질환 ${policy.통합 ? '통합치료비' : '치료비'}</span>
+            <em>I00~I99 · 41개 질환군 전체</em>
+            <b>${outerAmt > 0 ? ccW(outerAmt) : '미가입'}</b></div>
+          <div class="sc-cols">
+            <div class="sc-side b"><div class="sc-cap">뇌 계열 진단비</div>${brainChain}</div>
+            <div class="sc-side h"><div class="sc-cap">심장 계열 진단비</div>${heartChain}${heartSide}</div>
+          </div>
+        </div>
+        <p class="sc-note">바깥 상자가 넓은 보장입니다. 치료비는 순환계 질환 전체를 덮고,
+          진단비는 상자 안쪽의 좁은 범위에만 지급됩니다.</p>
+      </div>`;
+
     // 치료비 — 치료 행위별로, 어느 담보에서 얼마가 나오는지까지
     const act = (nm, v, rows, opt) => {
         const o = opt || {};
@@ -347,8 +385,8 @@ function ccCardsHtml(policy, tongName) {
 
     return `
     <div class="ccx">
-      <h3 class="sf-h3" style="--sf-sec:#2D6FB8">진단비<span class="hint">범위가 넓은 담보부터</span></h3>
-      ${dxHtml}
+      <h3 class="sf-h3" style="--sf-sec:#2D6FB8">보장 범위<span class="hint">바깥 상자일수록 넓은 보장</span></h3>
+      ${scopeHtml}
       <h3 class="sf-h3" style="--sf-sec:#C2436B">치료비<span class="hint">어느 담보에서 얼마가 나오는지${capTxt ? ` · ${capTxt}` : ''}</span></h3>
       <div class="cc-acts">${acts.join('')}</div>
     </div>`;

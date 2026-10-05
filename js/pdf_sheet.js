@@ -66,7 +66,7 @@ function sheetCss() {
     .meta .fee{background:${C.blue};color:#fff;flex:none;min-width:${mm(52)};
       text-align:right;border-left:0}
     .meta .k{font-size:${px(7)};font-weight:600;color:${C.muted};
-      letter-spacing:.06em;margin-bottom:${mm(1.2)}}
+      letter-spacing:.06em;margin-bottom:${mm(0.8)}}
     .meta .fee .k{color:rgba(255,255,255,.66)}
     .meta .v{font-size:${px(9.5)};font-weight:600;line-height:1.35}
     .meta .fee .v{font-family:'Plus Jakarta Sans',sans-serif;font-size:${px(15)};
@@ -154,6 +154,40 @@ function sheetCss() {
     .span .hosp{font-size:${px(8)};font-weight:700;white-space:nowrap;
       padding-left:${mm(4)};border-left:1px solid rgba(168,135,75,.3)}
     .span .hosp em{font-style:normal;color:${C.gold}}
+
+    /* 보장 범위 — 상자 속 상자 */
+    .sc-outer{border:1px solid ${C.blue};border-radius:${mm(3.6)};background:#F4F8FD;
+      padding:0 0 ${mm(1.4)}}
+    .sc-outer.off{border-color:${C.rule};background:${C.wash}}
+    .sc-top{display:flex;align-items:baseline;gap:${mm(2.5)};padding:${mm(1.8)} ${mm(4.5)};
+      border-bottom:1px solid rgba(0,60,220,.16)}
+    .sc-top .t{font-size:${px(9)};font-weight:800;color:${C.blue};letter-spacing:-.02em}
+    .sc-top em{font-style:normal;font-size:${px(7)};color:${C.muted}}
+    .sc-top b{margin-left:auto;font-family:'Plus Jakarta Sans',sans-serif;font-size:${px(12)};
+      font-weight:800;color:${C.blue};letter-spacing:-.03em;white-space:nowrap}
+    .sc-outer.off .sc-top .t,.sc-outer.off .sc-top b{color:${C.muted}}
+    .sc-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:${mm(3)};padding:${mm(2)} ${mm(4.5)} 0}
+    .sc-cap{font-size:${px(7)};font-weight:700;color:${C.muted};margin-bottom:${mm(1.2)}}
+    .sc-lv{border:1px solid ${C.rule};border-radius:${mm(2.6)};padding:${mm(1.4)} ${mm(2.4)};background:#fff}
+    .sc-lv .sc-lv{margin-top:${mm(1.1)}}
+    .sc-side.b .sc-lv{border-color:rgba(45,111,184,.35);background:rgba(45,111,184,.05)}
+    .sc-side.h .sc-lv{border-color:rgba(194,67,107,.35);background:rgba(194,67,107,.045)}
+    .sc-lv.off{border-style:dashed;background:transparent}
+    .sc-l{display:flex;align-items:baseline;gap:${mm(1.6)}}
+    .sc-l .n{font-size:${px(8)};font-weight:700}
+    .sc-l em{font-style:normal;font-size:${px(6.5)};color:${C.muted}}
+    .sc-l b{margin-left:auto;font-family:'Plus Jakarta Sans',sans-serif;font-size:${px(8.5)};
+      font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+    .sc-lv.off .sc-l .n,.sc-lv.off .sc-l b{color:${C.muted};font-weight:600}
+    .sc-sib{display:flex;align-items:baseline;gap:${mm(1.6)};margin-top:${mm(1.1)};
+      padding:${mm(1.6)} ${mm(2.4)};border:1px dashed ${C.rule};border-radius:${mm(2.6)};font-size:${px(8)}}
+    .sc-sib .n{font-weight:700;flex:none}
+    .sc-sib em{font-style:normal;font-size:${px(6.5)};color:${C.muted};flex:1;min-width:0;
+      overflow:hidden;white-space:nowrap}
+    .sc-sib b{margin-left:auto;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;
+      font-size:${px(8.5)};white-space:nowrap}
+    .sc-sib.off,.sc-sib.off b{color:${C.muted};font-weight:600}
 
     .pair{display:grid;grid-template-columns:1fr 1fr;gap:${mm(3.2)}}
     .col{border-radius:${mm(3.6)};overflow:hidden;border:1px solid ${C.rule}}
@@ -384,6 +418,32 @@ function sheetSurgery(d) {
         sheetFoot('삼성화재 가입제안서 기준 · 종 구분은 별표16 · 별표17', 4, 5);
 }
 
+// 보장 범위 — 치료비가 가장 넓고(특정순환계질환 41개 질환군) 진단비는 그 안쪽의 좁은 범위다.
+// 상자를 겹쳐 그려 포함관계를 보인다(뇌출혈 ⊂ 뇌졸중 ⊂ 뇌혈관질환 ⊂ 특정순환계질환).
+function scopeBlock(d) {
+    const lv = list => list.reduceRight((inner, x) => `
+        <div class="sc-lv${x.v ? '' : ' off'}">
+          <div class="sc-l"><span class="n">${sClip(x.nm, 10)}</span><em>${x.kcd || ''}</em>
+            <b>${x.v ? sFmt(x.v) : '미가입'}</b></div>${inner}</div>`, '');
+    const brain = (d.brainDx || []);
+    const heart = (d.heartDx || []);
+    const nest = heart.filter(x => /허혈성심장질환|급성심근경색/.test(x.nm));
+    const sib = heart.filter(x => !/허혈성심장질환|급성심근경색/.test(x.nm)).map(x =>
+        `<div class="sc-sib${x.v ? '' : ' off'}"><span class="n">${sClip(x.nm, 10)}</span>` +
+        `<em>${x.kcd || ''}</em><b>${x.v ? sFmt(x.v) : '미가입'}</b></div>`).join('');
+    return `
+      <div class="sc-outer${d.scopeOuter > 0 ? '' : ' off'}">
+        <div class="sc-top"><span class="t">특정순환계질환 ${d.hasTong ? '통합치료비' : '치료비'}</span>
+          <em>I00~I99 · 41개 질환군 전체${d.hasTong
+              ? ' · 검사 ▸ 약물 ▸ 치료 ▸ 수술 ▸ 재활 전 과정 · 모든 종합병원' : ''}</em>
+          <b>${d.scopeOuter > 0 ? sFmt(d.scopeOuter) : '미가입'}</b></div>
+        <div class="sc-cols">
+          <div class="sc-side b"><div class="sc-cap">뇌 계열 진단비</div>${lv(brain)}</div>
+          <div class="sc-side h"><div class="sc-cap">심장 계열 진단비</div>${lv(nest)}${sib}</div>
+        </div>
+      </div>`;
+}
+
 // ── 05 뇌·심장 ──
 function sheetCirc(d) {
     // 머리 금액은 한 번 진단받을 때의 최대치(circDxBest) — 목록 합계가 아니다.
@@ -398,19 +458,9 @@ function sheetCirc(d) {
     return sheetHead(d.who) + sheetTop('삼성화재', '뇌·심장 보장', 'Cerebro · Cardio') +
         covBlock(d.circCov, '뇌·심장') +
         `<div class="body">
-           ${d.hasTong ? `<div class="span">
-             <div class="path">
-               <span class="st">검사</span><span class="sep">▸</span>
-               <span class="st">약물</span><span class="sep">▸</span>
-               <span class="st">치료</span><span class="sep">▸</span>
-               <span class="st">수술</span><span class="sep">▸</span>
-               <span class="st">재활</span><span class="tail">전 과정을 한 담보로</span>
-             </div>
-             <div class="hosp"><em>모든 종합병원</em>에서 보장</div>
-           </div>` : ''}
-           <div><h3>진단비<span class="hint">범위가 넓은 담보부터</span></h3>
-             <div class="pair">${col('b', '뇌 계열', d.brainDx || [], d.brainBest || 0)}
-               ${col('h', '심장 계열', d.heartDx || [], d.heartBest || 0)}</div></div>
+           <!-- 검사▸약물▸치료▸수술▸재활 띠는 보장 범위 상자 머리줄로 옮겼다 (한 장 유지) -->
+           <div><h3>보장 범위<span class="hint">바깥 상자일수록 넓은 보장</span></h3>
+             ${scopeBlock(d)}</div>
            <div><h3>치료비<span class="hint">어느 담보에서 얼마가 나오는지</span></h3>
              <div class="cards">${(d.circCards || []).slice(0, 6).map(cardBlock).join('')}</div></div>
            ${caseBlock('사례로 보는 보장', d.circCaseDesc, d.circCase,
@@ -562,6 +612,8 @@ function buildSheetData(results, meta, customerName) {
             d.circCov = (cp._raw || []).map(r => ({ nm: (r.name || '').trim(), v: val(r) }))
                 .filter(x => x.nm).sort((a, b) => b.v - a.v);
             d.hasTong = !!cp.통합;
+            // 보장 범위 바깥 상자 금액 — 통합치료비면 가입금액, 아니면 특정치료비Ⅲ 금액
+            d.scopeOuter = cp.통합 ? cp.통합.amount : (cp.치료비 || 0);
             const dxOf = list => list.map(x => ({ nm: x.k, kcd: x.kcd, v: cp.dx[x.k] || 0 }));
             d.brainDx = dxOf(CIRCULATORY_DATA.DX.filter(x => /뇌/.test(x.k)));
             d.heartDx = dxOf(CIRCULATORY_DATA.DX.filter(x => !/뇌/.test(x.k)));

@@ -1284,6 +1284,45 @@ body.samsung-theme #summary-grid .premium-card .border-dashed{
    뇌·심장 — 지면 구성
    진단비는 뇌/심장 두 상자에 목록으로, 치료비는 3열 카드에 담보 내역까지.
    ══════════════════════════════════════════════════════════ */
+/* ── 보장 범위 (상자 속 상자) ──
+   치료비 담보가 가장 넓고, 진단비는 그 안쪽의 좁은 범위다. 상자를 겹쳐 그려
+   포함관계를 그대로 보인다(뇌출혈 ⊂ 뇌졸중 ⊂ 뇌혈관질환 ⊂ 특정순환계질환). */
+#circulatory-panel .sc-outer{border:1.5px solid #2D6FB8;border-radius:var(--sf-r);
+  background:linear-gradient(180deg,#F3F8FD,#fff 60%);padding:0 0 16px}
+#circulatory-panel .sc-outer.off{border-color:var(--sf-rule);background:var(--sf-wash)}
+#circulatory-panel .sc-top{display:flex;align-items:baseline;gap:10px;padding:13px 18px;
+  border-bottom:1px solid rgba(45,111,184,.18);flex-wrap:wrap}
+#circulatory-panel .sc-top .t{font-size:13.5px;font-weight:800;color:#2D6FB8;letter-spacing:-.02em}
+#circulatory-panel .sc-top em{font-style:normal;font-size:11px;color:var(--sf-muted)}
+#circulatory-panel .sc-top b{margin-left:auto;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:19px;font-weight:800;color:#2D6FB8;letter-spacing:-.03em}
+#circulatory-panel .sc-outer.off .sc-top .t,#circulatory-panel .sc-outer.off .sc-top b{color:var(--sf-muted)}
+#circulatory-panel .sc-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;padding:14px 18px 0}
+#circulatory-panel .sc-cap{font-size:11px;font-weight:700;color:var(--sf-muted);margin-bottom:7px}
+#circulatory-panel .sc-lv{border:1px solid var(--sf-rule);border-radius:12px;padding:9px 11px;
+  background:#fff;margin-bottom:0}
+#circulatory-panel .sc-lv .sc-lv{margin-top:8px}
+#circulatory-panel .sc-side.b .sc-lv{border-color:rgba(45,111,184,.35);background:rgba(45,111,184,.045)}
+#circulatory-panel .sc-side.h .sc-lv{border-color:rgba(194,67,107,.35);background:rgba(194,67,107,.04)}
+#circulatory-panel .sc-lv.off{border-style:dashed;background:transparent}
+#circulatory-panel .sc-l{display:flex;align-items:baseline;gap:6px}
+#circulatory-panel .sc-l .n{font-size:12.5px;font-weight:700;color:var(--sf-ink)}
+#circulatory-panel .sc-l em{font-style:normal;font-size:10.5px;color:var(--sf-muted)}
+#circulatory-panel .sc-l b{margin-left:auto;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13.5px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+#circulatory-panel .sc-lv.off .sc-l .n,#circulatory-panel .sc-lv.off .sc-l b{color:var(--sf-muted);font-weight:600}
+#circulatory-panel .sc-sib{display:flex;align-items:baseline;gap:6px;margin-top:8px;
+  padding:8px 11px;border:1px dashed var(--sf-rule);border-radius:12px;font-size:12.5px}
+#circulatory-panel .sc-sib .n{font-weight:700}
+#circulatory-panel .sc-sib em{font-style:normal;font-size:10.5px;color:var(--sf-muted)}
+#circulatory-panel .sc-sib .n{flex:none}
+#circulatory-panel .sc-sib em{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#circulatory-panel .sc-sib b{margin-left:auto;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;
+  white-space:nowrap}
+#circulatory-panel .sc-sib.off,#circulatory-panel .sc-sib.off b{color:var(--sf-muted);font-weight:600}
+#circulatory-panel .sc-note{margin:9px 2px 0;font-size:11px;color:var(--sf-muted);line-height:1.6}
+
 #circulatory-panel .cc-dx{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
   gap:14px;margin-bottom:20px}
 #circulatory-panel .cc-col{border:1px solid var(--sf-rule);border-radius:var(--sf-r);
