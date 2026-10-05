@@ -311,13 +311,16 @@ function sheetSummary(d) {
          <div class="v">${d.premium ? d.premium.toLocaleString('ko-KR') : '—'}<small>원</small></div></div>
      </div>
      <div class="body" style="gap:${mm(4.5)}">
-       ${d.hasCancer ? `<div><h3>암 보장<span class="hint">진단부터 치료까지</span></h3>
+       ${d.hasCancer ? `<div><h3>암 보장<span class="hint">${d.hasYusam
+           ? '갑상선암 · 기타피부암도 같은 금액으로' : '진단부터 치료까지'}</span></h3>
          <table><tr><th style="width:20%"></th><th>진단<span>최초 1회</span></th>
            <th>수술<span>매회</span></th><th>항암약물<span>연간 1회</span></th>
            <th>항암방사선<span>연간 1회</span></th></tr>
-           ${row('암 보장', [{ v: s.cancerDx },
+           ${row('일반암', [{ v: s.cancerDx },
                { v: s.cancerSx, s: s.cancerSxMax > s.cancerSx ? `최대 ${sFmt(s.cancerSxMax)}` : '' },
                { v: s.cancerDrug }, { v: s.cancerRad }])}
+           ${d.hasYusam ? row('갑상선암 · 기타피부암',
+               [{ v: d.yusam.dx }, { v: d.yusam.sx }, { v: d.yusam.drug }, { v: d.yusam.rad }]) : ''}
          </table></div>` : ''}
        ${s._hasCirc ? `<div><h3>뇌 · 심장 보장<span class="hint">범위가 넓은 담보 기준</span></h3>
          <table><tr><th style="width:20%"></th><th>진단</th><th>치료 · 수술</th>
@@ -465,7 +468,7 @@ function buildSheetData(results, meta, customerName) {
         return {
             // 술기에 따라 1~5종 3종~5종이 갈리는 카드는 범위로 보인다. 최솟값만 찍으면
             // 내역에 5종 2,000만원이 보이는데 카드는 330만원이라 설명이 안 된다(실측).
-            nm, v: g.totalMin || 0, vMax: g.totalMax || 0,
+            nm, v: g.totalMin || 0, vMax: g.totalMax || 0, yusam: g.yusamMin || 0,
             icon: (typeof getSheetIcon === 'function') ? getSheetIcon(nm) : '',
             cyc: keys.length === 1 ? CYC[keys[0]][0]
                : keys.length > 1 ? keys.map(k => k.replace(/1회|간/g, '')).join('+') : '',
@@ -509,6 +512,20 @@ function buildSheetData(results, meta, customerName) {
         drug.v > 0 && { s: '항암약물', a: drug.v, d: '연 1회 한도' }
     ].filter(Boolean);
     d.cancerCaseDesc = '암 진단 후 수술 · 항암치료';
+    // ── 갑상선암 · 기타피부암 ──
+    // 비통치·비특치는 이 둘을 「암 … 포함」으로 적어 일반암과 같은 금액을 준다.
+    // 한장요약에 한 줄 더해 일반암과 나란히 보여준다(제자리암·경계성종양은 포함 범위가 아님).
+    const yusamDxList = R.filter(r => r && /유사암\s*진단비/.test(r.name || '') &&
+        /기타피부암|갑상선암/.test(r.name || '')).map(val);
+    d.yusam = {
+        // 진단은 한 번에 하나만 받는다 — 둘 중 큰 쪽
+        dx: Math.max(0, ...yusamDxList),
+        // 칸마다 일반암과 같은 카드를 봐야 비교가 된다(수술=topCard, 약물=drug, 방사선=rad)
+        sx: topCard.yusam || 0,
+        drug: drug.yusam || 0,
+        rad: rad.yusam || 0
+    };
+    d.hasYusam = Object.values(d.yusam).some(v => v > 0);
     // 암 담보가 하나도 없으면 한장요약에서 암 표를 뺀다 — 0원만 늘어선 표가 '암이 잡힌' 것처럼 보였다.
     d.hasCancer = dxSum > 0 || d.cancerCards.length > 0;
 

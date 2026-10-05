@@ -5,28 +5,33 @@
 const samsungCoverageDetailsMap = {
     // 담보 57: 종합병원 암 전액본인부담(비급여포함) 통합치료비
     // 이름에 "전액본인부담(비급여포함)"이 명시된 경우만 → 비급여 태그 O
+    // 유사암: 이 담보의 지급표는 모든 줄이 「암(기타피부암 및 갑상선암 포함)」이라
+    // 갑상선암·기타피부암은 일반암과 같은 금액을 받는다. 삼성의 강점이라 따로 집계해 보여준다.
+    // 제자리암·경계성종양은 이 '포함' 범위에 없으므로 유사암 금액으로 세지 않는다.
     "종합병원 암 전액본인부담(비급여포함) 통합치료비": {
         type: "variant",
         data: {
             "10000": [ // 표준형 1억원 — 전액본인부담(비급여포함) 전용
-                { name: "암 수술비", amount: "1,000만", 비급여: true },
-                { name: "항암방사선치료비", amount: "1,000만", 비급여: true },
-                { name: "항암약물치료비", amount: "1,000만", 비급여: true },
+                { name: "암 수술비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "항암방사선치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "항암약물치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                // 다빈치는 갑상선암이 '특정암'이라 500만원으로 갈린다. 한장요약 유사암 행에는
+                // 수술·약물·방사선만 싣기로 해 여기서는 유사암 금액을 두지 않는다.
                 { name: "다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true },
                 { name: "다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
-                { name: "항암양성자방사선치료비", amount: "3,000만", 비급여: true },
-                { name: "표적항암약물허가치료비", amount: "3,000만", 비급여: true },
-                { name: "면역항암약물허가치료비", amount: "3,000만", 비급여: true }
+                { name: "항암양성자방사선치료비", amount: "3,000만", 비급여: true, 유사암: "3,000만" },
+                { name: "표적항암약물허가치료비", amount: "3,000만", 비급여: true, 유사암: "3,000만" },
+                { name: "면역항암약물허가치료비", amount: "3,000만", 비급여: true, 유사암: "3,000만" }
             ],
             "5000": [ // 실속형 5천만원 — 전액본인부담(비급여포함) 전용
-                { name: "암 수술비", amount: "1,000만", 비급여: true },
-                { name: "항암방사선치료비", amount: "1,000만", 비급여: true },
-                { name: "항암약물치료비", amount: "1,000만", 비급여: true },
+                { name: "암 수술비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "항암방사선치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "항암약물치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
                 { name: "다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true },
                 { name: "다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
-                { name: "항암양성자방사선치료비", amount: "1,000만", 비급여: true },
-                { name: "표적항암약물허가치료비", amount: "1,000만", 비급여: true },
-                { name: "면역항암약물허가치료비", amount: "1,000만", 비급여: true }
+                { name: "항암양성자방사선치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "표적항암약물허가치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "면역항암약물허가치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" }
             ]
         }
     },
@@ -38,44 +43,46 @@ const samsungCoverageDetailsMap = {
     "종합병원 암 통합치료비(종합형)": {
         type: "variant",
         data: {
+            // 유사암: ① 급여 묶음은 지급표에 유사암Ⅱ 금액이 따로 있다(고급 600 / 표준 400 / 실속 200).
+            //         ② 전액본인부담 묶음은 「…갑상선암 포함」이라 일반암과 같은 금액.
             "12000": [ // 고급형 연간 1억2천만 한도
-                { name: "암 수술비", amount: "1,500만" },                              // ① 급여/비급여 공통
-                { name: "항암방사선치료비", amount: "1,500만" },
-                { name: "항암약물치료비", amount: "1,500만" },
-                { name: "암 수술비", amount: "1,000만", 비급여: true },                // ② 비급여 전용 추가분
-                { name: "항암방사선치료비", amount: "1,000만", 비급여: true },
-                { name: "항암약물치료비", amount: "1,000만", 비급여: true },
+                { name: "암 수술비", amount: "1,500만", 유사암: "600만" },              // ① 급여/비급여 공통
+                { name: "항암방사선치료비", amount: "1,500만", 유사암: "600만" },
+                { name: "항암약물치료비", amount: "1,500만", 유사암: "600만" },
+                { name: "암 수술비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },   // ② 비급여 전용 추가분
+                { name: "항암방사선치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "항암약물치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
                 { name: "다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true }, // ③
                 { name: "다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
-                { name: "항암양성자방사선치료비", amount: "3,000만", 비급여: true },
-                { name: "표적항암약물허가치료비", amount: "3,000만", 비급여: true },
-                { name: "면역항암약물허가치료비", amount: "3,000만", 비급여: true }
+                { name: "항암양성자방사선치료비", amount: "3,000만", 비급여: true, 유사암: "3,000만" },
+                { name: "표적항암약물허가치료비", amount: "3,000만", 비급여: true, 유사암: "3,000만" },
+                { name: "면역항암약물허가치료비", amount: "3,000만", 비급여: true, 유사암: "3,000만" }
             ],
             "10000": [ // 표준형 연간 1억 한도
-                { name: "암 수술비", amount: "1,000만" },
-                { name: "항암방사선치료비", amount: "1,000만" },
-                { name: "항암약물치료비", amount: "1,000만" },
-                { name: "암 수술비", amount: "1,000만", 비급여: true },
-                { name: "항암방사선치료비", amount: "1,000만", 비급여: true },
-                { name: "항암약물치료비", amount: "1,000만", 비급여: true },
+                { name: "암 수술비", amount: "1,000만", 유사암: "400만" },
+                { name: "항암방사선치료비", amount: "1,000만", 유사암: "400만" },
+                { name: "항암약물치료비", amount: "1,000만", 유사암: "400만" },
+                { name: "암 수술비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "항암방사선치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "항암약물치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
                 { name: "다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true },
                 { name: "다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
-                { name: "항암양성자방사선치료비", amount: "3,000만", 비급여: true },
-                { name: "표적항암약물허가치료비", amount: "3,000만", 비급여: true },
-                { name: "면역항암약물허가치료비", amount: "3,000만", 비급여: true }
+                { name: "항암양성자방사선치료비", amount: "3,000만", 비급여: true, 유사암: "3,000만" },
+                { name: "표적항암약물허가치료비", amount: "3,000만", 비급여: true, 유사암: "3,000만" },
+                { name: "면역항암약물허가치료비", amount: "3,000만", 비급여: true, 유사암: "3,000만" }
             ],
             "5000": [ // 실속형 연간 5천만 한도
-                { name: "암 수술비", amount: "1,000만" },
-                { name: "항암방사선치료비", amount: "1,000만" },
-                { name: "항암약물치료비", amount: "1,000만" },
-                { name: "암 수술비", amount: "1,000만", 비급여: true },
-                { name: "항암방사선치료비", amount: "1,000만", 비급여: true },
-                { name: "항암약물치료비", amount: "1,000만", 비급여: true },
+                { name: "암 수술비", amount: "1,000만", 유사암: "200만" },
+                { name: "항암방사선치료비", amount: "1,000만", 유사암: "200만" },
+                { name: "항암약물치료비", amount: "1,000만", 유사암: "200만" },
+                { name: "암 수술비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "항암방사선치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "항암약물치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
                 { name: "다빈치로봇수술비(암, 특정암 제외)", amount: "1,000만", 비급여: true },
                 { name: "다빈치로봇수술비(특정암)", amount: "500만", 비급여: true },
-                { name: "항암양성자방사선치료비", amount: "1,000만", 비급여: true },
-                { name: "표적항암약물허가치료비", amount: "1,000만", 비급여: true },
-                { name: "면역항암약물허가치료비", amount: "1,000만", 비급여: true }
+                { name: "항암양성자방사선치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "표적항암약물허가치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" },
+                { name: "면역항암약물허가치료비", amount: "1,000만", 비급여: true, 유사암: "1,000만" }
             ]
         }
     },
@@ -150,6 +157,7 @@ const samsungCoverageDetailsMap = {
 
     // 담보 110: 항암 중입자방사선 치료비
     "항암 중입자방사선 치료비": {
+        유사암포함: true,   // 약관·제안서: 암, 기타피부암 또는 갑상선암
         type: "passthrough",
         displayName: "항암중입자방사선치료비"
     },
@@ -158,6 +166,7 @@ const samsungCoverageDetailsMap = {
     // 카드(세기조절방사선치료비)는 있는데 담보를 읽는 규칙이 없어, 가입했는데도
     // 카드에 제 금액이 들어가지 않았다(실측: 제안서 5건에서 전부 미인식).
     "항암 세기조절방사선 치료비": {
+        유사암포함: true,   // 약관·제안서: 암, 기타피부암 또는 갑상선암
         type: "passthrough",
         summaryTarget: "세기조절방사선치료비",
         displayName: "항암세기조절방사선치료비"
@@ -198,6 +207,18 @@ const samsungCoverageDetailsMap = {
         displayName: "항암방사선치료비"
     },
 
+    // 담보 186b: 항암방사선·약물 치료비Ⅲ(기타피부암 및 갑상선암) — 유사암 전용.
+    // 일반암 합계에는 들어가지 않지만(이름에 '기타피부암·갑상선암'), 갑상선암·기타피부암
+    // 기준 금액으로는 그대로 지급되므로 유사암 합계에 싣는다.
+    "유사암 항암방사선·약물 치료비Ⅲ(기타피부암 및 갑상선암)": {
+        type: "passthrough-dual",
+        displayName: "유사암 항암방사선·약물치료비Ⅲ(방사선·약물)",
+        summaryTargets: ["항암방사선치료비", "항암약물치료비"],
+        유사암포함: true,
+        비급여: true,
+        expandHierarchy: false
+    },
+
     // 담보 186: 항암방사선·약물 치료비Ⅲ (갱신형, 일반암, 비급여) — 수술비 미포함
     "암(유사암Ⅱ 제외) 항암방사선·약물 치료비Ⅲ": {
         type: "passthrough-dual",
@@ -208,6 +229,7 @@ const samsungCoverageDetailsMap = {
 
     // 담보 196: 표적항암약물허가 치료비 (갱신형, 급여)
     "표적항암약물허가 치료비(연간1회한)(암(유사암Ⅱ 제외))": {
+        유사암포함: true,   // 약관·제안서: 암, 기타피부암 또는 갑상선암
         type: "passthrough",
         summaryTarget: "표적항암약물치료비",
         displayName: "표적항암약물허가치료비"
@@ -215,6 +237,7 @@ const samsungCoverageDetailsMap = {
 
     // 담보 197: 전액본인부담(비급여포함) 표적항암약물허가 치료비 (갱신형, 비급여)
     "전액본인부담(비급여포함)표적항암약물허가 치료비": {
+        유사암포함: true,   // 약관·제안서: 암, 기타피부암 또는 갑상선암
         type: "passthrough",
         summaryTarget: "표적항암약물치료비",
         displayName: "표적항암약물허가치료비",
@@ -223,6 +246,7 @@ const samsungCoverageDetailsMap = {
 
     // 갱신형 항암양성자방사선치료비 단독 담보
     "항암양성자방사선치료비(갱신형)": {
+        유사암포함: true,   // 약관·제안서: 암, 기타피부암 또는 갑상선암
         type: "passthrough",
         summaryTarget: "양성자방사선치료비",
         displayName: "항암양성자방사선치료비"
@@ -230,6 +254,7 @@ const samsungCoverageDetailsMap = {
 
     // 갱신형 특정면역항암약물허가치료비 단독 담보 (계속받는 포함)
     "특정면역항암약물허가치료비(갱신형)": {
+        유사암포함: true,   // 약관·제안서: 암, 기타피부암 또는 갑상선암
         type: "passthrough",
         summaryTarget: "면역항암약물치료비",
         displayName: "특정면역항암약물허가치료비"
@@ -280,7 +305,9 @@ function findSamsungDetails(itemName) {
             return samsungCoverageDetailsMap["종합병원 암(기타피부암 및 갑상선암 포함) 전액본인부담(비급여포함) 특정치료비Ⅱ"];
         }
         if (itemName.includes("유사암") && !itemName.includes("제외")) {
-            return null; // 유사암Ⅱ(갑상선암/기타피부암/제자리암/경계성종양) 특정치료비Ⅱ → 표시 안 함
+            // 일반암 합계에는 넣지 않지만(이름으로 자동 제외) 갑상선암·기타피부암 기준
+            // 금액으로는 지급되므로 유사암 합계에 싣는다.
+            return samsungCoverageDetailsMap["종합병원 유사암Ⅱ 특정치료비Ⅱ"];
         }
         return samsungCoverageDetailsMap["종합병원 암(유사암Ⅱ 제외) 특정치료비Ⅱ"];
     }
@@ -295,9 +322,12 @@ function findSamsungDetails(itemName) {
 
     // 2-2. 항암방사선·약물 치료비Ⅲ (수술 제외, 방사선+약물만) — 특정치료비Ⅲ와 구분 필수
     if (itemName.includes("항암방사선") && itemName.includes("약물") && (itemName.includes("Ⅲ") || itemName.includes("III")) && !itemName.includes("특정치료비")) {
-        // 기타피부암·갑상선암 전용("제외" 없음) = 유사암 담보 → null
+        // 기타피부암·갑상선암 전용("제외" 없음) = 유사암 담보 → 유사암 합계 전용으로 매핑
+        // (일반암 합계에는 이름 때문에 자동으로 빠진다)
         // "기타피부암 및 갑상선암 제외" = 일반암 버전 → 정상 매핑
-        if (itemName.includes("기타피부암") && !itemName.includes("제외")) return null;
+        if (itemName.includes("기타피부암") && !itemName.includes("제외")) {
+            return samsungCoverageDetailsMap["유사암 항암방사선·약물 치료비Ⅲ(기타피부암 및 갑상선암)"];
+        }
         return samsungCoverageDetailsMap["암(유사암Ⅱ 제외) 항암방사선·약물 치료비Ⅲ"];
     }
 
@@ -449,8 +479,9 @@ function applySurgeryTiersToCancerSurgery(summaryMap, results) {
     // 두 줄로 따로 넣으면 내역에서 둘을 더해 '수술비 계열 1,330만원'처럼 부풀었다(실측: 실제 330~1,030만원).
     const push = (name, amount, maxAmount) => {
         if (target.items.some(i => i.name === name)) return;
+        // 질병 수술비 계열은 암 종류를 가리지 않는다 — 갑상선암·기타피부암 수술에도 같은 금액이 나온다.
         target.items.push({ name, amount, ...(maxAmount && maxAmount !== amount ? { maxAmount } : {}),
-                            source: '수술비 계열', surgeryTier: true });
+                            유사암: amount, source: '수술비 계열', surgeryTier: true });
     };
     const pushAlt = (label, a, b) => {
         if (a && b && a !== b) {
@@ -496,6 +527,8 @@ function applySurgeryTiersToCancerSurgery(summaryMap, results) {
     }
 
     if (created && (addMin || addMax)) summaryMap.set('암수술비', target);
+    // 유사암 합계에도 같은 금액을 더한다(한장요약 유사암 행의 수술 칸)
+    if (addMin) target.yusamMin = (target.yusamMin || 0) + addMin;
     if (addMin || addMax) {
         target.isolatedMin += addMin;
         target.isolatedMax += addMax;
@@ -507,6 +540,17 @@ function applySurgeryTiersToCancerSurgery(summaryMap, results) {
 // ── calculateHierarchicalSummarySamsung: 삼성화재 버전 계층적 요약 계산 ──
 // js/analyzer.js의 calculateHierarchicalSummary와 동일한 로직
 // samsungCoverageDetailsMap / findSamsungDetails 사용, 26종 분기 제거
+// 갑상선암·기타피부암에도 같은 금액이 나오는 담보인지 담보명으로 가린다.
+// 비통치·비특치는 「암(기타피부암 및 갑상선암 포함)」이라 일반암과 같은 금액을 주고,
+// 유사암Ⅱ 전용 담보는 그 금액이 그대로 나온다. 「유사암Ⅱ 제외」는 해당 없음.
+// 제자리암·경계성종양은 '포함' 범위가 아니라 여기 금액으로 세지 않는다.
+function yusamAmountOf(coverageName, amount) {
+    const t = String(coverageName || '').replace(/\s+/g, '');
+    if (/유사암Ⅱ?제외|기타피부암및갑상선암제외/.test(t)) return '';
+    if (/갑상선암포함|유사암포함|유사암Ⅱ/.test(t)) return amount;
+    return '';
+}
+
 function calculateHierarchicalSummarySamsung(results) {
     const summaryMap = new Map();
 
@@ -537,7 +581,10 @@ function calculateHierarchicalSummarySamsung(results) {
         if (details && details.type === 'passthrough') {
             const isBigugeom = details.비급여 || false;
             const tgt = details.summaryTarget || null;
-            details = [{ name: details.displayName, amount: item.amount, 비급여: isBigugeom, annualCount: item.tierCount, ...(tgt ? { targetName: tgt } : {}) }];
+            const incYusam = details.유사암포함 && !/제외/.test(item.name);
+            details = [{ name: details.displayName, amount: item.amount, 비급여: isBigugeom, annualCount: item.tierCount,
+                유사암: incYusam ? item.amount : yusamAmountOf(item.name, item.amount),
+                ...(tgt ? { targetName: tgt } : {}) }];
         }
 
         // Handle Passthrough-Dual (여러 summaryTargets에 동시 반영)
@@ -546,6 +593,7 @@ function calculateHierarchicalSummarySamsung(results) {
             const displayName = details.displayName;
             const shouldExpand = details.expandHierarchy !== false;
             const isBigugeom = details.비급여 || false;
+            const incYusamDual = details.유사암포함 && !/제외/.test(item.name);
             const directTargets = details.summaryTargets; // 명시적 대상 (확장 아님)
             const expandedTargets = [];
             directTargets.forEach(target => {
@@ -562,6 +610,7 @@ function calculateHierarchicalSummarySamsung(results) {
                 targetName: t,
                 비급여: isBigugeom,
                 annualCount: item.tierCount,
+                유사암: incYusamDual ? item.amount : yusamAmountOf(item.name, item.amount),
                 _expansion: !directTargets.includes(t) // true = 확장항목, post-processing propagation에서 중복 방지용
             }));
         }
@@ -613,6 +662,8 @@ function calculateHierarchicalSummarySamsung(results) {
                         isolatedMax: 0,
                         isolatedOnceMin: 0,
                         isolatedOnceMax: 0,
+                        // 갑상선암·기타피부암 기준 합계. 일반암 합계(totalMin)와 별개로만 쌓는다.
+                        yusamMin: 0,
                         items: [],
                         onceOnly: ONCE_ONLY_KEYS.has(normalizedName)
                     });
@@ -644,6 +695,8 @@ function calculateHierarchicalSummarySamsung(results) {
                     // 통합치료비/특정치료비 소스 및 암수술비 단독 담보 → 연간1회
                     payFreq_s = 'annual';
                 }
+                // 유사암(갑상선암·기타피부암) 합계 — 일반암 합계에서 빠지는 유사암 전용 담보도 여기엔 넣는다.
+                if (!det._expansion) group.yusamMin += parseKoAmount(det.유사암 || 0);
                 if (!det._expansion && (payFreq_s === 'once' || payFreq_s === 'once-each')) {
                     group.isolatedOnceMin += valMin;
                     group.isolatedOnceMax += valMax;
@@ -652,6 +705,7 @@ function calculateHierarchicalSummarySamsung(results) {
                     name: det.name,
                     amount: det.amount,
                     maxAmount: det.maxAmount,
+                    유사암: det.유사암 || '',
                     source: item.name,
                     // 약관이 정한 지급 주기(최초 1회 / 연간 1회 / 매회 / 1일당).
                     // 제안서에는 적혀 있지 않아 clause_cycle_data.js에서 읽는다.
@@ -695,7 +749,7 @@ function calculateHierarchicalSummarySamsung(results) {
         if (!snap || snap.isolatedMin === 0) return;
         children.forEach(child => {
             if (!summaryMap.has(child)) {
-                summaryMap.set(child, { displayName: child, totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0, items: [], onceOnly: ONCE_ONLY_KEYS.has(child) });
+                summaryMap.set(child, { displayName: child, totalMin: 0, totalMax: 0, isolatedMin: 0, isolatedMax: 0, yusamMin: 0, items: [], onceOnly: ONCE_ONLY_KEYS.has(child) });
             }
             const childGroup = summaryMap.get(child);
             // 하위 카드(다빈치/양성자/표적/면역)는 상위 카드(암수술비/항암방사선/항암약물)의 하위 개념이므로,
@@ -722,6 +776,9 @@ function calculateHierarchicalSummarySamsung(results) {
                 if (!pItem.비급여 && ownSources.has(pItem.source)) return;
                 childGroup.totalMin += parseKoAmount(pItem.amount);
                 childGroup.totalMax += parseKoAmount(pItem.maxAmount || pItem.amount);
+                // 유사암(갑상선암·기타피부암)도 같은 규칙으로 물려받는다 — 비통치의 항암약물은
+                // 유사암에도 같은 금액이 나오므로 표적·면역 카드의 유사암 금액에 그대로 들어간다.
+                childGroup.yusamMin = (childGroup.yusamMin || 0) + parseKoAmount(pItem.유사암 || 0);
                 // 비급여 여부까지 봐야 한다. 통합치료비(종합형)는 같은 이름 '항암방사선치료비'로
                 // 급여분 1,000만원과 비급여분 1,000만원을 따로 준다 — 이름·출처만 보면 하나가
                 // 중복으로 버려져 카드 내역 합이 1,000만원 모자랐다(실측).
