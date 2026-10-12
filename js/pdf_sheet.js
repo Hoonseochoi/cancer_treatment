@@ -257,7 +257,7 @@ async function renderSheetCanvas(innerHtml, accent, accentSoft) {
         `position:fixed;left:-99999px;top:0;width:${SHEET_W}px;height:${SHEET_H}px;` +
         'z-index:-1;pointer-events:none');
     host.innerHTML =
-        `<style>${sheetCss()}</style>` +
+        `<style>${sheetCss()}${typeof caregiverSheetCss === 'function' ? caregiverSheetCss() : ''}</style>` +
         `<div class="sheet" style="--ac:${accent};--acs:${accentSoft}">${innerHtml}</div>`;
     document.body.appendChild(host);
     try {
@@ -365,12 +365,12 @@ function sheetSummary(d) {
        ${d.etc && d.etc.length ? `<div><h3>입원 · 기타<span class="hint">그 밖에 가입한 담보</span></h3>
          <table><tr>${d.etc.slice(0,5).map(x => `<th>${sClip(x.nm, 10)}</th>`).join('')}</tr>
            <tr>${d.etc.slice(0,5).map(x => `<td>${sFmt(x.v)}</td>`).join('')}</tr></table></div>` : ''}
-       <div><h3>다빈도 수술<span class="hint">담보가 겹쳐 지급되는 합계</span></h3>
+       ${(d.topSurg || []).length ? `<div><h3>다빈도 수술<span class="hint">담보가 겹쳐 지급되는 합계</span></h3>
          <table><tr>${(d.topSurg || []).slice(0, 6).map(x =>
              `<th>${sClip(x.nm, 9)}</th>`).join('')}</tr>
            <tr>${(d.topSurg || []).slice(0, 6).map(x =>
              `<td>${sFmt(x.v)}${x.g ? `<small>${x.g}</small>` : ''}</td>`).join('')}</tr>
-         </table></div>
+         </table></div>` : ''}
      </div>` +
     sheetFoot('삼성화재 가입제안서 기준 · 0원은 미가입', 2, 5);
 }
@@ -694,6 +694,9 @@ function buildSheetData(results, meta, customerName) {
             };
         }
     }
+    // ── 간병인 지원 ──
+    d.caregiver = (typeof buildCaregiverPolicy === 'function') ? buildCaregiverPolicy(R) : null;
+    d.hasHomeCare = !!M.hasHomeCareService;
     d.summary = Object.assign({
         cancerDx: dxSum,
         cancerSx: topCard.v,
@@ -705,7 +708,9 @@ function buildSheetData(results, meta, customerName) {
     // 어느 장에도 실리지 않는 담보 — 입원일당·통원 같은 것들
     const shown = new Set([...(d.cancerCov || []), ...(d.surgCov || []), ...(d.circCov || [])]
         .map(x => x.nm));
-    d.etc = R.filter(r => r && r.name && !shown.has(r.name.trim()) && val(r) > 0 &&
+    // 간병 담보는 간병인 지면에서 따로 다룬다. 여기 섞이면 간병인지원 가입금액 '5천원'이
+    // 만원 단위로 읽혀 5,000만원으로 찍혔다(실측: 최현숙님 제안서).
+    d.etc = R.filter(r => r && r.name && r.kind !== 'caregiver' && !shown.has(r.name.trim()) && val(r) > 0 &&
             /일당|통원|입원|간병/.test(r.name) &&
             !/진단비/.test(r.name))
         .map(r => ({ nm: r.name.trim(), v: val(r) }))
@@ -745,6 +750,17 @@ async function renderSheetPages(results, meta, customerName) {
     if ((d.circCards || []).some(c => c.v > 0)) {
         pages.push({ html: sheetCirc(d), ac: C.brain, acs: C.brainSoft });
     }
+    if (d.caregiver && typeof sheetCaregiver === 'function') {
+        pages.push({ html: sheetCaregiver(d), ac: CG_COLOR.c, acs: CG_COLOR.s });
+    }
+    // 쪽 번호는 실제로 실린 지면 수로 매긴다. 고정값(02/05 …)이라 지면이 빠지거나
+    // 늘면 번호가 어긋났다. 표지가 01이다.
+    const total = pages.length + 1;
+    const pad = n => String(n).padStart(2, '0');
+    pages.forEach((p, i) => {
+        p.html = p.html.replace(/<span class="pg"><b>\d+<\/b> \/ \d+<\/span>/,
+            `<span class="pg"><b>${pad(i + 2)}</b> / ${pad(total)}</span>`);
+    });
     const out = [];
     for (const p of pages) out.push(await renderSheetCanvas(p.html, p.ac, p.acs));
     return out;

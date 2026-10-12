@@ -443,7 +443,7 @@ function renderCirculatoryPanel(results) {
         .slice(0, 15);
     const covHtml = covList.length ? `
       <div class="sf-cov">
-        <div class="sf-cov-hd"><span class="t">가입한 담보 쉽게보기</span>
+        <div class="sf-cov-hd" role="button" tabindex="0" aria-expanded="false"><span class="t">가입한 담보 쉽게보기</span>
           <span class="n">뇌·심장 ${covList.length}개</span></div>
         <ul>${covList.map(x =>
             `<li class="${x.v ? '' : 'off'}"><span title="${x.nm}">${clipName(x.nm, 26)}</span>` +

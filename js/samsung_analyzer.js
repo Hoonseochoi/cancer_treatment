@@ -211,9 +211,9 @@ function extractRawCoveragesSamsung(text) {
         //   \s+([\d억만천백십원,]+원|세부보장참조)   — 가입금액
         //   \s+(\d[\d,]*원|\(공통\))   — 보험료
         //   \s+(\d+년[^\n]*)   — 납입기간
-        const fullPattern = /^(\d{1,4})\s+(\[[^\]]+\]\s*)?(.+?)\s+(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원?|\(공통\))\s+(\d+년.*)/;
+        const fullPattern = /^(\d{1,4})\s+(\[[^\]]+\]\s*)?(.+?)\s+(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만\s*\d[\d,]*천원|\d[\d,]*만원|\d[\d,]*천원|\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원?|\(공통\))\s+(\d+년.*)/;
         // Also try without leading 번호:
-        const noIdPattern = /^(\[[^\]]+\]\s*)?(.+?)\s+(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원?|\(공통\))\s+(\d+년.*)/;
+        const noIdPattern = /^(\[[^\]]+\]\s*)?(.+?)\s+(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만\s*\d[\d,]*천원|\d[\d,]*만원|\d[\d,]*천원|\d[\d,]*원|세부보장참조)\s+(\d[\d,]*원?|\(공통\))\s+(\d+년.*)/;
 
         let id = '';
         let bracketPrefix = '';
@@ -275,7 +275,7 @@ function extractRawCoveragesSamsung(text) {
             // 담보명 안에 금액 표기가 섞인 경우("…통합치료비(표준형, 연간1억원한도)")를 가입금액으로
             // 오인하면 이름이 거기서 잘리고 금액도 틀린 값이 잡힌다. 담보명 내부 표기는 뒤에
             // "한도"가 붙거나 괄호 안에서 끝나므로, 그런 후보는 건너뛰고 다음 금액을 찾는다.
-            const AMOUNT_RE = /(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)/g;
+            const AMOUNT_RE = /(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만\s*\d[\d,]*천원|\d[\d,]*만원|\d[\d,]*천원|\d[\d,]*원|세부보장참조)/g;
             let amountM = null;
             for (let am; (am = AMOUNT_RE.exec(afterBracket)) !== null; ) {
                 const after = afterBracket.slice(am.index + am[0].length);
@@ -291,7 +291,7 @@ function extractRawCoveragesSamsung(text) {
             let borrowedTail = '';
             if (!amountM) {
                 const nextAmt = (mergedLines[idx + 1] || '').trim();
-                if (/^(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만원|\d[\d,]*원|세부보장참조)$/.test(nextAmt)) {
+                if (/^(\d[\d,]*억\s*(?:\d[\d,]*만)?원|\d[\d,]*만\s*\d[\d,]*천원|\d[\d,]*만원|\d[\d,]*천원|\d[\d,]*원|세부보장참조)$/.test(nextAmt)) {
                     borrowedTail = ' ' + nextAmt + ' ' + (mergedLines[idx + 2] || '').trim();
                     afterBracket = afterBracket + borrowedTail;
                     AMOUNT_RE.lastIndex = 0;
@@ -363,7 +363,11 @@ function extractRawCoveragesSamsung(text) {
         const isCancerRelated = !isCirculatory && (cancerWhitelist.some(kw => nameNorm.includes(kw)) ||
             (isGroupType && etcWhitelist.some(kw => nameNorm.includes(kw))));
         const isSurgeryTier = !isCancerRelated && !isCirculatory && surgeryWhitelist.some(kw => nameNorm.includes(kw));
-        if (!isCancerRelated && !isSurgeryTier && !isCirculatory) {
+        // 간병 담보(간병인지원 · 간병인 사용일당 · 간호·간병통합서비스 사용일당) — 간병인 탭 전용.
+        // 이름에 암·수술비·순환계 낱말이 없어 지금까지 통째로 버려졌다.
+        const isCaregiver = !isCancerRelated && !isCirculatory && !isSurgeryTier &&
+            /간병인|간호[·ㆍ]?간병/.test(nameNorm);
+        if (!isCancerRelated && !isSurgeryTier && !isCirculatory && !isCaregiver) {
             console.log(`[Samsung] Skipped (not cancer/surgery/circulatory): ${name}`);
             return;
         }
@@ -394,7 +398,8 @@ function extractRawCoveragesSamsung(text) {
             premium: premium,
             period: period,
             original: trimmed,
-            ...(isCirculatory ? { kind: 'circulatory' } : isSurgeryTier ? { kind: 'surgery' } : {})
+            ...(isCirculatory ? { kind: 'circulatory' } : isSurgeryTier ? { kind: 'surgery' }
+                : isCaregiver ? { kind: 'caregiver' } : {})
         });
     });
 

@@ -71,6 +71,9 @@ function formatKoAmount(val) {
 // ── Helper: Normalize any amount string to #,###만원 format ──
 function formatDisplayAmount(str) {
     if (!str) return str;
+    // "5천원"·"3만4천원"처럼 천 단위가 원으로 끝나는 표기는 만원 단위로 바꾸지 않고 그대로 둔다.
+    // parseKoAmount는 만원 단위라 "5천원"을 5,000만원으로 읽는다(실측: 간병인지원 가입금액).
+    if (/천\s*원\s*$/.test(str) && !/천\s*만/.test(str)) return str.trim();
     const val = parseKoAmount(str);
     if (val === 0) return str; // 파싱 실패 시 원본 유지
     return formatKoAmount(val);

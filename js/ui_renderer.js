@@ -5,6 +5,29 @@ function isYusamOrSpecificAmOnly(sub) {
     return isYusamOrSpecificAmOnlyText((sub.source || '') + '|' + (sub.name || ''));
 }
 
+// ── 가입한 담보 쉽게보기: 기본 접힘, 머리줄을 누르면 펼친다 ──
+// 탭(암·수술비·뇌심·간병)마다 다시 그려지므로 문서에 한 번만 위임해 둔다.
+// 접힌 목록은 display:none이라 이미지 저장에도 접힌 그대로 찍힌다.
+(function setupCovToggle() {
+    const flip = hd => {
+        const box = hd.closest('.sf-cov');
+        if (!box) return;
+        const open = box.classList.toggle('open');
+        hd.setAttribute('aria-expanded', String(open));
+    };
+    document.addEventListener('click', e => {
+        const hd = e.target.closest('.sf-cov-hd');
+        if (hd) flip(hd);
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const hd = e.target.closest && e.target.closest('.sf-cov-hd');
+        if (!hd) return;
+        e.preventDefault();
+        flip(hd);
+    });
+})();
+
 // ── UI Helpers ──
 function updateProgress(pct, text) {
     const bar = document.getElementById('progress-bar');
@@ -292,7 +315,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 const box = document.createElement('div');
                 box.className = 'sf-cov';
                 box.innerHTML =
-                    `<div class="sf-cov-hd"><span class="t">가입한 담보 쉽게보기</span>` +
+                    `<div class="sf-cov-hd" role="button" tabindex="0" aria-expanded="false"><span class="t">가입한 담보 쉽게보기</span>` +
                     `<span class="n">${own.length}개</span></div><ul>${lis}</ul>`;
                 summaryGrid.appendChild(box);
             }
@@ -871,6 +894,7 @@ function currentCaptureView() {
     };
     if (shown('surgery-panel')) return 'surgery';
     if (shown('circulatory-panel')) return 'circulatory';
+    if (shown('caregiver-panel')) return 'caregiver';
     return 'cancer';
 }
 
@@ -882,6 +906,7 @@ function availableCaptureViews() {
 }
 
 const CAPTURE_VIEW_TITLE = {
+    caregiver: '간병인 지원 한눈에 보기',
     cancer: '보장 내역 한눈에 보기',
     surgery: '수술비 한눈에 보기',
     circulatory: '뇌·심장 한눈에 보기'
@@ -922,6 +947,7 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null, fo
                 setShown('summary-grid', forceView === 'cancer');
                 setShown('surgery-panel', forceView === 'surgery');
                 setShown('circulatory-panel', forceView === 'circulatory');
+                setShown('caregiver-panel', forceView === 'caregiver');
                 setShown('other-panel-container', forceView === 'cancer');
                 setShown('insight-section', forceView === 'cancer');
                 const hdr = clonedDoc.getElementById('result-header');
@@ -1384,7 +1410,7 @@ const PDF_NAVY_RGB = { r: 15, g: 30, b: 66 };
 
 function coverViewChips() {
     return availableCaptureViews()
-        .map(v => ({ cancer: '암 치료비', surgery: '수술비', circulatory: '뇌·심장' })[v])
+        .map(v => ({ cancer: '암 치료비', surgery: '수술비', circulatory: '뇌·심장', caregiver: '간병인 지원' })[v])
         .filter(Boolean);
 }
 

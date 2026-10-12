@@ -290,7 +290,7 @@ function renderSurgeryPanel(results) {
         .slice(0, 15);
     const covHtml = covList.length ? `
       <div class="sf-cov">
-        <div class="sf-cov-hd"><span class="t">가입한 담보 쉽게보기</span>
+        <div class="sf-cov-hd" role="button" tabindex="0" aria-expanded="false"><span class="t">가입한 담보 쉽게보기</span>
           <span class="n">수술비 ${covList.length}개</span></div>
         <ul>${covList.map(x =>
             `<li class="${x.v ? '' : 'off'}"><span title="${x.nm}">${clipName(x.nm, 26)}</span>` +
@@ -368,10 +368,16 @@ function setupSurgeryToggle(results, insurer) {
     const ccCount = (results || []).filter(r => r && r.kind === 'circulatory').length;
     const hasSurgery = insurer === 'samsung' && count > 0 && renderSurgeryPanel(results);
     const hasCirc = insurer === 'samsung' && ccCount > 0 && renderCirculatoryPanel(results);
-    if (!hasSurgery && !hasCirc) {
+    // 간병인 탭 — 간병 담보(간병인지원·사용일당·간호간병통합)가 있을 때만
+    const cgPanel = document.getElementById('caregiver-panel');
+    const cgCount = (results || []).filter(r => r && r.kind === 'caregiver').length;
+    const hasCare = insurer === 'samsung' && cgCount > 0 && !!cgPanel &&
+        typeof renderCaregiverPanel === 'function' && renderCaregiverPanel(results);
+    if (!hasSurgery && !hasCirc && !hasCare) {
         wrap.classList.add('hidden');
         panel.classList.add('hidden');
         ccPanel.classList.add('hidden');
+        if (cgPanel) cgPanel.classList.add('hidden');
         return;
     }
 
@@ -380,7 +386,7 @@ function setupSurgeryToggle(results, insurer) {
     // '암 치료비는 최대 0원' 카드와 빈 화면이 먼저 보였다(실측: 백정진님 제안서).
     // PDF·표지는 이 버튼 목록(availableCaptureViews)을 따르므로 함께 빠진다.
     const hasCancer = !!grid.querySelector('.premium-card');
-    const first = hasCancer ? 'cancer' : (hasSurgery ? 'surgery' : 'circulatory');
+    const first = hasCancer ? 'cancer' : hasSurgery ? 'surgery' : hasCirc ? 'circulatory' : 'caregiver';
     const btn = (v, label) =>
         `<button type="button" data-v="${v}" aria-selected="${v === first}">${label}</button>`;
 
@@ -388,12 +394,14 @@ function setupSurgeryToggle(results, insurer) {
     wrap.innerHTML = `
       ${hasCancer ? btn('cancer', '암 보장') : ''}
       ${hasSurgery ? btn('surgery', `수술비 <span class="sg-badge">${count}</span>`) : ''}
-      ${hasCirc ? btn('circulatory', `뇌·심장 <span class="sg-badge">${ccCount}</span>`) : ''}`;
+      ${hasCirc ? btn('circulatory', `뇌·심장 <span class="sg-badge">${ccCount}</span>`) : ''}
+      ${hasCare ? btn('caregiver', `간병인 <span class="sg-badge">${cgCount}</span>`) : ''}`;
     const show = v => {
         wrap.querySelectorAll('button[data-v]').forEach(x =>
             x.setAttribute('aria-selected', String(x.dataset.v === v)));
         panel.classList.toggle('hidden', v !== 'surgery');
         ccPanel.classList.toggle('hidden', v !== 'circulatory');
+        if (cgPanel) cgPanel.classList.toggle('hidden', v !== 'caregiver');
         grid.classList.toggle('hidden', v !== 'cancer');
         const other = document.getElementById('other-panel-container');
         if (other) other.classList.toggle('hidden', v !== 'cancer');
@@ -404,7 +412,8 @@ function setupSurgeryToggle(results, insurer) {
         if (insight) insight.classList.toggle('hidden', v !== 'cancer');
         const header = document.getElementById('result-header');
         if (header) header.textContent = v === 'surgery' ? '수술비 한눈에 보기'
-            : v === 'circulatory' ? '뇌·심장 한눈에 보기' : '보장 내역 한눈에 보기';
+            : v === 'circulatory' ? '뇌·심장 한눈에 보기'
+            : v === 'caregiver' ? '간병인 지원 한눈에 보기' : '보장 내역 한눈에 보기';
     };
     wrap.onclick = e => {
         const b = e.target.closest('button[data-v]');

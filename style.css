@@ -1422,3 +1422,75 @@ body[data-print] #surgery-panel .sg-hot-legend{display:none}
 /* 뇌·심장 — 확인 사항은 인쇄본에서 뺀다(표지 고지로 갈음) */
 body[data-print] #circulatory-panel .cc-disc,
 body[data-print] #circulatory-panel .cc-src{display:none}
+
+/* ── 간병인 지원 탭 ──
+   받는 것 → 신청하는 법 → 꼭 알아둘 것 순서. 강조색은 청록 하나만 쓴다.
+   전화번호가 금액보다 크게 보이도록 — 고객이 이 화면을 찍어 두고 나중에 전화하는 상황을 상정. */
+#caregiver-panel{--cg:#0B8A7A;--cg-soft:#E7F5F2}
+#caregiver-panel .cg-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:22px}
+#caregiver-panel .cg-card{border:1px solid var(--sf-rule);border-radius:var(--sf-r);padding:15px 17px;background:#fff}
+#caregiver-panel .cg-ct{display:flex;align-items:center;gap:8px;color:var(--sf-ink-2)}
+#caregiver-panel .cg-ico{color:var(--cg);display:flex}
+#caregiver-panel .cg-ti{font-size:13px;font-weight:700}
+#caregiver-panel .cg-who{margin-left:auto;font-size:11px;font-weight:700;color:var(--cg);
+  background:var(--cg-soft);border-radius:999px;padding:2px 9px}
+#caregiver-panel .cg-head{font-size:19px;font-weight:800;letter-spacing:-.03em;margin-top:10px;color:var(--sf-ink)}
+#caregiver-panel .cg-head.num{font-family:'Plus Jakarta Sans','Noto Sans KR',sans-serif;color:var(--cg)}
+#caregiver-panel .cg-meta{font-size:12px;color:var(--sf-muted);margin-top:4px}
+#caregiver-panel .cg-foot{font-size:12px;color:var(--sf-ink-2);margin-top:10px;padding-top:9px;border-top:1px dotted var(--sf-rule)}
+#caregiver-panel .cg-apply{border-radius:20px;background:var(--cg-soft);padding:20px 22px;margin-bottom:22px}
+#caregiver-panel .cg-flow{display:flex;align-items:flex-start;gap:6px}
+#caregiver-panel .cg-step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px}
+#caregiver-panel .cg-sico{width:42px;height:42px;border-radius:50%;background:#fff;color:var(--cg);
+  display:flex;align-items:center;justify-content:center;margin-bottom:3px}
+#caregiver-panel .cg-step b{font-size:12.5px;font-weight:700}
+#caregiver-panel .cg-step em{font-style:normal;font-size:11px;color:var(--sf-muted)}
+#caregiver-panel .cg-arw{color:var(--cg);font-size:22px;margin-top:8px}
+#caregiver-panel .cg-call{display:flex;align-items:center;gap:20px;margin-top:18px;padding-top:16px;
+  border-top:1px solid rgba(11,138,122,.2)}
+#caregiver-panel .cg-qr{width:104px;height:104px;background:#fff;border-radius:10px;padding:4px;flex:none}
+#caregiver-panel .cg-num{display:flex;flex-direction:column;gap:3px;min-width:0}
+#caregiver-panel .cg-lbl{font-size:12.5px;font-weight:700;color:var(--sf-ink-2)}
+#caregiver-panel .cg-tel{font-family:'Plus Jakarta Sans',sans-serif;font-size:36px;font-weight:800;
+  letter-spacing:-.02em;color:var(--cg);line-height:1.1}
+#caregiver-panel .cg-note{font-size:12px;color:var(--sf-ink-2)}
+#caregiver-panel .cg-web{font-size:13px;font-weight:700;color:var(--sf-ink)}
+#caregiver-panel .cg-lead{margin-top:16px;background:#fff;border-radius:12px;padding:11px 15px;
+  display:flex;flex-direction:column;gap:2px}
+#caregiver-panel .cg-lead b{font-size:13.5px;font-weight:800}
+#caregiver-panel .cg-lead span{font-size:11.5px;color:var(--sf-muted)}
+#caregiver-panel .cg-sub{margin-top:10px;font-size:11.5px;color:var(--sf-muted)}
+#caregiver-panel .cg-keep{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:8px}
+#caregiver-panel .cg-keep li{font-size:13px;color:var(--sf-ink-2);line-height:1.6;padding-left:16px;position:relative}
+#caregiver-panel .cg-keep li::before{content:"";position:absolute;left:3px;top:9px;width:6px;height:6px;
+  border-radius:50%;background:var(--cg)}
+#caregiver-panel .cg-home{border:1px dashed var(--sf-rule);border-radius:var(--sf-r);padding:14px 17px;
+  background:var(--sf-wash);margin-bottom:18px}
+#caregiver-panel .cg-hh{display:flex;align-items:center;gap:8px}
+#caregiver-panel .cg-hh b{font-size:13px}
+#caregiver-panel .cg-tag{margin-left:auto;font-size:11px;font-weight:700;color:var(--sf-muted);
+  border:1px solid var(--sf-rule);border-radius:999px;padding:1px 8px}
+#caregiver-panel .cg-home p{font-size:12px;color:var(--sf-ink-2);margin:6px 0 0}
+#caregiver-panel .cg-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+#caregiver-panel .cg-chips span{font-size:11.5px;background:#fff;border:1px solid var(--sf-rule);
+  border-radius:999px;padding:2px 10px}
+@media (max-width:640px){
+  #caregiver-panel .cg-cards{grid-template-columns:1fr}
+  #caregiver-panel .cg-flow{flex-wrap:wrap}
+  #caregiver-panel .cg-tel{font-size:30px}
+}
+#caregiver-panel .cg-disc{font-size:11px;color:var(--sf-muted);line-height:1.6;margin:4px 2px 0}
+
+/* 가입한 담보 쉽게보기 — 기본 접힘. 머리줄을 누르면 펼쳐진다. */
+.sf-cov-hd{cursor:pointer;user-select:none;align-items:center}
+.sf-cov-hd:focus-visible{outline:2px solid var(--sf-blue);outline-offset:4px;border-radius:6px}
+.sf-cov-hd::after{content:"";width:8px;height:8px;flex:none;margin-left:2px;margin-top:-4px;
+  border-right:2px solid var(--sf-muted);border-bottom:2px solid var(--sf-muted);transform:rotate(45deg);
+  transition:transform .18s ease}
+.sf-cov.open .sf-cov-hd::after{transform:rotate(-135deg);margin-top:4px}
+.sf-cov:not(.open) .sf-cov-hd{margin-bottom:0}
+.sf-cov:not(.open) ul{display:none}
+.sf-cov:not(.open){padding-bottom:16px}
+#caregiver-panel .cg-q{font-style:normal;color:var(--sf-blue)}
+#caregiver-panel .cg-cost{color:var(--sf-ink-2);font-weight:700}
+@media (prefers-reduced-motion:reduce){ .sf-cov-hd::after{transition:none} }
