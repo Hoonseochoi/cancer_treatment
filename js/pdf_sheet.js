@@ -331,6 +331,9 @@ function caseBlock(title, desc, steps, accent) {
 
 // ── 02 한장요약 ──
 function sheetSummary(d) {
+    // 간병 담보가 있으면 상황별 한 줄(간병인 지원 장의 카드를 줄인 것)
+    const cgCells = (d.caregiver && typeof caregiverSummaryCells === 'function')
+        ? caregiverSummaryCells(d.caregiver) : [];
     const row = (lbl, cells) =>
         `<tr><td class="lbl">${lbl}</td>${cells.map(c =>
             `<td class="${c.v ? '' : 'z'}">${c.v ? sFmt(c.v) : '0원'}` +
@@ -361,6 +364,10 @@ function sheetSummary(d) {
            <th>중환자실</th><th>재활</th></tr>
            ${row('뇌 계열', [{ v: s.brainDx }, { v: s.circTreat }, { v: s.icu }, { v: s.rehab }])}
            ${row('심장 계열', [{ v: s.heartDx }, { v: s.circTreat }, { v: s.icu }, { v: s.rehab }])}
+         </table></div>` : ''}
+       ${cgCells.length ? `<div><h3>간병<span class="hint">입원하면 이렇게 · 자세한 내용은 간병인 지원 장</span></h3>
+         <table><tr>${cgCells.map(c => `<th>${c.h}</th>`).join('')}</tr>
+           <tr>${cgCells.map(c => `<td>${c.v}${c.s ? `<small>${c.s}</small>` : ''}</td>`).join('')}</tr>
          </table></div>` : ''}
        ${d.etc && d.etc.length ? `<div><h3>입원 · 기타<span class="hint">그 밖에 가입한 담보</span></h3>
          <table><tr>${d.etc.slice(0,5).map(x => `<th>${sClip(x.nm, 10)}</th>`).join('')}</tr>
@@ -697,6 +704,7 @@ function buildSheetData(results, meta, customerName) {
     // ── 간병인 지원 ──
     d.caregiver = (typeof buildCaregiverPolicy === 'function') ? buildCaregiverPolicy(R) : null;
     d.hasHomeCare = !!M.hasHomeCareService;
+    d.hasWaiver = !!M.hasWaiver;
     d.summary = Object.assign({
         cancerDx: dxSum,
         cancerSx: topCard.v,

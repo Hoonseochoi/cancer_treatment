@@ -23,6 +23,15 @@ const CAREGIVER_SERVICE = {
     target: '지원 대상: 상해/질병 입원 간병인지원 특약 가입자',
     lead: '간병인이 필요한 시점보다 최소 24시간 전에 신청하세요',
     leadSub: '영업일 9~18시 외 · 토·일·공휴일 신청은 최대 48시간',
+    // 장점 — 1·2는 공식 안내, 3·4는 운영 서비스(약관 보장 아님), 5는 납입면제 담보가 있을 때만
+    strengths: [
+        { ico: 'badge',  t: '자격있는 간병인',            s: '요양보호사·간병사 자격을 갖춘 간병인' },
+        { ico: 'clock',  t: '365일 연중무휴 신청·배정',    s: '9:00~18:00 · 리본케어 1877-7412' },
+        { ico: 'doc',    t: 'VOC 3진아웃 · AI 간병일지',   s: '간병 품질을 관리하고 기록으로 남겨요', svc: true },
+        { ico: 'shield', t: '삼성화재 배상책임',           s: '간병 중 사고에 대비해요', svc: true },
+        { ico: 'coin',   t: '납입면제 가능',              s: '납입면제 사유 발생 시 이후 보험료 면제', showIf: 'hasWaiver' }
+    ],
+    strengthsNote: '* 표시는 회사·제휴사의 운영 서비스로 약관상 보장이 아니며, 내용이 변경될 수 있습니다.',
     // 지급 설명에 적힌 조건 — 고객이 가장 자주 놓치는 세 가지만
     keep: [
         '회사에 신청하지 않고 간병인을 쓰거나 간호·간병통합서비스를 이용하면, 간병인 대신 입원일당이 나옵니다.',
@@ -60,6 +69,11 @@ const CG_ICON = {
     cal: '<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M9 15l2 2 4-4"/>',
     person: '<rect x="3.5" y="4" width="17" height="13" rx="2"/><circle cx="12" cy="9" r="2.3"/><path d="M8 15a4 4 0 0 1 8 0M10 20h4"/>',
     phone: '<path d="M6.5 4h3l1.5 4-2 1.3a10 10 0 0 0 5.7 5.7L16 13l4 1.5v3A2 2 0 0 1 18 19.5 15 15 0 0 1 4.5 6 2 2 0 0 1 6.5 4z"/>',
+    badge: '<circle cx="12" cy="9" r="5"/><path d="M9.5 9l1.8 1.8L15 7.2M8.5 13.5L7 21l5-2.5 5 2.5-1.5-7.5"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    doc: '<path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4M9 12h6M9 15.5h6M9 19h3"/>',
+    shield: '<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M8.8 12l2.2 2.2 4.2-4.4"/>',
+    coin: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 9.5l1.5 5 2-4 2 4 1.5-5M8 12h8"/>',
     care: '<path d="M3 15l4-1 5 2.5 4.5-1.5c1-.3 1.8.8 1 1.5L13 20l-7-1.5M3 15v5"/><path d="M15 9.5s-2.5-1.6-2.5-3.3a1.4 1.4 0 0 1 2.5-.7 1.4 1.4 0 0 1 2.5.7c0 1.7-2.5 3.3-2.5 3.3z"/>'
 };
 function cgIcon(k, size) {
@@ -141,6 +155,25 @@ function caregiverCards(p) {
     });
 }
 
+// 한장요약 간병 줄 — 상황별 카드를 표 한 줄로 줄인다(가입한 상황만)
+function caregiverSummaryCells(p) {
+    if (!p) return [];
+    const SHORT = {
+        support:     { h: '병원 입원',        v: () => '간병인 지원' },
+        supportLong: { h: '181일 이상 입원',  v: () => '간병인 지원' },
+        ward:        { h: '간호·간병통합병동', v: a => `1일 ${a.main}` },
+        wardLong:    { h: '통합병동 181일~',  v: a => `1일 ${a.main}` },
+        hire:        { h: '간병인 직접 고용',  v: a => `1일 ${a.main}` },
+        nursing:     { h: '요양병원',         v: a => `1일 ${a.main}` }
+    };
+    const SUB = { support: '1회 입원 180일', supportLong: '185일까지', ward: '180일까지',
+                  wardLong: '185일까지', hire: '', nursing: '180일까지' };
+    return Object.keys(SHORT).filter(k => p.by[k]).map(k => {
+        const a = cgAmount(p.by[k]);
+        return { h: SHORT[k].h, v: SHORT[k].v(a), s: SUB[k] };
+    });
+}
+
 // '가입한 담보 쉽게보기' — 지원형의 5천원은 간병인 대신 받는 입원일당이라 금액으로만 두면 오해를 산다.
 // 상해·질병이 같은 조건·같은 금액으로 짝지어 들어오는 게 보통이라 한 줄로 합친다(10줄 → 5줄).
 function caregiverCovList(p) {
@@ -162,6 +195,21 @@ function caregiverCovList(p) {
         });
     });
     return out;
+}
+
+// 장점 목록 — 납입면제는 담보가 있을 때만, 운영 서비스는 * 표시
+function caregiverStrengths(flags) {
+    const S = CAREGIVER_SERVICE;
+    const list = S.strengths.filter(x => !x.showIf || (flags && flags[x.showIf]));
+    const hasSvc = list.some(x => x.svc);
+    return { list, note: hasSvc ? S.strengthsNote : '' };
+}
+function caregiverStrengthsHtml(flags, size) {
+    const st = caregiverStrengths(flags);
+    return `<div class="cg-pros">${st.list.map(x => `
+        <div class="cg-pro"><span class="cg-pico">${cgIcon(x.ico, size)}</span>
+          <div class="cg-ptx"><b>${x.t}${x.svc ? '<sup>*</sup>' : ''}</b><span>${x.s}</span></div></div>`).join('')}</div>` +
+      (st.note ? `<p class="cg-pnote">${st.note}</p>` : '');
 }
 
 // ── 웹 탭 ──
@@ -222,6 +270,8 @@ function renderCaregiverPanel(results) {
       <h3 class="sf-h3" style="--sf-sec:#0B8A7A">입원하면 이렇게 받아요<span class="hint">가입한 담보 기준</span></h3>
       <div class="cg-cards">${cardHtml}</div>
       ${applyHtml}
+      ${p.hasSupport ? `<h3 class="sf-h3" style="--sf-sec:#0B8A7A">삼성화재 간병인지원은 이렇게 달라요</h3>
+        ${caregiverStrengthsHtml({ hasWaiver: !!meta.hasWaiver }, 22)}` : ''}
       <h3 class="sf-h3" style="--sf-sec:#0B8A7A">꼭 알아두세요</h3>
       <ul class="cg-keep">${S.keep.map(k => `<li>${k}</li>`).join('')}</ul>
       ${homeHtml}
@@ -242,7 +292,7 @@ function caregiverSheetCss() {
     .cg-ti{font-size:${px(7.6)};font-weight:700;white-space:nowrap}
     .cg-who{margin-left:auto;font-size:${px(6.5)};font-weight:700;color:${CG_COLOR.c};
       background:${CG_COLOR.s};border-radius:999px;padding:0 ${mm(1.8)};height:${mm(4)};line-height:${mm(4)}}
-    .cg-head{font-size:${px(10.5)};font-weight:800;letter-spacing:-.03em;margin-top:${mm(1.6)};color:${C.ink}}
+    .cg-head{font-size:${px(10)};font-weight:800;letter-spacing:-.03em;margin-top:${mm(1.2)};color:${C.ink}}
     .cg-head.num{font-family:'Plus Jakarta Sans','Noto Sans KR',sans-serif;color:${CG_COLOR.c}}
     .cg-meta{font-size:${px(6.5)};color:${C.muted};margin-top:${mm(0.8)};line-height:1.45}
     .cg-cost{color:${C.ink2};font-weight:700}
@@ -266,11 +316,29 @@ function caregiverSheetCss() {
       letter-spacing:-.02em;color:${CG_COLOR.c};line-height:1.1}
     .cg-note{font-size:${px(7)};color:${C.ink2}}
     .cg-web{font-size:${px(7.5)};font-weight:700;color:${C.ink}}
-    .cg-lead{margin-top:${mm(2.8)};background:#fff;border-radius:${mm(2.6)};padding:${mm(2)} ${mm(3.4)};
+    .cg-lead{margin-top:${mm(2.4)};background:#fff;border-radius:${mm(2.6)};padding:${mm(2)} ${mm(3.4)};
       display:flex;align-items:baseline;gap:${mm(2.4)};flex-wrap:wrap}
     .cg-lead b{font-size:${px(8)};font-weight:800}
     .cg-lead span{font-size:${px(6.8)};color:${C.muted}}
     .cg-sub{margin-top:${mm(1.6)};font-size:${px(6.8)};color:${C.muted}}
+    .cg-a2{display:grid;grid-template-columns:1.3fr 1fr;gap:${mm(5)};align-items:center}
+    .cg-a2 .cg-call{margin-top:0;padding-top:0;border-top:0}
+    .cg-steps2{list-style:none;display:flex;flex-direction:column;gap:${mm(1.6)};
+      padding-left:${mm(4)};border-left:1px solid rgba(11,138,122,.25)}
+    .cg-steps2 li{display:flex;align-items:baseline;gap:${mm(1.8)}}
+    .cg-steps2 .n{flex:none;width:${mm(4.6)};height:${mm(4.6)};line-height:${mm(4.6)};border-radius:50%;
+      background:${CG_COLOR.c};color:#fff;font-size:${px(6.5)};font-weight:800;text-align:center}
+    .cg-steps2 b{font-size:${px(7.6)};font-weight:700;white-space:nowrap}
+    .cg-steps2 em{font-style:normal;font-size:${px(6.4)};color:${C.muted};white-space:nowrap}
+    .cg-pros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:${mm(1.6)} ${mm(3)}}
+    .cg-pro{display:flex;align-items:flex-start;gap:${mm(1.8)}}
+    .cg-pico{flex:none;width:${mm(6.6)};height:${mm(6.6)};border-radius:50%;background:${CG_COLOR.s};
+      color:${CG_COLOR.c};display:flex;align-items:center;justify-content:center}
+    .cg-ptx{display:flex;flex-direction:column;gap:${mm(0.4)};min-width:0}
+    .cg-ptx b{font-size:${px(7.6)};font-weight:800;color:${C.ink};letter-spacing:-.02em}
+    .cg-ptx b sup{font-size:${px(5.5)};color:${C.muted};margin-left:1px}
+    .cg-ptx span{font-size:${px(6.4)};color:${C.muted};line-height:1.4}
+    .cg-pnote{font-size:${px(6.2)};color:${C.muted};margin-top:${mm(1.2)}}
     .cg-keep{list-style:none;display:flex;flex-direction:column;gap:${mm(1.2)}}
     .cg-keep li{font-size:${px(7.8)};color:${C.ink2};line-height:1.55;padding-left:${mm(4)};position:relative}
     .cg-keep li::before{content:"";position:absolute;left:${mm(0.6)};top:${mm(1.6)};width:${mm(1.4)};
@@ -296,7 +364,7 @@ function sheetCaregiver(d) {
       <div class="cov-hd"><span class="t">가입한 담보 쉽게보기</span><span class="n">간병 ${cov.length}개</span></div>
       <ul>${cov.map(x => `<li><span>${sClip(x.nm, 24)}</span><b>${x.label}</b></li>`).join('')}</ul></div>`;
     return sheetHead(d.who) + sheetTop('삼성화재', '간병인 지원', 'Caregiver') + covHtml +
-      `<div class="body">
+      `<div class="body" style="gap:${mm(4.2)}">
          <div><h3>입원하면 이렇게 받아요<span class="hint">가입한 담보 기준</span></h3>
            <div class="cg-cards">${cards.map(c => `
              <div class="cg-card">
@@ -308,21 +376,25 @@ function sheetCaregiver(d) {
              </div>`).join('')}</div></div>
          ${p.hasSupport ? `<div><h3>간병인 신청은 이렇게<span class="hint">${S.partner}</span></h3>
            <div class="cg-apply">
-             <div class="cg-flow">${S.steps.map((s, i) => (i ? '<span class="cg-arw">›</span>' : '') +
-               `<div class="cg-step"><span class="cg-sico">${cgIcon(s.ico, 18)}</span><b>${s.t}</b>` +
-               `${s.s ? `<em>${s.s}</em>` : ''}</div>`).join('')}</div>
-             <div class="cg-call">
-               <img class="cg-qr" src="${CAREGIVER_QR}" alt="">
-               <div class="cg-num">
-                 <span class="cg-lbl">${S.phone.label}</span>
-                 <span class="cg-tel">${S.phone.number}</span>
-                 <span class="cg-note">${S.phone.note}</span>
-                 <span class="cg-web">${S.web.label} · ${S.web.text}</span>
+             <!-- 지면에서는 번호·QR(왼쪽)과 4단계(오른쪽)를 나란히 — 세로로 쌓으면 한 장을 넘는다 -->
+             <div class="cg-a2">
+               <div class="cg-call">
+                 <img class="cg-qr" src="${CAREGIVER_QR}" alt="">
+                 <div class="cg-num">
+                   <span class="cg-lbl">${S.phone.label}</span>
+                   <span class="cg-tel">${S.phone.number}</span>
+                   <span class="cg-note">${S.phone.note}</span>
+                   <span class="cg-web">${S.web.label} · ${S.web.text}</span>
+                   <span class="cg-note">${S.productPhone.label} ${S.productPhone.number}</span>
+                 </div>
                </div>
+               <ol class="cg-steps2">${S.steps.map((s, i) =>
+                 `<li><span class="n">${i + 1}</span><b>${s.t}</b>${s.s ? `<em>${s.s}</em>` : ''}</li>`).join('')}</ol>
              </div>
              <div class="cg-lead"><b>${S.lead}</b><span>${S.leadSub}</span></div>
-             <div class="cg-sub">${S.productPhone.label} ${S.productPhone.number} · ${S.productPhone.note}</div>
            </div></div>` : ''}
+         ${p.hasSupport ? `<div><h3>삼성화재 간병인지원은 이렇게 달라요</h3>
+           ${caregiverStrengthsHtml({ hasWaiver: d.hasWaiver }, 18)}</div>` : ''}
          <div><h3>꼭 알아두세요</h3>
            <ul class="cg-keep">${S.keep.map(k => `<li>${k}</li>`).join('')}</ul></div>
          ${d.hasHomeCare ? `<div class="cg-home">

@@ -1494,3 +1494,14 @@ body[data-print] #circulatory-panel .cc-src{display:none}
 #caregiver-panel .cg-q{font-style:normal;color:var(--sf-blue)}
 #caregiver-panel .cg-cost{color:var(--sf-ink-2);font-weight:700}
 @media (prefers-reduced-motion:reduce){ .sf-cov-hd::after{transition:none} }
+#caregiver-panel .cg-pros{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 18px;margin-bottom:6px}
+#caregiver-panel .cg-pro{display:flex;align-items:flex-start;gap:10px}
+#caregiver-panel .cg-pico{flex:none;width:40px;height:40px;border-radius:50%;background:var(--cg-soft);color:var(--cg);
+  display:flex;align-items:center;justify-content:center}
+#caregiver-panel .cg-ptx{display:flex;flex-direction:column;gap:2px;min-width:0}
+#caregiver-panel .cg-ptx b{font-size:13.5px;font-weight:800;color:var(--sf-ink);letter-spacing:-.02em}
+#caregiver-panel .cg-ptx b sup{font-size:9px;color:var(--sf-muted);margin-left:1px}
+#caregiver-panel .cg-ptx span{font-size:12px;color:var(--sf-muted);line-height:1.45}
+#caregiver-panel .cg-pnote{font-size:11px;color:var(--sf-muted);margin:6px 0 20px}
+@media (max-width:900px){ #caregiver-panel .cg-pros{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:640px){ #caregiver-panel .cg-pros{grid-template-columns:1fr} }

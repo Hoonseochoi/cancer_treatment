@@ -182,6 +182,9 @@ async function processFile(file) {
             const isOntongProduct = /온.{0,6}통보장/.test(text);
             samsungMeta.hasHospitalCompanionService = hasServicePage || isOntongProduct;
             samsungMeta.hasHomeCareService = isOntongProduct;
+            // 납입면제 담보 가입 여부 — 간병인 지원 장의 '납입면제 가능' 장점을 이때만 보인다.
+            // 담보 목록 화이트리스트에 없는 담보라 결과(results)가 아니라 원문에서 찾는다.
+            samsungMeta.hasWaiver = /보험료\s*납입면제대상/.test(text);
 
             // 대리점명 + 설계사명: "(주)글로벌금융판매케이엘인슈주안(김진숙)" 패턴
             // agency: (주) 또는 주식회사 부터 한글이름 괄호 직전까지
