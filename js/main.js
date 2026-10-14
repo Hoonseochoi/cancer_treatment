@@ -162,7 +162,11 @@ async function processFile(file) {
             const pm = text.match(/보험상품명\s*(무배당[\s\S]+?)(?=보험계약자)/);
             if (pm) samsungMeta.productName = pm[1].replace(/\s+/g, '').trim();
 
-            const am = text.match(/나이\s*(\d{1,3})\s*세/);
+            // 표지의 "피보험자 홍길동 (35세 / 남 / …)"를 먼저 본다. 그냥 "나이 N세"를 찾으면
+            // 통합치료비 지급표 주석 "보험나이 15세 미만자는 계약일"이 먼저 걸려
+            // 35세가 15세로 찍혔다(실측: 박재현님 제안서).
+            const am = text.match(/피보험자\s*[^\n(]{0,20}\(\s*(\d{1,3})\s*세\s*\//) ||
+                       text.match(/(?<!보험)나이\s*(\d{1,3})\s*세(?!\s*미만)/);
             if (am) samsungMeta.age = parseInt(am[1], 10);
 
             const prm = text.match(/1회\s*보험료\s*([\d,]+)\s*원/) ||
