@@ -162,6 +162,13 @@ async function processFile(file) {
             const pm = text.match(/보험상품명\s*(무배당[\s\S]+?)(?=보험계약자)/);
             if (pm) samsungMeta.productName = pm[1].replace(/\s+/g, '').trim();
 
+            // 1~5종 수술비 지급 주기 — 2026.10 개정으로 연간 1회가 됐지만, 갱신형 상품과
+            // 자녀보험(마이스타·마이 슈퍼스타)은 그대로 수술 1회당이다(2609 상품 인사이트).
+            const pn = samsungMeta.productName || '';
+            const isRenewProduct = /자동갱신형/.test(pn);
+            const isChildProduct = /마이스타|마이슈퍼스타|자녀/.test(pn);
+            samsungMeta.fiveTypeCycle = (isRenewProduct || isChildProduct) ? '매회' : '연간1회';
+
             // 표지의 "피보험자 홍길동 (35세 / 남 / …)"를 먼저 본다. 그냥 "나이 N세"를 찾으면
             // 통합치료비 지급표 주석 "보험나이 15세 미만자는 계약일"이 먼저 걸려
             // 35세가 15세로 찍혔다(실측: 박재현님 제안서).
@@ -370,6 +377,7 @@ async function processFile(file) {
         // 제안서에서 못 찾으면 위쪽에서 이미 '고객'으로 채워져 있다.
         window.__customerName = customerName;
         window.__insurerKey = insurer;
+        window.__fiveTypeCycle = samsungMeta.fiveTypeCycle || '';
         renderResults(results, customerName, insurer, samsungMeta);
         if (results.length > 0) {
             showToast(`${results.length}개의 항목을 추출했습니다.`, false);

@@ -486,11 +486,14 @@ function applySurgeryTiersToCancerSurgery(summaryMap, results) {
     const amt = r => (r ? parseKoAmount(r.amount) : 0);
     // 술기에 따라 3종 또는 5종 하나만 나오는 담보는 한 줄에 최소~최대로 싣는다.
     // 두 줄로 따로 넣으면 내역에서 둘을 더해 '수술비 계열 1,330만원'처럼 부풀었다(실측: 실제 330~1,030만원).
+    // 담보마다 한 줄로 싣고 지급 주기를 단다. 예전에는 '수술비 계열' 한 줄로 묶어
+    // 1~5종(연간 1회)과 입원수술비(매회)의 주기 차이가 보이지 않았다.
     const push = (name, amount, maxAmount) => {
         if (target.items.some(i => i.name === name)) return;
         // 질병 수술비 계열은 암 종류를 가리지 않는다 — 갑상선암·기타피부암 수술에도 같은 금액이 나온다.
         target.items.push({ name, amount, ...(maxAmount && maxAmount !== amount ? { maxAmount } : {}),
-                            유사암: amount, source: '수술비 계열', surgeryTier: true });
+                            유사암: amount, source: name, surgeryTier: true,
+                            cycle: typeof clauseCycleOf === 'function' ? clauseCycleOf(name) : '' });
     };
     const pushAlt = (label, a, b) => {
         if (a && b && a !== b) {

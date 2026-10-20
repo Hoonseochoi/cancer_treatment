@@ -603,7 +603,8 @@ function buildSheetData(results, meta, customerName) {
                 .slice(0, 6).map(x => ({
                     nm: x.s.name, v: x.hi, lead: x.s.hot === 1,
                     cyc: '수술 1회', cycCls: 'yr',
-                    rows: x.rows.slice(0, 3).map(r => ({ n: r.k, v: r.v }))
+                    rows: x.rows.slice(0, 3).map(r => ({ n: r.k, v: r.v,
+                        c: (typeof SURG_CYC_SHORT !== 'undefined' && SURG_CYC_SHORT[r.c]) || '' }))
                 }));
             d.miniSurg = calc.filter(x => !x.s.hot).sort((a, b) => b.hi - a.hi)
                 .slice(0, 12).map(x => ({ nm: x.s.name, v: x.hi }));

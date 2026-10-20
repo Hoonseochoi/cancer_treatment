@@ -122,8 +122,21 @@ function calcSurgeryVariant(policy, s, v) {
     if (s.special && policy.전용[s.special] != null) {
         rows.push({ k: `${s.special} 수술비`, s: '전용 담보', v: policy.전용[s.special], on: true });
     }
+    // 지급 주기 — 1~5종은 연간 1회(2026.10 개정), 입원·통원·N대질병은 매회처럼 담보마다 다르다.
+    // 같은 수술을 해마다 받을 때 어느 줄이 다시 나오는지가 상담에서 바로 갈린다.
+    rows.forEach(r => { r.c = surgeryRowCycle(r.k); });
     return { rows, total: rows.reduce((a, b) => a + (b.on ? b.v : 0), 0) };
 }
+
+// 수술비 내역 줄의 지급 주기. 줄 이름이 제안서 담보명과 달라 사전 키로 바로 못 찾는 것만 이어 준다.
+function surgeryRowCycle(label) {
+    const k = String(label || '').replace(/\s+/g, '');
+    if (/^질병군수술비/.test(k)) return '매회';                    // 사전 "111대질병수술비"
+    if (/^1[~\-][58]종분류/.test(k)) return '';                    // 미가입 안내 줄
+    return typeof clauseCycleOf === 'function' ? clauseCycleOf(label) : '';
+}
+const SURG_CYC_SHORT = { '최초1회': '최초', '연간1회': '연간', '매회': '매회', '일당': '일당' };
+const SURG_CYC_LABEL = { '최초1회': '최초 1회', '연간1회': '연간 1회', '매회': '매회', '일당': '1일당' };
 
 // 지급액이 같은 술기끼리 묶는다. 술기가 갈려도 금액이 같으면 카드를 여러 장 보여줄
 // 이유가 없다. 라벨은 공통 접두·접미를 살리고 다른 부분만 "/"로 합친다.
@@ -216,13 +229,14 @@ function renderSurgeryPanel(results) {
             <div class="sf-src" style="margin:0 15px 13px;padding-top:9px">
               ${groups[0].rows.filter(x => x.on).slice(0, 4).map(x =>
                   `<div class="row"><span class="nm2" title="${x.k}">${clipName(x.k, 14)}</span>` +
-                  `<span class="amt2">${fmt(x.v)}</span></div>`).join('')}
+                  `<span class="amt2">${fmt(x.v)}</span>` +
+                  `<span class="c2">${SURG_CYC_SHORT[x.c] || ''}</span></div>`).join('')}
             </div>` : '';
         const detail = groups.map(g => `
             <div class="sg-v">
               <div class="sg-vh"><span>${g.label}</span><b>${fmt(g.total)}</b></div>
               ${g.rows.map(x => `<div class="sg-r${x.on ? '' : ' off'}">
-                  <span>${x.k}<em>${x.s}</em></span><b>${x.on ? fmt(x.v) : '—'}</b></div>`).join('')}
+                  <span>${x.k}<em>${x.s}${x.on && x.c ? ` · ${SURG_CYC_LABEL[x.c]}` : ''}</em></span><b>${x.on ? fmt(x.v) : '—'}</b></div>`).join('')}
               <div class="sg-src">${g.variants.map(v =>
                   [v.c8 ? `1~8종 ${v.c8} ${v.g8}종 「${v.n8}」` : '1~8종 분류표에 해당 항목 없음',
                    v.n5no ? `1~5종 ${v.n5no}항 ${v.g5}종` : '1~5종 분류표에 해당 항목 없음'

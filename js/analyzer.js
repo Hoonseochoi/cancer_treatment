@@ -147,10 +147,29 @@ function normCoverageKey(name) {
         .replace(/\s+/g, '');
 }
 
+// 약관 개정으로 주기가 바뀐 담보. clause_cycle_data.js는 빌더가 약관에서 다시 만들어 내므로
+// 거기를 고치면 다음 빌드에 되돌아간다 — 개정분은 여기서 덮어쓴다.
+//   1~5종 수술비: 수술 1회당(매회) → 연간 1회 (2026.10 개정)
+//   단 갱신형 상품·자녀보험은 그대로 수술 1회당(2609 상품 인사이트 30쪽).
+//   어느 쪽인지는 제안서 상품명으로 main.js가 정해 window.__fiveTypeCycle에 둔다.
+const FIVE_TYPE_CYCLE_DEFAULT = '연간1회';
+const CLAUSE_CYCLE_OVERRIDE = [
+    { re: /1[~\-]5종수술비/,
+      cycle: () => (typeof window !== 'undefined' && window.__fiveTypeCycle) || FIVE_TYPE_CYCLE_DEFAULT },
+    // 아래 둘은 사전 값 그대로지만 제안서 표기가 사전 키와 달라 이름으로는 못 찾는다
+    //   "질병 입원 수술비Ⅱ(당일입원 제외)" ↔ 사전 "질병입원·통원수술비Ⅱ"(매회)
+    //   "질병 7종 수술비(시술포함)" ↔ 사전 "질병1~8종수술비(시술포함)"(연간1회)
+    { re: /(질병|상해)(입원|통원)수술비/, cycle: '매회' },
+    { re: /1[~\-]8종수술비|(질병|상해)\d종수술비\(시술포함\)/, cycle: '연간1회' }
+];
+
 function clauseCycleOf(name) {
-    if (typeof CLAUSE_CYCLE === 'undefined' || !CLAUSE_CYCLE || !name) return '';
+    if (!name) return '';
     const key = normCoverageKey(name);
     if (!key) return '';
+    const ov = CLAUSE_CYCLE_OVERRIDE.find(o => o.re.test(key));
+    if (ov) return typeof ov.cycle === 'function' ? ov.cycle() : ov.cycle;
+    if (typeof CLAUSE_CYCLE === 'undefined' || !CLAUSE_CYCLE) return '';
     if (CLAUSE_CYCLE[key]) return CLAUSE_CYCLE[key].cycle;
     // 제안서 담보명이 약관보다 길거나 짧은 경우가 흔하다
     // (제안서 "종합병원 암 전액본인부담(비급여포함) 통합치료비(표준형,연간1억원한도)"
