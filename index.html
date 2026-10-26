@@ -399,10 +399,19 @@
                         <span style="position:relative;display:inline-block;animation:aboutFloat 3.4s ease-in-out infinite;animation-delay:0.4s;line-height:1;">
                           <button onclick="openInsightModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;color:#e91e8c;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">INSIGHT</button>
                         </span>
-                        <span style="position:relative;display:inline-block;animation:aboutFloat 3.8s ease-in-out infinite;animation-delay:0.8s;line-height:1;">
+                        <span style="position:relative;z-index:50;display:inline-block;animation:aboutFloat 3.8s ease-in-out infinite;animation-delay:0.8s;line-height:1;">
                           <button onclick="openPatchnoteModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#7C3AED,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">PATCHNOTE</button>
                           <!-- 오른쪽으로 빼면 좁은 화면(375px)에서 잘린다. TUTORIAL과 같은 기준으로 맞춘다. -->
                           <span aria-label="새 소식" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#7C3AED,#a855f7);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(124,58,237,0.35);pointer-events:none;">NEW</span>
+                          <!-- 최근 패치 말풍선 — 버전이 바뀌면 다시 뜬다. 닫으면 그 버전은 다시 안 뜬다. -->
+                          <div id="pn-bubble" class="pn-bubble" role="note" hidden>
+                            <button type="button" class="pn-body" onclick="openPatchnoteModal()">
+                              <span class="pn-ver">v.1026 업데이트</span>
+                              <span class="pn-title">이제 메리츠도 스마트가입제안서</span>
+                              <span class="pn-sub">암 · 수술비 · 뇌·심장 · 간병인 탭 오픈</span>
+                            </button>
+                            <button type="button" class="pn-close" aria-label="닫기" onclick="closePatchBubble(event)">&times;</button>
+                          </div>
                         </span>
                         <span style="position:relative;display:inline-block;animation:aboutFloat 4.2s ease-in-out infinite;animation-delay:1.2s;line-height:1;">
                           <button onclick="openSurgeryDict()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#0B6B7A,#14B8A6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">1~8종 검색</button>
@@ -983,6 +992,57 @@
       });
     </script>
 
+    <!-- ── 최근 패치 말풍선 ── -->
+    <style>
+      .pn-bubble{position:absolute;top:calc(100% + 14px);left:50%;z-index:40;width:max-content;max-width:min(250px, calc(100vw - 32px));
+        transform:translateX(-50%);animation:pnDrift 4.4s ease-in-out infinite;
+        display:flex;align-items:flex-start;gap:2px;padding:10px 6px 11px 14px;border-radius:14px;
+        background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);
+        border:1px solid rgba(124,58,237,.22);box-shadow:0 10px 28px rgba(76,29,149,.16),0 2px 6px rgba(76,29,149,.08)}
+      .pn-bubble[hidden]{display:none}
+      /* 꼬리 — 위쪽 가운데, PATCHNOTE 글자를 가리킨다 */
+      .pn-bubble::before{content:"";position:absolute;top:-7px;left:50%;width:12px;height:12px;margin-left:-6px;
+        background:inherit;border-left:1px solid rgba(124,58,237,.22);border-top:1px solid rgba(124,58,237,.22);
+        border-top-left-radius:3px;transform:rotate(45deg)}
+      @keyframes pnDrift{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(5px)}}
+      .pn-body{all:unset;cursor:pointer;display:flex;flex-direction:column;gap:3px;text-align:left;min-width:0}
+      .pn-ver{align-self:flex-start;font-size:10px;font-weight:800;letter-spacing:.4px;color:#fff;line-height:1.5;
+        padding:0 7px;border-radius:999px;background:linear-gradient(90deg,#7C3AED,#a855f7)}
+      .pn-title{font-size:13px;font-weight:800;color:#2E1065;letter-spacing:-.3px;line-height:1.35;white-space:nowrap}
+      .pn-sub{font-size:11px;font-weight:600;color:#6B5A8E;letter-spacing:-.2px;line-height:1.35}
+      .pn-body:hover .pn-title{text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(124,58,237,.4)}
+      .pn-body:focus-visible,.pn-close:focus-visible{outline:2px solid #7C3AED;outline-offset:3px;border-radius:8px}
+      .pn-close{all:unset;cursor:pointer;flex:none;width:22px;height:22px;margin-top:-4px;border-radius:50%;
+        display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;color:#8B7BAA}
+      .pn-close:hover{background:rgba(124,58,237,.1);color:#4C1D95}
+      @media (max-width:520px){
+        /* 좁은 화면에서는 왼쪽으로 붙여 화면 밖으로 나가지 않게 한다 — 꼬리는 글자 쪽에 남긴다 */
+        .pn-bubble{left:-8px;transform:none;animation-name:pnDriftM}
+        .pn-bubble::before{left:44px}
+        @keyframes pnDriftM{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+      }
+      @media (prefers-reduced-motion:reduce){ .pn-bubble{animation:none} }
+    </style>
+    <script>
+      // 버전이 바뀌면 다시 보인다. 저장소를 못 쓰는 환경(시크릿 등)에서는 그냥 매번 보인다.
+      (function () {
+        var KEY = 'pnBubbleClosed', VER = 'v1026';
+        function show() {
+          var el = document.getElementById('pn-bubble');
+          if (!el) return;
+          var closed = '';
+          try { closed = localStorage.getItem(KEY) || ''; } catch (e) {}
+          if (closed !== VER) el.hidden = false;
+        }
+        window.closePatchBubble = function (e) {
+          if (e) e.stopPropagation();
+          var el = document.getElementById('pn-bubble');
+          if (el) el.hidden = true;
+          try { localStorage.setItem(KEY, VER); } catch (err) {}
+        };
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show); else show();
+      })();
+    </script>
     <!-- ── PATCHNOTE MODAL ── -->
     <style>
       #patchnote-modal-overlay {
