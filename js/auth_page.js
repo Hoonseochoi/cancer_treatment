@@ -172,7 +172,11 @@
                 msg('s-msg', '가입을 마쳤어요. 분석 화면으로 이동합니다.', true);
                 setTimeout(() => { location.href = next; }, 700);
             }
-            else showDone(null, '인증 메일을 보냈어요', `${v.email} 메일함에서 인증 링크를 누르면 가입이 끝나요. 메일이 안 보이면 스팸함도 확인해 주세요.`);
+            else {
+                pendingEmail = v.email;
+                showDone(null, '인증 메일을 보냈어요', `${v.email} 메일함에서 「가입 확인」 버튼을 누르면 가입이 끝나요. 메일이 안 보이면 스팸함도 확인해 주세요.`);
+                $('d-resend').hidden = false;
+            }
         } catch (err) { msg('s-msg', koError(err)); }
         finally { busy(forms.signup, false); }
     });
@@ -184,8 +188,13 @@
         if (!sb) { msg('l-msg', '로그인 서버에 연결하지 못했어요.'); return; }
         busy(forms.login, true);
         try {
+            $('l-resend').hidden = true;
             const { error } = await sb.auth.signInWithPassword({ email, password });
-            if (error) throw error;
+            if (error) {
+                // 메일 인증 전이면 인증 메일을 다시 보낼 수 있게 한다
+                if (/Email not confirmed/i.test(error.message)) $('l-resend').hidden = false;
+                throw error;
+            }
             msg('l-msg', '로그인했어요. 분석 화면으로 이동합니다.', true);
             setTimeout(() => { location.href = next; }, 500);
         } catch (err) { msg('l-msg', koError(err)); }
@@ -226,11 +235,30 @@
         finally { busy(forms.newpw, false); }
     });
 
+    // ── 인증 메일 다시 보내기 ──
+    let pendingEmail = '';
+    async function resend(email, msgId, btn) {
+        if (!EMAIL_RE.test(email || '')) { msg(msgId, '이메일 주소를 확인해 주세요.'); return; }
+        btn.disabled = true;
+        try {
+            const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: location.origin + location.pathname } });
+            if (error) throw error;
+            msg(msgId, '인증 메일을 다시 보냈어요. 메일함을 확인해 주세요.', true);
+        } catch (err) { msg(msgId, koError(err)); }
+        finally { setTimeout(() => { btn.disabled = false; }, 30000); }   // 연타 방지
+    }
+    $('l-resend').addEventListener('click', e => resend($('l-email').value.trim(), 'l-msg', e.currentTarget));
+    $('d-resend').addEventListener('click', e => {
+        const d = $('done-d');
+        resend(pendingEmail, 'l-msg', e.currentTarget).then(() => { d.textContent = $('l-msg').textContent || d.textContent; });
+    });
+
     function showDone(user, title, desc) {
         const name = user && user.user_metadata && user.user_metadata.name;
         $('done-t').textContent = title;
         $('done-d').textContent = desc || (name ? `${name}님, 이제 분석 횟수 제한 없이 쓸 수 있어요.` : '이제 분석 횟수 제한 없이 쓸 수 있어요.');
         $('logout').hidden = !user;
+        $('d-resend').hidden = true;
         $('title').textContent = user ? '환영합니다' : '거의 다 됐어요';
         $('lead').textContent = '';
         setMode('done');
@@ -243,11 +271,16 @@
     if (sb) {
         // 메일의 재설정 링크로 들어오면(#...type=recovery) 새 비밀번호 화면을 연다
         const fromRecovery = /type=recovery/.test(location.hash);
+        // 가입 확인 메일의 링크로 들어오면(#...type=signup) 그 자리에서 로그인된다 — 환영하고 분석 화면으로
+        const fromSignup = /type=(signup|email)/.test(location.hash);
         if (fromRecovery) setMode('newpw');
         sb.auth.onAuthStateChange(evt => { if (evt === 'PASSWORD_RECOVERY') setMode('newpw'); });
         sb.auth.getSession().then(({ data }) => {
             const u = data && data.session && data.session.user;
-            if (u && !fromRecovery && forms.newpw.hidden) showDone(u, '이미 로그인되어 있어요');
+            if (u && fromSignup) {
+                showDone(u, '가입을 마쳤어요');
+                setTimeout(() => { location.href = next; }, 1500);
+            } else if (u && !fromRecovery && forms.newpw.hidden) showDone(u, '이미 로그인되어 있어요');
         });
         // 링크가 만료됐거나 잘못된 경우 Supabase가 #error=...로 돌려보낸다
         const hp = new URLSearchParams(location.hash.slice(1));

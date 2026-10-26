@@ -1,0 +1,18 @@
+<!-- Supabase → Authentication → Emails → Templates → Confirm signup 에 붙여 넣는다
+     제목(Subject): [슈린슈] 가입 확인 메일입니다 -->
+<div style="max-width:480px;margin:0 auto;padding:32px 24px;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#0F1626">
+  <p style="margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.18em;color:#8592AD">SURINSUR</p>
+  <h1 style="margin:0 0 16px;font-size:22px;font-weight:800;color:#0F1E42">가입을 확인해 주세요</h1>
+  <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#4B5768">
+    슈린슈 스마트가입제안서에 가입해 주셔서 감사합니다.<br>아래 버튼을 누르면 가입이 끝나고 바로 분석을 시작할 수 있어요.
+  </p>
+  <a href="{{ .ConfirmationURL }}"
+     style="display:inline-block;padding:14px 28px;border-radius:11px;background:#0F1E42;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none">
+    가입 확인
+  </a>
+  <p style="margin:28px 0 0;font-size:13px;line-height:1.7;color:#8592AD">
+    링크는 한 번만 쓸 수 있고 24시간 뒤 만료됩니다. 만료됐다면 로그인 화면에서 「인증 메일 다시 보내기」를 눌러 주세요.<br>
+    직접 가입하지 않으셨다면 이 메일은 무시하셔도 됩니다.
+  </p>
+  <p style="margin:24px 0 0;font-size:12px;color:#B3BCCD">슈린슈 스마트가입제안서 · surinsur.com</p>
+</div>

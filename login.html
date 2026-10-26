@@ -88,6 +88,10 @@
     .submit:hover{background:var(--navy-2)}
     .submit:disabled{opacity:.55;cursor:default}
     .submit:focus-visible{outline:3px solid rgba(44,85,184,.4);outline-offset:2px}
+    .resend{all:unset;cursor:pointer;align-self:flex-start;font-size:13px;font-weight:700;color:var(--accent);
+      text-decoration:underline;text-underline-offset:3px}
+    .resend:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+    .done .resend{display:inline-block;margin-top:10px}
     .links{display:flex;justify-content:space-between;margin-top:4px;font-size:13px}
     .links button{all:unset;cursor:pointer;color:var(--muted);font-weight:600}
     .links button:hover{color:var(--navy)}
@@ -172,6 +176,7 @@
             <div class="field"><label for="l-pw">비밀번호</label>
               <input id="l-pw" name="password" type="password" autocomplete="current-password" placeholder="비밀번호" required></div>
             <p class="msg" id="l-msg" role="status" aria-live="polite"></p>
+            <button type="button" class="resend" id="l-resend" hidden>인증 메일 다시 보내기</button>
             <button class="submit" type="submit">로그인</button>
             <div class="links">
               <button type="button" data-go="reset">비밀번호를 잊으셨나요?</button>
@@ -242,6 +247,7 @@
           <!-- 이미 로그인됨 / 가입 완료 -->
           <div class="done" id="done" hidden>
             <b id="done-t"></b><div id="done-d"></div>
+            <button type="button" class="resend" id="d-resend" hidden>인증 메일 다시 보내기</button>
             <div class="acts"><a href="index.html">분석하러 가기</a><button type="button" id="logout">로그아웃</button></div>
           </div>
 
@@ -276,6 +282,6 @@
   <script src="js/pdf_sheet.js?v=20261026a"></script>
   <script src="js/login_showcase_data.js?v=20261026a"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/auth_page.js?v=20261026c"></script>
+  <script src="js/auth_page.js?v=20261026d"></script>
 </body>
 </html>

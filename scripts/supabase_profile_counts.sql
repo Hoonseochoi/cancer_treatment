@@ -72,3 +72,21 @@ select created_at as 가입일, name as 이름, email as 이메일, phone as 휴
        last_analysis_at as 마지막분석, last_visit_date as 마지막접속
 from public.profiles
 order by created_at desc;
+
+-- ── 메일 인증 (2026-10-26) ──
+-- profiles.email_confirmed_at: 가입 확인 링크를 누르면 auth.users에서 옮겨 적는다.
+-- 대시보드 목록(profiles_with_usage)은 인증을 마친 회원만 보여 준다 — 더미 가입은 빠진다.
+alter table public.profiles add column if not exists email_confirmed_at timestamptz;
+create or replace function public.sync_profile_email_confirmed()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+    update public.profiles set email_confirmed_at = new.email_confirmed_at where id = new.id;
+    return new;
+end; $$;
+revoke execute on function public.sync_profile_email_confirmed() from public, anon, authenticated;
+drop trigger if exists on_auth_user_confirmed_profile on auth.users;
+create trigger on_auth_user_confirmed_profile
+    after update of email_confirmed_at on auth.users
+    for each row when (old.email_confirmed_at is distinct from new.email_confirmed_at)
+    execute function public.sync_profile_email_confirmed();
+-- (handle_new_user_profile도 email_confirmed_at을 함께 적도록 바꿨고, 뷰에 where email_confirmed_at is not null을 걸었다)
