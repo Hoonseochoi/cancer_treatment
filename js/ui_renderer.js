@@ -180,13 +180,15 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         // 추정 보장금액은 기본으로 접어 둔다. 반복 담보를 10년으로 곱한 참고값이라
         // 고객에게 그대로 건네기엔 무리가 있다. 설계사가 펴 두면 PDF에도 그대로
         // 실린다 — html2canvas는 감춘 요소를 찍지 않는다.
+        // 메리츠는 처음부터 접어 둔다(설계사 요청). 펴면 PDF에도 실린다.
+        const peekOpen = insurer !== 'meritz';
         insightSection.innerHTML = `
-            <div class="sf-peek" data-open="true">
-              <button type="button" data-peek aria-expanded="true">
-                <i></i><span>추정 보장금액 숨기기</span>
+            <div class="sf-peek" data-open="${peekOpen}">
+              <button type="button" data-peek aria-expanded="${peekOpen}">
+                <i></i><span>${peekOpen ? '추정 보장금액 숨기기' : '추정 보장금액 보기'}</span>
               </button>
             </div>
-            <div data-peek-body>
+            <div data-peek-body${peekOpen ? '' : ' hidden'}>
             <div class="premium-card rounded-3xl p-4 sm:p-6 shadow-xl border-none insight-card-gradient animate-insight relative overflow-hidden group">
                 <!-- Background Decoration -->
                 <div class="absolute -right-4 -top-4 w-32 h-32 bg-red-500/5 rounded-full blur-3xl group-hover:bg-red-500/10 transition-colors"></div>
