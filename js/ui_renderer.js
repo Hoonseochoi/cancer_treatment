@@ -1438,12 +1438,12 @@ async function renderCoverCanvas() {
         <div style="position:absolute;top:0;left:0;right:0;height:164px;padding:0 84px;
              display:flex;align-items:center;justify-content:space-between;
              border-bottom:3px solid #D5DDEE;box-sizing:border-box">
-          <span style="font:800 33px 'Outfit',sans-serif;letter-spacing:.22em;color:${PDF_NAVY}">SUR&middot;INSUR</span>
+          <img src="icon-512.png" alt="SURINSUR" style="height:72px;width:72px;display:block">
           <span style="font:500 25px 'Outfit',sans-serif;letter-spacing:.14em;color:#8592AD">SMART PROPOSAL</span>
         </div>
 
         <div style="position:absolute;left:84px;right:84px;top:50%;transform:translateY(-50%)">
-          <img src="logo.png" style="height:104px;object-fit:contain;display:block;margin-bottom:90px">
+          <img src="logo.png?v=shurin1" style="height:120px;object-fit:contain;display:block;margin-bottom:84px">
           <p style="margin:0 0 29px;font-size:40px;color:#5A6B8C;font-weight:500">
             <b style="font-weight:800;color:${PDF_NAVY};font-size:50px">${customer}</b> 님을 위한</p>
           <h1 style="margin:0;font-size:92px;font-weight:900;letter-spacing:-.04em;

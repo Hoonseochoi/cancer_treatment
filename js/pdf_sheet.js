@@ -52,8 +52,7 @@ function sheetCss() {
 
     .hd{height:${mm(16)};flex:none;background:${C.blue};color:#fff;
       display:flex;align-items:center;justify-content:space-between;padding:0 ${mm(14)}}
-    .hd .mark{font-family:'Plus Jakarta Sans',sans-serif;font-size:${px(8.5)};
-      font-weight:800;letter-spacing:.2em}
+    .hd .mark{display:block;height:${mm(9)};width:auto}
     .hd .who{font-size:${px(8)};font-weight:500;opacity:.8}
 
     .top{padding:${mm(11)} ${mm(14)} 0;flex:none;display:flex;
@@ -287,7 +286,8 @@ async function renderSheetCanvas(innerHtml, accent, accentSoft) {
 }
 
 function sheetHead(who) {
-    return `<div class="hd"><span class="mark">SURINSUR</span>` +
+    // 띠 왼쪽 로고 — 색 띠 위라 흰 글자 로고(logo_light.png)를 쓴다
+    return `<div class="hd"><img class="mark" src="logo_light.png?v=2" alt="SURINSUR">` +
            `<span class="who">스마트가입제안서${who ? ' · ' + who : ''}</span></div>`;
 }
 
