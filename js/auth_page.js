@@ -131,6 +131,44 @@
         e.currentTarget.textContent = t.hidden ? '내용 보기' : '접기';
     });
 
+    // ── 중복 이메일 확인 ──
+    // signup_email_status(DB 함수)는 none / confirmed / pending 셋 중 하나만 돌려준다.
+    // 이메일 칸을 벗어날 때 한 번, 가입을 누를 때 한 번 더 본다.
+    async function emailStatus(email) {
+        if (!sb || !EMAIL_RE.test(email)) return 'none';
+        try {
+            const { data, error } = await sb.rpc('signup_email_status', { p_email: email });
+            return error ? 'none' : (data || 'none');   // 확인이 안 되면 막지 않는다 — signUp이 다시 걸러낸다
+        } catch (e) { return 'none'; }
+    }
+    function showEmailStatus(st) {
+        const f = forms.signup.querySelector('.field[data-k="email"]');
+        const h = f.querySelector('.hint');
+        f.classList.remove('ok');
+        if (st === 'confirmed') { fieldState(forms.signup, 'email', '이미 가입된 이메일이에요. 로그인해 주세요.'); return false; }
+        if (st === 'pending') {
+            fieldState(forms.signup, 'email', '가입 확인 메일을 기다리는 이메일이에요. 메일함의 「가입 확인」을 눌러 주세요.');
+            return false;
+        }
+        fieldState(forms.signup, 'email', '');
+        f.classList.add('ok');
+        h.textContent = '사용할 수 있는 이메일이에요.';
+        return true;
+    }
+    let lastChecked = '';
+    $('s-email').addEventListener('blur', async () => {
+        const email = $('s-email').value.trim();
+        if (!EMAIL_RE.test(email) || email === lastChecked) return;
+        lastChecked = email;
+        showEmailStatus(await emailStatus(email));
+    });
+    $('s-email').addEventListener('input', () => {
+        lastChecked = '';
+        const f = forms.signup.querySelector('.field[data-k="email"]');
+        f.classList.remove('ok', 'bad');
+        f.querySelector('.hint').textContent = '';
+    });
+
     function checkSignup() {
         const f = forms.signup;
         const v = { email: $('s-email').value.trim(), pw: $('s-pw').value, pw2: $('s-pw2').value,
@@ -154,6 +192,12 @@
         if (!v || !sb) { if (!sb) msg('s-msg', '로그인 서버에 연결하지 못했어요.'); return; }
         busy(forms.signup, true);
         try {
+            const st = await emailStatus(v.email);
+            if (!showEmailStatus(st)) {
+                msg('s-msg', st === 'pending' ? '가입 확인 메일을 기다리는 이메일이에요.' : '이미 가입된 이메일이에요. 로그인해 주세요.');
+                if (st === 'pending') { pendingEmail = v.email; $('d-resend').hidden = true; }
+                return;
+            }
             const { data, error } = await sb.auth.signUp({
                 email: v.email, password: v.pw,
                 options: {
