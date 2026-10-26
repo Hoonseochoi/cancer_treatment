@@ -197,7 +197,8 @@
     .open-only-txt { font-size: 0.76rem; color: rgba(255,255,255,0.42); line-height: 1.6; }
 
     /* ── 탭 카드 3종 ── */
-    .tabgrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 28px; }
+    .tabgrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 28px; }
+    @media(max-width:860px){ .tabgrid { grid-template-columns: repeat(2,1fr); } }
     @media(max-width:640px){ .tabgrid { grid-template-columns: 1fr; } }
     .tabcard { background: #fafafa; border: 1px solid #efefef; border-radius: 16px; padding: 22px 20px; }
     .tabcard.on { background: #111; border-color: #111; }
@@ -400,15 +401,15 @@
     <h1 class="hero-title">복잡한 가입제안서,<br>핵심만 빠르게</h1>
     <p class="hero-sub">
       내가 설계한 가입제안서 설명하기 힘드셨죠?<br>
-      PDF 하나면 암 · 수술비 · 뇌·심장 담보가 자동으로 정리됩니다.
+      PDF 하나면 암 · 수술비 · 뇌·심장 · 간병 담보가 자동으로 정리됩니다.
     </p>
     <div class="hero-badges">
       <span class="hero-badge">삼성화재<em>전 기능</em></span>
-      <span class="hero-badge-sub">메리츠화재</span>
+      <span class="hero-badge">메리츠화재<em>전 기능</em></span>
       <span class="hero-badge-sub">DB손해보험</span>
       <span class="hero-badge-sub">흥국화재</span>
     </div>
-    <p class="hero-badge-note">수술비 · 뇌·심장 분석은 삼성화재 전용입니다. 나머지 3사는 암 보장 분석을 지원합니다.</p>
+    <p class="hero-badge-note">수술비 · 뇌·심장 · 간병인 분석은 삼성화재 · 메리츠화재 제안서에서 동작합니다. 나머지 3사는 암 보장 분석을 지원합니다.</p>
   </section>
 
   <!-- WHY -->
@@ -423,12 +424,12 @@
       <div class="vcard fu">
         <span class="vicon">⚡</span>
         <p class="vtitle">즉시 분석</p>
-        <p class="vdesc">PDF 업로드 후 수초 내 담보 자동 추출. 5년 최대 보장금액까지 한 화면에.</p>
+        <p class="vdesc">PDF 업로드 후 수초 내 담보 자동 추출. 담보별 금액과 지급 주기까지 한 화면에.</p>
       </div>
       <div class="vcard fu" style="transition-delay:.07s">
         <span class="vicon">🏢</span>
-        <p class="vtitle">4사 지원</p>
-        <p class="vdesc">메리츠 · 삼성화재 · DB손해보험 · 흥국화재. 각사 제안서 포맷을 자동으로 인식합니다.</p>
+        <p class="vtitle">5사 지원</p>
+        <p class="vdesc">삼성화재 · 메리츠화재 · DB손해보험 · 흥국화재 · 미래에셋생명. 각사 제안서 포맷을 자동으로 인식합니다.</p>
       </div>
       <div class="vcard fu" style="transition-delay:.14s">
         <span class="vicon">📸</span>
@@ -443,21 +444,23 @@
     <span class="eyebrow">NEW</span>
     <h2 class="stitle">스마트 가입제안서 OPEN</h2>
     <p class="slead">
-      암 치료비만 보던 화면에 <strong>수술비</strong>와 <strong>뇌·심장</strong>이 더해졌습니다.<br>
-      같은 제안서 한 장으로 세 가지 보장을 각각 정리해 보여드립니다.
+      암 치료비만 보던 화면에 <strong>수술비</strong> · <strong>뇌·심장</strong> · <strong>간병인</strong>이 더해졌습니다.<br>
+      같은 제안서 한 장으로 보장을 관점별로 정리해 보여드립니다.
     </p>
 
     <div class="open-banner fu">
       <span class="open-flag"><span class="dot"></span>Now Open</span>
-      <p class="open-h">제안서 한 장, 세 가지 관점</p>
+      <p class="open-h">제안서 한 장, 네 가지 관점</p>
       <p class="open-p">
-        업로드하면 상단에 토글이 생깁니다. 암 보장 · 수술비 · 뇌·심장을 눌러가며
-        보여주고, 필요한 화면만 저장하거나 세 장을 한 번에 PDF로 내보낼 수 있습니다.
+        업로드하면 상단에 토글이 생깁니다. 암 보장 · 수술비 · 뇌·심장 · 간병인을 눌러가며
+        보여주고, 필요한 화면만 저장하거나 전부 한 번에 PDF로 내보낼 수 있습니다.
+        제안서에 담보가 있는 탭만 생깁니다.
       </p>
       <div class="open-only">
-        <span class="open-only-badge">삼성화재 전용</span>
+        <span class="open-only-badge">삼성화재 · 메리츠화재</span>
         <span class="open-only-txt">
-          수술비 · 뇌·심장 분석은 현재 <strong style="color:rgba(255,255,255,.75)">삼성화재 제안서에서만</strong> 동작합니다.
+          수술비 · 뇌·심장 · 간병인 분석은 <strong style="color:rgba(255,255,255,.75)">삼성화재와 메리츠화재 제안서</strong>에서 동작합니다.
+          메리츠는 1-5종 · 5대질병 제외 수술비 · 순통치 · 특정혈전치료비 · 간병인지원(1688-0090)처럼 메리츠 담보 기준으로 계산합니다.
           다른 보험사는 기존과 같이 암 보장 분석만 제공됩니다.
         </span>
       </div>
@@ -467,7 +470,7 @@
       <div class="tabcard fu">
         <span class="tabpill">기본</span>
         <p class="tabt">암 보장</p>
-        <p class="tabd">기존 그대로입니다. 9개 카드와 5년간 받을 수 있는 암 치료비를 보여줍니다.</p>
+        <p class="tabd">9개 카드마다 어느 담보에서 얼마가 나오는지, 최초 1회 · 연간 1회 · 매회 같은 지급 주기까지 적어 보여줍니다.</p>
       </div>
       <div class="tabcard on fu" style="transition-delay:.07s">
         <span class="tabpill">NEW</span>
@@ -478,6 +481,11 @@
         <span class="tabpill">NEW</span>
         <p class="tabt">뇌·심장</p>
         <p class="tabd">치료행위와 질환별 진단비를 카드로 갈라, 어느 담보에서 얼마가 나오는지 펼쳐 보여줍니다.</p>
+      </div>
+      <div class="tabcard on fu" style="transition-delay:.21s">
+        <span class="tabpill">NEW</span>
+        <p class="tabt">간병인</p>
+        <p class="tabd">간병인지원 · 간호·간병통합 일당이 있으면 입원 상황별로 받는 것과 신청 번호 · 순서를 한 장으로 정리합니다.</p>
       </div>
     </div>
   </section>
@@ -619,7 +627,7 @@
     <h2 class="stitle">표지까지 갖춘<br>한 부의 제안서로</h2>
     <p class="slead">
       「이미지 저장」 옆 <strong>전체 PDF 저장</strong>을 누르면
-      <strong>표지 한 장 + 분석 세 장</strong>이 A4 세로 PDF로 묶여 내려받아집니다.
+      <strong>표지 + 한장요약 + 탭별 지면</strong>이 A4 세로 PDF로 묶여 내려받아집니다.
       그대로 인쇄해 건네도 되는 형태입니다.
     </p>
 
@@ -634,19 +642,19 @@
     <div class="plist">
       <div class="pitem fu">
         <span class="pnum">1</span>
-        <p class="ptxt"><b>모든 장에 머리말과 꼬리말</b> — 위에는 화면 이름, 아래에는
-        <strong>원본 파일 제목과 쪽번호</strong>(02 / 04)가 들어갑니다. 표지와 같은 네이비 테두리를 둘러
-        네 장이 한 세트로 읽힙니다.</p>
+        <p class="ptxt"><b>인쇄용으로 다시 그린 지면</b> — 화면을 줄여 찍지 않고 A4 실제 크기로 다시 그려
+        글씨가 또렷합니다. 머리띠에는 <strong>보험사 이름과 색</strong>(삼성화재 파랑 · 메리츠화재 빨강)이 들어가고,
+        아래에는 쪽번호(02 / 05)가 매겨집니다.</p>
       </div>
       <div class="pitem fu" style="transition-delay:.06s">
         <span class="pnum">2</span>
-        <p class="ptxt"><b>본문은 분석에만 집중</b> — 파일 정보 카드와 화면 제목 줄은 머리말·꼬리말이
-        대신하므로 PDF 본문에서는 빠집니다. 이미지 한 장으로 저장할 때는 예전 그대로 남습니다.</p>
+        <p class="ptxt"><b>첫 장은 한장요약</b> — 암 · 뇌·심장 · 간병 · 다빈도 수술을 표 한 장으로 먼저 보여주고,
+        이어서 암 치료비 9장 카드 · 수술비 · 뇌·심장 · 간병인 지면이 따라옵니다.</p>
       </div>
       <div class="pitem fu" style="transition-delay:.12s">
         <span class="pnum">3</span>
         <p class="ptxt"><b>없는 탭은 자동으로 빠집니다</b> — 수술비 담보가 없는 제안서라면
-        표지와 암 보장, 뇌·심장까지 세 장으로 나옵니다. 쪽번호도 그에 맞춰 매겨집니다.</p>
+        수술비 지면 없이 나오고, 쪽번호도 그에 맞춰 매겨집니다.</p>
       </div>
     </div>
   </section>
@@ -669,7 +677,7 @@
         <div>
           <span class="snum">STEP 02</span>
           <p class="stept">담보 자동 분석</p>
-          <p class="stepd">업로드된 PDF에서 암 관련 담보만 자동으로 추출합니다.<br><br>항암방사선 · 항암약물 · 암수술비 등 9개 카드로 분류하고, 5년간 받을 수 있는 최대 보장금액을 한눈에 확인하세요.</p>
+          <p class="stepd">업로드된 PDF에서 담보를 자동으로 추출합니다.<br><br>항암방사선 · 항암약물 · 암수술비 등 9개 카드로 분류하고, 삼성화재 · 메리츠화재는 수술비 · 뇌·심장 · 간병인 탭까지 함께 만들어집니다.</p>
         </div>
         <div class="simgs2">
           <div class="simg"><img src="ABOUT/ss.png" alt="삼성화재"></div>
@@ -682,7 +690,7 @@
         <div>
           <span class="snum">STEP 03</span>
           <p class="stept">결과 저장 &amp; 공유</p>
-          <p class="stepd">분석이 완료되면 <strong>이미지 저장</strong> 버튼으로 결과를 PNG 파일로 저장할 수 있습니다.<br><br>고객 상담 시 바로 활용하거나 카카오톡으로 전달하세요.</p>
+          <p class="stepd">분석이 완료되면 <strong>이미지 저장</strong>으로 지금 화면을 PNG로, <strong>전체 PDF 저장</strong>으로 모든 탭을 한 부로 저장할 수 있습니다.<br><br>고객 상담 시 바로 활용하거나 카카오톡으로 전달하세요.</p>
         </div>
         <div class="simg"><img src="ABOUT/snapshot.png" alt="이미지 저장"></div>
       </div>
@@ -700,10 +708,10 @@
         <span class="ibadge blead">★ 대표 · 전 기능</span>
         <p class="idesc">담보가입현황 기반 정밀 추출 · <strong>암 · 수술비 · 뇌·심장 전부 지원</strong></p>
       </div>
-      <div class="icard fu" style="transition-delay:.07s">
+      <div class="icard lead fu" style="transition-delay:.07s">
         <div class="iname">메리츠화재</div>
-        <span class="ibadge blive">✓ 정식 지원</span>
-        <p class="idesc">암 보장 분석 · 레벨링 서비스 연동 · 매니저 코드 자동 인식</p>
+        <span class="ibadge blead">★ 전 기능 · NEW</span>
+        <p class="idesc">가입담보리스트 기반 추출 · <strong>암 · 수술비 · 뇌·심장 · 간병인 전부 지원</strong></p>
       </div>
       <div class="icard fu" style="transition-delay:.14s">
         <div class="iname">DB손해보험</div>
@@ -725,6 +733,7 @@
             <th>암 보장 분석</th>
             <th class="lead-col">수술 보장 분석</th>
             <th class="lead-col">뇌·심장 보장 분석</th>
+            <th class="lead-col">간병인 분석</th>
           </tr>
         </thead>
         <tbody>
@@ -741,14 +750,20 @@
             </td>
             <td>
               <span class="mtx-solo">
-                <img src="sci2.svg" alt="삼성화재">
-                <span class="mtx-only">삼성화재 전용</span>
+                <span class="mtx-logos"><img src="sci2.svg" alt="삼성화재"><img src="mci2.png" alt="메리츠화재"></span>
+                <span class="mtx-only">삼성 · 메리츠</span>
               </span>
             </td>
             <td>
               <span class="mtx-solo">
-                <img src="sci2.svg" alt="삼성화재">
-                <span class="mtx-only">삼성화재 전용</span>
+                <span class="mtx-logos"><img src="sci2.svg" alt="삼성화재"><img src="mci2.png" alt="메리츠화재"></span>
+                <span class="mtx-only">삼성 · 메리츠</span>
+              </span>
+            </td>
+            <td>
+              <span class="mtx-solo">
+                <span class="mtx-logos"><img src="sci2.svg" alt="삼성화재"><img src="mci2.png" alt="메리츠화재"></span>
+                <span class="mtx-only">삼성 · 메리츠</span>
               </span>
             </td>
           </tr>
@@ -757,7 +772,7 @@
       <p class="mtx-hint">← → 표를 옆으로 밀어서 보실 수 있습니다</p>
       <p class="mtx-note">
         암 보장 분석은 5개사 모두 지원합니다(DB손해보험 · 흥국화재 · 미래에셋생명은 BETA).<br>
-        수술 보장 분석과 뇌·심장 보장 분석은 삼성화재 제안서에서만 동작합니다.
+        수술 · 뇌·심장 · 간병인 분석은 삼성화재와 메리츠화재 제안서에서 동작합니다.
       </p>
     </div>
   </section>
