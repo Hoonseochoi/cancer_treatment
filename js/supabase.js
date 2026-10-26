@@ -305,7 +305,8 @@ function calculateLevelFromCount(count) {
  * 매니저 레벨 상태 갱신 및 UI 반영
  * 레벨업 시 알림 표시
  */
-function updateManagerLevel(totalCount, name) {
+// notify: 분석을 막 마친 때만 true — 페이지를 열 때마다 레벨업 알림이 뜨지 않게 한다(js/auth.js)
+function updateManagerLevel(totalCount, name, notify = true) {
     let currentLevel = 1;
     let nextThreshold = 2;   // 다음 레벨까지 필요한 총 횟수
     let prevThreshold = 0;  // 현재 레벨 시작 횟수
@@ -337,7 +338,7 @@ function updateManagerLevel(totalCount, name) {
     // 변경 사항 즉시 화면에 반영
     renderManagerLevel();
 
-    if (justLeveledUp) {
+    if (justLeveledUp && notify) {
         showLevelUpNotification();
     }
 }

@@ -41,13 +41,13 @@ function detectInsurer(text) {
 // ── File Processing ──
 async function processFile(file) {
     if (!file) return;
-    currentFileName = file.name; // Save filename for mapping
-
-    const badge = document.getElementById('manager-badge-container');
-    if (badge) {
-        badge.classList.add('hidden', 'scale-90', 'opacity-0');
-        badge.classList.remove('scale-100', 'opacity-100');
+    // 로그인하지 않았으면 하루 5건까지 — 넘으면 로그인 안내를 띄우고 멈춘다(js/auth.js)
+    if (window.SurAuth && !(await SurAuth.allowAnalysis())) {
+        const fi = document.getElementById('file-input');
+        if (fi) fi.value = '';
+        return;
     }
+    currentFileName = file.name; // Save filename for mapping
 
     document.getElementById('progress-section').classList.remove('hidden');
     document.getElementById('upload-section').style.display = 'none';
@@ -89,40 +89,8 @@ async function processFile(file) {
             updateProgress(100, '분석 완료!');
         }
 
-        // ── Manager Recognition (가계약번호 OCR → managers.js 매칭) ──
-        let name = null;
-        let code = null;
-        const gaMatch = text.match(/(?:가계약번호|설계번호)\s*[:：]?\s*(\d{9,})/);
-        if (gaMatch && gaMatch[1] && typeof MANAGERS_MAP !== 'undefined') {
-            code = gaMatch[1].substring(0, 9);  // 앞 9자리 = 매니저코드
-            name = MANAGERS_MAP[code];
-        }
-        const welcomeNameEl = document.getElementById('welcome-manager-name');
-        const codeEl = document.getElementById('welcome-manager-code');
-        const nameContainer = document.querySelector('.welcome-name');
-        if (name) {
-            if (welcomeNameEl) welcomeNameEl.textContent = name;
-            const levelEl = document.getElementById('welcome-manager-level');
-            if (nameContainer) {
-                nameContainer.innerHTML = `<span id="welcome-manager-name">${name}</span> 매니저님 ${levelEl ? levelEl.outerHTML : ''}`;
-            }
-            if (typeof logManagerActivity === 'function') {
-                logManagerActivity(code, name, file.name);
-            }
-        } else {
-            if (nameContainer) nameContainer.innerHTML = "환영합니다!";
-            if (codeEl) codeEl.classList.add('hidden');
-            if (typeof logUnrecognizedUpload === 'function') {
-                logUnrecognizedUpload(file.name);
-            }
-        }
-        if (badge) {
-            badge.classList.remove('hidden');
-            setTimeout(() => {
-                badge.classList.remove('scale-90', 'opacity-0');
-                badge.classList.add('scale-100', 'opacity-100');
-            }, 100);
-        }
+        // 매니저 배지·레벨은 로그인 회원 기준으로 js/auth.js가 채운다.
+        // (예전에는 메리츠 설계번호 앞 9자리를 managers.js와 맞춰 매니저를 알아봤다)
 
         // ── Customer Name Extraction ──
         let customerName = '고객';
@@ -396,6 +364,8 @@ async function processFile(file) {
             if (typeof incrementInsurerCount === 'function') {
                 incrementInsurerCount(insurer);
             }
+            // 회원이면 분석 기록·레벨, 아니면 오늘 무료 횟수 차감
+            if (window.SurAuth) SurAuth.recordAnalysis(file.name, insurer);
         } else {
             showToast('추출된 항목이 없습니다. 텍스트 인식 결과를 확인해주세요.', true);
         }

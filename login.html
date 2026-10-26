@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>슈린슈 로그인</title>
+  <link rel="icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&family=Outfit:wght@500;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+  <style>
+    /* 슈린슈 표지와 같은 네이비 계열. 왼쪽은 지면이 흘러가는 어두운 전시대, 오른쪽은 흰 종이 위 입력지. */
+    :root{
+      --navy:#0F1E42; --navy-2:#1A2C5C; --stage:#0B1430; --accent:#2C55B8; --accent-soft:#EEF2FC;
+      --ink:#0F1626; --ink-2:#4B5768; --muted:#8592AD; --rule:#DCE2EE; --rule-2:#EEF1F7;
+      --paper:#FFFFFF; --ok:#0B8A5C; --err:#C2362B;
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{background:var(--paper);color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;
+      -webkit-font-smoothing:antialiased}
+    .wrap{min-height:100vh;padding:12px;display:grid;gap:12px;grid-template-columns:minmax(0,.94fr) minmax(0,1.06fr)}
+
+    /* ── 왼쪽: 스마트가입제안서 전시 ── */
+    /* 높이를 창에 고정한다 — 흐르는 지면 목록이 길어 그대로 두면 페이지가 수천 px로 늘어난다 */
+    .stage{position:sticky;top:12px;overflow:hidden;border-radius:10px;background:var(--stage);color:#fff;
+      display:flex;flex-direction:column;height:calc(100vh - 24px);min-height:560px}
+    .stage-top{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;
+      padding:28px 32px 0}
+    .stage-top img{height:42px;width:auto;display:block}
+    .stage-top span{font:700 11px/1 'Outfit',sans-serif;letter-spacing:.24em;color:rgba(255,255,255,.42)}
+    .credits{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center;gap:18px;
+      padding:0 24px;margin-top:8px;
+      -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 16%,#000 78%,transparent 100%);
+              mask-image:linear-gradient(to bottom,transparent 0,#000 16%,#000 78%,transparent 100%)}
+    .col{width:var(--w);flex:none;overflow:hidden}
+    .track{display:flex;flex-direction:column;gap:18px;animation:roll var(--dur) linear infinite;will-change:transform}
+    .col.b .track{animation-delay:calc(var(--dur) * -.45)}
+    @keyframes roll{from{transform:translateY(0)}to{transform:translateY(calc(-50% - 9px))}}
+    .page{width:var(--w);height:calc(var(--w) * 1.4145);flex:none;border-radius:4px;overflow:hidden;
+      background:#fff;box-shadow:0 18px 40px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06)}
+    .stage-foot{position:relative;z-index:3;padding:0 32px 32px}
+    .slogan{margin:0;font-size:clamp(26px,2.6vw,38px);font-weight:800;letter-spacing:-.045em;line-height:1.22;
+      text-wrap:balance}
+    .slogan em{font-style:normal;color:#8FB0FF}
+    .stage-cap{margin:12px 0 0;font-size:12.5px;color:rgba(255,255,255,.5);line-height:1.6}
+    .stage-cap b{color:rgba(255,255,255,.78);font-weight:600}
+
+    /* ── 오른쪽: 입력 ── */
+    .side{display:flex;flex-direction:column;padding:28px clamp(20px,5vw,72px)}
+    .back{align-self:flex-end;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none}
+    .back:hover{color:var(--navy)}
+    .form-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:28px 0}
+    .card{width:100%;max-width:420px}
+    h1{margin:0;font-size:clamp(28px,3vw,36px);font-weight:800;letter-spacing:-.05em;line-height:1.15;color:var(--navy)}
+    .lead{margin:10px 0 0;font-size:14px;color:var(--ink-2);line-height:1.6}
+    .seg{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;padding:4px;border-radius:12px;background:var(--rule-2)}
+    .seg button{all:unset;cursor:pointer;text-align:center;height:38px;line-height:38px;border-radius:9px;
+      font-size:14px;font-weight:700;color:var(--muted)}
+    .seg button[aria-selected="true"]{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(15,30,66,.12)}
+    .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    form{margin-top:22px;display:flex;flex-direction:column;gap:12px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:12.5px;font-weight:700;color:var(--ink-2);letter-spacing:-.01em}
+    .field input{height:46px;padding:0 14px;border-radius:10px;border:1px solid var(--rule);background:#fff;
+      font:500 15px 'Noto Sans KR',sans-serif;color:var(--ink);outline:none;transition:border-color .15s, box-shadow .15s}
+    .field input::placeholder{color:#B3BCCD}
+    .field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(44,85,184,.14)}
+    .field.bad input{border-color:var(--err)}
+    .field .hint{font-size:12px;color:var(--muted);min-height:0}
+    .field.bad .hint{color:var(--err)}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .consent{margin-top:4px;border:1px solid var(--rule);border-radius:10px;padding:12px 14px;background:#FAFBFE}
+    .chk{display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.45}
+    .chk input{appearance:none;flex:none;width:18px;height:18px;margin:1px 0 0;border-radius:5px;border:1.5px solid #B3BCCD;background:#fff;
+      display:grid;place-items:center;cursor:pointer}
+    .chk input:checked{background:var(--navy);border-color:var(--navy)}
+    .chk input:checked::after{content:"";width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:translateY(-1px) rotate(-45deg)}
+    .chk input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    .req{color:var(--accent);font-weight:800}
+    .more{all:unset;cursor:pointer;margin-left:auto;flex:none;font-size:12px;font-weight:600;color:var(--muted);text-decoration:underline;text-underline-offset:2px}
+    .terms{margin:10px 0 0 28px;font-size:12px;line-height:1.7;color:var(--ink-2)}
+    .terms table{width:100%;border-collapse:collapse;margin-top:4px}
+    .terms th,.terms td{text-align:left;vertical-align:top;padding:5px 0;border-top:1px dotted var(--rule)}
+    .terms th{width:76px;font-weight:700;color:var(--ink);white-space:nowrap}
+    .submit{margin-top:8px;height:50px;border:0;border-radius:11px;background:var(--navy);color:#fff;cursor:pointer;
+      font:700 16px 'Noto Sans KR',sans-serif;letter-spacing:-.02em;transition:background .15s}
+    .submit:hover{background:var(--navy-2)}
+    .submit:disabled{opacity:.55;cursor:default}
+    .submit:focus-visible{outline:3px solid rgba(44,85,184,.4);outline-offset:2px}
+    .links{display:flex;justify-content:space-between;margin-top:4px;font-size:13px}
+    .links button{all:unset;cursor:pointer;color:var(--muted);font-weight:600}
+    .links button:hover{color:var(--navy)}
+    .links button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+    .msg{min-height:20px;font-size:13.5px;line-height:1.5;font-weight:600;margin:0}
+    .msg.err{color:var(--err)} .msg.ok{color:var(--ok)}
+    .done{margin-top:28px;padding:22px;border-radius:14px;background:var(--accent-soft);color:var(--navy);line-height:1.6;font-size:14px}
+    .done b{font-size:16px}
+    .done .acts{display:flex;gap:8px;margin-top:14px}
+    .done a,.done button{all:unset;cursor:pointer;padding:0 16px;height:40px;line-height:40px;border-radius:10px;font-weight:700;font-size:14px}
+    .done a{background:var(--navy);color:#fff}
+    .done button{background:#fff;color:var(--navy);border:1px solid var(--rule)}
+    .fine{margin:22px 0 0;font-size:11.5px;color:var(--muted);line-height:1.6;text-align:center}
+    [hidden]{display:none !important}
+
+    @media (max-width:1023px){
+      .wrap{grid-template-columns:1fr}
+      .stage{position:relative;top:0;min-height:0;height:430px}
+      .stage-top{padding:22px 22px 0}
+      .stage-foot{padding:0 22px 22px}
+    }
+    @media (max-width:520px){
+      .wrap{padding:8px;gap:8px}
+      .stage{height:340px}
+      .stage-cap{display:none}
+      .row2{grid-template-columns:1fr}
+    }
+    @media (prefers-reduced-motion:reduce){ .track{animation:none} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- 왼쪽: 실제 지면 함수로 그린 샘플이 엔딩 크레딧처럼 위로 흘러간다 -->
+    <aside class="stage" aria-label="스마트가입제안서 예시">
+      <div class="stage-top">
+        <img src="surinsur.png" alt="슈린슈 sure, insure">
+        <span>SMART PROPOSAL</span>
+      </div>
+      <div class="credits" id="credits" aria-hidden="true">
+        <div class="col a"><div class="track"></div></div>
+        <div class="col b"><div class="track"></div></div>
+      </div>
+      <div class="stage-foot">
+        <p class="slogan">보험의 언어를,<br><em>고객의 언어로</em></p>
+        <p class="stage-cap">가입제안서 PDF 한 부가 <b>한장요약 · 암 · 수술비 · 뇌·심장 · 간병인</b> 지면으로.<br>삼성화재 · 메리츠화재 예시 화면이며, 고객 정보는 지웠습니다.</p>
+      </div>
+    </aside>
+
+    <!-- 오른쪽: 로그인 · 회원가입 -->
+    <main class="side">
+      <a class="back" href="index.html">← 분석으로 돌아가기</a>
+      <div class="form-wrap">
+        <div class="card">
+          <h1 id="title">다시 오셨네요</h1>
+          <p class="lead" id="lead">이메일로 로그인하고 분석을 이어가세요.</p>
+
+          <div class="seg" role="tablist" id="seg">
+            <button type="button" role="tab" data-mode="login" aria-selected="true">로그인</button>
+            <button type="button" role="tab" data-mode="signup" aria-selected="false">회원가입</button>
+          </div>
+
+          <!-- 로그인 -->
+          <form id="f-login" novalidate>
+            <div class="field"><label for="l-email">이메일</label>
+              <input id="l-email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required></div>
+            <div class="field"><label for="l-pw">비밀번호</label>
+              <input id="l-pw" name="password" type="password" autocomplete="current-password" placeholder="비밀번호" required></div>
+            <p class="msg" id="l-msg" role="status" aria-live="polite"></p>
+            <button class="submit" type="submit">로그인</button>
+            <div class="links">
+              <button type="button" data-go="reset">비밀번호를 잊으셨나요?</button>
+              <button type="button" data-go="signup">회원가입</button>
+            </div>
+          </form>
+
+          <!-- 회원가입 -->
+          <form id="f-signup" novalidate hidden>
+            <div class="field" data-k="email"><label for="s-email">이메일</label>
+              <input id="s-email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required>
+              <span class="hint"></span></div>
+            <div class="row2">
+              <div class="field" data-k="pw"><label for="s-pw">비밀번호</label>
+                <input id="s-pw" name="password" type="password" autocomplete="new-password" placeholder="8자 이상, 영문+숫자" required>
+                <span class="hint"></span></div>
+              <div class="field" data-k="pw2"><label for="s-pw2">비밀번호 확인</label>
+                <input id="s-pw2" name="password2" type="password" autocomplete="new-password" placeholder="한 번 더" required>
+                <span class="hint"></span></div>
+            </div>
+            <div class="row2">
+              <div class="field" data-k="name"><label for="s-name">이름</label>
+                <input id="s-name" name="name" type="text" autocomplete="name" placeholder="홍길동" required>
+                <span class="hint"></span></div>
+              <div class="field" data-k="phone"><label for="s-phone">휴대폰 번호</label>
+                <input id="s-phone" name="phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="010-0000-0000" required>
+                <span class="hint"></span></div>
+            </div>
+            <div class="consent">
+              <label class="chk"><input type="checkbox" id="s-agree" required>
+                <span><span class="req">[필수]</span> 개인정보 수집 · 이용에 동의합니다</span>
+                <button type="button" class="more" id="s-more" aria-expanded="false" aria-controls="s-terms">내용 보기</button>
+              </label>
+              <div class="terms" id="s-terms" hidden>
+                <table>
+                  <tr><th>수집 항목</th><td>이메일, 비밀번호, 이름, 휴대폰 번호</td></tr>
+                  <tr><th>이용 목적</th><td>회원 식별과 로그인, 분석 이용 횟수 관리, 서비스 공지와 문의 응대</td></tr>
+                  <tr><th>보유 기간</th><td>회원 탈퇴 시까지. 관계 법령에 보존 의무가 있으면 그 기간까지</td></tr>
+                </table>
+                동의하지 않으실 수 있으며, 이 경우 회원가입과 로그인이 필요한 기능을 이용할 수 없습니다.
+              </div>
+            </div>
+            <p class="msg" id="s-msg" role="status" aria-live="polite"></p>
+            <button class="submit" type="submit">가입하기</button>
+          </form>
+
+          <!-- 비밀번호 찾기 -->
+          <form id="f-reset" novalidate hidden>
+            <div class="field"><label for="r-email">가입한 이메일</label>
+              <input id="r-email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required></div>
+            <p class="msg" id="r-msg" role="status" aria-live="polite"></p>
+            <button class="submit" type="submit">재설정 메일 보내기</button>
+            <div class="links"><button type="button" data-go="login">← 로그인으로</button><span></span></div>
+          </form>
+
+          <!-- 메일 링크로 들어와 새 비밀번호 정하기 -->
+          <form id="f-newpw" novalidate hidden>
+            <div class="field" data-k="pw"><label for="n-pw">새 비밀번호</label>
+              <input id="n-pw" type="password" autocomplete="new-password" placeholder="8자 이상, 영문+숫자" required>
+              <span class="hint"></span></div>
+            <div class="field" data-k="pw2"><label for="n-pw2">새 비밀번호 확인</label>
+              <input id="n-pw2" type="password" autocomplete="new-password" placeholder="한 번 더" required>
+              <span class="hint"></span></div>
+            <p class="msg" id="n-msg" role="status" aria-live="polite"></p>
+            <button class="submit" type="submit">비밀번호 바꾸기</button>
+          </form>
+
+          <!-- 이미 로그인됨 / 가입 완료 -->
+          <div class="done" id="done" hidden>
+            <b id="done-t"></b><div id="done-d"></div>
+            <div class="acts"><a href="index.html">분석하러 가기</a><button type="button" id="logout">로그아웃</button></div>
+          </div>
+
+          <p class="fine">로그인 없이도 하루 5건까지 분석할 수 있어요.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 왼쪽 지면은 실제 PDF 지면 함수(pdf_sheet.js)로 그린다 — 화면과 인쇄본이 같은 모양이다 -->
+  <script src="expert_data.js"></script>
+  <script src="js/analyzer.js?v=20261026a"></script>
+  <script src="js/caregiver.js?v=20261026a"></script>
+  <script src="js/pdf_sheet.js?v=20261026a"></script>
+  <script src="js/login_showcase_data.js?v=20261026a"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/auth_page.js?v=20261026a"></script>
+</body>
+</html>

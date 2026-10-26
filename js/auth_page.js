@@ -1,0 +1,247 @@
+// ── 로그인 페이지 ──
+// 왼쪽: 스마트가입제안서 샘플 지면이 엔딩 크레딧처럼 흘러간다.
+// 오른쪽: Supabase Auth(이메일·비밀번호) 로그인 · 회원가입 · 비밀번호 재설정.
+// 이름·휴대폰 번호는 가입 시 user_metadata(name, phone)에 담는다 — 별도 테이블은 아직 없다.
+
+// ── 왼쪽 전시 ──
+(function showcase() {
+    const host = document.getElementById('credits');
+    if (!host || typeof LOGIN_SHOWCASE === 'undefined' || typeof sheetCss !== 'function') return;
+    const C = SHEET_COLOR;
+
+    // 지면 한 장을 그린다. 지면 CSS는 전역 클래스라 보험사마다 섞이지 않게 shadow DOM에 가둔다.
+    const sheet = (brand, make, ac, acs) => {
+        window.__insurerKey = brand;
+        const d = LOGIN_SHOWCASE[brand];
+        (d.cancerCards || []).forEach(c => { c.icon = getSheetIcon(c.nm); });
+        let html = '';
+        try { html = make(d); } catch (e) { return null; }
+        const css = sheetCss() + (typeof caregiverSheetCss === 'function' ? caregiverSheetCss() : '');
+        const page = document.createElement('div');
+        page.className = 'page';
+        const root = page.attachShadow({ mode: 'open' });
+        root.innerHTML = `<style>:host{display:block}${css}
+            .sheet{transform-origin:0 0;transform:scale(var(--s))}</style>
+            <div class="sheet" style="--ac:${ac};--acs:${acs}">${html}</div>`;
+        return page;
+    };
+    const brandBlue = b => (SHEET_BRAND[b] || SHEET_BRAND.samsung).blue;
+    const A = [
+        () => sheet('samsung', sheetSummary, brandBlue('samsung'), '#EDF2FE'),
+        () => sheet('meritz', sheetCancer, C.cancer, C.cancerSoft),
+        () => sheet('samsung', sheetSurgery, C.surgery, C.surgerySoft),
+        () => sheet('meritz', sheetCaregiver, CG_COLOR.c, CG_COLOR.s)
+    ];
+    const B = [
+        () => sheet('meritz', sheetSummary, brandBlue('meritz'), '#FDEEEE'),
+        () => sheet('samsung', sheetCancer, C.cancer, C.cancerSoft),
+        () => sheet('meritz', sheetCirc, C.brain, C.brainSoft),
+        () => sheet('samsung', sheetCirc, C.brain, C.brainSoft)
+    ];
+    const cols = host.querySelectorAll('.col');
+    const fill = (col, list) => {
+        const track = col.querySelector('.track');
+        // 같은 목록을 두 번 이어 붙여 끊김 없이 돈다(트랙을 절반만큼 올리면 처음과 같은 그림)
+        for (let round = 0; round < 2; round++) list.forEach(f => { const p = f(); if (p) track.appendChild(p); });
+    };
+    fill(cols[0], A);
+    fill(cols[1], B);
+    window.__insurerKey = '';
+
+    // 칸 폭에 맞춰 지면을 줄인다(1240px 지면 → 칸 폭)
+    const fit = () => {
+        const W = Math.max(150, Math.min(250, (host.clientWidth - 48 - 18) / 2));
+        host.style.setProperty('--w', W + 'px');
+        host.querySelectorAll('.page').forEach(p => p.shadowRoot.host.style.setProperty('--s', W / 1240));
+        cols[0].style.setProperty('--dur', '70s');
+        cols[1].style.setProperty('--dur', '86s');
+    };
+    fit();
+    window.addEventListener('resize', fit);
+})();
+
+// ── 로그인 · 회원가입 ──
+(function auth() {
+    // supabase.js와 같은 프로젝트의 공개(anon) 키 — 브라우저에 노출되는 값이다
+    const URL_ = 'https://omgwvnibssizmhovporl.supabase.co';
+    const KEY_ = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tZ3d2bmlic3Npem1ob3Zwb3JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NzA4MDYsImV4cCI6MjA4NzE0NjgwNn0.Cx9OFo_UAJOB2AnsRUg1FbWAD8avU7ktYIea1z4hCDY';
+    const sb = window.supabase ? window.supabase.createClient(URL_, KEY_) : null;
+
+    const $ = id => document.getElementById(id);
+    const forms = { login: $('f-login'), signup: $('f-signup'), reset: $('f-reset'), newpw: $('f-newpw') };
+    const COPY = {
+        login: ['다시 오셨네요', '이메일로 로그인하고 분석을 이어가세요.'],
+        signup: ['슈린슈 시작하기', '가입하면 하루 5건 제한 없이 분석할 수 있어요.'],
+        reset: ['비밀번호 찾기', '가입한 이메일로 재설정 링크를 보내드려요.'],
+        newpw: ['새 비밀번호', '앞으로 쓸 비밀번호를 정해 주세요.'],
+        done: ['', '']
+    };
+    const next = new URLSearchParams(location.search).get('next') || 'index.html';
+
+    function setMode(m) {
+        Object.entries(forms).forEach(([k, f]) => { f.hidden = k !== m; });
+        $('done').hidden = m !== 'done';
+        $('seg').hidden = !(m === 'login' || m === 'signup');
+        $('seg').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
+        if (COPY[m][0]) { $('title').textContent = COPY[m][0]; $('lead').textContent = COPY[m][1]; }
+        document.querySelectorAll('.msg').forEach(x => { x.textContent = ''; x.className = 'msg'; });
+        const first = forms[m] && forms[m].querySelector('input');
+        if (first) first.focus({ preventScroll: true });
+    }
+    $('seg').addEventListener('click', e => { const b = e.target.closest('button[data-mode]'); if (b) setMode(b.dataset.mode); });
+    document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.go)));
+
+    const msg = (id, text, ok) => { const el = $(id); el.textContent = text; el.className = 'msg ' + (ok ? 'ok' : 'err'); };
+    const busy = (form, on) => { const b = form.querySelector('.submit'); b.disabled = on; };
+
+    // Supabase 오류를 사람이 읽는 말로
+    function koError(err) {
+        const m = String((err && err.message) || err || '');
+        if (/Invalid login credentials/i.test(m)) return '이메일 또는 비밀번호가 맞지 않아요.';
+        if (/Email not confirmed/i.test(m)) return '메일함의 인증 링크를 먼저 눌러 주세요.';
+        if (/already registered|already exists/i.test(m)) return '이미 가입된 이메일이에요. 로그인해 주세요.';
+        if (/Password should be/i.test(m)) return '비밀번호가 너무 짧아요. 8자 이상으로 정해 주세요.';
+        if (/rate limit|too many/i.test(m)) return '요청이 많아 잠시 막혔어요. 조금 뒤 다시 시도해 주세요.';
+        if (/network|fetch/i.test(m)) return '연결이 불안정해요. 인터넷 연결을 확인해 주세요.';
+        return '처리하지 못했어요. 잠시 뒤 다시 시도해 주세요.';
+    }
+
+    // ── 입력 검사 ──
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    const pwOk = v => v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v);
+    const phoneDigits = v => v.replace(/\D/g, '');
+    function fieldState(form, k, text) {
+        const f = form.querySelector(`.field[data-k="${k}"]`);
+        if (!f) return;
+        f.classList.toggle('bad', !!text);
+        const h = f.querySelector('.hint');
+        if (h) h.textContent = text || '';
+    }
+    // 휴대폰 번호는 치는 대로 010-0000-0000 꼴로
+    $('s-phone').addEventListener('input', e => {
+        const d = phoneDigits(e.target.value).slice(0, 11);
+        e.target.value = d.length < 4 ? d : d.length < 8 ? `${d.slice(0, 3)}-${d.slice(3)}`
+            : `${d.slice(0, 3)}-${d.slice(3, d.length - 4)}-${d.slice(-4)}`;
+    });
+    $('s-more').addEventListener('click', e => {
+        e.preventDefault();
+        const t = $('s-terms'); t.hidden = !t.hidden;
+        e.currentTarget.setAttribute('aria-expanded', String(!t.hidden));
+        e.currentTarget.textContent = t.hidden ? '내용 보기' : '접기';
+    });
+
+    function checkSignup() {
+        const f = forms.signup;
+        const v = { email: $('s-email').value.trim(), pw: $('s-pw').value, pw2: $('s-pw2').value,
+                    name: $('s-name').value.trim(), phone: phoneDigits($('s-phone').value) };
+        const bad = {
+            email: !EMAIL_RE.test(v.email) && '이메일 주소를 확인해 주세요.',
+            pw: !pwOk(v.pw) && '영문과 숫자를 섞어 8자 이상으로 정해 주세요.',
+            pw2: v.pw2 !== v.pw && '비밀번호가 서로 달라요.',
+            name: v.name.length < 2 && '이름을 적어 주세요.',
+            phone: !/^01[016789]\d{7,8}$/.test(v.phone) && '휴대폰 번호를 확인해 주세요.'
+        };
+        Object.keys(bad).forEach(k => fieldState(f, k, bad[k]));
+        if (Object.values(bad).some(Boolean)) return null;
+        if (!$('s-agree').checked) { msg('s-msg', '개인정보 수집 · 이용에 동의해 주세요.'); return null; }
+        return v;
+    }
+
+    forms.signup.addEventListener('submit', async e => {
+        e.preventDefault();
+        const v = checkSignup();
+        if (!v || !sb) { if (!sb) msg('s-msg', '로그인 서버에 연결하지 못했어요.'); return; }
+        busy(forms.signup, true);
+        try {
+            const { data, error } = await sb.auth.signUp({
+                email: v.email, password: v.pw,
+                options: {
+                    data: { name: v.name, phone: v.phone, privacy_agreed_at: new Date().toISOString() },
+                    emailRedirectTo: location.origin + location.pathname
+                }
+            });
+            if (error) throw error;
+            // 이미 가입된 이메일이면 Supabase가 오류 대신 빈 identities를 돌려준다
+            if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+                msg('s-msg', '이미 가입된 이메일이에요. 로그인해 주세요.');
+                return;
+            }
+            // 메일 인증을 끈 상태(Confirm email OFF)면 가입과 동시에 로그인된다 — 바로 분석 화면으로
+            if (data.session) {
+                msg('s-msg', '가입을 마쳤어요. 분석 화면으로 이동합니다.', true);
+                setTimeout(() => { location.href = next; }, 700);
+            }
+            else showDone(null, '인증 메일을 보냈어요', `${v.email} 메일함에서 인증 링크를 누르면 가입이 끝나요. 메일이 안 보이면 스팸함도 확인해 주세요.`);
+        } catch (err) { msg('s-msg', koError(err)); }
+        finally { busy(forms.signup, false); }
+    });
+
+    forms.login.addEventListener('submit', async e => {
+        e.preventDefault();
+        const email = $('l-email').value.trim(), password = $('l-pw').value;
+        if (!EMAIL_RE.test(email) || !password) { msg('l-msg', '이메일과 비밀번호를 입력해 주세요.'); return; }
+        if (!sb) { msg('l-msg', '로그인 서버에 연결하지 못했어요.'); return; }
+        busy(forms.login, true);
+        try {
+            const { error } = await sb.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            msg('l-msg', '로그인했어요. 분석 화면으로 이동합니다.', true);
+            setTimeout(() => { location.href = next; }, 500);
+        } catch (err) { msg('l-msg', koError(err)); }
+        finally { busy(forms.login, false); }
+    });
+
+    forms.reset.addEventListener('submit', async e => {
+        e.preventDefault();
+        const email = $('r-email').value.trim();
+        if (!EMAIL_RE.test(email)) { msg('r-msg', '이메일 주소를 확인해 주세요.'); return; }
+        if (!sb) { msg('r-msg', '로그인 서버에 연결하지 못했어요.'); return; }
+        busy(forms.reset, true);
+        try {
+            const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+            if (error) throw error;
+            // 가입 여부를 드러내지 않도록 결과는 같은 문장으로
+            msg('r-msg', '가입된 이메일이면 재설정 링크가 도착해요. 메일함을 확인해 주세요.', true);
+        } catch (err) { msg('r-msg', koError(err)); }
+        finally { busy(forms.reset, false); }
+    });
+
+    forms.newpw.addEventListener('submit', async e => {
+        e.preventDefault();
+        const pw = $('n-pw').value, pw2 = $('n-pw2').value;
+        fieldState(forms.newpw, 'pw', !pwOk(pw) && '영문과 숫자를 섞어 8자 이상으로 정해 주세요.');
+        fieldState(forms.newpw, 'pw2', pw !== pw2 && '비밀번호가 서로 달라요.');
+        if (!pwOk(pw) || pw !== pw2) return;
+        busy(forms.newpw, true);
+        try {
+            const { data, error } = await sb.auth.updateUser({ password: pw });
+            if (error) throw error;
+            showDone(data.user, '비밀번호를 바꿨어요');
+        } catch (err) { msg('n-msg', koError(err)); }
+        finally { busy(forms.newpw, false); }
+    });
+
+    function showDone(user, title, desc) {
+        const name = user && user.user_metadata && user.user_metadata.name;
+        $('done-t').textContent = title;
+        $('done-d').textContent = desc || (name ? `${name}님, 이제 분석 횟수 제한 없이 쓸 수 있어요.` : '이제 분석 횟수 제한 없이 쓸 수 있어요.');
+        $('logout').hidden = !user;
+        $('title').textContent = user ? '환영합니다' : '거의 다 됐어요';
+        $('lead').textContent = '';
+        setMode('done');
+    }
+    $('logout').addEventListener('click', async () => {
+        if (sb) await sb.auth.signOut();
+        setMode('login');
+    });
+
+    if (sb) {
+        // 메일의 재설정 링크로 들어오면 새 비밀번호 화면을 연다
+        sb.auth.onAuthStateChange(evt => { if (evt === 'PASSWORD_RECOVERY') setMode('newpw'); });
+        sb.auth.getSession().then(({ data }) => {
+            const u = data && data.session && data.session.user;
+            if (u && forms.newpw.hidden) showDone(u, '이미 로그인되어 있어요');
+        });
+    }
+    if (new URLSearchParams(location.search).get('mode') === 'signup') setMode('signup');
+})();
