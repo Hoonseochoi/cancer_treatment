@@ -185,12 +185,30 @@ function clauseCycleOf(name) {
     return best ? CLAUSE_CYCLE[best].cycle : '';
 }
 
+// ── 메리츠: 이름만으로 사전 키를 못 찾는 담보 ──
+// 같은 '표적항암약물'이라도 종류 개수별 2·3종, 암진단및치료비의 2종및3종이상은 지급 조건이 달라
+// 아래 일반 규칙(표적항암약물 → 단독 담보)에 걸리면 안 된다. 일반 규칙보다 먼저 본다.
+function meritzExtraDetailKey(n) {
+    const t = String(n || '');
+    if (/암진단및치료비.*\[항암약물치료비\]/.test(t)) return "암진단및치료비Ⅱ[항암약물치료비]";
+    if (/표적항암약물/.test(t) && /2종및3종이상/.test(t)) return "표적항암약물(2종및3종이상)";
+    if (/표적항암약물/.test(t) && /약물종류\s*개수별/.test(t) && /\[[23]종이상\]/.test(t)) return "표적항암약물(연간 약물종류 개수별)[2·3종]";
+    return null;
+}
+
+// 메리츠 사전의 세부 이름에 적힌 주기 — "(매회) …", "(연1회) …", "(10년갱신)(최초1회) …"
+function cycleFromDetailName(name) {
+    const m = String(name || '').match(/\((매회|연1회|최초1회)\)/);
+    return m ? ({ '매회': '매회', '연1회': '연간1회', '최초1회': '최초1회' })[m[1]] : '';
+}
+
 // ── Aggregate Hierarchical Summary Logic ──
 function calculateHierarchicalSummary(results) {
     const summaryMap = new Map();
     let first26SummaryFound = false; // 26종 첫 번째만 한눈에보기에 반영
     results.forEach(item => {
-        let details = coverageDetailsMap[item.name];
+        const extraKey = meritzExtraDetailKey(item.name);
+        let details = coverageDetailsMap[item.name] || (extraKey ? coverageDetailsMap[extraKey] : null);
         // Dictionary Lookup (Fallback Logic)
         if (!details) {
             // 1. III (Best Priority)
@@ -265,6 +283,19 @@ function calculateHierarchicalSummary(results) {
             details = directTargets.map(t => ({
                 name: details.displayName,
                 amount: item.amount,
+                targetName: t,
+                payFreq: details.payFreq,
+                _expansion: isDescendantWithinList(t, directTargets)
+            }));
+        }
+        // 조건이 맞을 때만 더 나오는 담보(표적항암제 종류 2·3종 이상) — 최솟값 0, 최댓값에만 더한다
+        if (details && details.type === 'tier-max') {
+            const directTargets = details.summaryTargets;
+            const maxV = parseKoAmount(item.amount) * (details.maxTimes || 1);
+            details = directTargets.map(t => ({
+                name: details.displayName,
+                amount: '0',
+                maxAmount: formatKoAmount(maxV).replace(/원$/, ''),
                 targetName: t,
                 _expansion: isDescendantWithinList(t, directTargets)
             }));
@@ -347,7 +378,9 @@ function calculateHierarchicalSummary(results) {
                 const srcIsBundle  = /암진단|통합치료비|계속받는/.test(item.name);
                 const srcIsPerType = /약물종류 개수별/.test(item.name);
                 let payFreq = '';
-                if (srcIs26Jong) {
+                if (det.payFreq) {
+                    payFreq = det.payFreq;
+                } else if (srcIs26Jong) {
                     payFreq = 'once-each';
                 } else if (srcIsPerType) {
                     payFreq = 'annual';
@@ -363,7 +396,9 @@ function calculateHierarchicalSummary(results) {
                     amount: det.amount,
                     maxAmount: det.maxAmount,
                     source: item.name,
-                    cycle: clauseCycleOf(item.name),
+                    // 메리츠 사전은 세부 이름에 주기를 적어 둔다 — 약관 사전보다 그쪽이 정확하다
+                    cycle: cycleFromDetailName(det.name) ||
+                           (det.payFreq === 'once' ? '최초1회' : '') || clauseCycleOf(item.name),
                     hiddenInDetail: det.hiddenInDetail,
                     sub: det.sub, // 전달용 sub 항목 추가
                     payFreq: payFreq,
@@ -382,12 +417,15 @@ function calculateHierarchicalSummary(results) {
             });
         }
     });
+    // 메리츠: 암으로 수술하면 질병수술비·1-5종 수술비도 함께 나온다(js/meritz_adapter.js)
+    if (typeof applyMeritzSurgeryToCancer === 'function') applyMeritzSurgeryToCancer(summaryMap, results);
     return summaryMap;
 }
 
 // Helper to find details (Global Scope)
 function findDetails(itemName) {
-    let details = coverageDetailsMap[itemName];
+    const extraKey = meritzExtraDetailKey(itemName);
+    let details = coverageDetailsMap[itemName] || (extraKey ? coverageDetailsMap[extraKey] : null);
     if (!details) {
         // 1. III (Best Priority)
         if (itemName.includes("암 통합치료비") && (itemName.includes("III") || itemName.includes("Ⅲ"))) {

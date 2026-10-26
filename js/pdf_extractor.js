@@ -23,7 +23,10 @@ async function extractTextFromPDF(file, log = console.log) {
     const pagesToProcess = isMiraePDF
         ? [1, 2, 3, 4, 5, 6, 7, 8].filter(p => p <= pdf.numPages)
         : isMeritzPDF
-            ? [1, 3, 4, 5].filter(p => p <= pdf.numPages)
+            // 메리츠 담보 목록은 3쪽부터 상품에 따라 6쪽 이상까지 이어진다. 1·3·4·5쪽만 읽어
+            // 뒤쪽 담보가 빠졌다(실측: 내Mom대로 6쪽의 유사암 통합치료 생활비·양성뇌종양 진단비).
+            // 넉넉히 14쪽까지 잡고, 목록 끝 문구가 나오면 거기서 멈춘다(아래 루프).
+            ? [1, ...Array.from({ length: 12 }, (_, k) => k + 3)].filter(p => p <= pdf.numPages)
             : pdf.numPages > 8
                 ? Array.from({ length: pdf.numPages }, (_, i) => i + 1)
                 : [1, 3, 4, 5, 6].filter(p => p <= pdf.numPages);
@@ -124,7 +127,17 @@ async function extractTextFromPDF(file, log = console.log) {
             console.error(`Page ${i} Critical Error:`, pageErr);
             log(`Page ${i} 처리 중 오류: ${pageErr.message}`);
         }
+        // 메리츠: 담보별 설명(「가입담보 및 보장내용」)이 시작되는 쪽은 싣지 않고 멈춘다.
+        // 목록 끝 안내문("가입담보리스트는 담보사항…")은 상품에 따라 목록 앞에 오기도 해 기준이 못 된다.
+        if (isMeritzPDF && i >= 4 && /가입담보\s*및\s*보장내용/.test(pageText || '')) {
+            log(`[pdf_extractor] 메리츠 담보 설명 시작(${i}쪽) — 여기서 멈춤`);
+            break;
+        }
         fullText += (pageText || "") + '\n';
+        if (isMeritzPDF && i >= 3 && /^\s*주의사항\s*$/m.test(pageText || '')) {
+            log(`[pdf_extractor] 메리츠 가입담보리스트 끝(${i}쪽)`);
+            break;
+        }
     }
     return fullText || "";
 }

@@ -312,6 +312,9 @@ async function processFile(file) {
                         text.match(/보험료\s*([\d,]+)\s*원\s*\(매월\)/) ||
                         text.match(/보험료\s+([\d,]+)\s*원(?!\s*\()/) ;
             if (prm) samsungMeta.premium = parseInt(prm[1].replace(/,/g, ''), 10);
+            // 메리츠 수술비Ⅱ(1-5종)은 수술 1회당 지급(인수지침 2610 「생보형 수술비」).
+            // 1-5종수술비(plus)는 한 해 두 번째 수술부터 더 큰 종으로 연 1회 더 준다.
+            samsungMeta.fiveTypeCycle = '매회';
 
             console.log('[meritz meta]', samsungMeta);
         } else if (insurer === 'mirae') {
@@ -340,7 +343,7 @@ async function processFile(file) {
             console.log('[mirae meta]', samsungMeta);
         }
 
-        const results = insurer === 'samsung'
+        let results = insurer === 'samsung'
             ? extractRawCoveragesSamsung(text)
             : insurer === 'db'
                 ? extractRawCoveragesDB(text)
@@ -349,6 +352,10 @@ async function processFile(file) {
                     : insurer === 'mirae'
                         ? extractRawCoveragesMirae(text)
                         : extractRawCoverages(text);
+        // 메리츠: 갱신형·가입유형 꼬리말을 걷고 수술비·뇌심장·간병 담보에 표준 이름을 붙인다(js/meritz_adapter.js)
+        if (insurer === 'meritz' && typeof normalizeMeritzResults === 'function') {
+            results = normalizeMeritzResults(results, text);
+        }
         console.log(`[extraction] ${results.length}건 추출 (insurer=${insurer})`);
 
         // 원본 담보 전량 로깅 (매칭 성공/실패 무관, 향후 매핑 로직 보완용)

@@ -2,13 +2,28 @@
 // 기존 암보장 분석 결과는 그대로 두고, 삼성화재 제안서에서 수술비 담보가 감지되면
 // 토글로 전환해서 볼 수 있는 사이드 뷰. 암 9카드 렌더링에는 일절 관여하지 않는다.
 
+// 메리츠 수술비 확인 사항 — 가입제안서 담보 설명과 인수지침(2610)에 적힌 것만 옮긴다.
+const MERITZ_SURGERY_DISC = `
+        <ol class="sg-disc-rest">
+          <li>같은 수술도 <strong>개복·복강경·내시경, 림프절절제 동반 여부</strong>에 따라 수술 종류(종)와 금액이 달라집니다.</li>
+          <li><strong>질병수술비</strong>는 같은 질병으로 두 종류 이상의 수술을 받거나 같은 종류의 수술을 2회 이상 받아도 <strong>하나의 질병수술비만</strong> 지급합니다.</li>
+          <li><strong>질병수술비(특정5대질병 제외)</strong>는 ① 대장의 용종 또는 양성신생물의 내시경적 절제술 ② 백내장 ③ 후각특정질환 ④ 특정피부질환 ⑤ 혈관종 및 림프관종 수술에는 <strong>지급하지 않습니다</strong>.</li>
+          <li><strong>수술비Ⅱ(1-5종)</strong>는 1-5종 수술분류표Ⅱ(약관 참조)의 종에 따라 <strong>수술 1회당</strong> 가입금액을 지급합니다.</li>
+          <li><strong>1-5종수술비(plus)</strong>는 한 해에 1-5종 수술을 <strong>2회 이상</strong> 받은 경우 더 큰 종으로 <strong>연 1회</strong> 더 지급합니다. 수술 한 번의 금액에는 넣지 않고 <strong>+금액</strong>으로 따로 표시했습니다.</li>
+          <li>흡인·천자·신경 BLOCK, 미용성형·피임 목적, 검사·진단을 위한 수술(생검·복강경검사 등)은 수술로 보지 않는 것이 일반적입니다. 질병수술비의 면책 질병(정신질환·임신출산·선천기형·치핵 등)은 <strong>약관 기준</strong>으로 확인해 주세요.</li>
+          <li><strong>131대(130대)질병수술비</strong>는 수술 이름만으로 그룹이 분명한 백내장·치핵·편도염·심장질환만 반영했습니다. 그 밖의 그룹(특정31대·다빈도62대 등) 해당 여부는 약관 분류표로 확인해 주세요.</li>
+          <li>수술 종(1~5종) 구분은 표준 1-5종 수술분류표 기준으로 표시했습니다. 메리츠 약관 분류표Ⅱ와 다를 수 있으니 청구 전 약관을 확인해 주세요.</li>
+        </ol>`;
+
 // 제안서에서 추출한 수술비 담보(kind:'surgery')를 계열별로 정리한다.
 function buildSurgeryPolicy(results) {
     const surg = (results || []).filter(r => r && r.kind === 'surgery');
     if (!surg.length) return null;
 
     const norm = s => (s || '').replace(/\s+/g, '');
-    const find = re => surg.find(r => re.test(norm(r.name)));
+    // 메리츠는 담보명이 달라 어댑터가 붙인 표준 이름(canon)으로 찾는다(js/meritz_adapter.js)
+    const key = r => norm(r.canon || r.name);
+    const find = re => surg.find(r => re.test(key(r)));
     const val = r => (r ? parseKoAmount(r.amount) : 0);
 
     const p = {
@@ -27,9 +42,9 @@ function buildSurgeryPolicy(results) {
     }
     // 111대/115대/119대 질병수술비 — 그룹명을 담보명에서 그대로 뽑는다
     surg.forEach(r => {
-        const m = norm(r.name).match(/\d+대질병수술비\(([^)]+)\)/);
+        const m = key(r).match(/\d+대질병수술비\(([^)]+)\)/);
         if (m) p.군[m[1]] = parseKoAmount(r.amount);
-        const b = norm(r.name).match(/양성신생물수술비\(([^)]+?)(?:\(|\))/);
+        const b = key(r).match(/양성신생물수술비\(([^)]+?)(?:\(|\))/);
         if (b) p.양성[b[1].replace(/양성신생물$/, '')] = parseKoAmount(r.amount);
     });
     ['충수염', '인공관절치환', '조혈모세포이식', '각막이식', '5대장기이식'].forEach(k => {
@@ -39,7 +54,42 @@ function buildSurgeryPolicy(results) {
     // 위·십이지장, 대장 양성종양 및 용종 진단비 — 진단비지만 용종을 떼면 함께 나온다.
     // 수술비 담보가 아니라 지금까지 어느 화면에도 안 잡혔다.
     p.용종 = val(find(/양성종양및용종진단비/));
+
+    // ── 메리츠 ──
+    //   질병수술비는 입원·통원 구분 없이 수술 1회당 — 위 '입원' 자리에 들어간다.
+    //   질병수술비(특정5대질병 제외)는 그 위에 한 번 더 나온다. 특정5대질병은 빠진다.
+    //   1-5종수술비(plus)는 한 해 두 번째 수술부터 더 큰 종으로 연 1회 더 준다.
+    p.mz = (typeof window !== 'undefined' && window.__insurerKey === 'meritz');
+    p.추가 = val(find(/^질병추가수술비\(특정5대질병제외\)/));
+    p.plus5 = {};
+    for (let g = 1; g <= 5; g++) p.plus5[g] = val(find(new RegExp(`^질병1~5종plus\\(${g}종\\)`)));
+    // 메리츠 131대(130대)질병수술비 — 그룹 이름이 삼성 111대와 달라 삼성 분류로는 못 맞춘다.
+    // 수술 이름만으로 그룹이 분명한 것만 따로 잇는다(MZ_SURG_GROUP). 심장·뇌혈관 그룹은 뇌심 담보로 분류돼 있다.
+    p.mzGroup = {}; p.mzGroupName = '';
+    if (p.mz) {
+        p.군 = {};
+        (results || []).forEach(r => {
+            const m = norm(r && r.name).match(/^(1[23]\d대질병수술비)[\[(]([^\])]+)[\])]/);
+            if (m) { p.mzGroupName = m[1]; p.mzGroup[m[2]] = parseKoAmount(r.amount); }
+        });
+    }
     return p;
+}
+
+// 수술 이름만으로 메리츠 131대질병수술비 그룹이 분명한 것
+const MZ_SURG_GROUP = {
+    '백내장(수정체)': '백내장', '치핵(치질)': '치핵', '편도절제술': '편도염',
+    '관상동맥 우회술': '심장질환', '관상동맥 스텐트': '심장질환'
+};
+
+// 질병수술비(특정5대질병 제외)가 나오지 않는 수술 — ① 대장 용종·양성신생물 내시경 절제
+// ② 백내장 ③ 후각특정질환 ④ 특정피부질환 ⑤ 혈관종 및 림프관종 (가입제안서 담보 설명)
+function isMeritzFiveExcluded(s, v) {
+    const t = (s.name || '') + ' ' + ((v && v.label) || '');
+    if (/백내장|혈관종|림프관종/.test(t)) return true;
+    // 대장·위 용종 절제는 술기마다 갈린다 — 위내시경은 대상, 결장경(대장)은 제외
+    if (s.benign === '대장' && !/위내시경|위\s*용종|위·십이지장/.test((v && v.label) || '')) return true;
+    return false;
 }
 
 // 111대 그룹 담보명은 상품마다 표기가 달라(5대주요기관관혈 / 5대주요기관 등) 유연하게 찾는다.
@@ -64,7 +114,20 @@ function calcSurgeryVariant(policy, s, v) {
     const exWhy = ex ? `제6조②${ex.ho} ${ex.why}(${ex.kcd}) — 면책` : '';
 
     const base = Math.max(policy.입원, policy.통원);
-    if (base > 0) {
+    if (policy.mz) {
+        // 메리츠 질병수술비 — 같은 질병으로 여러 번 수술해도 하나만(가입제안서 담보 설명)
+        const why = ex ? `질병수술비 면책 질병 ${ex.why}(${ex.kcd})` : '';
+        if (policy.입원 > 0) {
+            if (blocked('base')) rows.push({ k: '질병수술비', s: why, v: 0, on: false, c: '매회' });
+            else rows.push({ k: '질병수술비', s: '수술 1회당', v: policy.입원, on: true, c: '매회' });
+        }
+        if (policy.추가 > 0) {
+            const k = '질병수술비(특정5대질병 제외)';
+            if (blocked('base')) rows.push({ k, s: why, v: 0, on: false, c: '매회' });
+            else if (isMeritzFiveExcluded(s, v)) rows.push({ k, s: '특정5대질병(백내장·대장 용종 내시경 절제 등) — 지급 제외', v: 0, on: false });
+            else rows.push({ k, s: '질병수술비에 더해 한 번 더', v: policy.추가, on: true, c: '매회' });
+        }
+    } else if (base > 0) {
         const name = policy.입원 >= policy.통원 ? '질병 입원 수술비' : '질병 통원 수술비';
         if (blocked('base')) rows.push({ k: name, s: exWhy, v: 0, on: false });
         else rows.push({ k: name, s: '입원·통원 중 택일', v: base, on: true });
@@ -75,11 +138,27 @@ function calcSurgeryVariant(policy, s, v) {
         rows.push({ k: '질병 1~5종 수술비', s: '1~5종 분류표에 해당 항목 없음', v: 0, on: false });
     } else {
         const a5 = policy.종5[v.g5];
-        if (a5 > 0) rows.push({ k: `질병 1~5종 수술비(${v.g5}종)`, s: v.n5, v: a5, on: true });
+        const nm5 = policy.mz ? `수술비Ⅱ(1-5종)[질병${v.g5}종]` : `질병 1~5종 수술비(${v.g5}종)`;
+        if (a5 > 0) rows.push({ k: nm5, s: v.n5, v: a5, on: true, ...(policy.mz ? { c: '매회' } : {}) });
         else rows.push({ k: `1~5종 분류: ${v.g5}종`, s: '이 상품에 해당 담보 없음', v: 0, on: false });
+        // plus — 한 수술에서 바로 나오는 돈이 아니라 합계에는 넣지 않고 금액만 보여준다
+        const pl = policy.plus5 && policy.plus5[v.g5];
+        if (pl > 0) rows.push({ k: `1-5종수술비(plus)(${v.g5}종)`, s: '같은 해 두 번째 수술부터 더 큰 종으로 연 1회',
+                                v: pl, on: false, opt: true, c: '연간1회' });
     }
 
-    if (v.g8 == null) {
+    // 131대질병수술비 — 같은 날 여러 수술은 1회만
+    const grp = policy.mz && MZ_SURG_GROUP[s.name];
+    if (grp && policy.mzGroup[grp] > 0) {
+        rows.push({ k: `${policy.mzGroupName}(${grp})`, s: '같은 날 여러 수술은 1회만', v: policy.mzGroup[grp], on: true, c: '매회' });
+    }
+
+    // 메리츠 상품에는 1~8종·N대질병 수술비가 없는 경우가 많다 — 없으면 '해당 없음' 줄을 늘어놓지 않는다
+    const has8 = Object.values(policy.종8).some(x => x > 0);
+    const hasGroup = Object.keys(policy.군).length > 0;
+    if (policy.mz && !has8) {
+        // 건너뜀
+    } else if (v.g8 == null) {
         rows.push({ k: '질병 1~8종 수술비', s: '1~8종 분류표에 해당 항목 없음', v: 0, on: false });
     } else {
         const a8 = policy.종8[v.g8];
@@ -87,7 +166,9 @@ function calcSurgeryVariant(policy, s, v) {
         else rows.push({ k: `1~8종 분류: ${v.g8}종`, s: '이 상품에 해당 담보 없음', v: 0, on: false });
     }
 
-    if (s.cancer) {
+    if (policy.mz && !hasGroup) {
+        // 건너뜀
+    } else if (s.cancer) {
         rows.push({ k: '질병군 수술비', s: '분류표에 악성신생물 미포함 — 해당 없음', v: 0, on: false });
     } else {
         // N대질병 수술비는 그룹 간 중복 지급되지 않는다. 한 질병이 여러 그룹에 해당해도
@@ -124,7 +205,7 @@ function calcSurgeryVariant(policy, s, v) {
     }
     // 지급 주기 — 1~5종은 연간 1회(2026.10 개정), 입원·통원·N대질병은 매회처럼 담보마다 다르다.
     // 같은 수술을 해마다 받을 때 어느 줄이 다시 나오는지가 상담에서 바로 갈린다.
-    rows.forEach(r => { r.c = surgeryRowCycle(r.k); });
+    rows.forEach(r => { if (!r.c) r.c = surgeryRowCycle(r.k); });
     return { rows, total: rows.reduce((a, b) => a + (b.on ? b.v : 0), 0) };
 }
 
@@ -236,11 +317,11 @@ function renderSurgeryPanel(results) {
             <div class="sg-v">
               <div class="sg-vh"><span>${g.label}</span><b>${fmt(g.total)}</b></div>
               ${g.rows.map(x => `<div class="sg-r${x.on ? '' : ' off'}">
-                  <span>${x.k}<em>${x.s}${x.on && x.c ? ` · ${SURG_CYC_LABEL[x.c]}` : ''}</em></span><b>${x.on ? fmt(x.v) : '—'}</b></div>`).join('')}
+                  <span>${x.k}<em>${x.s}${x.on && x.c ? ` · ${SURG_CYC_LABEL[x.c]}` : ''}</em></span><b>${x.on ? fmt(x.v) : x.opt ? '+' + fmt(x.v) : '—'}</b></div>`).join('')}
               <div class="sg-src">${g.variants.map(v =>
-                  [v.c8 ? `1~8종 ${v.c8} ${v.g8}종 「${v.n8}」` : '1~8종 분류표에 해당 항목 없음',
+                  [policy.mz ? '' : (v.c8 ? `1~8종 ${v.c8} ${v.g8}종 「${v.n8}」` : '1~8종 분류표에 해당 항목 없음'),
                    v.n5no ? `1~5종 ${v.n5no}항 ${v.g5}종` : '1~5종 분류표에 해당 항목 없음'
-                  ].join(' · ')).join('<br>')}</div>
+                  ].filter(Boolean).join(' · ')).join('<br>')}</div>
             </div>`).join('');
 
         // 1~5종·1~8종 어디에도 대응 항목이 없는 행위는 "수술"이 아니라 시술로 볼 여지가 커
@@ -262,7 +343,8 @@ function renderSurgeryPanel(results) {
                 <span class="sg-tags">
                   ${none ? '' : (policy.입원 || policy.통원 ? '<span class="sg-chip sg-base">질수</span>' : '')}
                   ${g5.map(grade).join('')}
-                  ${g8.length ? `<span class="sg-chip sg-cls">1~8종 ${g8.join('·')}종</span>` : ''}
+                  ${g8.length && !(policy.mz && !Object.values(policy.종8).some(x => x > 0))
+                      ? `<span class="sg-chip sg-cls">1~8종 ${g8.join('·')}종</span>` : ''}
                   ${s.cancer ? '<span class="sg-chip sg-cancer">암</span>' : ''}
                   ${s.benign ? '<span class="sg-chip sg-etc">양성신생물</span>' : ''}
                   ${s.special ? `<span class="sg-chip sg-etc">${s.special}</span>` : ''}
@@ -327,6 +409,7 @@ function renderSurgeryPanel(results) {
           </span>
           <span class="sg-disc-caret"></span>
         </button>
+        ${policy.mz ? MERITZ_SURGERY_DISC : `
         <ol class="sg-disc-rest">
           <li>같은 수술도 <strong>개복·복강경·내시경, 림프절절제 동반 여부</strong>에 따라 수술 종류(종)와 금액이 달라집니다.</li>
           <li><strong>질병 입원 수술비·통원 수술비 및 N대질병 수술비는 아래 질병에 대해 보상하지 않습니다</strong>(질병 수술비 특별약관 제6조②).
@@ -346,7 +429,7 @@ function renderSurgeryPanel(results) {
           <li><strong>N대질병 수술비 분류표에는 악성신생물(암)이 없습니다.</strong> 양성신생물은 포함됩니다. 1~5종 수술비는 다수 항목이 <strong>「근본수술」·「근치수술」</strong>을 요건으로 합니다.</li>
           <li>양성신생물 수술비 등 일부 담보는 <strong>가입 후 1년 이내 감액 지급</strong>됩니다. 고의·자해, 수익자·계약자의 고의, 전쟁·외국의 무력행사·혁명·내란·사변·폭동으로 인한 경우도 면책입니다(제6조①).</li>
         </ol>
-      </div>`;
+        `}      </div>`;
 
     // onclick 으로 대입한다. addEventListener 를 쓰면 제안서를 다시 분석할 때마다
     // 핸들러가 중첩되어 클릭 한 번에 토글이 여러 번 뒤집힌다.
@@ -380,12 +463,14 @@ function setupSurgeryToggle(results, insurer) {
 
     const count = (results || []).filter(r => r && r.kind === 'surgery').length;
     const ccCount = (results || []).filter(r => r && r.kind === 'circulatory').length;
-    const hasSurgery = insurer === 'samsung' && count > 0 && renderSurgeryPanel(results);
-    const hasCirc = insurer === 'samsung' && ccCount > 0 && renderCirculatoryPanel(results);
+    // 삼성·메리츠 — 메리츠는 어댑터가 담보에 kind를 붙여 준다(js/meritz_adapter.js)
+    const smartOk = insurer === 'samsung' || insurer === 'meritz';
+    const hasSurgery = smartOk && count > 0 && renderSurgeryPanel(results);
+    const hasCirc = smartOk && ccCount > 0 && renderCirculatoryPanel(results);
     // 간병인 탭 — 간병 담보(간병인지원·사용일당·간호간병통합)가 있을 때만
     const cgPanel = document.getElementById('caregiver-panel');
     const cgCount = (results || []).filter(r => r && r.kind === 'caregiver').length;
-    const hasCare = insurer === 'samsung' && cgCount > 0 && !!cgPanel &&
+    const hasCare = smartOk && cgCount > 0 && !!cgPanel &&
         typeof renderCaregiverPanel === 'function' && renderCaregiverPanel(results);
     if (!hasSurgery && !hasCirc && !hasCare) {
         wrap.classList.add('hidden');

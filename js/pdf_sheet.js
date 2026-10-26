@@ -29,8 +29,20 @@ const SHEET_COLOR = {
     heart: '#C2436B', heartSoft: '#FCF0F4'
 };
 
+// 보험사별 머리띠 색·이름. 지면 구성은 같고 머리띠·강조색·회사명만 바뀐다.
+const SHEET_BRAND = {
+    samsung: { name: '삼성화재', blue: '#003CDC' },
+    meritz: { name: '메리츠화재', blue: '#E60000' }
+};
+function sheetBrand() {
+    const k = (typeof window !== 'undefined' && window.__insurerKey) || 'samsung';
+    return SHEET_BRAND[k] || SHEET_BRAND.samsung;
+}
+function sheetBrandName() { return sheetBrand().name; }
+function sheetIsMeritz() { return typeof window !== 'undefined' && window.__insurerKey === 'meritz'; }
+
 function sheetCss() {
-    const C = SHEET_COLOR;
+    const C = Object.assign({}, SHEET_COLOR, { blue: sheetBrand().blue });
     return `
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     .sheet{width:${SHEET_W}px;height:${SHEET_H}px;background:#fff;color:${C.ink};
@@ -156,11 +168,11 @@ function sheetCss() {
     .span .hosp em{font-style:normal;color:${C.gold}}
 
     /* 보장 범위 — 상자 속 상자 */
-    .sc-outer{border:1px solid ${C.blue};border-radius:${mm(3.6)};background:#F4F8FD;
+    .sc-outer{border:1px solid ${C.blue};border-radius:${mm(3.6)};background:${sheetIsMeritz() ? '#FDF5F5' : '#F4F8FD'};
       padding:0 0 ${mm(1.4)}}
     .sc-outer.off{border-color:${C.rule};background:${C.wash}}
     .sc-top{display:flex;align-items:baseline;gap:${mm(2.5)};padding:${mm(1.8)} ${mm(4.5)};
-      border-bottom:1px solid rgba(0,60,220,.16)}
+      border-bottom:1px solid ${sheetIsMeritz() ? 'rgba(230,0,0,.16)' : 'rgba(0,60,220,.16)'}}
     .sc-top .t{font-size:${px(9)};font-weight:800;color:${C.blue};letter-spacing:-.02em}
     .sc-top em{font-style:normal;font-size:${px(7)};color:${C.muted}}
     .sc-top b{margin-left:auto;font-family:'Plus Jakarta Sans',sans-serif;font-size:${px(12)};
@@ -339,7 +351,7 @@ function sheetSummary(d) {
             `<td class="${c.v ? '' : 'z'}">${c.v ? sFmt(c.v) : '0원'}` +
             `${c.s ? `<small>${c.s}</small>` : ''}</td>`).join('')}</tr>`;
     const s = d.summary;
-    return sheetHead(d.who) + sheetTop('삼성화재', '한장요약', 'Summary') +
+    return sheetHead(d.who) + sheetTop(sheetBrandName(), '한장요약', 'Summary') +
     `<div class="meta">
        <div class="m"><div class="k">상품</div><div class="v">${sClip(d.product, 22)}</div></div>
        <div class="m"><div class="k">피보험자</div><div class="v">${d.person || '—'}</div></div>
@@ -362,8 +374,8 @@ function sheetSummary(d) {
        ${s._hasCirc ? `<div><h3>뇌 · 심장 보장<span class="hint">범위가 넓은 담보 기준</span></h3>
          <table><tr><th style="width:20%"></th><th>진단</th><th>치료 · 수술</th>
            <th>중환자실</th><th>재활</th></tr>
-           ${row('뇌 계열', [{ v: s.brainDx }, { v: s.circTreat }, { v: s.icu }, { v: s.rehab }])}
-           ${row('심장 계열', [{ v: s.heartDx }, { v: s.circTreat }, { v: s.icu }, { v: s.rehab }])}
+           ${row('뇌 계열', [{ v: s.brainDx }, { v: s.circTreat }, { v: s.icu }, { v: s.rehab, s: s.rehabSub }])}
+           ${row('심장 계열', [{ v: s.heartDx }, { v: s.circTreat }, { v: s.icu }, { v: s.rehab, s: s.rehabSub }])}
          </table></div>` : ''}
        ${cgCells.length ? `<div><h3>간병<span class="hint">입원하면 이렇게 · 자세한 내용은 간병인 지원 장</span></h3>
          <table><tr>${cgCells.map(c => `<th>${c.h}</th>`).join('')}</tr>
@@ -379,7 +391,7 @@ function sheetSummary(d) {
              `<td>${sFmt(x.v)}${x.g ? `<small>${x.g}</small>` : ''}</td>`).join('')}</tr>
          </table></div>` : ''}
      </div>` +
-    sheetFoot('삼성화재 가입제안서 기준 · 0원은 미가입', 2, 5);
+    sheetFoot(`${sheetBrandName()} 가입제안서 기준 · 0원은 미가입`, 2, 5);
 }
 
 // 암 카드 9장 고정 배치 — 1단 표적·면역·다빈치 / 2단 양성자·중입자·세기조절 / 3단 수술·약물·방사선.
@@ -400,13 +412,13 @@ function cancerGrid(cards) {
 
 // ── 03 암 ──
 function sheetCancer(d) {
-    return sheetHead(d.who) + sheetTop('삼성화재', '암 치료비', 'Cancer') +
+    return sheetHead(d.who) + sheetTop(sheetBrandName(), '암 치료비', 'Cancer') +
         covBlock(d.cancerCov, '암 관련') +
         `<div class="body">
            <div><h3>치료비<span class="hint">어느 담보에서 얼마가 나오는지</span></h3>
              <div class="cards c9">${cancerGrid(d.cancerCards).map(cardBlock).join('')}</div></div>
          </div>` +
-        sheetFoot('삼성화재 가입제안서 기준 · 0원은 미가입', 3, 5);
+        sheetFoot(`${sheetBrandName()} 가입제안서 기준 · 0원은 미가입`, 3, 5);
 }
 
 // ── 04 수술비 ──
@@ -414,7 +426,7 @@ function sheetSurgery(d) {
     const mini = (d.miniSurg || []).slice(0, 12).map(x =>
         `<div class="m"><span class="n3">${sClip(x.nm, 11)}</span>` +
         `<span class="a3">${sFmt(x.v)}</span></div>`).join('');
-    return sheetHead(d.who) + sheetTop('삼성화재', '수술비', 'Surgery') +
+    return sheetHead(d.who) + sheetTop(sheetBrandName(), '수술비', 'Surgery') +
         covBlock(d.surgCov, '수술비') +
         `<div class="body">
            <div><h3>다빈도 수술<span class="hint">어느 담보에서 얼마가 나오는지</span></h3>
@@ -422,7 +434,8 @@ function sheetSurgery(d) {
            ${mini ? `<div><h3>그 밖의 수술<span class="hint">가입금액 기준 검토 가능액</span></h3>
              <div class="mini">${mini}</div></div>` : ''}
          </div>` +
-        sheetFoot('삼성화재 가입제안서 기준 · 종 구분은 별표16 · 별표17', 4, 5);
+        sheetFoot(sheetIsMeritz() ? '메리츠화재 가입제안서 기준 · 종 구분은 1-5종 수술분류표 기준'
+                                  : '삼성화재 가입제안서 기준 · 종 구분은 별표16 · 별표17', 4, 5);
 }
 
 // 보장 범위 — 치료비가 가장 넓고(특정순환계질환 41개 질환군) 진단비는 그 안쪽의 좁은 범위다.
@@ -441,7 +454,7 @@ function scopeBlock(d) {
     return `
       <div class="sc-outer${d.scopeOuter > 0 ? '' : ' off'}">
         <div class="sc-top"><span class="t">특정순환계질환 ${d.hasTong ? '통합치료비' : '치료비'}</span>
-          <em>I00~I99 · 41개 질환군 전체${d.hasTong
+          <em>${d.mz ? '특정순환계질환 분류표 전체' : 'I00~I99 · 41개 질환군 전체'}${d.hasTong
               ? ' · 검사 ▸ 약물 ▸ 치료 ▸ 수술 ▸ 재활 전 과정 · 모든 종합병원' : ''}</em>
           <b>${d.scopeOuter > 0 ? sFmt(d.scopeOuter) : '미가입'}</b></div>
         <div class="sc-cols">
@@ -462,18 +475,20 @@ function sheetCirc(d) {
             `${x.kcd ? ` <em>${x.kcd}</em>` : ''}</span>` +
             `<b>${x.v ? sFmt(x.v) : '미가입'}</b></li>`).join('')}</ul></div>`;
     };
-    return sheetHead(d.who) + sheetTop('삼성화재', '뇌·심장 보장', 'Cerebro · Cardio') +
+    return sheetHead(d.who) + sheetTop(sheetBrandName(), '뇌·심장 보장', 'Cerebro · Cardio') +
         covBlock(d.circCov, '뇌·심장') +
         `<div class="body">
            <!-- 검사▸약물▸치료▸수술▸재활 띠는 보장 범위 상자 머리줄로 옮겼다 (한 장 유지) -->
            <div><h3>보장 범위<span class="hint">바깥 상자일수록 넓은 보장</span></h3>
              ${scopeBlock(d)}</div>
            <div><h3>치료비<span class="hint">어느 담보에서 얼마가 나오는지</span></h3>
-             <div class="cards">${(d.circCards || []).slice(0, 6).map(cardBlock).join('')}</div></div>
-           ${caseBlock('사례로 보는 보장', d.circCaseDesc, d.circCase,
+             <div class="cards">${(d.mz ? (d.circCards || []).filter((c, i) => i < 4 || c.v > 0) : (d.circCards || []))
+                 .slice(0, 6).map(cardBlock).join('')}</div></div>
+           ${d.mz ? '' /* 메리츠는 치료비 카드가 6장 꽉 차 사례까지 실으면 한 장을 넘는다 */
+               : caseBlock('사례로 보는 보장', d.circCaseDesc, d.circCase,
                { c: SHEET_COLOR.heart, s: SHEET_COLOR.heartSoft })}
          </div>` +
-        sheetFoot('삼성화재 가입제안서 기준', 5, 5);
+        sheetFoot(`${sheetBrandName()} 가입제안서 기준`, 5, 5);
 }
 
 // ── 지면에 쓸 값을 한곳에서 모은다 ──
@@ -495,8 +510,11 @@ function buildSheetData(results, meta, customerName) {
     };
 
     // ── 암 ──
-    const sm = (typeof calculateHierarchicalSummarySamsung === 'function')
-        ? calculateHierarchicalSummarySamsung(R) : new Map();
+    // 메리츠는 메리츠 사전(analyzer.js)으로 — 화면 카드와 같은 계산
+    d.mz = sheetIsMeritz();
+    const sm = d.mz
+        ? (typeof calculateHierarchicalSummary === 'function' ? calculateHierarchicalSummary(R) : new Map())
+        : (typeof calculateHierarchicalSummarySamsung === 'function') ? calculateHierarchicalSummarySamsung(R) : new Map();
     const CYC = { '최초1회': ['최초 1회', 'on'], '연간1회': ['연간 1회', 'yr'],
                   '매회': ['매회', 'ev'], '일당': ['1일당', ''] };
     const ORDER = ['최초1회', '연간1회', '매회', '일당'];
@@ -531,7 +549,8 @@ function buildSheetData(results, meta, customerName) {
                : keys.length > 1 ? keys.map(k => k.replace(/1회|간/g, '')).join('+') : '',
             cycCls: keys.length === 1 ? CYC[keys[0]][1] : (keys.length > 1 ? 'mix' : 'yr'),
             rows: [...bySrc.entries()].map(([n, o]) =>
-                ({ n, v: o.v, vMax: o.vMax, c: o.c ? CYC[o.c][0].replace(' 1회', '') : '' }))
+                ({ n: (d.mz && typeof meritzShortName === 'function') ? meritzShortName(n) : n,
+                   v: o.v, vMax: o.vMax, c: o.c ? CYC[o.c][0].replace(' 1회', '') : '' }))
         };
     }).sort((a, b) => b.v - a.v);
     // 금액은 제안서에 적힌 가입금액을 쓴다. 카드마다 쓰인 금액을 더해 두면 한 담보가
@@ -646,7 +665,9 @@ function buildSheetData(results, meta, customerName) {
             };
             // '특정치료비Ⅲ(중환자실)'은 이름에 특정치료비가 들어 있어 수술·혈전 칸 내역에
             // 섞였다(실측). 중환자실 담보는 중환자실 칸에만 싣는다.
-            d.circCards = [
+            d.circCards = cp.mz ? meritzCircActs(cp).map(a => mk(a.nm, a.v, a.rows,
+                    { lead: a.lead, cyc: a.cyc.replace(/^연 1회$/, '연간 1회'), cycCls: a.badge != null ? a.badge : 'yr' }))
+                : [
                 mk('주요 치료 수술', cp.surgTreat.수술 || 0,
                    withTong(/^(?!.*중환자실).*(특정치료비|순환계.*수술비)/, '수술'),
                    { lead: true, cyc: '수술 매회', cycCls: 'ev' }),
@@ -657,7 +678,7 @@ function buildSheetData(results, meta, customerName) {
                 mk('중환자실 입원', cp.중환자실 || 0,
                    withTong(/중환자실/, '중환자실'), { cyc: '연간 1회' })
             ];
-            if (cp.통합) {
+            if (cp.통합 && !cp.mz) {
                 d.circCards.push(mk('검사 · 영상진단', jV('MRI') + jV('CT') + jV('양전자'),
                     [{ n: 'MRI촬영(급여)', v: jV('MRI') },
                      { n: 'CT · PET촬영', v: jV('CT') + jV('양전자') }], { cyc: '각 연 1회' }));
@@ -668,7 +689,8 @@ function buildSheetData(results, meta, customerName) {
             const hDx = Math.max(...d.heartDx.map(x => x.v), 0);
             // 수술 담보가 없어도 사례는 만든다. 혈전용해·혈전제거만 가입한 제안서가
             // 흔한데, 그 경우에도 "진단 → 치료" 흐름은 보여줄 값어치가 있다.
-            const op = cp.통합 ? (cp.통합.type === 'std' ? 2000 : 1000) : (cp.surgTreat.수술 || 0);
+            const op = cp.mz ? (cp.surgTreat.수술 || 0)
+                : cp.통합 ? (cp.통합.type === 'std' ? 2000 : 1000) : (cp.surgTreat.수술 || 0);
             const lyse = cp.surgTreat.혈전용해 || 0;
             const remove = cp.surgTreat.혈전제거 || 0;
             if (op > 0) {
@@ -698,7 +720,8 @@ function buildSheetData(results, meta, customerName) {
                 heartDx: dxBest.heart,
                 _hasCirc: true,
                 circTreat: cp.treatBest || 0, icu: cp.중환자실 || 0,
-                rehab: jV('전문재활')
+                rehab: cp.mz ? (cp.통합 ? meritzSuntongValue(cp.통합.amount, '전문재활') : 0) : jV('전문재활'),
+                rehabSub: cp.mz && cp.통합 ? '1일당' : ''
             };
         }
     }
@@ -749,7 +772,7 @@ async function renderSheetPages(results, meta, customerName) {
     const d = buildSheetData(results, meta, customerName);
     const C = SHEET_COLOR;
     const pages = [];
-    pages.push({ html: sheetSummary(d), ac: C.blue, acs: '#EDF2FE' });
+    pages.push({ html: sheetSummary(d), ac: sheetBrand().blue, acs: d.mz ? '#FDEEEE' : '#EDF2FE' });
     if ((d.cancerCards || []).length) {
         pages.push({ html: sheetCancer(d), ac: C.cancer, acs: C.cancerSoft });
     }

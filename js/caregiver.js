@@ -82,6 +82,13 @@ function cgIcon(k, size) {
            `${CG_ICON[k] || ''}</svg>`;
 }
 
+// 보험사별 안내 — 메리츠는 js/meritz_adapter.js의 MERITZ_CAREGIVER_SERVICE
+function cgIsMeritz() {
+    return typeof window !== 'undefined' && window.__insurerKey === 'meritz' &&
+        typeof MERITZ_CAREGIVER_SERVICE !== 'undefined';
+}
+function cgService() { return cgIsMeritz() ? MERITZ_CAREGIVER_SERVICE : CAREGIVER_SERVICE; }
+
 // ── 담보 정리 ──
 // 같은 상황(scope)에 상해·질병이 둘 다 있으면 카드 한 장으로 합친다.
 function buildCaregiverPolicy(results) {
@@ -93,7 +100,9 @@ function buildCaregiverPolicy(results) {
         const cause = /상해/.test(n) ? '상해' : /질병/.test(n) ? '질병' : '';
         const long = /181일/.test(n);
         let key;
-        if (/간병인지원/.test(n)) key = long ? 'supportLong' : 'support';
+        // 메리츠 요양성특정질병(치매·뇌혈관·신경계) — 요양병원 181일째부터 간병인 지원
+        if (/간병인지원/.test(n) && /요양성특정질병/.test(n)) key = 'supportRehab';
+        else if (/간병인지원/.test(n)) key = long ? 'supportLong' : 'support';
         else if (/간호[·ㆍ]?간병통합/.test(n)) key = long ? 'wardLong' : 'ward';
         else if (/간병인사용일당/.test(n) && /요양병원/.test(n) && !/요양병원제외/.test(n)) key = 'nursing';
         else if (/간병인사용일당/.test(n)) key = long ? 'hireLong' : 'hire';
@@ -101,13 +110,15 @@ function buildCaregiverPolicy(results) {
         // 간병인지원의 가입금액은 '5천원'처럼 천 단위다. parseKoAmount는 만원 단위라
         // 그대로 쓰면 5,000만원이 된다 — 천원 표기는 제안서 글자 그대로 보여준다.
         const amt = String(r.amount || '').replace(/\s+/g, '');
-        const disp = /천원$/.test(amt) && !/천만/.test(amt) ? amt : formatKoAmount(parseKoAmount(r.amount));
+        // 메리츠 간병인지원은 가입금액 칸에 금액 대신 '간병인지원'이라고만 적혀 있다
+        const disp = amt === '간병인지원' ? '간병인 지원'
+            : /천원$/.test(amt) && !/천만/.test(amt) ? amt : formatKoAmount(parseKoAmount(r.amount));
         return { key, cause, v: parseKoAmount(r.amount), disp,
                  name: String(r.name || '').trim(), stepUp: /체증형/.test(n) };
     });
     const by = {};
     items.forEach(it => { (by[it.key] = by[it.key] || []).push(it); });
-    return { items, by, hasSupport: !!(by.support || by.supportLong) };
+    return { items, by, hasSupport: !!(by.support || by.supportLong || by.supportRehab), mz: cgIsMeritz() };
 }
 
 // 상해·질병 금액 묶어 쓰기 — 같으면 한 번, 다르면 나눠서
@@ -123,17 +134,23 @@ function cgAmount(list) {
 function caregiverCards(p) {
     const C = [];
     const add = (key, o) => { if (p.by[key]) C.push(Object.assign({ key, list: p.by[key] }, o)); };
+    // 메리츠 간병인지원은 간병인 대신 받는 일당이 없다 — 회사가 못 보내면 실제 간병비를 한도 안에서 준다
     add('support', {
-        ico: 'bed', title: '병원에 입원하면', head: '<em class="cg-q">자격있는</em> 간병인을 보내드려요', big: false,
-        meta: '1일 이상 · 요양병원 제외 · 1회 입원 180일까지',
-        foot: a => `간병인 대신 받으면 1일 ${a.main}` });
+        ico: 'bed', title: '병원에 입원하면',
+        head: p.mz ? '간병인을 보내드려요' : '<em class="cg-q">자격있는</em> 간병인을 보내드려요', big: false,
+        meta: p.mz ? '1일 이상 · 1회 입원 180일까지' : '1일 이상 · 요양병원 제외 · 1회 입원 180일까지',
+        foot: a => (p.mz ? '48시간 전 신청 · 1688-0090' : `간병인 대신 받으면 1일 ${a.main}`) });
     add('supportLong', {
         ico: 'long', title: '181일 넘게 입원해도', head: '계속 보내드려요', big: false,
         meta: '181일째부터 · 요양·정신·한방병원 제외 · 185일까지',
-        foot: a => `간병인 대신 받으면 1일 ${a.main}` });
+        foot: a => (p.mz ? '' : `간병인 대신 받으면 1일 ${a.main}`) });
+    add('supportRehab', {
+        ico: 'home', title: '요양병원에 오래 있어도', head: '간병인을 보내드려요', big: false,
+        meta: '치매·뇌혈관·신경계 질환 · 요양병원 181일째부터 · 185일까지',
+        foot: () => '' });
     add('ward', {
         ico: 'ward', title: '간호·간병통합병동이면', head: a => `1일 ${a.main}`, big: true,
-        meta: '1일 이상 · 요양병원 제외 · 180일까지', cost: CAREGIVER_SERVICE.cost.ward,
+        meta: p.mz ? '1일 이상 · 180일까지' : '1일 이상 · 요양병원 제외 · 180일까지', cost: CAREGIVER_SERVICE.cost.ward,
         foot: () => (p.by.ward.some(x => x.stepUp) ? '5년마다 가입금액의 10%씩 늘어나요' : '') });
     add('wardLong', {
         ico: 'long', title: '통합병동 181일 넘으면', head: a => `1일 ${a.main}`, big: true,
@@ -161,12 +178,13 @@ function caregiverSummaryCells(p) {
     const SHORT = {
         support:     { h: '병원 입원',        v: () => '간병인 지원' },
         supportLong: { h: '181일 이상 입원',  v: () => '간병인 지원' },
+        supportRehab:{ h: '요양병원 181일~',  v: () => '간병인 지원' },
         ward:        { h: '간호·간병통합병동', v: a => `1일 ${a.main}` },
         wardLong:    { h: '통합병동 181일~',  v: a => `1일 ${a.main}` },
         hire:        { h: '간병인 직접 고용',  v: a => `1일 ${a.main}` },
         nursing:     { h: '요양병원',         v: a => `1일 ${a.main}` }
     };
-    const SUB = { support: '1회 입원 180일', supportLong: '185일까지', ward: '180일까지',
+    const SUB = { support: '1회 입원 180일', supportLong: '185일까지', supportRehab: '185일까지', ward: '180일까지',
                   wardLong: '185일까지', hire: '', nursing: '180일까지' };
     return Object.keys(SHORT).filter(k => p.by[k]).map(k => {
         const a = cgAmount(p.by[k]);
@@ -179,7 +197,7 @@ function caregiverSummaryCells(p) {
 function caregiverCovList(p) {
     const clean = s => s.replace(/\[[^\]]*\]\s*/g, '').trim();
     const out = [];
-    const ORDER = ['support', 'supportLong', 'ward', 'wardLong', 'hire', 'nursing', 'etc'];
+    const ORDER = ['support', 'supportLong', 'supportRehab', 'ward', 'wardLong', 'hire', 'nursing', 'etc'];
     ORDER.filter(k => p.by[k]).map(k => p.by[k]).forEach(list => {
         const groups = new Map();
         list.forEach(it => {
@@ -218,7 +236,7 @@ function renderCaregiverPanel(results) {
     if (!host) return false;
     const p = buildCaregiverPolicy(results);
     if (!p) return false;
-    const S = CAREGIVER_SERVICE;
+    const S = cgService();
     const cards = caregiverCards(p);
     const cov = caregiverCovList(p);
     const meta = window.__lastMeta || {};
@@ -245,12 +263,12 @@ function renderCaregiverPanel(results) {
             `<div class="cg-step"><span class="cg-sico">${cgIcon(s.ico, 20)}</span><b>${s.t}</b>` +
             `${s.s ? `<em>${s.s}</em>` : ''}</div>`).join('')}</div>
         <div class="cg-call">
-          <img class="cg-qr" src="${CAREGIVER_QR}" alt="간병인 신청 웹페이지 QR">
+          ${S.web ? `<img class="cg-qr" src="${CAREGIVER_QR}" alt="간병인 신청 웹페이지 QR">` : ''}
           <div class="cg-num">
             <span class="cg-lbl">${S.phone.label}</span>
             <span class="cg-tel">${S.phone.number}</span>
             <span class="cg-note">${S.phone.note}</span>
-            <span class="cg-web">${S.web.label} · ${S.web.text}</span>
+            ${S.web ? `<span class="cg-web">${S.web.label} · ${S.web.text}</span>` : ''}
           </div>
         </div>
         <div class="cg-lead"><b>${S.lead}</b><span>${S.leadSub}</span></div>
@@ -270,7 +288,7 @@ function renderCaregiverPanel(results) {
       <h3 class="sf-h3" style="--sf-sec:#0B8A7A">입원하면 이렇게 받아요<span class="hint">가입한 담보 기준</span></h3>
       <div class="cg-cards">${cardHtml}</div>
       ${applyHtml}
-      ${p.hasSupport ? `<h3 class="sf-h3" style="--sf-sec:#0B8A7A">삼성화재 간병인지원은 이렇게 달라요</h3>
+      ${p.hasSupport && !p.mz ? `<h3 class="sf-h3" style="--sf-sec:#0B8A7A">삼성화재 간병인지원은 이렇게 달라요</h3>
         ${caregiverStrengthsHtml({ hasWaiver: !!meta.hasWaiver }, 22)}` : ''}
       <h3 class="sf-h3" style="--sf-sec:#0B8A7A">꼭 알아두세요</h3>
       <ul class="cg-keep">${S.keep.map(k => `<li>${k}</li>`).join('')}</ul>
@@ -357,13 +375,13 @@ function caregiverSheetCss() {
 
 function sheetCaregiver(d) {
     const p = d.caregiver;
-    const S = CAREGIVER_SERVICE;
+    const S = cgService();
     const cards = caregiverCards(p);
     const cov = caregiverCovList(p).map(x => ({ nm: x.nm, v: 1, label: x.label }));
     const covHtml = `<div class="cov">
       <div class="cov-hd"><span class="t">가입한 담보 쉽게보기</span><span class="n">간병 ${cov.length}개</span></div>
       <ul>${cov.map(x => `<li><span>${sClip(x.nm, 24)}</span><b>${x.label}</b></li>`).join('')}</ul></div>`;
-    return sheetHead(d.who) + sheetTop('삼성화재', '간병인 지원', 'Caregiver') + covHtml +
+    return sheetHead(d.who) + sheetTop(sheetBrandName(), '간병인 지원', 'Caregiver') + covHtml +
       `<div class="body" style="gap:${mm(4.2)}">
          <div><h3>입원하면 이렇게 받아요<span class="hint">가입한 담보 기준</span></h3>
            <div class="cg-cards">${cards.map(c => `
@@ -379,12 +397,12 @@ function sheetCaregiver(d) {
              <!-- 지면에서는 번호·QR(왼쪽)과 4단계(오른쪽)를 나란히 — 세로로 쌓으면 한 장을 넘는다 -->
              <div class="cg-a2">
                <div class="cg-call">
-                 <img class="cg-qr" src="${CAREGIVER_QR}" alt="">
+                 ${S.web ? `<img class="cg-qr" src="${CAREGIVER_QR}" alt="">` : ''}
                  <div class="cg-num">
                    <span class="cg-lbl">${S.phone.label}</span>
                    <span class="cg-tel">${S.phone.number}</span>
                    <span class="cg-note">${S.phone.note}</span>
-                   <span class="cg-web">${S.web.label} · ${S.web.text}</span>
+                   ${S.web ? `<span class="cg-web">${S.web.label} · ${S.web.text}</span>` : ''}
                    <span class="cg-note">${S.productPhone.label} ${S.productPhone.number}</span>
                  </div>
                </div>
@@ -393,7 +411,7 @@ function sheetCaregiver(d) {
              </div>
              <div class="cg-lead"><b>${S.lead}</b><span>${S.leadSub}</span></div>
            </div></div>` : ''}
-         ${p.hasSupport ? `<div><h3>삼성화재 간병인지원은 이렇게 달라요</h3>
+         ${p.hasSupport && !p.mz ? `<div><h3>삼성화재 간병인지원은 이렇게 달라요</h3>
            ${caregiverStrengthsHtml({ hasWaiver: d.hasWaiver }, 18)}</div>` : ''}
          <div><h3>꼭 알아두세요</h3>
            <ul class="cg-keep">${S.keep.map(k => `<li>${k}</li>`).join('')}</ul></div>
@@ -404,5 +422,6 @@ function sheetCaregiver(d) {
            <p>가정케어 신청 ${S.homeCare.phone.number} · ${S.homeCare.phone.note}</p></div>` : ''}
          <p class="cg-disc">${S.disclaimer}</p>
        </div>` +
-      sheetFoot('삼성화재 가입제안서 · 간병인지원 이용 안내 기준', 0, 0);
+      sheetFoot(p.mz ? '메리츠화재 가입제안서 · 간병인지원 특약에 관한 사항 기준'
+                     : '삼성화재 가입제안서 · 간병인지원 이용 안내 기준', 0, 0);
 }

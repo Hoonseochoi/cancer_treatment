@@ -292,7 +292,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
         // 제안서에 적힌 담보를 그대로 먼저 보여준다. 아래 카드들은 이 담보들이
         // 실제 상황에서 어떻게 쓰이는지를 푸는 자리다. 설계사가 "가입하신 건
         // 이것들입니다"로 시작해 "이렇게 나옵니다"로 넘어갈 수 있게.
-        if (insurer === 'samsung') {
+        if (insurer === 'samsung' || insurer === 'meritz') {
             // 아래 카드가 실제로 쓰는 담보만 싣는다. 제안서 전체를 긁어오면
             // 상해 1~5종처럼 암과 무관한 담보가 섞인다(실측).
             const used = new Map();
@@ -317,6 +317,23 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 box.innerHTML =
                     `<div class="sf-cov-hd" role="button" tabindex="0" aria-expanded="false"><span class="t">가입한 담보 쉽게보기</span>` +
                     `<span class="n">${own.length}개</span></div><ul>${lis}</ul>`;
+                summaryGrid.appendChild(box);
+            }
+        }
+
+        // ── 메리츠: 진단비 · 생활비 ──
+        // 아래 9장은 치료비다. 진단비(최초 1회)와 통합치료 생활비(한 해 치료 2회 이상)는
+        // 치료 종류와 상관없이 따로 나오므로 카드에 섞지 않고 한 줄로 먼저 보여준다.
+        if (insurer === 'meritz' && typeof meritzCancerExtras === 'function') {
+            const ex = meritzCancerExtras(results);
+            if (ex.length) {
+                const box = document.createElement('div');
+                box.className = 'mz-dx';
+                box.innerHTML =
+                    `<div class="mz-dx-hd"><span class="t">진단비 · 생활비</span>` +
+                    `<span class="n">치료비 카드와 별도로 나와요</span></div>` +
+                    `<ul>${ex.map(x => `<li title="${x.src}"><span class="nm">${x.nm}</span>` +
+                        `<b>${formatKoAmount(x.v)}</b><em>${x.note}</em></li>`).join('')}</ul>`;
                 summaryGrid.appendChild(box);
             }
         }
@@ -388,7 +405,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
 
             let subItemsHtml = '';
 
-            if (insurer === 'samsung' && dedupedItems.length > 0) {
+            if ((insurer === 'samsung' || insurer === 'meritz') && dedupedItems.length > 0) {
                 // ── 담보 내역 ──
                 // 제안서의 어느 담보가 이 금액을 만드는지 한 줄씩 적는다.
                 // 예전에는 details로 접어 두었는데, 접혀 있으면 설계사가 펴 보지 않아
@@ -406,38 +423,20 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 });
                 let rows = '';
                 srcMap.forEach((e, srcName) => {
+                    // 조건이 맞을 때만 나오는 담보(표적항암제 2·3종 이상)는 최솟값이 0이다
                     const amtTxt = e.max > e.total
-                        ? formatKoAmount(e.total).replace(/원$/, '') + '~' + formatKoAmount(e.max)
+                        ? (e.total ? formatKoAmount(e.total).replace(/원$/, '') + '~' : '최대 ') + formatKoAmount(e.max)
                         : formatKoAmount(e.total);
+                    const shown = (insurer === 'meritz' && typeof meritzShortName === 'function')
+                        ? meritzShortName(srcName) : srcName;
                     rows += `
-                        <div class="row${e.total ? '' : ' zero'}">
-                            <span class="nm2" title="${srcName}">${clipName(srcName, 14)}</span>
+                        <div class="row${e.total || e.max ? '' : ' zero'}">
+                            <span class="nm2" title="${srcName}">${clipName(shown, 14)}</span>
                             <span class="amt2">${amtTxt}</span>
                             <span class="c2">${CYC_SHORT[e.cycle] || ''}</span>
                         </div>`;
                 });
                 subItemsHtml = `<div class="sf-src">${rows}</div>`;
-            } else if (insurer === 'meritz' && dedupedItems.length > 0) {
-                // 삼성화재: source(담보명) 기준 그룹핑 → 접기/펼치기
-                const srcMap = new Map();
-                dedupedItems.forEach(sub => {
-                    const src = sub.source || '';
-                    if (!srcMap.has(src)) srcMap.set(src, []);
-                    srcMap.get(src).push(sub);
-                });
-                srcMap.forEach((groupItems, srcName) => {
-                    const groupTotal = groupItems.reduce((s, sub) => s + parseKoAmount(sub.amount), 0);
-                    const truncSrc = srcName.length > 26 ? srcName.substring(0, 26) + '…' : srcName;
-                    const itemsHtml = groupItems.map(sub => buildSubItemHtml(sub)).join('');
-                    subItemsHtml += `
-                        <details open class="mt-3" style="list-style:none">
-                            <summary style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:4px 6px;border-radius:5px;background:rgba(0,0,0,0.03);font-size:10.5px;font-weight:700;color:#666;margin-bottom:2px;user-select:none;list-style:none" title="${srcName}">
-                                <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">ㄴ ${truncSrc}</span>
-                                <span style="color:#e53e3e;font-weight:800;font-size:11px;white-space:nowrap;flex-shrink:0">${formatKoAmount(groupTotal)}</span>
-                            </summary>
-                            <div>${itemsHtml}</div>
-                        </details>`;
-                });
             } else {
                 // 기타 보험사: 기존 flat 렌더링
                 dedupedItems.forEach(sub => {
