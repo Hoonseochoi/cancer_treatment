@@ -407,8 +407,8 @@
                           <div id="pn-bubble" class="pn-bubble" role="note" hidden>
                             <button type="button" class="pn-body" onclick="openPatchnoteModal()">
                               <span class="pn-ver">v.1026 업데이트</span>
-                              <span class="pn-title">이제 메리츠도 스마트가입제안서</span>
-                              <span class="pn-sub">암 · 수술비 · 뇌·심장 · 간병인 탭 오픈</span>
+                              <span class="pn-title">로그인 · 회원 레벨 오픈</span>
+                              <span class="pn-sub">메리츠 스마트가입제안서도 함께</span>
                             </button>
                             <button type="button" class="pn-close" aria-label="닫기" onclick="closePatchBubble(event)">&times;</button>
                           </div>
@@ -1024,10 +1024,10 @@
     <div id="free-limit-modal" role="dialog" aria-modal="true" aria-labelledby="fl-title" hidden>
       <div class="fl-card">
         <h2 id="fl-title">오늘 비회원 분석 가능 횟수를 다 쓰셨어요</h2>
-        <p>비회원은 하루 5건까지 분석할 수 있어요.<br>로그인하면 횟수 제한 없이 쓰고, 분석할수록 레벨도 쌓여요.</p>
+        <p>비회원은 하루 5건까지 분석할 수 있어요.<br>로그인하면 횟수 제한 없이 쓰고, 분석할수록 레벨도 쌓여요.<br><b style="color:#0F1E42">슈린슈는 계속 무료입니다.</b></p>
         <div class="fl-acts">
           <a class="p" href="login.html?next=index.html">로그인</a>
-          <a class="s" href="login.html?mode=signup&amp;next=index.html">회원가입 (1분)</a>
+          <a class="s" href="login.html?mode=signup&amp;next=index.html">무료 회원가입 (1분)</a>
         </div>
         <button type="button" class="fl-x" data-close>내일 다시 할게요</button>
       </div>
@@ -1066,7 +1066,7 @@
     <script>
       // 버전이 바뀌면 다시 보인다. 저장소를 못 쓰는 환경(시크릿 등)에서는 그냥 매번 보인다.
       (function () {
-        var KEY = 'pnBubbleClosed', VER = 'v1026';
+        var KEY = 'pnBubbleClosed', VER = 'v1026-login';
         function show() {
           var el = document.getElementById('pn-bubble');
           if (!el) return;
