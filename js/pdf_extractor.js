@@ -1,3 +1,28 @@
+// ── OCR 글자 간격 정리 ──
+// Tesseract(kor)는 한글을 글자마다 띄워 읽는다("건 강 보 험 1,000 만 원"). 분석기는 글자 레이어처럼
+// 붙은 이름·금액("건강보험 1,000만원")을 기대하므로, 이미지 PDF(예: OZ 뷰어로 이미지 저장한 삼성 제안서)는
+// 0건이 나왔다. 칸 사이 공백(숫자↔숫자, 한글↔숫자)은 그대로 두고 글자 사이 공백만 걷어낸다.
+function normalizeOcrText(t) {
+    return String(t || '').split('\n').map(line => {
+        let s = line;
+        s = s.replace(/([가-힣])\s+(?=[가-힣])/g, '$1');                    // 한글 사이
+        s = s.replace(/(\d)\s+(?=(?:만|천|억|원|년|세|회|개|종|대|일|%))/g, '$1');   // 1,000 만 원 → 1,000만원
+        s = s.replace(/([가-힣])\s*-\s*(?=[가-힣])/g, '$1·');                // 뇌 - 심장 → 뇌·심장
+        s = s.replace(/([(\[])\s+/g, '$1').replace(/\s+([)\]])/g, '$1');  // 괄호 안쪽
+        s = s.replace(/([가-힣)\]])\s+(?=\()/g, '$1');                     // 수술비 ( → 수술비(
+        s = s.replace(/([)\]])\s+(?=[가-힣(])/g, '$1');                     // ] 통합 → ]통합 (금액 앞 칸 공백은 둔다)
+        // 로마숫자 Ⅱ·Ⅲ 오인식 — "특정치료비 1|(", "유사암 ! 제외", "수술비 |!(", "수술비 ㅣ |"
+        // 실측(삼성 이미지 제안서)에서 '1'이 섞인 묶음은 Ⅲ, 나머지는 Ⅱ였다.
+        s = s.replace(/([가-힣])\s*((?:[|!ㅣlI1]\s*){1,3}?)(?=\(|\s+[가-힣(]|\s*$)/g,
+            (m, h, g) => h + (/1/.test(g) ? 'Ⅲ' : 'Ⅱ'));
+        s = s.replace(/(^|\s)[_|ㅣ](?=\s)/g, '$1').replace(/\s+,/g, ',');   // 홀로 떨어진 _ | 잡티, " ," → ","
+        s = s.replace(/\s{2,}/g, ' ');
+        // 표지 이름 칸은 띄어 둔다 — "피보험자홍길동" 이면 이름을 못 찾는다
+        s = s.replace(/(피보험자|계약자|설계사|보험상품명)(?=[가-힣])/g, '$1 ');
+        return s;
+    }).join('\n');
+}
+
 // ── PDF Extraction (Hybrid: Text Layer + OCR + Line Preservation) ──
 async function extractTextFromPDF(file, log = console.log) {
     log("PDF 로딩 시작...");
@@ -31,6 +56,7 @@ async function extractTextFromPDF(file, log = console.log) {
                 ? Array.from({ length: pdf.numPages }, (_, i) => i + 1)
                 : [1, 3, 4, 5, 6].filter(p => p <= pdf.numPages);
     const totalPagesToProcess = pagesToProcess.length;
+    let usedOcr = false;
     log(`처리할 페이지: [${pagesToProcess.join(', ')}]`);
     showToast(`총 ${totalPagesToProcess}페이지 정밀 분석을 시작합니다.`, false);
     for (let idx = 0; idx < pagesToProcess.length; idx++) {
@@ -88,6 +114,7 @@ async function extractTextFromPDF(file, log = console.log) {
             // 텍스트가 너무 적으면(50자 미만) 이미지로 간주
             const len = pageText.trim().length;
             if (len < 50) {
+                usedOcr = true;
                 updateProgress(
                     Math.round((idx / totalPagesToProcess) * 100),
                     `${i}페이지 OCR 변환 중...`
@@ -114,7 +141,7 @@ async function extractTextFromPDF(file, log = console.log) {
                             }
                         }
                     );
-                    pageText = (result && result.data && result.data.text) || "";
+                    pageText = normalizeOcrText((result && result.data && result.data.text) || "");
                     log(`Page ${i} OCR 완료: ${pageText.length}자`);
                 } catch (ocrErr) {
                     console.error(`Page ${i} OCR Error:`, ocrErr);
@@ -134,6 +161,13 @@ async function extractTextFromPDF(file, log = console.log) {
             break;
         }
         fullText += (pageText || "") + '\n';
+        // 이미지(OCR) 제안서는 한 장에 수 초가 걸린다. 가입 담보 목록은 앞쪽에 몰려 있으므로
+        // 목록 끝("보장보험료 합계")이 나온 쪽까지만 읽고 멈춘다(실측: 21쪽 → 3쪽).
+        // 글자 레이어 PDF는 빠르니 그대로 끝까지 읽는다(뒤쪽 부가서비스 안내 감지 등).
+        if (usedOcr && !isMeritzPDF && /보장보험료\s*합계/.test(pageText || '')) {
+            log(`[pdf_extractor] 이미지 제안서 — 담보 목록 끝(${i}쪽)에서 멈춤`);
+            break;
+        }
         if (isMeritzPDF && i >= 3 && /^\s*주의사항\s*$/m.test(pageText || '')) {
             log(`[pdf_extractor] 메리츠 가입담보리스트 끝(${i}쪽)`);
             break;
