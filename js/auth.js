@@ -68,27 +68,20 @@ const SurAuth = (function () {
             left.hidden = !!user;
         }
     }
-    // 매니저 배지 — 이름과 레벨을 회원 기준으로 채운다
+    // 위 노치 섬의 회원 이름 — 누르면 같은 섬이 레벨 패널로 펼쳐진다(index.html 노치 스크립트)
     function renderBadge(leveledUp) {
-        const badge = document.getElementById('manager-badge-container');
-        if (!badge) return;
-        if (!user) { badge.classList.add('hidden', 'scale-90', 'opacity-0'); return; }
-        // "OOO님 환영합니다 !" — 누르면 기존 레벨 패널(캐릭터·경험치 바)이 펼쳐진다(supabase.js toggleBadge)
-        const nameBox = document.querySelector('.welcome-name');
-        const lv = document.getElementById('welcome-manager-level');
-        if (nameBox) {
-            nameBox.innerHTML = `<span><span id="welcome-manager-name"></span>님 환영합니다 !</span> ${lv ? lv.outerHTML : ''}`;
-            document.getElementById('welcome-manager-name').textContent = displayName();
+        const btn = document.getElementById('nn-user');
+        if (!btn) return;
+        if (!user) {
+            btn.hidden = true;
+            if (window.SurNotch && document.getElementById('notch').dataset.mode === 'level') SurNotch.close();
+            return;
         }
-        const greet = badge.querySelector('.welcome-greet');
-        if (greet) greet.textContent = '눌러서 내 레벨 보기';
-        badge.style.cursor = 'pointer';
-        badge.title = '내 레벨 보기';
-        const code = document.getElementById('welcome-manager-code');
-        if (code) code.classList.add('hidden');
+        const nm = document.getElementById('welcome-manager-name');
+        if (nm) nm.textContent = displayName();
+        btn.title = '내 레벨 보기';
         if (typeof updateManagerLevel === 'function') updateManagerLevel(count, displayName(), leveledUp);
-        badge.classList.remove('hidden');
-        setTimeout(() => { badge.classList.remove('scale-90', 'opacity-0'); badge.classList.add('scale-100', 'opacity-100'); }, 60);
+        btn.hidden = false;
     }
 
     // ── 6건째 안내 ──

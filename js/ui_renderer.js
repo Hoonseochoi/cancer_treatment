@@ -1049,7 +1049,7 @@ function buildCaptureOptions({ captureExpertName, qrBase64, forceView = null, fo
             // 결과물에 남을 이유가 없고, 대부분 absolute/animation이라 캡처에서
             // 엉뚱한 자리에 찍히거나 다른 요소를 덮는다.
             [
-                '#manager-badge-container',   // 우상단 매니저 배지 (떠다님)
+                '#notch',                     // 위 노치 메뉴 (로고·메뉴·회원)
                 '#error-report-island',       // 우하단 오류 제보 (bounce)
                 '#insurer-more-toggle',       // 지원사 +4 버튼
                 '#other-insurers-wrap',       // +4 펼침 영역

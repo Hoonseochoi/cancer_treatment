@@ -384,6 +384,97 @@
 </head>
 
 <body class="h-full">
+    <!-- ── 위 노치 메뉴 ──
+         화면 위에 매달린 섬 하나: 로고 · 메뉴 · 회원 이름(로그인).
+         메뉴를 누르면 섬이 아래로 펼쳐져 메뉴판이 되고, 이름을 누르면 같은 섬이 레벨 패널로 펼쳐진다. -->
+    <nav id="notch" class="notch" aria-label="메뉴" data-mode="">
+      <svg class="nw nw-l" viewBox="0 0 20 20" aria-hidden="true"><path d="M20 20C20 8.954 11.046 0 0 0H21V20Z"/></svg>
+      <svg class="nw nw-r" viewBox="0 0 20 20" aria-hidden="true"><path d="M0 20C0 8.954 8.954 0 20 0H-1V20Z"/></svg>
+      <div class="nn-clip" id="nn-clip">
+        <div class="nn-bar">
+          <a href="index.html" class="nn-logo" aria-label="슈린슈 처음으로"><img class="nn-logo-full" src="logo_light.png" alt="슈린슈 SURINSUR"><img class="nn-logo-full nn-logo-dark" src="logo.png" alt=""><img class="nn-logo-mark" src="favicon.png" alt=""></a>
+          <button type="button" id="nn-menu" class="nn-btn nn-menu" aria-expanded="false" aria-controls="nn-pane-menu">
+            <span>메뉴</span>
+            <svg class="nn-chev" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            <i class="nn-dot" id="nn-dot" hidden></i>
+          </button>
+          <a id="auth-btn" class="nn-btn nn-login" href="login.html">로그인</a>
+          <button type="button" id="nn-user" class="nn-btn nn-user" aria-expanded="false" aria-controls="manager-badge-container" hidden>
+            <img class="nn-face" id="nn-face" src="level/lv1.png?v=shurin1" alt="">
+            <span class="nn-name"><span id="welcome-manager-name"></span>님</span>
+            <span id="welcome-manager-level" class="nn-lv">LV.1</span>
+          </button>
+        </div>
+
+        <div class="nn-drop">
+          <!-- 메뉴판 -->
+          <div class="nn-pane" id="nn-pane-menu" data-pane="menu" hidden>
+            <ul class="nn-grid">
+              <li><button class="nn-item" type="button" onclick="openAboutModal()">
+                <span class="nn-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></svg></span>
+                <span class="nn-txt"><b>튜토리얼</b><small>처음 쓰는 법</small></span>
+              </button></li>
+              <li><button class="nn-item" type="button" onclick="openInsightModal()">
+                <span class="nn-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2l.1.2h4.8l.1-.2c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3z"/></svg></span>
+                <span class="nn-txt"><b>인사이트</b><small>담보 완전 해설</small></span>
+              </button></li>
+              <li><button class="nn-item" type="button" onclick="openPatchnoteModal()">
+                <span class="nn-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4z"/><path d="M19 14l.8 2 2.2.7-2.2.7L19 20l-.8-2.6-2.2-.7 2.2-.7z"/></svg></span>
+                <span class="nn-txt"><b>패치노트 <em class="nn-chip new">NEW</em></b><small>v.1026 새 소식</small></span>
+              </button></li>
+              <li><button class="nn-item" type="button" onclick="openSurgeryDict()">
+                <span class="nn-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+                <span class="nn-txt"><b>1~8종 검색</b><small>수술 분류 찾기</small></span>
+              </button></li>
+              <li><button class="nn-item" type="button" onclick="openClauseChat()">
+                <span class="nn-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/></svg></span>
+                <span class="nn-txt"><b>슈린슈 AI <em class="nn-chip">PRO</em></b><small>약관에 물어보기</small></span>
+              </button></li>
+              <!-- 자동고지AI(고지도우미)는 별도 페이지이고, 들어가면 회원 비밀번호 잠금 화면이 먼저 뜬다 -->
+              <li><a class="nn-item" href="disclosure/">
+                <span class="nn-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 3.5h6v3H9zM8.5 13l2.5 2.5 4.5-5"/></svg></span>
+                <span class="nn-txt"><b>자동고지 AI <em class="nn-chip">PRO</em></b><small>고지도우미</small></span>
+              </a></li>
+            </ul>
+            <p class="nn-foot">슈린슈는 계속 <b>무료</b>입니다</p>
+          </div>
+
+          <!-- 레벨 패널 — 이름과 숫자는 supabase.js renderManagerLevel이 채운다 -->
+          <div class="nn-pane nn-level" id="manager-badge-container" data-pane="level" hidden>
+            <div class="nl-head">
+              <img id="level-modal-image" src="level/lv1.png?v=shurin1" alt="슈린 레벨 캐릭터" class="nl-img">
+              <div class="nl-meta">
+                <span class="nl-cap">현재 레벨</span>
+                <span class="nl-lv">LV.<span id="level-modal-lv-num">1</span></span>
+              </div>
+            </div>
+            <div class="nl-exp">
+              <div class="nl-row"><span>현재 <b id="level-modal-current-exp">0</b>회</span><span>목표 <b id="level-modal-next-exp">1</b>회</span></div>
+              <div class="nl-track"><div id="level-modal-progress" class="nl-fill"></div></div>
+              <p id="level-modal-exp-hint" class="nl-hint">다음 레벨까지 N회 남았습니다.</p>
+            </div>
+            <button type="button" id="auth-logout" class="nl-out" hidden>로그아웃</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="pn-bubble" class="pn-bubble" role="note" hidden>
+        <img class="pn-shurin" src="shurin/shurin_thumb.png" alt="" width="40" height="40">
+        <button type="button" class="pn-body" onclick="openPatchnoteModal()">
+          <span class="pn-ver">v.1026 업데이트</span>
+          <span class="pn-title">로그인 · 회원 레벨 오픈</span>
+          <span class="pn-sub">메리츠 스마트가입제안서도 함께</span>
+        </button>
+        <button type="button" class="pn-close" aria-label="닫기" onclick="closePatchBubble(event)">&times;</button>
+      </div>
+
+      <!-- 레벨업 알림 — 섬 바로 아래에 잠깐 내려온다 -->
+      <div id="level-up-notification"
+          class="transition-all duration-1000 ease-out transform -translate-y-4 opacity-0 pointer-events-none">
+          <span>⬆ Level UP ! 이름을 눌러 보세요</span>
+      </div>
+    </nav>
+    <div id="nn-scrim" class="nn-scrim" hidden></div>
     <div class="bg-subtle-glow"></div>
     <div id="app-wrapper" class="h-full w-full overflow-auto relative">
 
@@ -391,128 +482,6 @@
         <main class="relative z-10 w-full max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8" role="main">
             <!-- Header with Logo -->
             <header class="flex flex-col items-center mb-10 stagger-in" style="animation-delay:0ms;">
-                <div class="w-full flex justify-between items-center mb-8 flex-wrap gap-y-3">
-                    <!-- LEFT: 슈인슈 로고 + TUTORIAL + INSIGHT -->
-                    <div class="header-left-group" style="display:flex;align-items:center;">
-                        <img src="logo.png" alt="슈린슈 SURINSUR" class="header-logo" style="object-fit:contain;">
-                        <style>
-                          @keyframes aboutFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-                        </style>
-                        <span style="position:relative;display:inline-block;animation:aboutFloat 3s ease-in-out infinite;line-height:1;">
-                          <button onclick="openAboutModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;color:#1A3A8F;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">TUTORIAL</button>
-                        </span>
-                        <span style="position:relative;display:inline-block;animation:aboutFloat 3.4s ease-in-out infinite;animation-delay:0.4s;line-height:1;">
-                          <button onclick="openInsightModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;color:#e91e8c;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">INSIGHT</button>
-                        </span>
-                        <span style="position:relative;z-index:50;display:inline-block;animation:aboutFloat 3.8s ease-in-out infinite;animation-delay:0.8s;line-height:1;">
-                          <button onclick="openPatchnoteModal()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#7C3AED,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">PATCHNOTE</button>
-                          <!-- 오른쪽으로 빼면 좁은 화면(375px)에서 잘린다. TUTORIAL과 같은 기준으로 맞춘다. -->
-                          <span aria-label="새 소식" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#7C3AED,#a855f7);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(124,58,237,0.35);pointer-events:none;">NEW</span>
-                          <!-- 최근 패치 말풍선 — 버전이 바뀌면 다시 뜬다. 닫으면 그 버전은 다시 안 뜬다. -->
-                          <div id="pn-bubble" class="pn-bubble" role="note" hidden>
-                            <img class="pn-shurin" src="shurin/shurin_thumb.png" alt="" width="40" height="40">
-                            <button type="button" class="pn-body" onclick="openPatchnoteModal()">
-                              <span class="pn-ver">v.1026 업데이트</span>
-                              <span class="pn-title">로그인 · 회원 레벨 오픈</span>
-                              <span class="pn-sub">메리츠 스마트가입제안서도 함께</span>
-                            </button>
-                            <button type="button" class="pn-close" aria-label="닫기" onclick="closePatchBubble(event)">&times;</button>
-                          </div>
-                        </span>
-                        <span style="position:relative;display:inline-block;animation:aboutFloat 4.2s ease-in-out infinite;animation-delay:1.2s;line-height:1;">
-                          <button onclick="openSurgeryDict()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#0B6B7A,#14B8A6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">1~8종 검색</button>
-                        </span>
-                        <span style="position:relative;display:inline-block;animation:aboutFloat 4.6s ease-in-out infinite;animation-delay:1.6s;line-height:1;">
-                          <button onclick="openClauseChat()" style="background:none;border:none;cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#0F1E42,#2C55B8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;">슈린슈 AI</button>
-                          <span aria-label="유료 기능" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#0F1E42,#2C55B8);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(15,30,66,0.35);pointer-events:none;">PRO</span>
-                        </span>
-                        <!-- 자동고지AI(고지도우미)는 별도 페이지이고, 들어가면 회원 비밀번호 잠금 화면이 먼저 뜬다 -->
-                        <span style="position:relative;display:inline-block;animation:aboutFloat 5s ease-in-out infinite;animation-delay:2s;line-height:1;">
-                          <a href="disclosure/" style="cursor:pointer;font-size:1.32rem;font-weight:700;background:linear-gradient(90deg,#1A3A8F,#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.2px;line-height:1;display:inline-block;padding:0;font-family:inherit;text-decoration:none;white-space:nowrap;">자동고지AI</a>
-                          <span aria-label="유료 기능" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#1A3A8F,#7C3AED);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(26,58,143,0.35);pointer-events:none;">PRO</span>
-                        </span>
-                    </div><!-- end left-group -->
-                    <!-- RIGHT: 로그인 · 회원 배지 -->
-                    <div style="display:flex;align-items:center;gap:18px;">
-                    <a id="auth-btn" class="auth-btn" href="login.html">로그인</a>
-                    <!-- Floating Manager Welcome Badge & Expandable Level Panel -->
-                    <div id="manager-badge-container"
-                        class="manager-welcome-float hidden scale-90 opacity-0 transition-all duration-700 flex flex-col items-center">
-
-                        <!-- Top Visible Badge Area -->
-                        <div id="level-badge-top"
-                            class="premium-welcome-badge relative z-20 w-full transition-all duration-500">
-                            <span class="welcome-greet">WELCOME BACK</span>
-                            <div class="welcome-name"><span id="welcome-manager-name"></span> 매니저님 <span
-                                    id="welcome-manager-level"
-                                    class="text-xs font-bold bg-white/20 px-1.5 py-0.5 rounded ml-1 hidden">LV.1</span>
-                            </div>
-                            <div id="welcome-manager-code" class="welcome-code"></div>
-                        </div>
-
-                        <!-- Expanded Level Panel (Hidden by default via max-height) -->
-                        <div id="level-expanded-panel"
-                            class="w-full flex-col items-center overflow-hidden transition-all duration-500">
-                            <div class="pt-4 pb-2 w-full flex flex-col items-center relative z-10">
-
-                                <h3 id="level-modal-title"
-                                    class="text-white/90 font-medium text-sm mb-0.5 tracking-wide drop-shadow-md">
-                                    현재 레벨
-                                </h3>
-
-                                <!-- Level Emblem -->
-                                <div
-                                    class="relative flex items-center justify-center mb-0 scale-[0.65] origin-top h-[60px]">
-                                    <div id="level-emblem-container"
-                                        class="relative z-10 flex items-center justify-center w-24 h-24 rounded-full shadow-[0_0_30px_rgba(255,255,255,0.2)]">
-                                        <span id="level-modal-lv-text"
-                                            class="text-3xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] tracking-tighter">LV.
-                                            <span id="level-modal-lv-num">1</span></span>
-                                    </div>
-                                    <div class="emblem-deco left"></div>
-                                    <div class="emblem-deco right"></div>
-                                </div>
-
-                                <!-- Character Image -->
-                                <div class="relative w-20 h-20 mb-2 -mt-2 animate-float">
-                                    <div class="absolute inset-0 bg-white/20 blur-xl rounded-full"></div>
-                                    <img id="level-modal-image" src="level/lv1.png?v=shurin1" alt="슈린 레벨 캐릭터"
-                                        class="relative z-10 w-full h-full object-contain drop-shadow-lg">
-                                </div>
-
-                                <!-- EXP Progress Bar -->
-                                <div class="w-[85%] space-y-1 mt-1 pb-2">
-                                    <div class="flex justify-between w-full text-[10px] font-medium text-white/80 px-1">
-                                        <span>현재: <span id="level-modal-current-exp" class="text-white">0</span>회</span>
-                                        <span>목표: <span id="level-modal-next-exp" class="text-white">1</span>회</span>
-                                    </div>
-                                    <div
-                                        class="w-full h-2 bg-white/20 rounded-full overflow-hidden shadow-inner relative">
-                                        <div id="level-modal-progress"
-                                            class="h-full bg-gradient-to-r from-blue-300 to-indigo-300 w-0 transition-all duration-1000 ease-out rounded-full relative overflow-hidden">
-                                            <div
-                                                class="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-shimmer">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <p id="level-modal-exp-hint" class="text-[9px] text-white/70 pt-0.5 text-center">다음
-                                        레벨까지 N회 남았습니다.</p>
-                                    <button type="button" id="auth-logout" class="auth-logout" hidden>로그아웃</button>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-                    </div><!-- end right-group -->
-                </div><!-- end justify-between -->
-
-                <!-- Level Up Notification (Dynamic Drop-down) -->
-                <div id="level-up-notification"
-                    class="absolute top-[100px] right-[30px] z-[90] transition-all duration-1000 ease-out transform -translate-y-4 opacity-0 pointer-events-none flex items-center justify-center">
-                    <span
-                        style="font-family: 'Outfit', 'Noto Sans KR', sans-serif; letter-spacing: 0.07em; border: 1.5px solid rgba(200,30,30,0.6); border-radius: 999px; padding: 4px 14px; background: rgba(18,18,22,0.88); backdrop-filter: blur(8px); color: #f0f0f0;"
-                        class="text-[13px] font-medium tracking-wide whitespace-nowrap">⬆ Level UP ! Click Here!</span>
-                </div>
 
                 <!-- Analysis Counter Badge (Dual Design) -->
                 <div id="counter-badge"
@@ -855,8 +824,8 @@
     <script src="js/heungkuk_analyzer.js?v=20260514a"></script>
     <script src="js/mirae_config.js?v=20260521a"></script>
     <script src="js/mirae_analyzer.js?v=20260521g"></script>
-    <script src="js/supabase.js?v=20261026s"></script>
-    <script src="js/auth.js?v=20261026e"></script>
+    <script src="js/supabase.js?v=20261026t"></script>
+    <script src="js/auth.js?v=20261026f"></script>
     <script src="js/pdf_extractor.js?v=20261026a"></script>
     <script src="js/clause_cycle_data.js?v=20260911a"></script>
     <script src="js/analyzer.js?v=20261026t"></script>
@@ -870,7 +839,7 @@
     <script src="js/surgery_dict_data.js?v=20260826a"></script>
     <script src="js/surgery_dict.js?v=20260910a"></script>
     <script src="js/pdf_sheet.js?v=20261026t"></script>
-    <script src="js/ui_renderer.js?v=20261026u"></script>
+    <script src="js/ui_renderer.js?v=20261026x"></script>
     <script src="js/main.js?v=20261026c"></script>
 
     <!-- ── ABOUT MODAL ── -->
@@ -1003,6 +972,163 @@
       });
     </script>
 
+    <!-- ── 위 노치 메뉴 ── -->
+    <style>
+      :root{--nn-bg:#0E1424;--nn-ink:#EEF1F7;--nn-muted:#8C95AA;--nn-hover:rgba(255,255,255,.07);--nn-line:rgba(255,255,255,.08);
+        --nn-tile:rgba(255,255,255,.06);--nn-focus:#8FB0FF;--nn-ease:cubic-bezier(.32,.72,0,1)}
+      /* 펼치면 섬이 밝아진다 — 같은 토큰을 밝은 값으로 바꿔 끼운다 */
+      .notch[data-mode="menu"],.notch[data-mode="level"]{--nn-bg:#FFFFFF;--nn-ink:#1B2236;--nn-muted:#6B7385;--nn-hover:#F1F3F8;
+        --nn-line:#E6E9F0;--nn-tile:#F1F3F8;--nn-focus:#2C55B8}
+      .notch{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:70;background:var(--nn-bg);color:var(--nn-ink);
+        border-radius:0 0 22px 22px;font-family:'Pretendard','Noto Sans KR',sans-serif;
+        transition:border-radius .42s var(--nn-ease),box-shadow .42s var(--nn-ease),background-color .3s ease,color .3s ease}
+      .notch[data-mode]:not([data-mode=""]){border-radius:0 0 28px 28px;box-shadow:0 24px 60px -18px rgba(14,20,36,.32),0 0 0 1px rgba(14,20,36,.05)}
+      /* 위 가장자리로 이어지는 오목한 날개 */
+      .nw{position:absolute;top:0;width:16px;height:16px;fill:var(--nn-bg);pointer-events:none;transition:fill .3s ease}
+      .nw-l{right:100%}
+      .nw-r{left:100%}
+      .nn-clip{overflow:hidden;transition:width .42s var(--nn-ease),height .42s var(--nn-ease)}
+      .nn-bar{display:flex;align-items:center;gap:6px;height:46px;padding:0 7px 0 16px;white-space:nowrap}
+      .nn-logo{display:flex;align-items:center;flex:none;margin-right:6px}
+      .nn-logo-full{height:22px;width:auto;display:block}
+      .nn-logo-mark{display:none;height:28px;width:28px}
+      .nn-logo-full.nn-logo-dark,.notch:not([data-mode=""]) .nn-logo-full{display:none}
+      .notch:not([data-mode=""]) .nn-logo-full.nn-logo-dark{display:block}
+      .nn-btn{all:unset;box-sizing:border-box;position:relative;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;
+        border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:700;letter-spacing:-.01em;color:var(--nn-ink)}
+      .nn-btn:hover,.nn-btn[aria-expanded="true"]{background:var(--nn-hover)}
+      .nn-btn:focus-visible,.nn-item:focus-visible,.nl-out:focus-visible{outline:2px solid var(--nn-focus);outline-offset:1px}
+      .nn-menu{margin:0 auto}
+      .nn-chev{color:var(--nn-muted);transition:transform .3s var(--nn-ease)}
+      .nn-menu[aria-expanded="true"] .nn-chev{transform:rotate(180deg)}
+      .nn-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:#A78BFA;box-shadow:0 0 0 2px var(--nn-bg)}
+      .nn-dot[hidden]{display:none}
+      .nn-login{background:var(--nn-ink);color:var(--nn-bg)}
+      .nn-login:hover{opacity:.88}
+      .nn-login[hidden],.nn-user[hidden]{display:none}
+      .nn-user{padding:0 6px 0 4px}
+      .nn-face{width:26px;height:26px;border-radius:50%;object-fit:cover;background:var(--nn-tile)}
+      .nn-name{max-width:9em;overflow:hidden;text-overflow:ellipsis}
+      .nn-lv{font-size:10.5px;font-weight:800;letter-spacing:.04em;color:var(--nn-muted);padding:2px 7px;border-radius:999px;border:1px solid var(--nn-line)}
+      #notch:has(.badge-levelup-glow) .nn-user{box-shadow:0 0 0 2px rgba(239,68,68,.7)}
+
+      /* 펼친 내용 */
+      .nn-pane{box-sizing:border-box;opacity:0;transition:opacity .16s ease}
+      .notch[data-mode="menu"] #nn-pane-menu,.notch[data-mode="level"] .nn-level{opacity:1;transition:opacity .28s ease .1s}
+      #nn-pane-menu{width:min(460px,calc(100vw - 24px));padding:4px 10px 12px}
+      .nn-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:2px}
+      .nn-item{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:16px;cursor:pointer}
+      .nn-item:hover{background:var(--nn-hover)}
+      .nn-ico{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--nn-tile);color:var(--nn-ink)}
+      .nn-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+      .nn-txt b{font-size:14px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:6px}
+      .nn-txt small{font-size:11.5px;color:var(--nn-muted);font-weight:500}
+      .nn-chip{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.06em;padding:1px 5px;border-radius:5px;color:var(--nn-muted);border:1px solid var(--nn-line)}
+      .nn-chip.new{color:#2E1065;background:#DDD6FE;border-color:#DDD6FE}
+      .nn-foot{margin:8px 12px 0;padding-top:10px;border-top:1px solid var(--nn-line);font-size:11.5px;color:var(--nn-muted);text-align:center}
+      .nn-foot b{color:var(--nn-ink)}
+
+      .nn-level{width:300px;padding:6px 18px 16px}
+      .nl-head{display:flex;align-items:center;gap:14px}
+      .nl-img{width:84px;height:84px;border-radius:20px;object-fit:cover;background:var(--nn-tile)}
+      .nl-meta{display:flex;flex-direction:column;gap:2px}
+      .nl-cap{font-size:11.5px;color:var(--nn-muted);font-weight:600}
+      .nl-lv{font-size:30px;font-weight:900;letter-spacing:-.02em;line-height:1.05}
+      .nl-exp{margin-top:14px}
+      .nl-row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--nn-muted);margin-bottom:6px}
+      .nl-row b{color:var(--nn-ink);font-variant-numeric:tabular-nums}
+      .nl-track{height:7px;border-radius:999px;background:var(--nn-tile);overflow:hidden}
+      .nl-fill{height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#60A5FA,#A78BFA);transition:width 1s ease-out}
+      .nl-hint{margin:8px 0 0;font-size:11.5px;color:var(--nn-muted)}
+      .nl-out{all:unset;box-sizing:border-box;display:block;width:100%;margin-top:14px;padding:9px 0;text-align:center;border-radius:12px;
+        font-size:12.5px;font-weight:700;color:var(--nn-muted);border:1px solid var(--nn-line);cursor:pointer}
+      .nl-out:hover{color:var(--nn-ink);background:var(--nn-hover)}
+      .nl-out[hidden]{display:none}
+
+      .nn-scrim{position:fixed;inset:0;z-index:69;background:rgba(14,20,36,.16)}
+      .nn-scrim[hidden]{display:none}
+      /* 말풍선은 섬 오른쪽 빈자리에 띄운다 — 섬이 펼쳐지면 숨긴다 */
+      #notch .pn-bubble{left:calc(100% + 26px);top:3px;transform:none;animation:pnNotch 4.4s ease-in-out infinite}
+      #notch .pn-bubble::before{left:-7px;top:50%;margin:-6px 0 0;border-left:1px solid rgba(124,58,237,.22);border-bottom:1px solid rgba(124,58,237,.22);border-top:0}
+      @keyframes pnNotch{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+      .notch:not([data-mode=""]) .pn-bubble{display:none}
+      #level-up-notification{position:absolute;top:calc(100% + 12px);right:0;z-index:2}
+      #level-up-notification span{display:block;white-space:nowrap;font-size:12.5px;font-weight:600;padding:5px 14px;border-radius:999px;
+        background:rgba(14,20,36,.92);color:#F1F3F8;border:1.5px solid rgba(220,40,40,.6)}
+      /* 위에 매달린 섬 아래로 첫 화면을 내린다 */
+      #app-wrapper > main{padding-top:112px}
+      @media (max-width:640px){
+        .nn-logo-full,.notch:not([data-mode=""]) .nn-logo-full.nn-logo-dark{display:none}
+        .nn-logo-mark{display:block}
+        .nn-bar{padding-left:10px;gap:2px}
+        .nn-name{max-width:5.5em}
+        .nn-lv{display:none}
+        .nn-grid{grid-template-columns:1fr}
+        .nn-item{padding:9px 10px}
+        .nw{width:12px;height:12px}
+        /* 좁은 화면엔 자리가 없어 말풍선 대신 '메뉴' 버튼의 점으로 알린다 */
+        #notch .pn-bubble{display:none}
+        #app-wrapper > main{padding-top:84px}
+      }
+      @media (prefers-reduced-motion:reduce){ .notch,.nn-clip,.nn-pane,.nn-chev{transition:none} #notch .pn-bubble{animation:none} }
+    </style>
+    <script>
+      // 섬 모양 바꾸기 — 지금 크기에서 새 크기로 너비·높이를 이어서 움직인다
+      (function () {
+        function init() {
+          var notch = document.getElementById('notch');
+          if (!notch) return;
+          var clip = document.getElementById('nn-clip'), scrim = document.getElementById('nn-scrim'),
+              menuBtn = document.getElementById('nn-menu'), userBtn = document.getElementById('nn-user'),
+              panes = notch.querySelectorAll('.nn-pane'), timer = 0;
+          var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+          function setMode(mode) {
+            var prev = notch.dataset.mode || '';
+            if (prev === mode) return;
+            var from = clip.getBoundingClientRect();
+            clearTimeout(timer);
+            clip.style.width = clip.style.height = '';
+            notch.dataset.mode = mode;
+            panes.forEach(function (p) { p.hidden = p.dataset.pane !== mode; });
+            var to = clip.getBoundingClientRect();
+            // 닫을 때는 내용이 줄어드는 섬 안에서 사라지도록 잠깐 남겨 둔다
+            var leaving = prev && !mode ? notch.querySelector('[data-pane="' + prev + '"]') : null;
+            if (leaving) leaving.hidden = false;
+            menuBtn.setAttribute('aria-expanded', String(mode === 'menu'));
+            userBtn.setAttribute('aria-expanded', String(mode === 'level'));
+            scrim.hidden = !mode;
+            if (reduce) { if (leaving) leaving.hidden = true; return; }
+            clip.style.width = from.width + 'px'; clip.style.height = from.height + 'px';
+            void clip.offsetWidth;
+            clip.style.width = to.width + 'px'; clip.style.height = to.height + 'px';
+            timer = setTimeout(function () {
+              clip.style.width = clip.style.height = '';
+              if (leaving && !notch.dataset.mode) leaving.hidden = true;
+            }, 460);
+            if (mode === 'menu') setTimeout(function () { var f = notch.querySelector('.nn-item'); if (f) f.focus({ preventScroll: true }); }, 120);
+          }
+          window.SurNotch = { open: setMode, close: function () { setMode(''); } };
+          menuBtn.addEventListener('click', function (e) { e.stopPropagation(); setMode(notch.dataset.mode === 'menu' ? '' : 'menu'); });
+          userBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (notch.dataset.mode !== 'level' && typeof renderManagerLevel === 'function') renderManagerLevel();
+            setMode(notch.dataset.mode === 'level' ? '' : 'level');
+          });
+          scrim.addEventListener('click', function () { setMode(''); });
+          document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && notch.dataset.mode) { var was = notch.dataset.mode; setMode(''); (was === 'level' ? userBtn : menuBtn).focus(); }
+          });
+          // 메뉴를 고르면 섬을 접는다(모달이 그 위에 뜬다)
+          notch.querySelector('.nn-grid').addEventListener('click', function (e) { if (e.target.closest('.nn-item')) setMode(''); });
+
+          // 아직 안 본 패치가 있으면 '메뉴' 버튼에 점(말풍선과 같은 기준)
+          var bubble = document.getElementById('pn-bubble'), dot = document.getElementById('nn-dot');
+          if (bubble && dot) setTimeout(function () { dot.hidden = bubble.hidden; }, 0);
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+      })();
+    </script>
     <!-- ── 마법소녀 슈린 (메인 제목) ── -->
     <style>
       .magic-shurin{position:absolute;right:-196px;top:-128px;width:182px;pointer-events:none;z-index:2;
@@ -1104,6 +1230,7 @@
           if (e) e.stopPropagation();
           var el = document.getElementById('pn-bubble');
           if (el) el.hidden = true;
+          var dot = document.getElementById('nn-dot'); if (dot) dot.hidden = true;
           try { localStorage.setItem(KEY, VER); } catch (err) {}
         };
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', show); else show();

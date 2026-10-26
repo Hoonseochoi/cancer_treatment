@@ -272,6 +272,8 @@ function renderManagerLevel() {
     if (imgEl) {
         imgEl.src = `level/lv${level}.png?v=shurin1`;  // 레벨별 이미지
     }
+    const faceEl = document.getElementById('nn-face');  // 노치 섬 이름 옆 작은 얼굴
+    if (faceEl) faceEl.src = `level/lv${level}.png?v=shurin1`;
 
     // 3. 레벨 테마 클래스 적용 (level-theme-1 ~ level-theme-10)
     badgeContainer.className = badgeContainer.className.replace(/level-theme-\d+/g, '');
@@ -298,39 +300,6 @@ function showLevelUpNotification() {
         if (badge) badge.classList.remove('badge-levelup-glow');
     }, 4000);
 }
-
-/**
- * ── 배지 클릭 이벤트 ──
- * 배지 클릭 시 펼침/접힘 토글, 바깥 클릭 시 접힘
- */
-document.addEventListener('DOMContentLoaded', () => {
-    const badgeContainer = document.getElementById('manager-badge-container');
-
-    function toggleBadge(e) {
-        if (!badgeContainer) return;
-
-        // 클릭이 document로 전파되어 바로 닫히는 것 방지
-        e.stopPropagation();
-
-        if (badgeContainer.classList.contains('badge-expanded')) {
-            badgeContainer.classList.remove('badge-expanded');
-        } else {
-            // 펼치고 데이터 렌더링
-            badgeContainer.classList.add('badge-expanded');
-            renderManagerLevel();
-        }
-    }
-
-    // 배지 바깥 클릭 시 접기
-    document.addEventListener('click', (e) => {
-        if (badgeContainer && badgeContainer.classList.contains('badge-expanded') && !badgeContainer.contains(e.target)) {
-            badgeContainer.classList.remove('badge-expanded');
-        }
-    });
-
-    if (badgeContainer) badgeContainer.addEventListener('click', toggleBadge);
-});
-
 
 /**
  * ── 분석 횟수 카운터 (Supabase analysis_counters 테이블) ──
