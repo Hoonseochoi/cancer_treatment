@@ -31,6 +31,18 @@ const SurAuth = (function () {
     }
     const displayName = () => (user && user.user_metadata && user.user_metadata.name) || (user && user.email ? user.email.split('@')[0] : '');
 
+    // 접속한 날 — 하루(한국 시간) 한 번만 user_visits에 남긴다. 같은 날 두 번째부터는 DB가 무시하고,
+    // 이 브라우저에서도 그날은 다시 보내지 않는다. 트리거가 profiles.visit_days를 올린다.
+    async function recordVisit() {
+        if (!sb || !user) return;
+        const key = 'surinsurVisit:' + user.id;
+        try { if (localStorage.getItem(key) === today()) return; } catch (e) {}
+        const { error } = await sb.from('user_visits')
+            .upsert({ user_id: user.id }, { onConflict: 'user_id,visit_date', ignoreDuplicates: true });
+        if (error) { console.warn('[auth] 접속 기록 실패', error.message); return; }
+        try { localStorage.setItem(key, today()); } catch (e) {}
+    }
+
     async function refreshCount() {
         if (!sb || !user) return 0;
         const { count: c, error } = await sb.from('user_usage').select('id', { count: 'exact', head: true });
@@ -99,10 +111,11 @@ const SurAuth = (function () {
                 const next = (session && session.user) || null;
                 if ((next && next.id) === (user && user.id)) return;
                 user = next;
+                recordVisit();
                 refreshCount().then(() => { renderHeader(); renderBadge(false); });
             });
         }
-        if (user) await refreshCount();
+        if (user) { recordVisit(); await refreshCount(); }
         renderHeader();
         renderBadge(false);
         const out = document.getElementById('auth-logout');
