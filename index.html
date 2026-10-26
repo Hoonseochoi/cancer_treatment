@@ -849,7 +849,7 @@
     <script src="js/mirae_config.js?v=20260521a"></script>
     <script src="js/mirae_analyzer.js?v=20260521g"></script>
     <script src="js/supabase.js?v=20261026b"></script>
-    <script src="js/auth.js?v=20261026b"></script>
+    <script src="js/auth.js?v=20261026c"></script>
     <script src="js/pdf_extractor.js?v=20261026a"></script>
     <script src="js/clause_cycle_data.js?v=20260911a"></script>
     <script src="js/analyzer.js?v=20261026a"></script>
@@ -996,7 +996,7 @@
       });
     </script>
 
-    <!-- ── 로그인 · 하루 무료 분석 ── -->
+    <!-- ── 로그인 · 비회원 하루 분석 횟수 ── -->
     <style>
       .auth-btn{display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:999px;
         background:#0F1E42;color:#fff;font-size:13.5px;font-weight:700;letter-spacing:-.01em;text-decoration:none;
@@ -1024,8 +1024,8 @@
     </style>
     <div id="free-limit-modal" role="dialog" aria-modal="true" aria-labelledby="fl-title" hidden>
       <div class="fl-card">
-        <h2 id="fl-title">오늘 무료 분석 5건을 다 쓰셨어요</h2>
-        <p>로그인하면 횟수 제한 없이 분석할 수 있고,<br>분석할수록 레벨도 쌓여요.</p>
+        <h2 id="fl-title">오늘 비회원 분석 가능 횟수를 다 쓰셨어요</h2>
+        <p>비회원은 하루 5건까지 분석할 수 있어요.<br>로그인하면 횟수 제한 없이 쓰고, 분석할수록 레벨도 쌓여요.</p>
         <div class="fl-acts">
           <a class="p" href="login.html?next=index.html">로그인</a>
           <a class="s" href="login.html?mode=signup&amp;next=index.html">회원가입 (1분)</a>

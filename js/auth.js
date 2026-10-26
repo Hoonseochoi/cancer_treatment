@@ -52,7 +52,7 @@ const SurAuth = (function () {
         if (left) {
             const n = Math.max(0, FREE_DAILY_LIMIT - freeUsed());
             left.innerHTML = user ? ''
-                : `오늘 남은 무료 분석 <b>${n}건</b> · <a href="login.html?mode=signup">가입하면 제한 없이</a>`;
+                : `오늘 비회원 분석 가능 횟수 <b>${n}건</b> · <a href="login.html?mode=signup">가입하면 제한 없이</a>`;
             left.hidden = !!user;
         }
     }
