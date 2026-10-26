@@ -101,6 +101,22 @@
     .done a{background:var(--navy);color:#fff}
     .done button{background:#fff;color:var(--navy);border:1px solid var(--rule)}
     .fine{margin:22px 0 0;font-size:11.5px;color:var(--muted);line-height:1.6;text-align:center}
+    .report-row{margin-top:14px;text-align:center}
+    .report-btn{all:unset;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--muted);
+      padding:6px 12px;border-radius:999px;border:1px solid var(--rule)}
+    .report-btn:hover{color:var(--err);border-color:rgba(194,54,43,.35)}
+    .report-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    #report-modal{position:fixed;inset:0;z-index:50;background:rgba(15,22,38,.46);display:flex;align-items:center;justify-content:center;padding:16px}
+    .rp-card{width:100%;max-width:440px;background:#fff;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:12px;
+      box-shadow:0 24px 60px rgba(15,22,38,.28)}
+    .rp-card h2{margin:0;font-size:19px;font-weight:800;color:var(--navy);letter-spacing:-.04em}
+    .rp-lead{margin:-4px 0 4px;font-size:13px;color:var(--ink-2);line-height:1.55}
+    .rp-card textarea{padding:12px 14px;border-radius:10px;border:1px solid var(--rule);font:500 14px/1.55 'Noto Sans KR',sans-serif;
+      color:var(--ink);resize:vertical;outline:none}
+    .rp-card textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(44,85,184,.14)}
+    .rp-acts{display:flex;gap:8px;justify-content:flex-end}
+    .rp-cancel{all:unset;cursor:pointer;height:46px;padding:0 18px;border-radius:11px;font-weight:700;font-size:14px;color:var(--ink-2);background:var(--rule-2)}
+    .rp-send{margin-top:0;height:46px;padding:0 22px}
     [hidden]{display:none !important}
 
     @media (max-width:1023px){
@@ -202,10 +218,10 @@
             <button class="submit" type="submit">가입하기</button>
           </form>
 
-          <!-- 비밀번호 찾기 -->
+          <!-- 비밀번호 찾기 — 메일 링크로 본인 확인 (Brevo SMTP로 발송) -->
           <form id="f-reset" novalidate hidden>
             <div class="field"><label for="r-email">가입한 이메일</label>
-              <input id="r-email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required></div>
+              <input id="r-email" type="email" autocomplete="email" placeholder="name@example.com" required></div>
             <p class="msg" id="r-msg" role="status" aria-live="polite"></p>
             <button class="submit" type="submit">재설정 메일 보내기</button>
             <div class="links"><button type="button" data-go="login">← 로그인으로</button><span></span></div>
@@ -230,9 +246,27 @@
           </div>
 
           <p class="fine">로그인 없이도 하루 5건까지 분석할 수 있어요.</p>
+          <div class="report-row"><button type="button" class="report-btn" id="report-open">오류 발생 신고</button></div>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- 오류 발생 신고 — error_reports에 남고 관리자 메일로 간다(send-error-email) -->
+  <div id="report-modal" role="dialog" aria-modal="true" aria-labelledby="rp-title" hidden>
+    <form class="rp-card" id="f-report" novalidate>
+      <h2 id="rp-title">오류 발생 신고</h2>
+      <p class="rp-lead">어떤 화면에서 무엇이 안 됐는지 적어 주세요. 확인 후 답장 드릴게요.</p>
+      <div class="field"><label for="rp-email">답장 받을 이메일</label>
+        <input id="rp-email" type="email" autocomplete="email" placeholder="name@example.com" required></div>
+      <div class="field"><label for="rp-body">내용</label>
+        <textarea id="rp-body" rows="5" maxlength="2000" placeholder="예: 회원가입을 누르면 아무 반응이 없어요" required></textarea></div>
+      <p class="msg" id="rp-msg" role="status" aria-live="polite"></p>
+      <div class="rp-acts">
+        <button type="button" class="rp-cancel" data-close>닫기</button>
+        <button type="submit" class="submit rp-send">보내기</button>
+      </div>
+    </form>
   </div>
 
   <!-- 왼쪽 지면은 실제 PDF 지면 함수(pdf_sheet.js)로 그린다 — 화면과 인쇄본이 같은 모양이다 -->
@@ -242,6 +276,6 @@
   <script src="js/pdf_sheet.js?v=20261026a"></script>
   <script src="js/login_showcase_data.js?v=20261026a"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/auth_page.js?v=20261026a"></script>
+  <script src="js/auth_page.js?v=20261026c"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 // ── 로그인 페이지 ──
 // 왼쪽: 스마트가입제안서 샘플 지면이 엔딩 크레딧처럼 흘러간다.
 // 오른쪽: Supabase Auth(이메일·비밀번호) 로그인 · 회원가입 · 비밀번호 재설정.
+// 비밀번호 재설정은 메일 링크로 — 발송은 Supabase 커스텀 SMTP(Brevo, no-reply@surinsur.com).
 // 이름·휴대폰 번호는 가입 시 user_metadata(name, phone)에 담는다 — 별도 테이블은 아직 없다.
 
 // ── 왼쪽 전시 ──
@@ -118,11 +119,11 @@
         if (h) h.textContent = text || '';
     }
     // 휴대폰 번호는 치는 대로 010-0000-0000 꼴로
-    $('s-phone').addEventListener('input', e => {
+    ['s-phone'].forEach(id => $(id).addEventListener('input', e => {
         const d = phoneDigits(e.target.value).slice(0, 11);
         e.target.value = d.length < 4 ? d : d.length < 8 ? `${d.slice(0, 3)}-${d.slice(3)}`
             : `${d.slice(0, 3)}-${d.slice(3, d.length - 4)}-${d.slice(-4)}`;
-    });
+    }));
     $('s-more').addEventListener('click', e => {
         e.preventDefault();
         const t = $('s-terms'); t.hidden = !t.hidden;
@@ -201,7 +202,7 @@
             const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
             if (error) throw error;
             // 가입 여부를 드러내지 않도록 결과는 같은 문장으로
-            msg('r-msg', '가입된 이메일이면 재설정 링크가 도착해요. 메일함을 확인해 주세요.', true);
+            msg('r-msg', '가입된 이메일이면 재설정 메일이 도착해요. 메일함(스팸함 포함)을 확인해 주세요.', true);
         } catch (err) { msg('r-msg', koError(err)); }
         finally { busy(forms.reset, false); }
     });
@@ -214,10 +215,14 @@
         if (!pwOk(pw) || pw !== pw2) return;
         busy(forms.newpw, true);
         try {
-            const { data, error } = await sb.auth.updateUser({ password: pw });
+            const { error } = await sb.auth.updateUser({ password: pw });
             if (error) throw error;
-            showDone(data.user, '비밀번호를 바꿨어요');
-        } catch (err) { msg('n-msg', koError(err)); }
+            msg('n-msg', '비밀번호를 바꿨어요. 분석 화면으로 이동합니다.', true);
+            setTimeout(() => { location.href = next; }, 800);
+        } catch (err) {
+            msg('n-msg', /session|JWT|expired/i.test(String(err && err.message))
+                ? '링크가 만료됐어요. 비밀번호 찾기에서 메일을 다시 받아 주세요.' : koError(err));
+        }
         finally { busy(forms.newpw, false); }
     });
 
@@ -236,12 +241,52 @@
     });
 
     if (sb) {
-        // 메일의 재설정 링크로 들어오면 새 비밀번호 화면을 연다
+        // 메일의 재설정 링크로 들어오면(#...type=recovery) 새 비밀번호 화면을 연다
+        const fromRecovery = /type=recovery/.test(location.hash);
+        if (fromRecovery) setMode('newpw');
         sb.auth.onAuthStateChange(evt => { if (evt === 'PASSWORD_RECOVERY') setMode('newpw'); });
         sb.auth.getSession().then(({ data }) => {
             const u = data && data.session && data.session.user;
-            if (u && forms.newpw.hidden) showDone(u, '이미 로그인되어 있어요');
+            if (u && !fromRecovery && forms.newpw.hidden) showDone(u, '이미 로그인되어 있어요');
         });
+        // 링크가 만료됐거나 잘못된 경우 Supabase가 #error=...로 돌려보낸다
+        const hp = new URLSearchParams(location.hash.slice(1));
+        if (hp.get('error')) {
+            setMode('reset');
+            msg('r-msg', '링크가 만료됐거나 이미 쓴 링크예요. 메일을 다시 받아 주세요.');
+        }
     }
     if (new URLSearchParams(location.search).get('mode') === 'signup') setMode('signup');
+
+    // ── 오류 발생 신고 ──
+    const rp = $('report-modal');
+    const openReport = () => {
+        rp.hidden = false;
+        const guess = $('l-email').value.trim() || $('s-email').value.trim() || $('r-email').value.trim();
+        if (guess && !$('rp-email').value) $('rp-email').value = guess;
+        $('rp-msg').textContent = ''; $('rp-msg').className = 'msg';
+        ($('rp-email').value ? $('rp-body') : $('rp-email')).focus();
+    };
+    const closeReport = () => { rp.hidden = true; $('report-open').focus(); };
+    $('report-open').addEventListener('click', openReport);
+    rp.addEventListener('click', e => { if (e.target === rp || e.target.closest('[data-close]')) closeReport(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !rp.hidden) closeReport(); });
+    $('f-report').addEventListener('submit', async e => {
+        e.preventDefault();
+        const email = $('rp-email').value.trim(), body = $('rp-body').value.trim();
+        if (!EMAIL_RE.test(email)) { msg('rp-msg', '답장 받을 이메일을 확인해 주세요.'); return; }
+        if (body.length < 5) { msg('rp-msg', '무슨 일이 있었는지 조금만 더 적어 주세요.'); return; }
+        if (!sb) { msg('rp-msg', '서버에 연결하지 못했어요.'); return; }
+        busy($('f-report'), true);
+        try {
+            const { error } = await sb.from('error_reports').insert([{
+                email, content: `[로그인 화면] ${body}\n\n— ${navigator.userAgent}`
+            }]);
+            if (error) throw error;
+            msg('rp-msg', '접수했어요. 확인 후 답장 드릴게요.', true);
+            $('rp-body').value = '';
+            setTimeout(closeReport, 1400);
+        } catch (err) { msg('rp-msg', '보내지 못했어요. 잠시 뒤 다시 시도해 주세요.'); }
+        finally { busy($('f-report'), false); }
+    });
 })();
