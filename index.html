@@ -57,6 +57,8 @@
         href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&amp;family=Outfit:wght@300;400;500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Dongle:wght@300;400;700&amp;display=swap"
         rel="stylesheet">
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+
     <!-- External Styles -->
     <link rel="stylesheet" href="style.css?v=20261026u">
     <style>
@@ -481,65 +483,36 @@
 
         <main class="relative z-10 w-full max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8" role="main">
             <!-- Header with Logo -->
-            <header class="flex flex-col items-center mb-10 stagger-in" style="animation-delay:0ms;">
+            <header class="lp-hero flex flex-col items-center mb-10 stagger-in" style="animation-delay:0ms;">
+                <!-- 뒤에서 천천히 흐르는 빛(슈린 색) -->
+                <div class="lp-aura" aria-hidden="true"><i></i><i></i><i></i></div>
 
-                <!-- Analysis Counter Badge (Dual Design) -->
-                <div id="counter-badge"
-                    class="flex flex-wrap items-center justify-center gap-2 mb-6 transition-all duration-500 opacity-0 scale-95 origin-center">
-                    <!-- Today Counter -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-2xl text-[11px] font-black shadow-lg bg-white/60 backdrop-blur-xl border border-white/80 ring-1 ring-black/5"
-                        style="color:var(--primary-bright);">
-                        <div class="flex items-center gap-1.5">
-                            <span class="relative flex h-2 w-2">
-                                <span
-                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
-                            </span>
-                            <span class="text-gray-500 font-bold tracking-tight">TODAY</span>
-                        </div>
-                        <div class="flex items-baseline gap-0.5 ml-1">
-                            <span id="analysis-count-today" class="text-sm tabular-nums tracking-tighter">0</span>
-                            <span class="text-[9px] text-gray-400 font-medium">건</span>
-                        </div>
-                    </div>
-
-                    <!-- Total Counter -->
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-2xl text-[11px] font-black shadow-lg bg-black/5 backdrop-blur-xl border border-black/5"
-                        style="color:#333;">
-                        <span class="text-gray-400 font-bold tracking-tight uppercase opacity-70">Total Analysis</span>
-                        <div class="flex items-baseline gap-0.5 ml-1">
-                            <span id="analysis-count-total" class="text-sm tabular-nums tracking-tighter">0</span>
-                            <span class="text-[9px] text-gray-400 font-medium whitespace-nowrap">건 분석완료</span>
-                        </div>
-                    </div>
+                <!-- 분석 카운트 — supabase.js updateCounterUI가 숫자를 채우고 보이게 한다 -->
+                <div id="counter-badge" class="lp-count" style="opacity:0;transform:scale(.95)">
+                    <span class="lp-live"><i></i>TODAY</span>
+                    <b id="analysis-count-today">0</b><span class="lp-unit">건</span>
+                    <span class="lp-sep" aria-hidden="true"></span>
+                    <span class="lp-cap">누적</span>
+                    <b id="analysis-count-total">0</b><span class="lp-unit">건 분석</span>
                 </div>
 
-                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-4"
-                    style="background:rgba(37,71,184,0.07); color:var(--primary-bright); border:1px solid rgba(37,71,184,0.18);">
-                    <svg width="14" height="14" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <path d="M9 12l2 2 4-4" />
-                        <circle cx="12" cy="12" r="10" />
-                    </svg> 슈린슈 스마트 가입제안서 시스템
+                <div class="lp-chip">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z"/></svg>
+                    슈린슈 스마트 가입제안서 시스템
                 </div>
 
-                <h1 id="main-title"
-                    class="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-6 leading-tight tracking-tighter">
-                    <span class="title-accent text-4xl sm:text-7xl font-black relative px-2"
-                        style="font-family: 'Noto Sans KR', sans-serif;">
-                        슈린슈
-                        <span
-                            class="absolute bottom-2 left-0 w-full h-4 bg-gradient-to-r from-red-600/15 to-transparent -z-10 rounded-full"></span>
-                    </span>
-                    <span
-                        class="title-main text-4xl sm:text-7xl font-black text-gray-700 opacity-90 px-1"
-                        style="font-family: 'Outfit', 'Noto Sans KR', sans-serif;position:relative;">
-                        스마트 가입제안서
-                        <!-- 마법소녀 슈린 — 제목 오른쪽 위에서 둥둥 떠 지팡이를 휘두른다 -->
+                <h1 id="main-title" class="lp-title">
+                    <span class="lp-line"><span class="lp-a">슈린슈</span></span>
+                    <span class="lp-line lp-line-b"><span class="lp-b"><span class="lp-mark">스마트<svg class="lp-squiggle" viewBox="0 0 200 16" preserveAspectRatio="none" aria-hidden="true"><path d="M3 11 C 40 3, 70 3, 100 9 S 165 14, 197 5"/></svg></span> 가입제안서</span>
+                        <!-- 마법소녀 슈린 — 제목 오른쪽 위에서 둥둥 떠 지팡이를 휘두르고, 둘레에 별이 반짝인다 -->
                         <span class="magic-shurin" aria-hidden="true"><img src="shurin/shurin_magic.png" alt="" width="420" height="417"></span>
+                        <span class="lp-stars" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z"/></svg><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z"/></svg><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z"/></svg><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z"/></svg><svg viewBox="0 0 24 24"><path d="M12 0c.6 6.4 5.6 11.4 12 12-6.4.6-11.4 5.6-12 12-.6-6.4-5.6-11.4-12-12C6.4 11.4 11.4 6.4 12 0z"/></svg></span>
                     </span>
                 </h1>
-                <p id="subtitle" class="text-base sm:text-lg max-w-2xl text-gray-500 font-medium text-center">
-                    가입제안서 PDF를 업로드하면,<br>슈린슈가 보장내역에서 암·뇌·심 치료비 및 수술비를 스마트하게 정리해드려요 !
+                <p id="subtitle" class="lp-sub">
+                    가입제안서 PDF를 올리면,<br>슈린슈가 보장내역에서
+                    <span class="lp-rot" aria-hidden="true"><span>암 치료비</span><span>뇌·심 치료비</span><span>수술비</span><span>간병비</span></span><span class="sr-only">암·뇌·심 치료비 및 수술비</span>를
+                    스마트하게 정리해드려요!
                 </p>
             </header>
 
@@ -547,8 +520,8 @@
             <section id="upload-section" class="stagger-in" style="animation-delay:100ms;" aria-label="파일 업로드">
 
                 <!-- 지원 회사 CI 로고 -->
-                <div class="flex items-center justify-center sm:justify-end gap-2 mb-3 px-1 flex-wrap">
-                    <span class="text-xs font-semibold text-gray-400 tracking-wide mr-1">지원 회사</span>
+                <div class="lp-insurers">
+                    <span class="lp-ins-cap">지원 회사</span>
                     <img src="sci2.svg" alt="삼성화재" class="insurer-logo object-contain opacity-80 hover:opacity-100 transition-opacity" style="height:25px;max-width:82px;">
                     <button id="insurer-more-toggle" type="button" onclick="toggleOtherInsurers()"
                         style="font-size:10px;font-weight:800;color:#6b7280;border:1px solid #d1d5db;border-radius:9999px;padding:2px 9px;line-height:1.5;background:#fff;cursor:pointer;white-space:nowrap;transition:background-color .2s ease,color .2s ease,border-color .2s ease;">+4</button>
@@ -587,28 +560,47 @@
                     }
                 </script>
 
+                <!-- 업로드 칸 — 왼쪽: 파일 놓는 곳 / 오른쪽: 스마트가입제안서로 바뀐 모습(겹친 지면). 칸 전체가 파일을 받는다 -->
                 <div id="upload-zone"
-                    class="upload-zone premium-card rounded-3xl p-6 sm:p-14 text-center cursor-pointer" style="outline:none;"
-                    onclick="document.getElementById('file-input').click()">
+                    class="upload-zone lp-zone rounded-3xl cursor-pointer" style="outline:none;" tabindex="0" role="button" aria-label="가입제안서 PDF 올리기"
+                    onclick="document.getElementById('file-input').click()"
+                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('file-input').click()}">
                     <input type="file" id="file-input" accept=".pdf, .png, .jpg, .jpeg" class="hidden"
                         aria-label="파일 선택">
-                    <div class="flex flex-col items-center gap-5">
-                        <div class="w-20 h-20 rounded-2xl flex items-center justify-center shadow-inner"
-                            style="background:rgba(37,71,184,0.05);">
-                            <svg width="32" height="32" viewbox="0 0 24 24" fill="none" stroke="var(--primary-bright)"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <polyline points="14 2 14 8 20 8" />
-                                <line x1="12" y1="18" x2="12" y2="12" />
-                                <line x1="9" y1="15" x2="12" y2="12" />
-                                <line x1="15" y1="15" x2="12" y2="12" />
-                            </svg>
+                    <div class="lp-drop">
+                        <!-- 테두리 점선이 천천히 흐른다(올려놓으면 빨라진다) -->
+                        <svg class="lp-ants" aria-hidden="true"><rect x="1" y="1" rx="19" ry="19"/></svg>
+                        <!-- 서류 세 장 — 마우스를 올리면 부채처럼 펼쳐지고, 파일을 끌어오면 슈린이 받는다 -->
+                        <div class="lp-docs" aria-hidden="true">
+                            <span class="lp-doc lp-doc-3"></span>
+                            <span class="lp-doc lp-doc-2"></span>
+                            <span class="lp-doc lp-doc-1">
+                                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                    <line x1="12" y1="18" x2="12" y2="12" />
+                                    <line x1="9" y1="15" x2="12" y2="12" />
+                                    <line x1="15" y1="15" x2="12" y2="12" />
+                                </svg>
+                                <img src="shurin/shurin_joy.png" alt="">
+                            </span>
                         </div>
-                        <div>
-                            <p id="upload-btn-text" class="font-bold text-base sm:text-xl mb-2 text-gray-800">제안서 파일을 이곳에 놓아주세요</p>
-                            <p class="text-sm text-gray-400">PDF 파일을 드래그하거나 클릭하여 시작하세요</p>
+                        <div class="text-center">
+                            <p class="lp-tag">가입제안서 PDF</p>
+                            <p id="upload-btn-text" class="lp-zone-t">제안서 파일을 이곳에 놓아주세요</p>
+                            <p class="lp-zone-s">끌어다 놓거나 <span class="lp-pick">파일 선택</span></p>
                             <p id="free-left" class="free-left" hidden></p>
                         </div>
+                    </div>
+                    <div class="lp-arrow" aria-hidden="true">
+                        <span class="lp-flow"><i></i><i></i><i></i></span>
+                        <span class="lp-wand"><img src="favicon.png" alt=""></span>
+                        <span class="lp-flow"><i></i><i></i><i></i></span>
+                    </div>
+                    <div class="lp-out" aria-hidden="true">
+                        <div class="lp-stack" id="lp-stack"></div>
+                        <p class="lp-stack-cap"><b>스마트가입제안서</b><span id="lp-stack-name">보장 요약</span></p>
                     </div>
                 </div>
                 <p class="text-center text-[10px] sm:text-[11px] text-gray-400 mt-4 font-medium">
@@ -840,6 +832,8 @@
     <script src="js/surgery_dict.js?v=20260910a"></script>
     <script src="js/pdf_sheet.js?v=20261026t"></script>
     <script src="js/ui_renderer.js?v=20261026x"></script>
+    <script src="js/login_showcase_data.js?v=20261026a"></script>
+    <script src="js/landing_stack.js?v=20261026a"></script>
     <script src="js/main.js?v=20261026c"></script>
 
     <!-- ── ABOUT MODAL ── -->
@@ -1141,8 +1135,185 @@
       @keyframes shurinSwing{0%{transform:rotate(-7deg) scale(1)}45%{transform:rotate(8deg) scale(1.03)}
         60%{transform:rotate(5deg) scale(1.02)}100%{transform:rotate(-7deg) scale(1)}}
       @media (max-width:1180px){ .magic-shurin{right:-128px;top:-112px;width:146px} }
+      /* 제목이 한 줄인 좁은 폭(641~900px)에서는 오른쪽으로 덜 나가게 — 가로 스크롤 방지 */
+      @media (min-width:641px) and (max-width:900px){ .magic-shurin{right:-44px;top:-104px;width:116px} }
       @media (max-width:640px){ .magic-shurin{right:-14px;top:-74px;width:100px} }
       @media (prefers-reduced-motion:reduce){ .magic-shurin,.magic-shurin img{animation:none} }
+    </style>
+    <!-- ── 첫 화면(랜딩) ── -->
+    <style>
+      .lp-hero{position:relative;isolation:isolate;font-family:'Pretendard Variable','Pretendard','Noto Sans KR',sans-serif}
+      /* 뒤에서 흐르는 빛 — 슈린의 파랑·보라·민트 */
+      /* 덩어리는 칸 안에서만 움직이고(가로 스크롤 방지), 번짐은 칸 밖으로 부드럽게 퍼진다 */
+      .lp-aura{position:absolute;inset:-70px 0 -40px;z-index:-1;pointer-events:none;overflow:hidden;filter:blur(56px);opacity:.55}
+      .lp-aura i{position:absolute;border-radius:50%}
+      .lp-aura i:nth-child(1){width:34%;height:62%;left:12%;top:14%;background:#9DB8FF;animation:lpDrift1 16s ease-in-out infinite}
+      .lp-aura i:nth-child(2){width:30%;height:58%;right:10%;top:6%;background:#C9B6FF;animation:lpDrift2 19s ease-in-out infinite}
+      .lp-aura i:nth-child(3){width:28%;height:46%;left:38%;bottom:6%;background:#A7EBF2;animation:lpDrift3 22s ease-in-out infinite}
+      @keyframes lpDrift1{0%,100%{transform:translate(0,0)}50%{transform:translate(70px,30px)}}
+      @keyframes lpDrift2{0%,100%{transform:translate(0,0)}50%{transform:translate(-80px,40px)}}
+      @keyframes lpDrift3{0%,100%{transform:translate(0,0)}50%{transform:translate(-40px,-30px)}}
+
+      /* 카운트 — 유리 알약 하나 */
+      .lp-count{display:inline-flex;align-items:baseline;gap:5px;margin-bottom:22px;padding:8px 16px;border-radius:999px;
+        background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+        border:1px solid rgba(255,255,255,.9);box-shadow:0 6px 20px -8px rgba(26,40,90,.22);
+        font-size:12px;color:#5A6480;transition:opacity .5s ease,transform .5s ease}
+      .lp-count b{font-size:15px;font-weight:800;color:#14214A;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+      .lp-live{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#14214A;align-self:center}
+      .lp-live i{position:relative;width:7px;height:7px;border-radius:50%;background:#EF4444}
+      .lp-live i::after{content:"";position:absolute;inset:0;border-radius:50%;background:#EF4444;animation:lpPing 1.6s ease-out infinite}
+      @keyframes lpPing{to{transform:scale(2.8);opacity:0}}
+      .lp-unit{font-size:11px;color:#8590A8}
+      .lp-cap{font-size:11px;font-weight:700;color:#8590A8}
+      .lp-sep{width:1px;height:12px;background:rgba(20,33,74,.14);margin:0 6px;align-self:center}
+
+      .lp-chip{display:inline-flex;align-items:center;gap:7px;margin-bottom:18px;padding:6px 14px;border-radius:999px;
+        font-size:12.5px;font-weight:700;color:#3B4FA8;background:rgba(255,255,255,.55);border:1px solid rgba(91,110,220,.22)}
+      .lp-chip svg{color:#8B5CF6;animation:lpTwinkle 2.4s ease-in-out infinite}
+
+      /* 제목 — 줄마다 아래에서 떠오른다 */
+      .lp-title{display:flex;flex-direction:column;align-items:center;gap:0;margin:0 0 22px;line-height:1.12;
+        font-size:clamp(42px,7.4vw,80px);font-weight:800;letter-spacing:-.045em}
+      @media (min-width:640px){ .lp-title{flex-direction:row;gap:.28em} }
+      .lp-line{display:block;padding:.04em .02em .1em}
+      .lp-line > span{display:inline-block;animation:lpRise .9s cubic-bezier(.2,.8,.2,1) both}
+      .lp-line-b > .lp-b{animation-delay:.12s}
+      .lp-line-b{position:relative}
+      @keyframes lpRise{from{transform:translateY(40%);opacity:0;filter:blur(6px)}to{transform:none;opacity:1;filter:none}}
+      .lp-a{background:linear-gradient(100deg,var(--primary-bright) 0%,#4D7CFF 35%,#8B5CF6 65%,var(--primary-bright) 100%);background-size:220% 100%;
+        -webkit-background-clip:text;background-clip:text;color:transparent;animation:lpRise .9s cubic-bezier(.2,.8,.2,1) both,lpFlow 7s linear infinite}
+      @keyframes lpFlow{to{background-position:-220% 0}}
+      .lp-b{color:#1B2440}
+      .lp-mark{position:relative;display:inline-block}
+      .lp-squiggle{position:absolute;left:-2%;bottom:-.06em;width:104%;height:.26em;overflow:visible;z-index:-1}
+      .lp-squiggle path{fill:none;stroke:#A5B8FF;stroke-width:9;stroke-linecap:round;opacity:.75;
+        stroke-dasharray:240;stroke-dashoffset:240;animation:lpDraw 1s ease-out .7s forwards}
+      @keyframes lpDraw{to{stroke-dashoffset:0}}
+
+      /* 지팡이 둘레 반짝이 */
+      .lp-stars{position:absolute;right:-150px;top:-110px;width:220px;height:200px;pointer-events:none}
+      .lp-stars svg{position:absolute;width:14px;height:14px;fill:#FFD66B;animation:lpTwinkle 2.6s ease-in-out infinite}
+      .lp-stars svg:nth-child(1){left:6%;top:30%;animation-delay:.2s}
+      .lp-stars svg:nth-child(2){left:30%;top:4%;width:10px;height:10px;fill:#C4B5FD;animation-delay:.9s}
+      .lp-stars svg:nth-child(3){left:84%;top:16%;width:18px;height:18px;animation-delay:1.4s}
+      .lp-stars svg:nth-child(4){left:70%;top:82%;width:9px;height:9px;fill:#93C5FD;animation-delay:.5s}
+      .lp-stars svg:nth-child(5){left:2%;top:74%;width:11px;height:11px;fill:#A7EBF2;animation-delay:1.9s}
+      @keyframes lpTwinkle{0%,100%{transform:scale(.6) rotate(0);opacity:.35}50%{transform:scale(1.1) rotate(45deg);opacity:1}}
+      @media (max-width:1180px){ .lp-stars{right:-100px;top:-100px;width:170px;height:170px} }
+      @media (min-width:641px) and (max-width:900px){ .lp-stars{right:-30px;top:-96px;width:130px;height:140px} }
+      @media (max-width:640px){ .lp-stars{right:-10px;top:-70px;width:110px;height:110px} }
+
+      /* 부제 — 가운데 단어가 돌아가며 바뀐다(자리는 가장 긴 단어 폭으로 고정) */
+      .lp-sub{max-width:42rem;text-align:center;font-size:clamp(15px,1.7vw,18px);line-height:1.7;color:#5A6480;font-weight:500}
+      .lp-rot{display:inline-grid;vertical-align:bottom;text-align:center;margin:0 .1em}
+      .lp-rot span{grid-area:1/1;padding:0 .45em;border-radius:8px;font-weight:800;color:#2D46B9;background:rgba(77,124,255,.1);
+        opacity:0;transform:translateY(60%);animation:lpRot 10s infinite}
+      .lp-rot span:nth-child(2){animation-delay:2.5s}
+      .lp-rot span:nth-child(3){animation-delay:5s}
+      .lp-rot span:nth-child(4){animation-delay:7.5s}
+      @keyframes lpRot{0%{opacity:0;transform:translateY(60%)}4%,22%{opacity:1;transform:none}26%,100%{opacity:0;transform:translateY(-60%)}}
+
+      /* 지원 회사 — 유리 알약 */
+      .lp-insurers{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;width:max-content;max-width:100%;
+        margin:0 auto 14px;padding:6px 8px 6px 14px;border-radius:999px;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.85)}
+      @media (min-width:640px){ .lp-insurers{margin-right:4px} }
+      .lp-ins-cap{font-size:11.5px;font-weight:700;color:#8590A8;margin-right:2px}
+
+      /* 업로드 칸 — 반으로 나눠 왼쪽은 올리는 곳, 오른쪽은 바뀐 결과 */
+      .lp-zone{position:relative;display:grid;grid-template-columns:1fr;gap:6px;padding:14px;border:0 !important;
+        background:rgba(255,255,255,.72) !important;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+        border:1px solid rgba(255,255,255,.9) !important;box-shadow:0 18px 50px -24px rgba(26,40,90,.28);
+        transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s ease}
+      @media (min-width:768px){ .lp-zone{grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr);gap:0;padding:16px} }
+      .lp-zone:hover,.lp-zone:focus-visible,.lp-zone.dragover{transform:translateY(-3px) !important;box-shadow:0 26px 60px -24px rgba(45,70,185,.38)}
+      .lp-drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+        min-height:300px;padding:34px 18px;border-radius:20px;background:#fff;transition:background-color .3s ease}
+      .lp-zone.dragover .lp-drop{background:#F6F4FF}
+      .lp-ants{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+      .lp-ants rect{width:calc(100% - 2px);height:calc(100% - 2px);fill:none;stroke:#B4C2EE;stroke-width:2;stroke-dasharray:9 8;
+        animation:lpAnts 2.4s linear infinite;transition:stroke .3s ease}
+      .lp-zone:hover .lp-ants rect,.lp-zone:focus-visible .lp-ants rect{stroke:#5B7CFA;animation-duration:1s}
+      .lp-zone.dragover .lp-ants rect{stroke:#8B5CF6;stroke-width:2.5;animation-duration:.5s}
+      @keyframes lpAnts{to{stroke-dashoffset:-34}}
+      .lp-docs{position:relative;width:84px;height:84px}
+      .lp-doc{position:absolute;inset:0;border-radius:20px;background:#fff;border:1px solid #E3E8F5;
+        transition:transform .45s cubic-bezier(.2,.8,.2,1),background-color .3s ease}
+      .lp-doc-3{background:#EEF1FB;transform:rotate(-9deg) translate(-6px,4px)}
+      .lp-doc-2{background:#F4F6FC;transform:rotate(7deg) translate(6px,3px)}
+      .lp-doc-1{display:grid;place-items:center;color:#2D46B9;box-shadow:0 10px 24px -12px rgba(45,70,185,.45);animation:lpBob 3.2s ease-in-out infinite}
+      .lp-doc-1 svg{transition:opacity .2s ease}
+      .lp-doc-1 img{position:absolute;inset:8px;width:calc(100% - 16px);height:calc(100% - 16px);object-fit:contain;opacity:0;transform:scale(.6);
+        transition:opacity .25s ease,transform .35s cubic-bezier(.3,1.6,.5,1)}
+      @keyframes lpBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+      .lp-zone:hover .lp-doc-3,.lp-zone:focus-visible .lp-doc-3{transform:rotate(-18deg) translate(-26px,6px)}
+      .lp-zone:hover .lp-doc-2,.lp-zone:focus-visible .lp-doc-2{transform:rotate(15deg) translate(26px,4px)}
+      .lp-zone.dragover .lp-doc-3{transform:rotate(-22deg) translate(-32px,8px)}
+      .lp-zone.dragover .lp-doc-2{transform:rotate(19deg) translate(32px,6px)}
+      .lp-zone.dragover .lp-doc-1 svg{opacity:0}
+      .lp-zone.dragover .lp-doc-1 img{opacity:1;transform:none}
+      .lp-tag{margin:0 0 6px;font-size:11px;font-weight:800;letter-spacing:.08em;color:#8590A8}
+      .lp-zone-t{margin:0 0 6px;font-size:clamp(17px,2vw,21px);font-weight:800;letter-spacing:-.03em;color:#1B2440}
+      .lp-zone-s{margin:0;font-size:13.5px;color:#8590A8}
+      .lp-pick{display:inline-block;margin-left:4px;padding:3px 11px;border-radius:999px;font-size:12.5px;font-weight:700;color:#fff;
+        background:#1B2440;transition:background-color .25s ease}
+      .lp-zone:hover .lp-pick{background:#2D46B9}
+
+      /* 가운데 — 점이 오른쪽으로 흘러가며 슈린 배지를 지나간다 */
+      .lp-arrow{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:6px 0}
+      .lp-flow{display:flex;flex-direction:column;gap:5px}
+      .lp-flow i{width:5px;height:5px;border-radius:50%;background:#B4C2EE;animation:lpFlowDot 1.5s ease-in-out infinite}
+      .lp-flow i:nth-child(2){animation-delay:.15s}
+      .lp-flow i:nth-child(3){animation-delay:.3s}
+      .lp-flow + .lp-wand + .lp-flow i{animation-delay:.5s}
+      .lp-flow + .lp-wand + .lp-flow i:nth-child(2){animation-delay:.65s}
+      .lp-flow + .lp-wand + .lp-flow i:nth-child(3){animation-delay:.8s}
+      @keyframes lpFlowDot{0%,100%{opacity:.35;transform:scale(.8)}40%{opacity:1;transform:scale(1.25);background:#8B5CF6}}
+      .lp-wand{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#fff;
+        box-shadow:0 0 0 6px rgba(139,92,246,.1),0 8px 20px -8px rgba(45,70,185,.5);animation:lpPulse 2.4s ease-in-out infinite}
+      .lp-wand img{width:30px;height:30px}
+      @keyframes lpPulse{0%,100%{box-shadow:0 0 0 6px rgba(139,92,246,.1),0 8px 20px -8px rgba(45,70,185,.5)}
+        50%{box-shadow:0 0 0 11px rgba(139,92,246,.05),0 8px 20px -8px rgba(45,70,185,.5)}}
+
+      /* 오른쪽 — 실제 스마트가입제안서 지면 여러 장이 겹쳐 있고, 맨 앞 장이 차례로 뒤로 넘어간다 */
+      .lp-out{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+        min-height:300px;padding:22px 10px 16px;border-radius:20px;overflow:hidden;
+        background:radial-gradient(120% 90% at 50% 30%,#EEF2FF 0%,#F6F3FF 55%,rgba(255,255,255,0) 100%)}
+      .lp-stack{--w:214px;position:relative;width:calc(var(--w) + 60px);height:calc(var(--w) * 1.4145 + 10px)}
+      .lp-stack .page{position:absolute;left:24px;top:4px;width:var(--w);height:calc(var(--w) * 1.4145);border-radius:6px;overflow:hidden;
+        background:#fff;box-shadow:0 14px 30px -14px rgba(20,33,74,.45),0 0 0 1px rgba(20,33,74,.06);
+        transition:transform .7s cubic-bezier(.2,.8,.2,1),opacity .5s ease}
+      .lp-stack .page[data-pos="0"]{z-index:4;transform:rotate(-3deg)}
+      .lp-stack .page[data-pos="1"]{z-index:3;transform:translate(16px,-6px) rotate(3deg)}
+      .lp-stack .page[data-pos="2"]{z-index:2;transform:translate(30px,-10px) rotate(8deg);opacity:.9}
+      .lp-stack .page[data-pos="3"]{z-index:1;transform:translate(30px,-10px) rotate(8deg);opacity:0}
+      .lp-stack .page.lp-leave{z-index:5;transform:translate(-70%,6px) rotate(-16deg);opacity:0}
+      .lp-zone:hover .lp-stack .page[data-pos="1"]{transform:translate(22px,-8px) rotate(5deg)}
+      .lp-zone:hover .lp-stack .page[data-pos="2"]{transform:translate(42px,-14px) rotate(11deg)}
+      /* 지면 위에 마우스를 올리면 네 장이 부채처럼 촤라락 펼쳐진다(앞 장부터 차례로) */
+      .lp-stack{--fan:112px}
+      .lp-stack .page{transform-origin:50% 100%}
+      .lp-zone .lp-out:hover .lp-stack .page,.lp-zone .lp-out.lp-fan .lp-stack .page{opacity:1}
+      .lp-zone .lp-out:hover .lp-stack .page[data-pos="0"],.lp-zone .lp-out.lp-fan .lp-stack .page[data-pos="0"]{transform:translate(calc(var(--fan) * 1),10px) rotate(13deg);transition-delay:0s}
+      .lp-zone .lp-out:hover .lp-stack .page[data-pos="1"],.lp-zone .lp-out.lp-fan .lp-stack .page[data-pos="1"]{transform:translate(calc(var(--fan) * .34),-6px) rotate(4.5deg);transition-delay:.05s}
+      .lp-zone .lp-out:hover .lp-stack .page[data-pos="2"],.lp-zone .lp-out.lp-fan .lp-stack .page[data-pos="2"]{transform:translate(calc(var(--fan) * -.34),-6px) rotate(-4.5deg);transition-delay:.1s}
+      .lp-zone .lp-out:hover .lp-stack .page[data-pos="3"],.lp-zone .lp-out.lp-fan .lp-stack .page[data-pos="3"]{transform:translate(calc(var(--fan) * -1),10px) rotate(-13deg);transition-delay:.15s}
+      .lp-stack .page{transition-timing-function:cubic-bezier(.3,1.35,.5,1)}
+      .lp-stack-cap{margin:0;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#5A6480}
+      .lp-stack-cap b{font-weight:800;color:#2D46B9}
+      .lp-stack-cap span{padding:2px 9px;border-radius:999px;background:#fff;border:1px solid #E3E8F5;font-weight:700;transition:opacity .3s ease}
+      @media (max-width:767px){
+        .lp-drop{min-height:0;padding:28px 16px}
+        .lp-out{min-height:0}
+        .lp-stack{--w:150px;--fan:76px}
+      }
+      @media (prefers-reduced-motion:reduce){
+        .lp-aura i,.lp-live i::after,.lp-chip svg,.lp-a,.lp-line > span,.lp-stars svg,.lp-doc-1,.lp-ants rect,.lp-flow i,.lp-wand{animation:none}
+        .lp-stack .page{transition:none}
+        .lp-squiggle path{animation:none;stroke-dashoffset:0}
+        .lp-rot span{animation:none}
+        .lp-rot span:first-child{opacity:1;transform:none}
+      }
     </style>
     <!-- ── 로그인 · 비회원 하루 분석 횟수 ── -->
     <style>
