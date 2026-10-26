@@ -61,12 +61,17 @@ const SurAuth = (function () {
         const badge = document.getElementById('manager-badge-container');
         if (!badge) return;
         if (!user) { badge.classList.add('hidden', 'scale-90', 'opacity-0'); return; }
+        // "OOO님 환영합니다 !" — 누르면 기존 레벨 패널(캐릭터·경험치 바)이 펼쳐진다(supabase.js toggleBadge)
         const nameBox = document.querySelector('.welcome-name');
         const lv = document.getElementById('welcome-manager-level');
         if (nameBox) {
-            nameBox.innerHTML = `<span id="welcome-manager-name"></span>님 ${lv ? lv.outerHTML : ''}`;
+            nameBox.innerHTML = `<span><span id="welcome-manager-name"></span>님 환영합니다 !</span> ${lv ? lv.outerHTML : ''}`;
             document.getElementById('welcome-manager-name').textContent = displayName();
         }
+        const greet = badge.querySelector('.welcome-greet');
+        if (greet) greet.textContent = '눌러서 내 레벨 보기';
+        badge.style.cursor = 'pointer';
+        badge.title = '내 레벨 보기';
         const code = document.getElementById('welcome-manager-code');
         if (code) code.classList.add('hidden');
         if (typeof updateManagerLevel === 'function') updateManagerLevel(count, displayName(), leveledUp);
