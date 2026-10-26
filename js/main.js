@@ -90,7 +90,6 @@ async function processFile(file) {
         }
 
         // 매니저 배지·레벨은 로그인 회원 기준으로 js/auth.js가 채운다.
-        // (예전에는 메리츠 설계번호 앞 9자리를 managers.js와 맞춰 매니저를 알아봤다)
 
         // ── Customer Name Extraction ──
         let customerName = '고객';
@@ -331,18 +330,7 @@ async function processFile(file) {
             logRawCoverageItems(file.name, insurer, samsungMeta.productName, results, MATCH_FN_BY_INSURER[insurer]);
         }
 
-        // 미인식 담보 추적
-        if (insurer === 'samsung' && typeof findSamsungDetails === 'function') {
-            const unmatchedNames = results
-                .filter(item => !findSamsungDetails(item.name))
-                .map(item => item.name);
-            if (unmatchedNames.length > 0) {
-                console.warn('[미인식 담보]', unmatchedNames);
-                if (typeof logUnmatchedCoverages === 'function') {
-                    logUnmatchedCoverages(file.name, insurer, unmatchedNames);
-                }
-            }
-        }
+        // 미인식 담보는 raw_coverage_items의 matched 칸으로 본다(위 logRawCoverageItems)
 
         await new Promise(r => setTimeout(r, 500));
         document.getElementById('progress-section').classList.add('hidden');

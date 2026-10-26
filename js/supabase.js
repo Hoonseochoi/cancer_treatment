@@ -36,108 +36,8 @@ const LEVEL_THRESHOLDS = [
 // 현재 매니저 상태: 실행 횟수, 레벨, 현재 경험치, 다음 레벨 필요 경험치, 이름
 let currentManagerData = { count: 0, level: 1, exp: 0, required: 1, name: '' };
 
-/**
- * 매니저 활동 기록 (PDF 분석 실행 시 호출)
- * 1) manager_logs에 로그 삽입 → 2) 총 실행 횟수 조회 → 3) manager_profiles 업데이트 → 4) UI 갱신
- */
-async function logManagerActivity(code, name, fileName) {
-    if (!supabaseClient) {
-        console.warn("Supabase client not initialized.");
-        return;
-    }
-    try {
-        // 1. manager_logs 테이블에 실행 이력 저장
-        const { error: logError } = await supabaseClient
-            .from('manager_logs')
-            .insert([
-                {
-                    manager_code: code,
-                    manager_name: name,
-                    file_name: fileName
-                }
-            ]);
-        if (logError) throw logError;
-        console.log("Activity logged successfully.");
-
-        // 2. 해당 매니저의 총 실행 횟수를 조회하여 새 레벨 계산
-        const { count, error: countError } = await supabaseClient
-            .from('manager_logs')
-            .select('*', { count: 'exact', head: true })
-            .eq('manager_code', code);
-
-        if (countError) throw countError;
-
-        const totalCount = count || 1;
-        const currentLevel = calculateLevelFromCount(totalCount);
-
-        // 3. manager_profiles 테이블에 upsert (있으면 갱신, 없으면 삽입)
-        const { error: profileError } = await supabaseClient
-            .from('manager_profiles')
-            .upsert({
-                manager_code: code,
-                manager_name: name,
-                execution_count: totalCount,
-                level: currentLevel,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'manager_code' });
-
-        if (profileError) throw profileError;
-        console.log("Manager profile updated successfully.");
-
-        // 4. 로컬 상태 및 화면 UI 갱신
-        updateManagerLevel(totalCount, name);
-
-    } catch (err) {
-        console.error("Failed to log activity:", err);
-    }
-}
-
-/**
- * ── 미인식 매니저 업로드 로그 ──
- * 매니저 코드를 찾지 못한 PDF 파일명을 unrecognized_uploads 테이블에 기록
- */
-async function logUnrecognizedUpload(fileName) {
-    if (!supabaseClient) {
-        console.warn("Supabase client not initialized.");
-        return;
-    }
-    try {
-        const { error } = await supabaseClient
-            .from('unrecognized_uploads')
-            .insert([{
-                file_name: fileName,
-                created_at: new Date().toISOString()
-            }]);
-        if (error) throw error;
-        console.log("Unrecognized upload logged:", fileName);
-    } catch (err) {
-        console.error("Failed to log unrecognized upload:", err);
-    }
-}
-
-/**
- * ── 미인식 담보 추적 ──
- * findSamsungDetails()에서 null을 반환한 담보명을 unmatched_coverages 테이블에 기록
- */
-async function logUnmatchedCoverages(fileName, insurer, coverageNames) {
-    if (!supabaseClient || !coverageNames.length) return;
-    try {
-        const rows = coverageNames.map(name => ({
-            file_name: fileName,
-            insurer: insurer,
-            coverage_name: name,
-            created_at: new Date().toISOString()
-        }));
-        const { error } = await supabaseClient
-            .from('unmatched_coverages')
-            .insert(rows);
-        if (error) throw error;
-        console.log(`[unmatched] ${coverageNames.length}건 로깅:`, coverageNames);
-    } catch (err) {
-        console.error("Failed to log unmatched coverages:", err);
-    }
-}
-window.logUnmatchedCoverages = logUnmatchedCoverages;
+// 매니저 레벨은 로그인 회원 기준(js/auth.js · user_usage)으로 바뀌었다. 예전 manager_logs ·
+// manager_profiles · unrecognized_uploads · unmatched_coverages 기록 함수는 2026-10-26에 걷어냈다.
 
 /**
  * ── 원본 담보 전량 로깅 ──
@@ -289,17 +189,6 @@ async function logSamsungProposal(meta, summaryMap) {
     }
 }
 window.logSamsungProposal = logSamsungProposal;
-
-/** 실행 횟수로 레벨 계산 (LEVEL_THRESHOLDS 기준) */
-function calculateLevelFromCount(count) {
-    let level = 1;
-    for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) {
-        if (count >= LEVEL_THRESHOLDS[i].min) {
-            level = LEVEL_THRESHOLDS[i].level;
-        }
-    }
-    return level;
-}
 
 /**
  * 매니저 레벨 상태 갱신 및 UI 반영
