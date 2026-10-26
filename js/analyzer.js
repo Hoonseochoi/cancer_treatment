@@ -288,16 +288,13 @@ function calculateHierarchicalSummary(results) {
                 _expansion: isDescendantWithinList(t, directTargets)
             }));
         }
-        // 조건이 맞을 때만 더 나오는 담보(표적항암제 종류 2·3종 이상) — 최솟값 0, 최댓값에만 더한다
-        if (details && details.type === 'tier-max') {
-            const directTargets = details.summaryTargets;
-            const maxV = parseKoAmount(item.amount) * (details.maxTimes || 1);
-            details = directTargets.map(t => ({
-                name: details.displayName,
-                amount: '0',
-                maxAmount: formatKoAmount(maxV).replace(/원$/, ''),
-                targetName: t,
-                _expansion: isDescendantWithinList(t, directTargets)
+        // 표적항암제 「종류 개수」로 나오는 담보 — 카드 합계에 넣지 않고 따로 적는다(config.js 주석)
+        if (details && details.type === 'tier-extra') {
+            const n = (item.name.match(/\[(\d)종이상\]/) || [])[1] || '';
+            const note = (details.note || '').replace('{n}', n);
+            details = details.summaryTargets.map(t => ({
+                name: details.displayName, amount: item.amount, targetName: t,
+                tierExtra: true, tierNote: note
             }));
         }
         if (details && details.type === '26jong') {
@@ -365,8 +362,9 @@ function calculateHierarchicalSummary(results) {
                 }
                 const group = summaryMap.get(normalizedName);
                 // Amount Parsing (Support Range)
-                const valMin = parseKoAmount(det.amount);
-                const valMax = det.maxAmount ? parseKoAmount(det.maxAmount) : valMin;
+                // 종류 개수 담보(tierExtra)는 합계에 넣지 않는다 — 카드 아래에 따로 보인다
+                const valMin = det.tierExtra ? 0 : parseKoAmount(det.amount);
+                const valMax = det.tierExtra ? 0 : (det.maxAmount ? parseKoAmount(det.maxAmount) : valMin);
                 group.totalMin += valMin;
                 group.totalMax += valMax;
                 if (!det._expansion) {
@@ -402,6 +400,8 @@ function calculateHierarchicalSummary(results) {
                     hiddenInDetail: det.hiddenInDetail,
                     sub: det.sub, // 전달용 sub 항목 추가
                     payFreq: payFreq,
+                    tierExtra: det.tierExtra || false,
+                    tierNote: det.tierNote || '',
                     _expansion: det._expansion || false,
                     premium: item.premium
                 });

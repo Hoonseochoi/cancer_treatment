@@ -129,6 +129,9 @@ function sheetCss() {
     .cyc.on{background:transparent;color:${C.muted};box-shadow:inset 0 0 0 1px ${C.rule}}
     .cyc.mix{background:${C.ink};color:#fff}
 
+    .xtra{margin-top:${mm(1.4)};padding:${mm(1)} ${mm(1.6)};border:1px dashed ${C.rule};border-radius:${mm(1.6)};
+      font-size:${px(6)};line-height:1.45;color:${C.muted}}
+    .xtra b{color:${C.ink2};font-weight:700;margin-right:${mm(1)}}
     .src{margin-top:${mm(2)};padding-top:${mm(2)};border-top:1px solid ${C.rule2};
       font-size:${px(7)};line-height:1.5;color:${C.ink2}}
     .src .row{display:flex;align-items:baseline;gap:${mm(2)};padding:${mm(0.7)} 0}
@@ -325,6 +328,8 @@ function cardBlock(c) {
       <div class="v">${c.v > 0 ? (c.vMax > c.v ? sFmt(c.v).replace(/원$/, '') + '~' + sFmt(c.vMax) : sFmt(c.v)) : '0원'}</div>
       <div class="nm">${sClip(c.nm, 16)}</div>
       ${rows ? `<div class="src">${rows}</div>` : (c.sub ? `<div class="sub">${c.sub}</div>` : '')}
+      ${(c.extra || []).length ? `<div class="xtra"><b>약물 종류에 따라 따로</b> ${c.extra.map(x =>
+          `${sClip(x.n, 12)} ${sFmt(x.v).replace(/원$/, '')}`).join(' · ')}</div>` : ''}
     </div>`;
 }
 
@@ -522,7 +527,15 @@ function buildSheetData(results, meta, customerName) {
     d.cancerCards = [...sm.entries()].map(([nm, g]) => {
         const bySrc = new Map();
         const cyc = {};
+        const extra = [];   // 메리츠 표적 「종류 개수」 담보 — 합계와 떼어 따로 적는다
         (g.items || []).forEach(it => {
+            if (it.tierExtra) {
+                const s0 = (it.source || '').trim();
+                if (!extra.some(x => x.src === s0)) extra.push({ src: s0, v: parseKoAmount(it.amount),
+                    n: (typeof meritzShortName === 'function') ? meritzShortName(s0) : s0 });
+                if (s0 && !usedSrc.has(s0)) usedSrc.set(s0, 0);
+                return;
+            }
             // 카드 금액(totalMin)에 들어가지 않는 유사암·특정암 전용 담보는 내역에서도 뺀다.
             // 화면 카드는 이미 거르고 있었는데 인쇄본만 600만원 줄이 남아 합이 안 맞았다(실측).
             if (isYusamOrSpecificAmOnlyText((it.source || '') + '|' + (it.name || ''))) return;
@@ -548,6 +561,7 @@ function buildSheetData(results, meta, customerName) {
             cyc: keys.length === 1 ? CYC[keys[0]][0]
                : keys.length > 1 ? keys.map(k => k.replace(/1회|간/g, '')).join('+') : '',
             cycCls: keys.length === 1 ? CYC[keys[0]][1] : (keys.length > 1 ? 'mix' : 'yr'),
+            extra,
             rows: [...bySrc.entries()].map(([n, o]) =>
                 ({ n: (d.mz && typeof meritzShortName === 'function') ? meritzShortName(n) : n,
                    v: o.v, vMax: o.vMax, c: o.c ? CYC[o.c][0].replace(' 1회', '') : '' }))

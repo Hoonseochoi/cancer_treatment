@@ -1117,6 +1117,15 @@ img[src^="data:image/gif;base64,R0lGODlh"]{display:inline!important;vertical-ali
 .sf-src .c2{font-size:10px;font-weight:800;color:var(--sf-muted);white-space:nowrap;
   min-width:30px;text-align:right}
 .sf-src .row.zero .amt2{color:var(--sf-muted)}
+/* 메리츠 표적 「종류 개수」 담보 — 합계와 떼어 점선 상자로 */
+.sf-tier{margin-top:10px;padding:8px 10px 6px;border:1px dashed var(--sf-rule);border-radius:10px;background:var(--sf-wash)}
+.sf-tier .h{font-size:11px;font-weight:800;color:var(--sf-ink-2);margin-bottom:4px}
+.sf-tier .row{display:flex;align-items:baseline;gap:8px;padding:3px 0;font-size:11.5px}
+.sf-tier .row + .row{border-top:1px dotted var(--sf-rule-2)}
+.sf-tier .nm2{flex:1;min-width:0;display:flex;flex-direction:column;color:var(--sf-ink-2)}
+.sf-tier .nm2 em{font-style:normal;font-size:10px;color:var(--sf-muted)}
+.sf-tier .amt2{font-weight:800;color:var(--sf-ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sf-tier .f{margin:4px 0 0;font-size:10px;color:var(--sf-muted)}
 
 /* ══════════════════════════════════════════════════════════
    지면과 같은 얼굴로 — 암 담보 카드

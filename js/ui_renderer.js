@@ -415,6 +415,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 const CYC_SHORT = { '최초1회': '최초', '연간1회': '연간', '매회': '매회', '일당': '일당' };
                 const srcMap = new Map();
                 dedupedItems.forEach(sub => {
+                    if (sub.tierExtra) return;   // 종류 개수 담보는 아래 따로
                     const src = sub.source || '';
                     if (!srcMap.has(src)) srcMap.set(src, { total: 0, max: 0, cycle: sub.cycle || '' });
                     const e = srcMap.get(src);
@@ -439,6 +440,20 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         </div>`;
                 });
                 subItemsHtml = `<div class="sf-src">${rows}</div>`;
+                // ── 표적항암제 종류 개수에 따라 따로 나오는 담보 ──
+                // 치료를 받으면 바로 나오는 돈이 아니라 합계와 떼어 적는다(메리츠).
+                const tiers = [];
+                dedupedItems.forEach(sub => {
+                    if (!sub.tierExtra || tiers.some(t => t.src === sub.source)) return;
+                    tiers.push({ src: sub.source, v: parseKoAmount(sub.amount), note: sub.tierNote || '' });
+                });
+                if (tiers.length) {
+                    subItemsHtml += `<div class="sf-tier"><div class="h">약물 종류 개수에 따라 따로 지급</div>` +
+                        tiers.map(t => `<div class="row"><span class="nm2" title="${t.src}">${clipName(
+                            typeof meritzShortName === 'function' ? meritzShortName(t.src) : t.src, 14)}` +
+                            `${t.note ? `<em>${t.note}</em>` : ''}</span><span class="amt2">${formatKoAmount(t.v)}</span></div>`).join('') +
+                        `<p class="f">합계 금액에는 넣지 않았어요</p></div>`;
+                }
             } else {
                 // 기타 보험사: 기존 flat 렌더링
                 dedupedItems.forEach(sub => {
@@ -487,6 +502,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             const CYC_ORDER = ['최초1회', '연간1회', '매회', '일당'];
             const cycSum = {};
             dedupedItems.forEach(sub => {
+                if (sub.tierExtra) return;
                 const c = sub.cycle;
                 if (!c || !CYC_META[c]) return;
                 cycSum[c] = (cycSum[c] || 0) + parseKoAmount(sub.amount);
