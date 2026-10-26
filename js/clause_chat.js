@@ -170,7 +170,7 @@ function bubble(who, html) {
     const t = document.createElement('div');
     t.className = 'turn ' + who;
     t.innerHTML = who === 'ai'
-        ? `<span class="ava"><img src="surinsur.png" alt=""></span><div class="bub">${html}</div>`
+        ? `<span class="ava"><img src="icon-512.png" alt=""></span><div class="bub">${html}</div>`
         : `<div class="bub">${html}</div>`;
     $('thread').appendChild(t);
     const s = $('scroll');

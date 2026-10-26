@@ -4,7 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>슈린슈 로그인</title>
-  <link rel="icon" href="favicon.png">
+  <link rel="icon" href="favicon-32.png?v=shurin" sizes="32x32" type="image/png">
+  <link rel="icon" href="favicon.png?v=shurin" sizes="64x64" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=shurin">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&family=Outfit:wght@500;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
@@ -27,7 +29,7 @@
       display:flex;flex-direction:column;height:calc(100vh - 24px);min-height:560px}
     .stage-top{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;
       padding:28px 32px 0}
-    .stage-top img{height:42px;width:auto;display:block}
+    .stage-top img{height:40px;width:auto;display:block}
     .stage-top span{font:700 11px/1 'Outfit',sans-serif;letter-spacing:.24em;color:rgba(255,255,255,.42)}
     .credits{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center;gap:18px;
       padding:0 24px;margin-top:8px;
@@ -52,6 +54,8 @@
     .back:hover{color:var(--navy)}
     .form-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:28px 0}
     .card{width:100%;max-width:420px}
+    .shurin{display:block;width:72px;height:72px;border-radius:20px;object-fit:cover;margin-bottom:14px;
+      box-shadow:0 6px 16px rgba(30,79,214,.18)}
     h1{margin:0;font-size:clamp(28px,3vw,36px);font-weight:800;letter-spacing:-.05em;line-height:1.15;color:var(--navy)}
     .lead{margin:10px 0 0;font-size:14px;color:var(--ink-2);line-height:1.6}
     .seg{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;padding:4px;border-radius:12px;background:var(--rule-2)}
@@ -144,7 +148,7 @@
     <!-- 왼쪽: 실제 지면 함수로 그린 샘플이 엔딩 크레딧처럼 위로 흘러간다 -->
     <aside class="stage" aria-label="스마트가입제안서 예시">
       <div class="stage-top">
-        <img src="surinsur.png" alt="슈린슈 sure, insure">
+        <img src="logo_light.png" alt="슈린슈 SURINSUR">
         <span>SMART PROPOSAL</span>
       </div>
       <div class="credits" id="credits" aria-hidden="true">
@@ -162,6 +166,7 @@
       <a class="back" href="index.html">← 분석으로 돌아가기</a>
       <div class="form-wrap">
         <div class="card">
+          <img class="shurin" id="shurin" src="shurin/shurin_wave.png" alt="슈린" width="72" height="72">
           <h1 id="title">다시 오셨네요</h1>
           <p class="lead" id="lead">이메일로 로그인하고 분석을 이어가세요.</p>
 
@@ -283,6 +288,6 @@
   <script src="js/pdf_sheet.js?v=20261026t"></script>
   <script src="js/login_showcase_data.js?v=20261026a"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/auth_page.js?v=20261026f"></script>
+  <script src="js/auth_page.js?v=20261026s"></script>
 </body>
 </html>

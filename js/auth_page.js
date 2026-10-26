@@ -85,6 +85,9 @@
         $('seg').hidden = !(m === 'login' || m === 'signup');
         $('seg').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
         if (COPY[m][0]) { $('title').textContent = COPY[m][0]; $('lead').textContent = COPY[m][1]; }
+        // 슈린 표정 — 화면마다 다르게
+        const face = { login: 'wave', signup: 'joy', reset: 'worry', newpw: 'check', done: 'thumb' }[m];
+        if (face && $('shurin')) $('shurin').src = `shurin/shurin_${face}.png`;
         document.querySelectorAll('.msg').forEach(x => { x.textContent = ''; x.className = 'msg'; });
         const first = forms[m] && forms[m].querySelector('input');
         if (first) first.focus({ preventScroll: true });

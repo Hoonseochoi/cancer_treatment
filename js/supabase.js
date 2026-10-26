@@ -270,7 +270,7 @@ function renderManagerLevel() {
 
     const imgEl = document.getElementById('level-modal-image');
     if (imgEl) {
-        imgEl.src = `level/lv${level}.png`;  // 레벨별 이미지
+        imgEl.src = `level/lv${level}.png?v=shurin1`;  // 레벨별 이미지
     }
 
     // 3. 레벨 테마 클래스 적용 (level-theme-1 ~ level-theme-10)

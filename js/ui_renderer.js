@@ -134,28 +134,9 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
             total5Display = `${formatKoAmount(total5Min)} ~ ${formatKoAmount(total5Max)}`;
         }
 
-        // Conditional Expert Mapping
-        let expertName = "메리";
-        let expertImgBase64 = MERY_B64; // Use global Base64 string
-        if (currentFileName && currentFileName.startsWith("323003978")) {
-            expertName = "보장분석 마스터";
-            expertImgBase64 = JIAN_B64; // Base64 for download/export compatibility
-        } else if (currentFileName && currentFileName.startsWith("325001957")) {
-            expertName = "예원";
-            expertImgBase64 = YEWON_B64; // Use global Base64 string
-        } else if (insurer === 'samsung') {
-            expertName = "바다";
-            expertImgBase64 = SBADA_B64;
-        } else if (insurer === 'db') {
-            expertName = "프로미";
-            expertImgBase64 = PROMY_B64;
-        } else if (insurer === 'heungkuk') {
-            expertName = "루루";
-            expertImgBase64 = RURU_B64;
-        } else if (insurer === 'mirae') {
-            expertName = "미래봇";
-            expertImgBase64 = MIRAE_B64;
-        }
+        // 마스코트 — 모든 보험사 공통으로 슈린. 캡처(html2canvas)도 같은 출처 이미지라 그대로 찍힌다.
+        const expertName = "슈린";
+        const expertImgBase64 = 'shurin/shurin_check.png';
 
         // ── 점수 박스 HTML (있을 때만 렌더링) ──
         // 암 치료비 점수 노출 스위치 — 산출·로깅(coverage_scores)은 그대로 두고 화면 표시만 끈다.
@@ -195,15 +176,15 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 <div class="flex flex-col sm:flex-row items-center gap-6 relative z-10">
                     <div class="relative shrink-0">
                         <div class="w-20 h-20 rounded-2xl overflow-hidden shadow-lg shadow-red-100 border-2 border-white ring-1 ring-red-100">
-                             <img src="${expertImgBase64}" alt="보험전문가 ${expertName}" class="w-full h-full object-cover object-top">
+                             <img src="${expertImgBase64}" alt="슈린슈 마스코트 ${expertName}" class="w-full h-full object-cover">
                         </div>
                         <div class="absolute -bottom-2 -right-2 ${insurer === 'db' ? 'bg-blue-600' : insurer === 'heungkuk' ? 'bg-pink-600' : insurer === 'mirae' ? 'bg-orange-500' : 'bg-red-600'} text-white text-[9px] font-black px-2 py-0.5 rounded-lg shadow-md uppercase tracking-tighter">
-                            ${insurer === 'db' ? 'Promy' : insurer === 'heungkuk' ? 'Ruru' : insurer === 'mirae' ? 'Mirae' : 'Expert'}
+                            Shurin
                         </div>
                     </div>
                     <div class="text-center sm:text-left flex-1">
                         <p class="text-gray-500 text-[13px] font-bold mb-1 opacity-80">
-                            🛡️ <span class="text-gray-400">${insurer === 'db' ? 'DB손보 마스코트' : insurer === 'heungkuk' ? '흥국화재 마스코트' : insurer === 'mirae' ? '미래에셋생명 AI' : '보험전문가'} <b class="text-gray-600">${expertName}</b>의 insight</span>
+                            🛡️ <span class="text-gray-400">슈린슈 마스코트 <b class="text-gray-600">${expertName}</b>의 insight</span>
                         </p>
                         <h3 class="text-sm sm:text-xl font-medium text-gray-800 leading-relaxed">
                             <span class="font-black text-red-600 underline decoration-red-200 underline-offset-4">${customerName}</span>님이 
@@ -1462,7 +1443,7 @@ async function renderCoverCanvas() {
         </div>
 
         <div style="position:absolute;left:84px;right:84px;top:50%;transform:translateY(-50%)">
-          <img src="surinsur.png" style="height:118px;object-fit:contain;display:block;margin-bottom:90px">
+          <img src="logo.png" style="height:104px;object-fit:contain;display:block;margin-bottom:90px">
           <p style="margin:0 0 29px;font-size:40px;color:#5A6B8C;font-weight:500">
             <b style="font-weight:800;color:${PDF_NAVY};font-size:50px">${customer}</b> 님을 위한</p>
           <h1 style="margin:0;font-size:92px;font-weight:900;letter-spacing:-.04em;

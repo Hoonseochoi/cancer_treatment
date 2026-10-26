@@ -19,17 +19,22 @@
     <!-- Social Media Metadata -->
     <meta property="og:title" content="슈린슈 스마트 가입제안서">
     <meta property="og:description" content="가입제안서 PDF를 올리면 암·뇌·심 치료비 및 수술비를 스마트하게 정리해드려요.">
-    <meta property="og:image" content="level/metadata.png">
-    <meta property="og:url" content="https://hoonseochoi.com">
+    <meta property="og:image" content="https://surinsur.com/og-image.png?v=shurin1">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="슈린슈">
+    <meta property="og:url" content="https://surinsur.com/">
     <meta property="og:type" content="website">
     
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="슈린슈 스마트 가입제안서">
     <meta name="twitter:description" content="가입제안서 PDF를 올리면 암·뇌·심 치료비 및 수술비를 스마트하게 정리해드려요.">
-    <meta name="twitter:image" content="level/metadata.png">
+    <meta name="twitter:image" content="https://surinsur.com/og-image.png?v=shurin1">
 
     <!-- Favicon -->
-    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="icon" href="favicon-32.png?v=shurin" sizes="32x32" type="image/png">
+    <link rel="icon" href="favicon.png?v=shurin" sizes="64x64" type="image/png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=shurin">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -53,7 +58,7 @@
         rel="stylesheet">
 
     <!-- External Styles -->
-    <link rel="stylesheet" href="style.css?v=20261026t">
+    <link rel="stylesheet" href="style.css?v=20261026u">
     <style>
         /* Floating Animation for Insight Card - Refined for Stability */
         @keyframes insightFloat {
@@ -389,7 +394,7 @@
                 <div class="w-full flex justify-between items-center mb-8 flex-wrap gap-y-3">
                     <!-- LEFT: 슈인슈 로고 + TUTORIAL + INSIGHT -->
                     <div class="header-left-group" style="display:flex;align-items:center;">
-                        <img src="surinsur.png" alt="슈인슈" class="header-logo" style="object-fit:contain;opacity:0.9;">
+                        <img src="logo.png" alt="슈린슈 SURINSUR" class="header-logo" style="object-fit:contain;">
                         <style>
                           @keyframes aboutFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
                         </style>
@@ -405,6 +410,7 @@
                           <span aria-label="새 소식" style="position:absolute;top:-11px;right:-4px;background:linear-gradient(90deg,#7C3AED,#a855f7);color:#fff;font-size:0.52rem;font-weight:800;letter-spacing:0.6px;padding:2px 5px;border-radius:5px;line-height:1.3;box-shadow:0 2px 6px rgba(124,58,237,0.35);pointer-events:none;">NEW</span>
                           <!-- 최근 패치 말풍선 — 버전이 바뀌면 다시 뜬다. 닫으면 그 버전은 다시 안 뜬다. -->
                           <div id="pn-bubble" class="pn-bubble" role="note" hidden>
+                            <img class="pn-shurin" src="shurin/shurin_thumb.png" alt="" width="40" height="40">
                             <button type="button" class="pn-body" onclick="openPatchnoteModal()">
                               <span class="pn-ver">v.1026 업데이트</span>
                               <span class="pn-title">로그인 · 회원 레벨 오픈</span>
@@ -470,7 +476,7 @@
                                 <!-- Character Image -->
                                 <div class="relative w-20 h-20 mb-2 -mt-2 animate-float">
                                     <div class="absolute inset-0 bg-white/20 blur-xl rounded-full"></div>
-                                    <img id="level-modal-image" src="level/lv1.png" alt="Manager Level Character"
+                                    <img id="level-modal-image" src="level/lv1.png?v=shurin1" alt="슈린 레벨 캐릭터"
                                         class="relative z-10 w-full h-full object-contain drop-shadow-lg">
                                 </div>
 
@@ -557,8 +563,10 @@
                     </span>
                     <span
                         class="title-main text-4xl sm:text-7xl font-black text-gray-700 opacity-90 px-1"
-                        style="font-family: 'Outfit', 'Noto Sans KR', sans-serif;">
+                        style="font-family: 'Outfit', 'Noto Sans KR', sans-serif;position:relative;">
                         스마트 가입제안서
+                        <!-- 마법소녀 슈린 — 제목 오른쪽 위에서 둥둥 떠 지팡이를 휘두른다 -->
+                        <span class="magic-shurin" aria-hidden="true"><img src="shurin/shurin_magic.png" alt="" width="420" height="417"></span>
                     </span>
                 </h1>
                 <p id="subtitle" class="text-base sm:text-lg max-w-2xl text-gray-500 font-medium text-center">
@@ -847,7 +855,7 @@
     <script src="js/heungkuk_analyzer.js?v=20260514a"></script>
     <script src="js/mirae_config.js?v=20260521a"></script>
     <script src="js/mirae_analyzer.js?v=20260521g"></script>
-    <script src="js/supabase.js?v=20261026c"></script>
+    <script src="js/supabase.js?v=20261026s"></script>
     <script src="js/auth.js?v=20261026e"></script>
     <script src="js/pdf_extractor.js?v=20261026a"></script>
     <script src="js/clause_cycle_data.js?v=20260911a"></script>
@@ -862,7 +870,7 @@
     <script src="js/surgery_dict_data.js?v=20260826a"></script>
     <script src="js/surgery_dict.js?v=20260910a"></script>
     <script src="js/pdf_sheet.js?v=20261026t"></script>
-    <script src="js/ui_renderer.js?v=20261026t"></script>
+    <script src="js/ui_renderer.js?v=20261026u"></script>
     <script src="js/main.js?v=20261026c"></script>
 
     <!-- ── ABOUT MODAL ── -->
@@ -995,6 +1003,21 @@
       });
     </script>
 
+    <!-- ── 마법소녀 슈린 (메인 제목) ── -->
+    <style>
+      .magic-shurin{position:absolute;right:-196px;top:-128px;width:182px;pointer-events:none;z-index:2;
+        animation:shurinFloat 4.6s ease-in-out infinite}
+      .magic-shurin img{display:block;width:100%;height:auto;transform-origin:38% 72%;
+        animation:shurinSwing 2.3s ease-in-out infinite;filter:drop-shadow(0 10px 18px rgba(44,85,184,.22))}
+      /* 위아래로 둥둥 */
+      @keyframes shurinFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+      /* 지팡이를 휘두르듯 몸이 기울었다 돌아온다 — 끝에서 살짝 튕긴다 */
+      @keyframes shurinSwing{0%{transform:rotate(-7deg) scale(1)}45%{transform:rotate(8deg) scale(1.03)}
+        60%{transform:rotate(5deg) scale(1.02)}100%{transform:rotate(-7deg) scale(1)}}
+      @media (max-width:1180px){ .magic-shurin{right:-128px;top:-112px;width:146px} }
+      @media (max-width:640px){ .magic-shurin{right:-14px;top:-74px;width:100px} }
+      @media (prefers-reduced-motion:reduce){ .magic-shurin,.magic-shurin img{animation:none} }
+    </style>
     <!-- ── 로그인 · 비회원 하루 분석 횟수 ── -->
     <style>
       .auth-btn{display:inline-flex;align-items:center;height:36px;padding:0 16px;border-radius:999px;
@@ -1013,6 +1036,7 @@
       #free-limit-modal[hidden]{display:none}
       .fl-card{width:100%;max-width:380px;background:#fff;border-radius:18px;padding:28px 24px 22px;text-align:center;
         box-shadow:0 24px 60px rgba(15,22,38,.28)}
+      .fl-shurin{display:block;width:84px;height:84px;margin:0 auto 12px;border-radius:22px;object-fit:cover}
       .fl-card h2{margin:0;font-size:20px;font-weight:800;color:#0F1E42;letter-spacing:-.04em}
       .fl-card p{margin:10px 0 0;font-size:14px;line-height:1.6;color:#4B5768}
       .fl-acts{display:flex;flex-direction:column;gap:8px;margin-top:20px}
@@ -1023,6 +1047,7 @@
     </style>
     <div id="free-limit-modal" role="dialog" aria-modal="true" aria-labelledby="fl-title" hidden>
       <div class="fl-card">
+        <img class="fl-shurin" src="shurin/shurin_worry.png" alt="" width="84" height="84">
         <h2 id="fl-title">오늘 비회원 분석 가능 횟수를 다 쓰셨어요</h2>
         <p>비회원은 하루 5건까지 분석할 수 있어요.<br>로그인하면 횟수 제한 없이 쓰고, 분석할수록 레벨도 쌓여요.<br><b style="color:#0F1E42">슈린슈는 계속 무료입니다.</b></p>
         <div class="fl-acts">
@@ -1040,6 +1065,7 @@
         background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);
         border:1px solid rgba(124,58,237,.22);box-shadow:0 10px 28px rgba(76,29,149,.16),0 2px 6px rgba(76,29,149,.08)}
       .pn-bubble[hidden]{display:none}
+      .pn-shurin{flex:none;width:40px;height:40px;border-radius:12px;object-fit:cover;margin:2px 4px 0 -4px}
       /* 꼬리 — 위쪽 가운데, PATCHNOTE 글자를 가리킨다 */
       .pn-bubble::before{content:"";position:absolute;top:-7px;left:50%;width:12px;height:12px;margin-left:-6px;
         background:inherit;border-left:1px solid rgba(124,58,237,.22);border-top:1px solid rgba(124,58,237,.22);

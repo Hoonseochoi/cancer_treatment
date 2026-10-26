@@ -537,13 +537,13 @@ strong {
    ════════════════════════════════ */
 
 /* Header logo */
-.header-logo { height: 90px; }
+.header-logo { height: 52px; width: auto; }
 
 /* Header left group gap + button font */
 .header-left-group { gap: 20px; }
 
 @media (max-width: 640px) {
-    .header-logo { height: 54px; }
+    .header-logo { height: 38px; }
     /* 메뉴가 늘어 한 줄에 다 안 들어가므로 줄바꿈한다. 윗줄 NEW/PRO 태그(-11px)가 아랫줄과 겹치지 않게 세로 간격을 둔다. */
     .header-left-group { gap: 18px 10px; flex-wrap: wrap; }
     .header-left-group button,
