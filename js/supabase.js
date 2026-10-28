@@ -53,10 +53,26 @@ let currentManagerData = { count: 0, level: 1, exp: 0, required: 1, name: '' };
 // 없으면 검사 대상이 아니라는 뜻으로 matched를 NULL로 둔다.
 const TREATMENT_KEYWORDS = ['수술비', '치료비', '약물'];
 
+// 같은 제안서를 다시 돌리면 분석 기록(담보·스냅샷·점수·삼성 상세)은 또 쌓지 않는다.
+// 파일 이름+크기로 알아보고, 이 브라우저에서 최근 돌린 200개까지 기억한다. 분석 횟수는 그대로 센다.
+const LOGGED_KEY = 'sur_logged_files';
+function markProposalLogged(file) {
+    const key = (file && file.name || '') + '|' + (file && file.size || 0);
+    let seen = [];
+    try { seen = JSON.parse(localStorage.getItem(LOGGED_KEY) || '[]'); } catch (e) {}
+    if (seen.includes(key)) return false;
+    seen.push(key);
+    try { localStorage.setItem(LOGGED_KEY, JSON.stringify(seen.slice(-200))); } catch (e) {}
+    return true;
+}
+window.markProposalLogged = markProposalLogged;
+// main.js가 분석마다 정한다 — false면 이번 분석은 기록하지 않는다
+function skipProposalLog() { return window.__logThisRun === false; }
+
 async function logRawCoverageItems(fileName, insurer, productName, results, matchFn) {
-    if (!supabaseClient || !results || !results.length) return;
+    if (!supabaseClient || !results || !results.length || skipProposalLog()) return;
     try {
-        const rows = results.map(item => {
+        const all = results.map(item => {
             const name = item.name || '';
             // kind 태그(surgery/circulatory)가 최우선: 이 계열들은 이름에 "수술비"/"치료비"가
             // 들어있어도 findXDetails(암 9카드 로직)와는 완전히 다른 체계라 이 검사 자체가 무의미하다.
@@ -75,12 +91,15 @@ async function logRawCoverageItems(fileName, insurer, productName, results, matc
                     : (typeof matchFn === 'function' ? !!matchFn(item.name) : null)
             };
         });
+        // 놓친 담보를 찾는 게 목적이라, 치료비 로직이 못 잡은 행(matched=false)만 남긴다.
+        // 잡힌 행·검사 대상이 아닌 행까지 매번 다 쌓던 게 분석 한 번에 50~70줄이라 디스크를 많이 썼다.
+        const rows = all.filter(r => r.matched === false);
+        if (!rows.length) return;
         const { error } = await supabaseClient
             .from('raw_coverage_items')
             .insert(rows);
         if (error) throw error;
-        const unmatchedCount = rows.filter(r => r.matched === false).length;
-        console.log(`[raw_coverage] ${rows.length}건 로깅 (미매칭 ${unmatchedCount}건)`);
+        console.log(`[raw_coverage] 미매칭 ${rows.length}건 로깅 (전체 ${all.length}건 중)`);
     } catch (err) {
         console.error('Failed to log raw coverage items:', err);
     }
@@ -98,7 +117,7 @@ const SNAPSHOT_CARD_KEYS = [
 ];
 
 async function logCoverageSnapshot(fileName, insurer, meta, grandTotalMin, grandTotalMax, summaryMap) {
-    if (!supabaseClient) return;
+    if (!supabaseClient || skipProposalLog()) return;
     try {
         const cards = {};
         SNAPSHOT_CARD_KEYS.forEach(key => {
@@ -133,7 +152,7 @@ window.logCoverageSnapshot = logCoverageSnapshot;
  * 테이블 생성 SQL: scripts/supabase_coverage_scores.sql
  */
 async function logCoverageScore(fileName, insurer, meta, scoreResult) {
-    if (!supabaseClient || !scoreResult) return;
+    if (!supabaseClient || !scoreResult || skipProposalLog()) return;
     try {
         const { error } = await supabaseClient
             .from('coverage_scores')
@@ -162,7 +181,7 @@ window.logCoverageScore = logCoverageScore;
  * 테이블: samsung_proposals
  */
 async function logSamsungProposal(meta, summaryMap) {
-    if (!supabaseClient) return;
+    if (!supabaseClient || skipProposalLog()) return;
     try {
         const cards = {};
         SNAPSHOT_CARD_KEYS.forEach(key => {

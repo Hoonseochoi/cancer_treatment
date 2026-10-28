@@ -325,7 +325,9 @@ async function processFile(file) {
         }
         console.log(`[extraction] ${results.length}건 추출 (insurer=${insurer})`);
 
-        // 원본 담보 전량 로깅 (매칭 성공/실패 무관, 향후 매핑 로직 보완용)
+        // 같은 제안서를 다시 돌린 거면 이번엔 분석 기록을 남기지 않는다(js/supabase.js)
+        window.__logThisRun = typeof markProposalLogged === 'function' ? markProposalLogged(file) : true;
+        // 치료비 로직이 놓친 담보 로깅 (향후 매핑 로직 보완용)
         if (typeof logRawCoverageItems === 'function') {
             logRawCoverageItems(file.name, insurer, samsungMeta.productName, results, MATCH_FN_BY_INSURER[insurer]);
         }
