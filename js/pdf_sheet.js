@@ -110,6 +110,15 @@ function sheetCss() {
     .card.off .v{color:${C.muted};font-weight:700}
     .card .nm{font-size:${px(8)};font-weight:600;line-height:1.35;margin-top:${mm(1.4)};
       letter-spacing:-.015em}
+    .scp{display:inline-block;font-style:normal;font-size:${px(5.6)};font-weight:800;line-height:1;padding:${mm(.6)} ${mm(.9)} ${mm(.4)};
+      border-radius:${mm(.8)};white-space:nowrap;color:#475569;background:#E3EAF3;flex:none}
+    .scp.f-b{color:#4F46E5;background:#EEF0FE}
+    .scp.f-h{color:#D6336C;background:#FDF0F5}
+    .card .splt{display:flex;flex-wrap:wrap;gap:${mm(.8)} ${mm(2)};margin-top:${mm(1.2)};font-size:${px(6.6)};font-weight:800;
+      font-variant-numeric:tabular-nums;color:${C.ink}}
+    .card .splt span{display:inline-flex;align-items:center;gap:${mm(.8)}}
+    .card .splt{padding-top:${mm(1.2)};border-top:1px solid ${C.rule2}}
+    .card .splt .cap{font-size:${px(6)};font-weight:700;color:${C.muted}}
     .card .sub{font-size:${px(6.5)};color:${C.muted};margin-top:${mm(1)};line-height:1.5}
 
     /* 글자가 아래로 밀리던 건 태그 문제가 아니라 캡처 전체의 기준선 측정 오류였다
@@ -120,6 +129,10 @@ function sheetCss() {
     .cyc .t{font-style:normal}
     /* 암 9장(3×3) — 한 장에 들어가도록 아이콘·여백을 줄인다 */
     .cards.c9{gap:${mm(2.8)}}
+    .cards.tight{gap:${mm(2.4)}}
+    .cards.tight .card{padding:${mm(3)} ${mm(4)} ${mm(2.2)}}
+    .cards.tight .src{margin-top:${mm(1.2)};padding-top:${mm(1.2)}}
+    .cards.tight .splt{margin-top:${mm(.8)};padding-top:${mm(.8)}}
     .cards.c9 .card{padding:${mm(3.2)} ${mm(4)} ${mm(2.8)}}
     .cards.c9 .ico{width:${mm(9.5)};height:${mm(9.5)};margin-bottom:${mm(1)}}
     .cards.c9 .src{margin-top:${mm(1.4)};padding-top:${mm(1.4)}}
@@ -319,7 +332,7 @@ function covBlock(list, label) {
 
 function cardBlock(c) {
     const rows = (c.rows || []).filter(r => r.v > 0).slice(0, 3).map(r =>
-        `<div class="row"><span class="n2">${sClip(r.n, 14)}</span>` +
+        `<div class="row">${r.sc ? `<i class="scp f-${r.sc.f}">${r.sc.k}</i>` : ''}<span class="n2">${r.sc ? sClip(r.n.replace(/^종합병원\s?/, '').replace(/\(중환자실\)/, '').replace(/\s?치료비$/, ''), 9) : sClip(r.n, 14)}</span>` +
         `<span class="a2">${r.vMax > r.v ? sFmt(r.v).replace(/원$/, '') + '~' + sFmt(r.vMax) : sFmt(r.v)}</span>` +
         `<span class="c2">${r.c || ''}</span></div>`).join('');
     return `<div class="card${c.lead ? ' lead' : ''}${c.v > 0 ? '' : ' off'}">
@@ -328,6 +341,8 @@ function cardBlock(c) {
       <div class="v">${c.v > 0 ? (c.vMax > c.v ? sFmt(c.v).replace(/원$/, '') + '~' + sFmt(c.vMax) : sFmt(c.v)) : '0원'}</div>
       <div class="nm">${sClip(c.nm, 16)}</div>
       ${rows ? `<div class="src">${rows}</div>` : (c.sub ? `<div class="sub">${c.sub}</div>` : '')}
+      ${c.v > 0 && (c.split || []).length > 1 ? `<div class="splt"><b class="cap">합계</b>${c.split.map(x =>
+          `<span><i class="scp f-${x.f}">${x.k.replace('그 밖의 순환계', '그 밖')}</i>${sFmt(x.v)}</span>`).join('')}</div>` : ''}
       ${(c.extra || []).length ? `<div class="xtra"><b>약물 종류에 따라 따로</b> ${c.extra.map(x =>
           `${sClip(x.n, 12)} ${sFmt(x.v).replace(/원$/, '')}`).join(' · ')}</div>` : ''}
     </div>`;
@@ -470,6 +485,11 @@ function scopeBlock(d) {
 }
 
 // ── 05 뇌·심장 ──
+// 삼성 카드가 5장 이상이고 질환별 금액 줄까지 붙으면 사례 상자를 실을 자리가 없다(실측: 사례가 2px로 눌림)
+function circHeavy(d) {
+    const cards = d.circCards || [];
+    return cards.length > 4 && cards.some(c => (c.split || []).length > 1);
+}
 function sheetCirc(d) {
     // 머리 금액은 한 번 진단받을 때의 최대치(circDxBest) — 목록 합계가 아니다.
     const col = (cls, label, list, tot) => {
@@ -487,9 +507,9 @@ function sheetCirc(d) {
            <div><h3>보장 범위<span class="hint">바깥 상자일수록 넓은 보장</span></h3>
              ${scopeBlock(d)}</div>
            <div><h3>치료비<span class="hint">어느 담보에서 얼마가 나오는지</span></h3>
-             <div class="cards">${(d.mz ? (d.circCards || []).filter((c, i) => i < 4 || c.v > 0) : (d.circCards || []))
+             <div class="cards${circHeavy(d) ? ' tight' : ''}">${(d.mz ? (d.circCards || []).filter((c, i) => i < 4 || c.v > 0) : (d.circCards || []))
                  .slice(0, 6).map(cardBlock).join('')}</div></div>
-           ${d.mz ? '' /* 메리츠는 치료비 카드가 6장 꽉 차 사례까지 실으면 한 장을 넘는다 */
+           ${d.mz || circHeavy(d) ? '' /* 치료비 카드가 꽉 차면 사례까지 실을 때 한 장을 넘는다 */
                : caseBlock('사례로 보는 보장', d.circCaseDesc, d.circCase,
                { c: SHEET_COLOR.heart, s: SHEET_COLOR.heartSoft })}
          </div>` +
@@ -665,41 +685,11 @@ function buildSheetData(results, meta, customerName) {
                 return it ? (cp.통합.type === 'std' ? it.std : it.stdL) || 0 : 0;
             };
             const mk = (nm, v, rows, o) => Object.assign({ nm, v, rows }, o || {});
-            // 내역은 제안서에 적힌 담보명을 그대로 쓴다. '특정치료비Ⅲ' 같은 통칭만
-            // 넣어 두면, 행위 하나만 따로 파는 담보('혈전용해치료비(급성심근경색증)')를
-            // 가진 제안서에서 내역이 통째로 빈다(실측).
-            const rawRows = re => (cp._raw || [])
-                .filter(r => re.test((r.name || '').replace(/\s+/g, '')))
-                .map(r => ({ n: (r.name || '').trim(), v: val(r) }))
-                .filter(x => x.v > 0);
-            const withTong = (re, key) => {
-                const rows = rawRows(re);
-                if (cp.통합 && jV(key)) rows.push({ n: '특정순환계 통합치료비', v: jV(key) });
-                return rows;
-            };
-            // '특정치료비Ⅲ(중환자실)'은 이름에 특정치료비가 들어 있어 수술·혈전 칸 내역에
-            // 섞였다(실측). 중환자실 담보는 중환자실 칸에만 싣는다.
-            d.circCards = cp.mz ? meritzCircActs(cp).map(a => mk(a.nm, a.v, a.rows,
-                    { lead: a.lead, cyc: a.cyc.replace(/^연 1회$/, '연간 1회'), cycCls: a.badge != null ? a.badge : 'yr' }))
-                : [
-                mk('주요 치료 수술', cp.surgTreat.수술 || 0,
-                   withTong(/^(?!.*중환자실).*(특정치료비|순환계.*수술비)/, '수술'),
-                   { lead: true, cyc: '수술 매회', cycCls: 'ev' }),
-                mk('혈전용해치료', cp.surgTreat.혈전용해 || 0,
-                   withTong(/^(?!.*중환자실).*(혈전용해|특정치료비)/, '혈전용해'), { cyc: '연간 1회' }),
-                mk('혈전제거술', cp.surgTreat.혈전제거 || 0,
-                   withTong(/^(?!.*중환자실).*(혈전제거|특정치료비)/, '혈전제거'), { cyc: '연간 1회' }),
-                mk('중환자실 입원', cp.중환자실 || 0,
-                   withTong(/중환자실/, '중환자실'), { cyc: '연간 1회' })
-            ];
-            if (cp.통합 && !cp.mz) {
-                d.circCards.push(mk('검사 · 영상진단', jV('MRI') + jV('CT') + jV('양전자'),
-                    [{ n: 'MRI촬영(급여)', v: jV('MRI') },
-                     { n: 'CT · PET촬영', v: jV('CT') + jV('양전자') }], { cyc: '각 연 1회' }));
-                d.circCards.push(mk('약물 · 재활치료', jV('항응고') + jV('항혈소판') + jV('전문재활'),
-                    [{ n: '항응고·항혈소판제', v: jV('항응고') + jV('항혈소판') },
-                     { n: '전문재활치료(급여)', v: jV('전문재활') }], { cyc: '연간 1회' }));
-            }
+            // 카드 목록은 화면과 같은 함수에서 받는다 — 삼성은 samsungCircActs가 담보마다
+            // 나오는 질환(순환계·허혈성·급성심근·뇌경색…)을 달아 한 질환 기준 금액을 정한다.
+            d.circCards = (cp.mz ? meritzCircActs(cp) : (cp.acts || [])).map(a => mk(a.nm, a.v, a.rows,
+                { lead: a.lead, cyc: (a.cyc || '').replace(/^연 1회$/, '연간 1회'), cycCls: a.badge != null ? a.badge : 'yr',
+                  sub: a.sub, split: a.split }));
             const hDx = Math.max(...d.heartDx.map(x => x.v), 0);
             // 수술 담보가 없어도 사례는 만든다. 혈전용해·혈전제거만 가입한 제안서가
             // 흔한데, 그 경우에도 "진단 → 치료" 흐름은 보여줄 값어치가 있다.

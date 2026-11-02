@@ -1391,6 +1391,25 @@ body.meritz-theme{--sf-blue:#E60000}
 #circulatory-panel .cc-act.lead .v{color:var(--sf-gold)}
 #circulatory-panel .cc-act.off .v{color:var(--sf-muted)}
 #circulatory-panel .cc-act-sub{margin:2px 0 0;font-size:11px;color:var(--sf-muted);line-height:1.4}
+/* 담보가 나오는 질환 범위 칩 — 회색 순환계 전체 / 남색 뇌 / 장미 심장 */
+#circulatory-panel .sc-chip{flex:none;display:inline-block;font-style:normal;font-size:10px;font-weight:800;line-height:1;
+  letter-spacing:-.01em;padding:4px 6px 3px;border-radius:6px;white-space:nowrap;color:var(--outer);background:var(--outer-band)}
+#circulatory-panel .sc-chip.f-b{color:var(--brain-2);background:var(--brain-soft)}
+#circulatory-panel .sc-chip.f-h{color:var(--heart-2);background:var(--heart-soft)}
+#circulatory-panel .sf-src .row{align-items:center}
+#circulatory-panel .cc-act .v small{display:block;margin-top:2px;font-family:'Pretendard','Noto Sans KR',sans-serif;
+  font-size:10.5px;font-weight:600;letter-spacing:0;color:var(--sf-muted)}
+#circulatory-panel .cc-split{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--sf-wash)}
+#circulatory-panel .cc-split .cap{display:block;font-size:10.5px;font-weight:700;color:var(--sf-muted);margin-bottom:5px}
+#circulatory-panel .cc-split ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:5px 12px}
+#circulatory-panel .cc-split li{display:flex;align-items:center;gap:5px;font-size:12px}
+#circulatory-panel .cc-split b{font-weight:800;color:var(--sf-ink);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+#circulatory-panel .cc-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:-2px 0 12px;font-size:11.5px;color:var(--sf-ink-2)}
+#circulatory-panel .cc-legend > span{display:flex;align-items:center;gap:6px}
+#circulatory-panel .cc-legend em{font-style:normal;color:var(--sf-muted);font-size:10.5px}
+#circulatory-panel .cc-legend p{flex-basis:100%;margin:2px 0 0;font-size:11px;color:var(--sf-muted);line-height:1.5}
+#circulatory-panel .cc-legend p b{color:var(--outer)}
+body[data-print] #circulatory-panel .cc-legend p{display:none}
 @media (max-width:900px){
   #circulatory-panel .cc-acts{grid-template-columns:repeat(2,minmax(0,1fr))}
 }

@@ -27,6 +27,91 @@ function circDxBest(dx) {
     };
 }
 
+// ── 치료비 담보가 어느 질환에 나오는지 ──
+// 같은 '혈전용해 치료비'라도 특정치료비Ⅲ는 순환계 질환 전체에, '(뇌경색증)'은 뇌경색에만,
+// '(급성심근경색증)'은 급성심근경색에만 나온다. 이걸 한 칸에 다 더하면 한 번 아플 때 받을 수
+// 없는 금액이 된다(실측: 혈전용해 3,000만원 → 한 질환 최대 2,000만원).
+// in = 이 질환이면 함께 나오는 넓은 범위(급성심근경색은 허혈성심장질환·심질환 담보도 받는다).
+// 순서가 중요하다 — 좁은 범위부터 본다('심장부정맥'이 '심질환'에 먼저 걸리면 안 된다).
+const CIRC_SCOPES = [
+    { k: '뇌경색',   re: /뇌경색/,       f: 'b', full: '뇌경색증',       kcd: 'I63', in: ['뇌질환'] },
+    { k: '급성심근', re: /급성심근경색/, f: 'h', full: '급성심근경색증', kcd: 'I21~I23', in: ['허혈성', '심질환'] },
+    { k: '허혈성',   re: /허혈성/,       f: 'h', full: '허혈성심장질환', kcd: 'I20~I25', in: ['심질환'] },
+    { k: '부정맥',   re: /부정맥/,       f: 'h', full: '심장부정맥',     kcd: 'I47~I49', in: [] },
+    { k: '뇌질환',   re: /뇌질환|뇌혈관/, f: 'b', full: '뇌혈관질환',    kcd: 'I60~I69', in: [] },
+    { k: '심질환',   re: /심질환|심장질환/, f: 'h', full: '심장질환',    kcd: '', in: [] }
+];
+const CIRC_SCOPE_ALL = { k: '순환계', f: 'o', full: '순환계 질환 전체', kcd: 'I00~I99', in: [] };
+function circScope(name) {
+    const n = String(name || '').replace(/\s+/g, '');
+    return CIRC_SCOPES.find(s => s.re.test(n)) || CIRC_SCOPE_ALL;
+}
+// 칸 안에서는 범위 칩이 질환을 말해 주므로, 이름에서는 질환·지급 조건 꼬리를 걷는다
+function circShortName(name) {
+    return String(name || '').replace(/\s+/g, ' ')
+        .replace(/\((?:뇌경색증?|급성심근경색증?|연간\s?1회한|급여|1년\s?50%|1년감액|90일이상\s?처방|수술,\s?혈전용해,\s?혈전제거)\)/g, '')
+        .replace(/특정순환계질환\s?/g, '')
+        .replace(/^(뇌질환|심질환|심장부정맥)\s?/, '')
+        .replace(/스텐트삽입술\s?및\s?풍선혈관성형수술비/, '스텐트·풍선확장술')
+        .replace(/고주파·?\s?냉각절제술\s?치료비/, '고주파·냉각 절제술')
+        .replace(/항응고제\(와파린,\s?NOAC\)\s?치료비/, '항응고제 치료비')
+        .replace(/\s{2,}/g, ' ').trim();
+}
+// 한 치료행위 칸의 금액 — 순환계 전체 담보는 늘 나오고, 좁은 범위 담보는 그 질환일 때만 더한다.
+// v = 한 질환 기준 최대, split = 질환별로 얼마인지(좁은 범위 담보가 있을 때만)
+function circActValue(rows) {
+    const live = (rows || []).filter(r => r.v > 0);
+    const base = live.filter(r => !r.sc || r.sc.k === '순환계').reduce((n, r) => n + r.v, 0);
+    const keys = [...new Set(live.filter(r => r.sc && r.sc.k !== '순환계').map(r => r.sc.k))];
+    if (!keys.length) return { v: base, split: null };
+    const split = CIRC_SCOPES.filter(s => keys.includes(s.k)).map(s => ({
+        k: s.k, f: s.f, full: s.full,
+        v: base + live.filter(r => r.sc && (r.sc.k === s.k || s.in.includes(r.sc.k))).reduce((n, r) => n + r.v, 0)
+    }));
+    if (base > 0) split.push({ k: '그 밖의 순환계', f: 'o', full: '그 밖의 순환계 질환', v: base });
+    return { v: Math.max(...split.map(x => x.v)), split };
+}
+
+// ── 삼성 치료비 카드 목록 ──
+// 화면(ccCardsHtml)과 PDF(buildSheetData)가 같은 목록을 쓴다(메리츠는 meritzCircActs).
+//   주요 수술 · 혈전용해 · 혈전제거 · 중환자실 — 늘 자리를 지킨다(미가입이면 회색)
+//   스텐트 · 부정맥 절제술 · 항응고제 · 검사 · 약물·재활 — 가입했을 때만
+function samsungCircActs(p) {
+    const norm = s => String(s || '').replace(/\s+/g, '');
+    const rows = re => (p._raw || []).filter(r => re.test(norm(r.name)))
+        .map(r => ({ n: circShortName(r.name), full: (r.name || '').trim(), v: parseKoAmount(r.amount), sc: circScope(r.name) }))
+        .filter(x => x.v > 0);
+    const flat = p.통합 ? CIRCULATORY_DATA.JOURNEY.flatMap(g => g.items) : [];
+    const jv = k => {
+        const it = flat.find(x => x.n.startsWith(k));
+        return it ? (p.통합.type === 'std' ? it.std : it.stdL) || 0 : 0;
+    };
+    const tongNm = p.통합 ? `통합치료비(${p.통합.type === 'std' ? '표준형' : '실속형'})` : '';
+    const tong = k => (jv(k) ? [{ n: tongNm, full: '특정순환계질환 ' + tongNm, v: jv(k), sc: CIRC_SCOPE_ALL }] : []);
+    const mk = (nm, rs, o) => { const c = circActValue(rs); return Object.assign({ nm, v: c.v, rows: rs, split: c.split }, o || {}); };
+    // '특정치료비Ⅲ(중환자실)'은 이름에 특정치료비가 들어 있어 수술·혈전 칸에 섞였다(실측) — 중환자실 칸에만
+    const out = [
+        mk('주요 치료 수술', [...rows(/^(?!.*(중환자실|스텐트|진단비)).*(특정치료비|(순환계|심장|뇌|허혈성).*수술비|관상동맥.*수술)/), ...tong('수술')],
+           { lead: true, cyc: '수술 매회', badge: 'ev' }),
+        mk('혈전용해치료', [...rows(/^(?!.*중환자실).*(혈전용해|특정치료비)/), ...tong('혈전용해')], { cyc: '연 1회' }),
+        mk('혈전제거술', [...rows(/^(?!.*중환자실).*(혈전제거|특정치료비)/), ...tong('혈전제거')], { cyc: '연 1회' }),
+        mk('중환자실 입원', [...rows(/중환자실/), ...tong('중환자실')], { cyc: '연 1회' })
+    ];
+    const opt = (nm, re, o) => { const rs = rows(re); if (rs.length) out.push(mk(nm, rs, o)); };
+    opt('스텐트 · 풍선확장술', /스텐트|풍선혈관/, { cyc: '연 1회', sub: '막힌 혈관을 넓히는 시술' });
+    opt('부정맥 절제술', /절제술/, { cyc: '연 1회', sub: '고주파 · 냉각으로 끊는 시술' });
+    if (!p.통합) opt('항응고제 치료', /항응고|항혈소판/, { cyc: '', sub: '90일 이상 처방받을 때' });
+    if (p.통합) {
+        out.push(mk('검사 · 영상진단', [
+            { n: 'MRI촬영(급여)', v: jv('MRI'), sc: CIRC_SCOPE_ALL },
+            { n: 'CT · PET촬영(급여)', v: jv('CT') + jv('양전자'), sc: CIRC_SCOPE_ALL }], { cyc: '각 연 1회' }));
+        out.push(mk('약물 · 재활치료', [
+            { n: '항응고·항혈소판제', v: jv('항응고') + jv('항혈소판'), sc: CIRC_SCOPE_ALL },
+            { n: '전문재활치료(급여)', v: jv('전문재활'), sc: CIRC_SCOPE_ALL }], { cyc: '연 1회' }));
+    }
+    return out;
+}
+
 // 제안서에서 추출한 순환계 담보(kind:'circulatory') + 수술비 담보(kind:'surgery')를
 // 뷰에 필요한 금액 묶음으로 정리한다.
 function buildCirculatoryPolicy(results) {
@@ -181,12 +266,25 @@ function buildCirculatoryPolicy(results) {
 
     p.surgSum = p.sx.입원 + p.sx.종5 + p.sx.대질병 + p.sx.종8 + p.sx.오대;
 
+    // 삼성은 카드 목록이 한 질환 기준 금액을 정한다 — 화면·PDF·요약이 같은 숫자를 쓰게
+    p._raw = _raw;
+    if (!p.mz) {
+        p.acts = samsungCircActs(p);
+        // 순환계 전체 담보뿐이면 칩이 다 같은 말이라 떼어 낸다(화면·PDF 모두)
+        if (!p.acts.some(a => a.rows.some(r => r.v > 0 && r.sc && r.sc.k !== '순환계')))
+            p.acts.forEach(a => a.rows.forEach(r => { r.sc = null; }));
+        const av = nm => (p.acts.find(a => a.nm === nm) || {}).v || 0;
+        p.surgTreat = { 수술: av('주요 치료 수술'), 혈전용해: av('혈전용해치료'), 혈전제거: av('혈전제거술'),
+                        스텐트: av('스텐트 · 풍선확장술'), 절제술: av('부정맥 절제술') };
+    }
+
     // ── 대표 금액과 최대 금액을 분리한다 ──
     // 약관 지급표가 "수술(혈전제거술 제외)"로 못박고 있어 수술과 혈전제거는 배타적이고,
     // 혈전용해·혈전제거도 통상 택일이다. 세 행위를 모두 받는 건 극단적 시나리오라
     // 대표 금액(ringTotal)은 가장 높은 단일 치료행위 하나 + 수술비로 잡고,
     // 세 행위를 모두 받는 경우는 maxTotal 로 따로 보여준다.
-    const acts = [p.surgTreat.수술, p.surgTreat.혈전용해, p.surgTreat.혈전제거, p.surgTreat.특정혈전 || 0];
+    const acts = [p.surgTreat.수술, p.surgTreat.혈전용해, p.surgTreat.혈전제거, p.surgTreat.특정혈전 || 0,
+                  p.surgTreat.스텐트 || 0, p.surgTreat.절제술 || 0];
     p.treatBest = Math.max(...acts, 0);
     p.treatAll = acts.reduce((a, b) => a + b, 0);
 
@@ -322,12 +420,6 @@ function ccCardsHtml(policy, tongName) {
     // 진단비는 뇌/심장 두 상자에 목록으로, 치료비는 3열 카드에 담보 내역까지 편다.
     // 예전에는 질환마다 카드를 하나씩 벌렸는데, 진단비는 "얼마 나오나"만 알면 되는
     // 정보라 칸을 그만큼 쓸 값어치가 없었다. 그 자리를 치료비가 가져간다.
-    const jFlat = policy.통합 ? CIRCULATORY_DATA.JOURNEY.flatMap(g => g.items) : [];
-    const jVal = key => {
-        if (!policy.통합) return 0;
-        const it = jFlat.find(x => x.n.startsWith(key));
-        return it ? (policy.통합.type === 'std' ? it.std : it.stdL) || 0 : 0;
-    };
     const capTxt = policy.통합
         ? `연 ${ccW(policy.통합.type === 'mz' ? policy.통합.amount
             : policy.통합.type === 'std' ? CIRCULATORY_DATA.CAP.std : CIRCULATORY_DATA.CAP.lite)} 한도`
@@ -393,63 +485,42 @@ function ccCardsHtml(policy, tongName) {
       </div>`;
 
     // 치료비 — 치료 행위별로, 어느 담보에서 얼마가 나오는지까지
+    // 담보 줄 앞의 칩이 그 담보가 나오는 질환 범위다(circScope). 좁은 범위 담보가 섞인 칸은
+    // 머리 금액이 '한 질환 기준 최대'이고, 담보 줄(순환계 1천 · 급성 1천) 아래에 질환별 합계(급성 2천)를 단다.
     const act = (nm, v, rows, opt) => {
         const o = opt || {};
         const live = rows.filter(r => r.v > 0);
+        const split = v > 0 && o.split && o.split.length > 1 ? o.split : null;
         return `
       <div class="cc-act${o.lead ? ' lead' : ''}${v > 0 ? '' : ' off'}">
         <div class="top"><span class="nm">${nm}</span>
           ${o.cyc ? `<span class="sf-cyc ${o.badge != null ? o.badge : 'yr'}">${o.cyc}</span>` : ''}</div>
-        <div class="v">${v > 0 ? ccW(v) : '미가입'}</div>${o.sub ? `<p class="cc-act-sub">${o.sub}</p>` : ''}
+        <div class="v">${v > 0 ? ccW(v) : '미가입'}${split ? '<small>한 질환 기준 최대</small>' : ''}</div>
+        ${o.sub ? `<p class="cc-act-sub">${o.sub}</p>` : ''}
         ${live.length ? `<div class="sf-src">${live.map(r =>
-            `<div class="row"><span class="nm2" title="${r.n}">${clipName(r.n, 14)}</span>` +
+            `<div class="row">${r.sc ? `<span class="sc-chip f-${r.sc.f}" title="${r.sc.full}">${r.sc.k}</span>` : ''}` +
+            `<span class="nm2" title="${r.full || r.n}">${clipName(r.n, 16)}</span>` +
             `<span class="amt2">${ccW(r.v)}</span></div>`).join('')}</div>` : ''}
+        ${split ? `<div class="cc-split"><span class="cap">질환별 합계</span><ul>${split.map(x =>
+            `<li><span class="sc-chip f-${x.f}" title="${x.full}">${x.k}</span><b>${ccW(x.v)}</b></li>`).join('')}</ul></div>` : ''}
       </div>`;
     };
 
-    // 내역은 제안서에 적힌 담보명을 그대로 쓴다. 통칭만 넣어 두면 행위 하나만
-    // 따로 파는 담보('혈전용해치료비(급성심근경색증)')를 가진 제안서에서 빈다.
-    const rawRows = re => (policy._raw || [])
-        .filter(r => re.test((r.name || '').replace(/\s+/g, '')))
-        .map(r => ({ n: (r.name || '').trim(), v: parseKoAmount(r.amount) }))
-        .filter(x => x.v > 0);
-    const withTong = (re, key) => {
-        const rows = rawRows(re);
-        if (policy.통합 && jVal(key)) {
-            rows.push({ n: `특정순환계 통합치료비${tongName ? '(' + tongName + ')' : ''}`,
-                        v: jVal(key) });
-        }
-        return rows;
-    };
-    // '특정치료비Ⅲ(중환자실)'은 이름에 특정치료비가 들어 있어 수술·혈전 칸 내역에
-    // 섞였다(실측). 중환자실 담보는 중환자실 칸에만 싣는다.
-    const acts = policy.mz ? meritzCircActs(policy).map(a => act(a.nm, a.v, a.rows, a)) : [
-        act('주요 치료 수술', policy.surgTreat.수술 || 0,
-            withTong(/^(?!.*중환자실).*(특정치료비|순환계.*수술비)/, '수술'),
-            { lead: true, cyc: '수술 매회', badge: 'ev' }),
-        act('혈전용해치료', policy.surgTreat.혈전용해 || 0,
-            withTong(/^(?!.*중환자실).*(혈전용해|특정치료비)/, '혈전용해'), { cyc: '연 1회' }),
-        act('혈전제거술', policy.surgTreat.혈전제거 || 0,
-            withTong(/^(?!.*중환자실).*(혈전제거|특정치료비)/, '혈전제거'), { cyc: '연 1회' }),
-        act('중환자실 입원', policy.중환자실 || 0,
-            withTong(/중환자실/, '중환자실'), { cyc: '연 1회' })
-    ];
-    if (policy.통합 && !policy.mz) {
-        acts.push(act('검사 · 영상진단', jVal('MRI') + jVal('CT') + jVal('양전자'), [
-            { n: 'MRI촬영(급여)', v: jVal('MRI') },
-            { n: 'CT · PET촬영(급여)', v: jVal('CT') + jVal('양전자') }
-        ], { cyc: '각 연 1회' }));
-        acts.push(act('약물 · 재활치료', jVal('항응고') + jVal('항혈소판') + jVal('전문재활'), [
-            { n: '항응고·항혈소판제 치료', v: jVal('항응고') + jVal('항혈소판') },
-            { n: '전문재활치료(급여)', v: jVal('전문재활') }
-        ], { cyc: '연 1회' }));
-    }
+    const acts = (policy.mz ? meritzCircActs(policy) : policy.acts).map(a => act(a.nm, a.v, a.rows, a));
+    // 칩이 무슨 뜻인지 — 이 제안서에 나온 범위만
+    const used = new Map();
+    (policy.mz ? [] : policy.acts).forEach(a => a.rows.forEach(r => { if (r.v > 0 && r.sc) used.set(r.sc.k, r.sc); }));
+    const order = [CIRC_SCOPE_ALL, ...CIRC_SCOPES];
+    const legend = used.size > 1 ? `<div class="cc-legend">${order.filter(s => used.has(s.k)).map(s =>
+        `<span><i class="sc-chip f-${s.f}">${s.k}</i>${s.full}${s.kcd ? ` <em>${s.kcd}</em>` : ''}</span>`).join('')}
+        <p>칩은 그 담보가 나오는 질환입니다. 넓은 <b>순환계</b> 담보는 어느 질환이든 나오고, 좁은 담보는 그 질환일 때만 더해집니다.</p></div>` : '';
 
     return `
     <div class="ccx">
       <h3 class="sf-h3" style="--sf-sec:#2D6FB8">보장 범위<span class="hint">바깥 상자일수록 넓은 보장</span></h3>
       ${scopeHtml}
       <h3 class="sf-h3" style="--sf-sec:#C2436B">치료비<span class="hint">어느 담보에서 얼마가 나오는지${capTxt ? ` · ${capTxt}` : ''}</span></h3>
+      ${legend}
       <div class="cc-acts">${acts.join('')}</div>
     </div>`;
 }
