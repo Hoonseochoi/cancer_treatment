@@ -148,6 +148,7 @@ function sheetCss() {
       font-size:${px(7)};line-height:1.5;color:${C.ink2}}
     .src .row{display:flex;align-items:baseline;gap:${mm(2)};padding:${mm(0.7)} 0}
     .src .row + .row{border-top:1px dotted ${C.rule2}}
+    .src .n2 .bgy{color:#003CDC;font-weight:800}
     .src .n2{flex:1;min-width:0;overflow:hidden;white-space:nowrap}
     .src .a2{flex:none;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;
       color:${C.ink};letter-spacing:-.02em;white-space:nowrap}
@@ -330,9 +331,9 @@ function covBlock(list, label) {
       <ul>${li}</ul></div>`;
 }
 
-function cardBlock(c) {
-    const rows = (c.rows || []).filter(r => r.v > 0).slice(0, 3).map(r =>
-        `<div class="row">${r.sc ? `<i class="scp f-${r.sc.f}">${r.sc.k}</i>` : ''}<span class="n2">${r.sc ? sClip(r.n.replace(/^종합병원\s?/, '').replace(/\(중환자실\)/, '').replace(/\s?치료비$/, ''), 9) : sClip(r.n, 14)}</span>` +
+function cardBlock(c, maxRows) {
+    const rows = (c.rows || []).filter(r => r.v > 0).slice(0, maxRows || 3).map(r =>
+        `<div class="row">${r.sc ? `<i class="scp f-${r.sc.f}">${r.sc.k}</i>` : ''}<span class="n2">${r.sc ? sClip(r.n.replace(/^종합병원\s?/, '').replace(/\(중환자실\)/, '').replace(/\s?치료비$/, ''), 9) : sClip(r.n, 14).replace(/비급여/g, '<b class="bgy">비급여</b>')}</span>` +
         `<span class="a2">${r.vMax > r.v ? sFmt(r.v).replace(/원$/, '') + '~' + sFmt(r.vMax) : sFmt(r.v)}</span>` +
         `<span class="c2">${r.c || ''}</span></div>`).join('');
     return `<div class="card${c.lead ? ' lead' : ''}${c.v > 0 ? '' : ' off'}">
@@ -431,12 +432,18 @@ function cancerGrid(cards) {
 }
 
 // ── 03 암 ──
+// 통합치료비를 지급표 줄마다 나눠 적으니 카드 내역이 4~5줄이 됐다. 3줄에서 자르면
+// 다빈치 카드의 질병 수술비·1~5종 줄이 빠져 합계가 안 맞는다(실측: 고은서님).
+// 암 지면은 바닥글까지 여유가 있어 9장이면 5줄, 그보다 많으면 4줄까지 싣는다
+// (실측: 11장 4줄 1,586px · 9장 5줄 1,544px < 바닥글 1,654px).
+function cancerRowCap(cards) { return (cards || []).length > 9 ? 4 : 5; }
+
 function sheetCancer(d) {
     return sheetHead(d.who) + sheetTop(sheetBrandName(), '암 치료비', 'Cancer') +
         covBlock(d.cancerCov, '암 관련') +
         `<div class="body">
            <div><h3>치료비<span class="hint">어느 담보에서 얼마가 나오는지</span></h3>
-             <div class="cards c9">${cancerGrid(d.cancerCards).map(cardBlock).join('')}</div></div>
+             <div class="cards c9">${cancerGrid(d.cancerCards).map(c => cardBlock(c, cancerRowCap(d.cancerCards))).join('')}</div></div>
          </div>` +
         sheetFoot(`${sheetBrandName()} 가입제안서 기준 · 0원은 미가입`, 3, 5);
 }
@@ -450,7 +457,7 @@ function sheetSurgery(d) {
         covBlock(d.surgCov, '수술비') +
         `<div class="body">
            <div><h3>다빈도 수술<span class="hint">어느 담보에서 얼마가 나오는지</span></h3>
-             <div class="cards">${(d.surgCards || []).slice(0, 6).map(cardBlock).join('')}</div></div>
+             <div class="cards">${(d.surgCards || []).slice(0, 6).map(c => cardBlock(c)).join('')}</div></div>
            ${mini ? `<div><h3>그 밖의 수술<span class="hint">가입금액 기준 검토 가능액</span></h3>
              <div class="mini">${mini}</div></div>` : ''}
          </div>` +
@@ -508,7 +515,7 @@ function sheetCirc(d) {
              ${scopeBlock(d)}</div>
            <div><h3>치료비<span class="hint">어느 담보에서 얼마가 나오는지</span></h3>
              <div class="cards${circHeavy(d) ? ' tight' : ''}">${(d.mz ? (d.circCards || []).filter((c, i) => i < 4 || c.v > 0) : (d.circCards || []))
-                 .slice(0, 6).map(cardBlock).join('')}</div></div>
+                 .slice(0, 6).map(c => cardBlock(c)).join('')}</div></div>
            ${d.mz || circHeavy(d) ? '' /* 치료비 카드가 꽉 차면 사례까지 실을 때 한 장을 넘는다 */
                : caseBlock('사례로 보는 보장', d.circCaseDesc, d.circCase,
                { c: SHEET_COLOR.heart, s: SHEET_COLOR.heartSoft })}
@@ -561,9 +568,12 @@ function buildSheetData(results, meta, customerName) {
             if (isYusamOrSpecificAmOnlyText((it.source || '') + '|' + (it.name || ''))) return;
             const s = (it.source || '').trim();
             if (s) {
-                if (!bySrc.has(s)) bySrc.set(s, { v: 0, vMax: 0, c: it.cycle || '' });
-                bySrc.get(s).v += parseKoAmount(it.amount);
-                bySrc.get(s).vMax += parseKoAmount(it.maxAmount || it.amount);
+                // 삼성 통합치료비는 지급표 줄마다 나눠 적는다 — 화면 카드와 같은 기준
+                const line = !d.mz && typeof samsungBundleLine === 'function' ? samsungBundleLine(it) : null;
+                const k = line ? line.n : s;
+                if (!bySrc.has(k)) bySrc.set(k, { v: 0, vMax: 0, c: (line && line.cycle) || it.cycle || '' });
+                bySrc.get(k).v += parseKoAmount(it.amount);
+                bySrc.get(k).vMax += parseKoAmount(it.maxAmount || it.amount);
                 // '수술비 계열'은 묶음 이름일 뿐 제안서 담보가 아니므로 담보 목록에는 싣지 않는다
                 if (!it.surgeryTier) {
                     if (!usedSrc.has(s)) usedSrc.set(s, 0);
@@ -582,9 +592,11 @@ function buildSheetData(results, meta, customerName) {
                : keys.length > 1 ? keys.map(k => k.replace(/1회|간/g, '')).join('+') : '',
             cycCls: keys.length === 1 ? CYC[keys[0]][1] : (keys.length > 1 ? 'mix' : 'yr'),
             extra,
+            // 지면은 카드당 4~5줄만 싣는다 — 큰 금액부터 적어 잘려도 작은 줄이 빠지게
             rows: [...bySrc.entries()].map(([n, o]) =>
                 ({ n: (d.mz && typeof meritzShortName === 'function') ? meritzShortName(n) : n,
                    v: o.v, vMax: o.vMax, c: o.c ? CYC[o.c][0].replace(' 1회', '') : '' }))
+                .sort((a, b) => (b.vMax || b.v) - (a.vMax || a.v))
         };
     }).sort((a, b) => b.v - a.v);
     // 금액은 제안서에 적힌 가입금액을 쓴다. 카드마다 쓰인 금액을 더해 두면 한 담보가

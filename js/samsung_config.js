@@ -456,12 +456,27 @@ const CATEGORY_HIERARCHY = {
     "표적항암약물치료비": ["면역항암약물치료비"]  // 면역항암은 표적항암을 포함 (면역7천=면역3+표적3+비급여약물1)
 };
 
+// ── 통합치료비 내역 줄 나누기 ──
+// 통합치료비는 한 담보가 치료행위마다 따로 준다. 카드 내역을 담보 이름 한 줄로 합치면
+// 실속형 면역 카드가 '통합치료비 3,000만원'으로 보여 표준형 칸을 읽은 것처럼 보였다
+// (실측: 고은서님 — 실제는 특정치료 약물 1,000 · 비급여 약물 1,000 · 표적 1,000 · 면역 1,000).
+// 지급표 줄 이름을 돌려준다. 통합치료비 줄이 아니면 ''.
+const BUNDLE_LINE_NAMES = [[/다빈치/, '다빈치', '연간1회'], [/양성자/, '양성자', '연간1회'],
+    [/표적/, '표적', '연간1회'], [/면역/, '면역', '연간1회'], [/수술/, '수술', '매회'],
+    [/방사선/, '방사선', '연간1회'], [/약물/, '약물', '연간1회']];
+function samsungBundleLine(item) {
+    if (!item || !/통합치료비/.test(item.source || '')) return null;
+    const hit = BUNDLE_LINE_NAMES.find(([re]) => re.test(item.name || ''));
+    if (!hit) return null;
+    return { n: '통합치료비 ' + (item.비급여 ? '비급여 ' : '특정치료 ') + hit[1], cycle: hit[2] };
+}
+
 // ── applySurgeryTiersToCancerSurgery ──
 // 암 수술 1건이 발생하면 암 전용 담보 외에 일반 수술비 계열도 함께 지급된다.
 //   · 질병 입원/통원 수술비 — 암도 질병이므로 지급 (입원·통원은 서로 배타 → 큰 쪽만)
 //   · 질병 1~5종 수술비   — 약관 [별표-상해및질병관련17] Ⅱ섹션 기준
 //                            관혈적 악성신생물 근치수술 = 5종, 내시경·경피적 = 3종
-//                            → 술식에 따라 갈리므로 3종~5종을 min~max 범위로 반영
+//                            → 5종 기준(5종 담보가 없으면 3종)
 //   · 질병 1~8종 수술비   — 담보가 있는 상품에 한해 반영 (암 주요 절제술은 7종)
 // 반대로 111대/115대/119대질병 수술비는 분류표에 악성신생물(C코드)이 없어 암에는 지급되지 않으므로
 // 여기서 가산하지 않는다.
@@ -517,14 +532,16 @@ function applySurgeryTiersToCancerSurgery(summaryMap, results) {
         push(src.name, src.amount);
     }
 
-    // 2) 질병 1~5종 수술비 — 3종(내시경·경피적) ~ 5종(관혈적 근치수술)
+    // 2) 질병 1~5종 수술비 — 5종(관혈적 근치수술)을 기준으로 잡는다.
+    //    3종(내시경·경피적)~5종 범위로 두면 PDF·대표값에 3종만 찍혀 5종 500만원이
+    //    빠진 것처럼 보였다(실측: 고은서님). 다빈치(로봇) 근치수술도 5종으로 본다.
+    //    5종 담보가 없는 상품만 3종으로 물러선다.
     const j3 = pick(/질병1[~-]5종수술비\(3종\)/);
     const j5 = pick(/질병1[~-]5종수술비\(5종\)/);
-    if (j5 || j3) {
-        const lo = amt(j3) || amt(j5);
-        const hi = amt(j5) || amt(j3);
-        addMin += Math.min(lo, hi); addMax += Math.max(lo, hi);
-        pushAlt('질병 1~5종 수술비(3종~5종)', j3, j5);
+    const jt = j5 || j3;
+    if (jt) {
+        addMin += amt(jt); addMax += amt(jt);
+        push(jt.name, jt.amount);
     }
 
     // 3) 질병 1~8종 수술비 — 해당 담보가 있는 상품만 (암 주요 절제술 = 7종)
@@ -721,7 +738,12 @@ function calculateHierarchicalSummarySamsung(results) {
                     source: item.name,
                     // 약관이 정한 지급 주기(최초 1회 / 연간 1회 / 매회 / 1일당).
                     // 제안서에는 적혀 있지 않아 clause_cycle_data.js에서 읽는다.
-                    cycle: typeof clauseCycleOf === 'function' ? clauseCycleOf(item.name) : '',
+                    // 통합치료비는 담보 하나에 주기가 섞인다 — 수술 줄만 「수술 1회당」(매회)이고
+                    // 나머지(다빈치 포함)는 연간 1회한. 담보 주기로 통째로 찍으면 카드 머리에
+                    // '연간 1회 3,500만원'으로 수술이 연간으로 보였다(실측: 고은서님).
+                    cycle: /통합치료비/.test(item.name) && /수술/.test(det.name || '') && !/다빈치/.test(det.name || '')
+                        ? '매회'
+                        : (typeof clauseCycleOf === 'function' ? clauseCycleOf(item.name) : ''),
                     hiddenInDetail: det.hiddenInDetail,
                     sub: det.sub,
                     비급여: det.비급여 || false,
@@ -769,23 +791,15 @@ function calculateHierarchicalSummarySamsung(results) {
             // (다빈치 수술도 "수술"의 일종이므로, 다빈치 카드의 총 보장액에는 일반 수술비도 포함되어야 함).
             // 단, 담보165처럼 애초에 암 무관 담보가 섞이는 문제는 findSamsungDetails에서 "암" 키워드로
             // 걸러내야 하는 별개의 이슈이며, 여기서 조건을 거는 것으로는 해결되지 않는다.
-            // 표적·면역·양성자·다빈치는 비급여(전액본인부담) 치료다. 같은 담보 안에서는
-            // 그 담보의 '전액본인부담' 묶음끼리 겹쳐 지급되지만, '특정치료(급여)' 묶음의
-            // 항암약물·방사선·수술은 함께 나오지 않는다.
-            //   종합병원 암 통합치료비(표준형) 지급표
-            //     특정치료(급여)      : 항암약물 1,000
-            //     전액본인부담(비급여): 항암약물 1,000 · 표적 3,000 · 면역 3,000
-            //   → 표적 = 1,000 + 3,000 = 4,000 / 면역 = 1,000 + 3,000 + 3,000 = 7,000
-            // 급여 줄까지 더해 표적이 5,000만원으로 나왔다(실측: 지설아님 제안서).
-            // 다른 담보(특정치료비Ⅱ 등)에서 오는 금액은 별개 특약이라 그대로 더한다.
-            // 이 카드가 '직접' 가진 담보만 본다. 확장(_expansion)으로 딸려온 다른 특약까지
-            // 같은 담보로 치면 그 특약 금액이 통째로 빠진다(실측: 송지원님 표적 1,000만원 누락).
-            const ownSources = new Set(childGroup.items
-                .filter(i => !i.fromParent && !i._expansion).map(i => i.source));
+            // 통합치료비의 '특정치료' 묶음도 함께 물려받는다. 약관 제4조②의 특정치료에는
+            // 급여 조건이 없고(그 병원에서 받은 수술·항암약물·방사선이면 된다), 제1조①이
+            // "각 치료행위별로 각각" 지급한다. 다빈치 수술 한 번이면 특정치료 수술 ·
+            // 비급여 수술 · 다빈치가 모두 나온다.
+            //   상급종합병원 암 통합치료비(실속형) → 다빈치 = 1,000 + 1,000 + 1,000
+            // 예전에는 특정치료 줄을 빼서 다빈치·표적·양성자가 1,000만원씩 모자랐다(실측: 고은서님).
             // 부모 항목도 하위 카드에 추가 (포함관계 출처 표시용)
             snap.items.forEach(pItem => {
                 if (isYusamOrSpecificAmOnlyText((pItem.source || '') + '|' + (pItem.name || ''))) return;
-                if (!pItem.비급여 && ownSources.has(pItem.source)) return;
                 childGroup.totalMin += parseKoAmount(pItem.amount);
                 childGroup.totalMax += parseKoAmount(pItem.maxAmount || pItem.amount);
                 // 유사암(갑상선암·기타피부암)도 같은 규칙으로 물려받는다 — 비통치의 항암약물은

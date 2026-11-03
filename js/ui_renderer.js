@@ -397,8 +397,11 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                 const srcMap = new Map();
                 dedupedItems.forEach(sub => {
                     if (sub.tierExtra) return;   // 종류 개수 담보는 아래 따로
-                    const src = sub.source || '';
-                    if (!srcMap.has(src)) srcMap.set(src, { total: 0, max: 0, cycle: sub.cycle || '' });
+                    // 삼성 통합치료비는 지급표 줄마다 나눠 적는다(특정치료 수술 · 비급여 수술 · 다빈치)
+                    const line = insurer === 'samsung' && typeof samsungBundleLine === 'function'
+                        ? samsungBundleLine(sub) : null;
+                    const src = line ? line.n : (sub.source || '');
+                    if (!srcMap.has(src)) srcMap.set(src, { total: 0, max: 0, cycle: (line && line.cycle) || sub.cycle || '', full: sub.source || '' });
                     const e = srcMap.get(src);
                     e.total += parseKoAmount(sub.amount);
                     // 술기에 따라 갈리는 담보(1~5종 3종~5종)는 최대치를 따로 센다
@@ -415,7 +418,7 @@ function renderResults(results, customerName = '고객', insurer = 'meritz', met
                         ? meritzShortName(srcName) : srcName;
                     rows += `
                         <div class="row${e.total || e.max ? '' : ' zero'}">
-                            <span class="nm2" title="${srcName}">${clipName(shown, 14)}</span>
+                            <span class="nm2" title="${e.full || srcName}">${clipName(shown, 14).replace(/비급여/g, '<b class="bgy">비급여</b>')}</span>
                             <span class="amt2">${amtTxt}</span>
                             <span class="c2">${CYC_SHORT[e.cycle] || ''}</span>
                         </div>`;

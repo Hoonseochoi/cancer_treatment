@@ -1112,6 +1112,8 @@ img[src^="data:image/gif;base64,R0lGODlh"]{display:inline!important;vertical-ali
   color:var(--sf-ink-2);line-height:1.5}
 .sf-src .row + .row{border-top:1px dotted var(--sf-rule-2)}
 .sf-src .nm2{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 세부내역의 「비급여」는 파란 볼드 — 통합치료비 특정치료 줄과 한눈에 갈린다 */
+.sf-src .nm2 .bgy{color:#003CDC;font-weight:800}
 .sf-src .amt2{font-weight:800;color:var(--sf-ink);font-variant-numeric:tabular-nums;
   letter-spacing:-.02em;white-space:nowrap}
 .sf-src .c2{font-size:10px;font-weight:800;color:var(--sf-muted);white-space:nowrap;
