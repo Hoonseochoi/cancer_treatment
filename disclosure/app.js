@@ -1701,9 +1701,11 @@ if (typeof document !== 'undefined') {
 
       // 잘못 분류된 사례를 되짚으려고 원문·정리결과를 남긴다(익명 기록, log.js가 실패해도 화면은 그대로 진행).
       const startedAt = Date.now();
+      // 정리 1번 = 이용 1회 = 기록 1줄. AI 호출 기록(토큰·비용)과 정리 기록을 이 ID로 묶는다.
+      const runId = typeof DisclosureAccess !== 'undefined' ? DisclosureAccess.newRunId() : null;
       const logRun = payload => {
         if (typeof logDisclosureRun === 'function') {
-          logDisclosureRun({ rawText: text, todayStr: TODAY_ISO, latencyMs: Date.now() - startedAt, ...payload });
+          logDisclosureRun({ runId, rawText: text, todayStr: TODAY_ISO, latencyMs: Date.now() - startedAt, ...payload });
         }
       };
 
@@ -1730,7 +1732,7 @@ if (typeof document !== 'undefined') {
         }
         // 정리 1번 = 이용 1회. 나눠 보낸 요청·빠뜨린 줄 재요청은 같은 runId라 1회로 센다.
         const requester = functionRequester({
-          rawText: text, today: TODAY_ISO, runId: DisclosureAccess.newRunId(), accessToken, anonKey: DisclosureAccess.anonKey,
+          rawText: text, today: TODAY_ISO, runId, accessToken, anonKey: DisclosureAccess.anonKey,
         });
         try {
           // AI는 원문 기록만 옮겨 적고, 병력 묶기·합산·분류는 규칙(recordsToHistories/classifyHistories)이 한다.

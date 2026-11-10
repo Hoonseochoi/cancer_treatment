@@ -22,6 +22,8 @@ async function requestOnce(prompt, apiKey, model, providerOrder, signal) {
       temperature: 0,
       max_tokens: 4000,
       reasoning: { enabled: false },
+      // 토큰 수·비용(USD)을 응답에 받아 기록한다
+      usage: { include: true },
       provider: { order: providerOrder, allow_fallbacks: true },
       messages: [{ role: 'user', content: prompt }],
     }),
@@ -41,14 +43,27 @@ async function requestOnce(prompt, apiKey, model, providerOrder, signal) {
   if (typeof text !== 'string') {
     throw new Error('OpenRouter 응답에서 결과를 찾을 수 없습니다');
   }
-  return { text, provider: data.provider || '' };
+  const u = data.usage || {};
+  return {
+    text,
+    provider: data.provider || '',
+    generationId: data.id || '',
+    usage: {
+      promptTokens: u.prompt_tokens ?? null,
+      completionTokens: u.completion_tokens ?? null,
+      cachedTokens: u.prompt_tokens_details?.cached_tokens ?? null,
+      cost: u.cost ?? null,
+    },
+  };
 }
 
 // 첫 요청이 BACKUP_AFTER_MS 안에 안 끝나거나 실패하면 다른 제공사 순서로 한 번 더 보내고, 먼저 성공한 답을 쓴다.
+// 돌려주는 usage는 쓴 답의 것이다. 예비 요청을 보냈으면(backupFired) 중간에 끊은 요청도 일부 과금됐을 수 있다.
 export async function requestCompletion(prompt, apiKey, model = OPENROUTER_MODEL) {
   if (!apiKey) throw new Error('OpenRouter 키가 설정되지 않았습니다');
   const controllers = [];
   let settled = false;
+  let backupFired = false;
   let timer;
   const send = order => {
     const controller = new AbortController();
@@ -61,13 +76,15 @@ export async function requestCompletion(prompt, apiKey, model = OPENROUTER_MODEL
     const fire = () => {
       if (settled || fired) return;
       fired = true;
+      backupFired = true;
       send(BACKUP_PROVIDER_ORDER).then(resolve, reject);
     };
     timer = setTimeout(fire, BACKUP_AFTER_MS);
     primary.catch(fire);
   });
   try {
-    return await Promise.any([primary, backup]);
+    const out = await Promise.any([primary, backup]);
+    return { ...out, backupFired };
   } catch (e) {
     throw e.errors ? e.errors[0] : e;
   } finally {
