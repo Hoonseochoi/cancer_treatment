@@ -1393,7 +1393,7 @@ if (typeof document !== 'undefined') {
       const rank = el('div', 'sp-rank');
       rank.appendChild(el('span', 'sp-rank-label', '가입 가능 후보'));
       candidates.forEach((c, i) => {
-        const chip = el('span', `sp-rank-chip sp-${SIMPLE_STATUS[c.variant.status].cls}`, `${i + 1}. ${productTitle(c.product, c.variant)}`);
+        const chip = el('span', `sp-rank-chip${i === 0 ? ' top' : ''}`, `${i + 1}. ${productTitle(c.product, c.variant)}`);
         rank.appendChild(chip);
       });
       box.appendChild(rank);
