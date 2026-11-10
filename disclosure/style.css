@@ -107,6 +107,9 @@ body {
 /* 처음 화면에서는 예시가 다 보이도록 칸을 넓힌다 */
 #al-content.landing-mode .chat-input-wrap { max-width: 600px; }
 #al-content.landing-mode .chat-textarea { min-height: 300px; }
+/* 결과 화면의 작은 입력창에서는 예시 대신 안내 한 줄만 */
+#al-content:not(.landing-mode) .input-example p:not(.ex-lead) { display: none; }
+#al-content:not(.landing-mode) .input-example .ex-lead { margin: 0; font-weight: 400; font-size: 0.94rem; line-height: 1.6; color: var(--text-faint); }
 .chat-send-btn {
   flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
   background: var(--navy); color: #fff; border: none; cursor: pointer;
@@ -270,6 +273,104 @@ body.unlocking #lock-screen { opacity: 0; transform: translateY(-10px) scale(0.9
 .lock-contact a, .usage-note a { color: var(--navy); font-weight: 700; }
 .usage-note { margin-top: 12px; font-size: 0.78rem; color: var(--text-faint); }
 .usage-note b { color: var(--navy); }
+
+/* 표준 / 간편 알릴의무 전환 탭 */
+.mode-tabs {
+  display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 18px;
+  background: #f3f4f6; border-radius: 99px;
+}
+.mode-tab {
+  border: none; background: none; cursor: pointer; font-family: inherit;
+  font-size: 0.84rem; font-weight: 700; color: var(--text-muted);
+  padding: 8px 18px; border-radius: 99px; transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.mode-tab:hover { color: var(--text); }
+.mode-tab.active { background: #fff; color: var(--navy); box-shadow: 0 1px 3px rgba(17,17,17,0.1); }
+#simple-result[hidden], #classify-result[hidden] { display: none; }
+
+/* 간편 알릴의무: 상태 배지 */
+.sp-badge {
+  display: inline-flex; align-items: center; font-size: 0.68rem; font-weight: 800;
+  padding: 3px 10px; border-radius: 99px; white-space: nowrap; letter-spacing: 0.2px;
+}
+.sp-badge-sm { font-size: 0.6rem; padding: 2px 7px; }
+.sp-ok { background: #ecfdf5; color: #047857; }
+.sp-pass { background: #eff6ff; color: #1d4ed8; }
+.sp-check { background: #fff7ed; color: #c2410c; }
+.sp-no { background: #f3f4f6; color: #6b7280; }
+
+/* 추천 요약 */
+.sp-summary {
+  background: linear-gradient(135deg, #0F1E42, #1A3A8F); color: #fff;
+  border-radius: 20px; padding: 24px 26px; margin-bottom: 22px; box-shadow: var(--shadow-card-hover);
+}
+.sp-summary-none { background: #fff; color: var(--text); border: 1px solid var(--card-border-strong); }
+.sp-sum-label { font-size: 0.72rem; font-weight: 700; opacity: 0.75; letter-spacing: 0.2px; }
+.sp-sum-name { font-size: 1.45rem; font-weight: 800; letter-spacing: -0.4px; margin: 4px 0 10px; }
+.sp-sum-name b { color: #93c5fd; }
+.sp-summary-none .sp-sum-name { font-size: 1.15rem; }
+.sp-sum-desc { font-size: 0.85rem; color: var(--text-muted); }
+.sp-sum-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.sp-sum-notes { list-style: none; display: grid; gap: 6px; margin-bottom: 14px; }
+.sp-sum-notes li {
+  font-size: 0.82rem; line-height: 1.55; padding: 9px 12px; border-radius: 12px;
+  background: rgba(255,255,255,0.1);
+}
+.sp-sum-notes .sp-note-check { background: rgba(251,146,60,0.18); }
+.sp-sum-notes .sp-note-alt { background: rgba(147,197,253,0.18); font-weight: 700; }
+.sp-rank { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; }
+.sp-rank-label { font-size: 0.72rem; font-weight: 700; opacity: 0.75; margin-right: 4px; }
+.sp-rank-chip { font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; }
+.sp-sum-foot { font-size: 0.7rem; opacity: 0.6; line-height: 1.5; }
+
+/* 상품 카드 */
+.sp-cards { display: grid; gap: 14px; }
+.sp-card {
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 18px;
+  padding: 18px 20px; box-shadow: var(--shadow-card);
+}
+.sp-card-no { opacity: 0.78; }
+.sp-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.sp-card-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 8px; min-width: 0; }
+.sp-card-name { font-size: 1rem; font-weight: 800; letter-spacing: -0.2px; }
+.sp-card-code { font-size: 0.74rem; color: var(--text-faint); font-weight: 600; }
+.sp-new { font-size: 0.6rem; font-weight: 800; color: #fff; background: #ef4444; border-radius: 99px; padding: 1px 7px; }
+.sp-ladder { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.sp-step {
+  font-family: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer;
+  border: 1.5px solid transparent; border-radius: 10px; padding: 5px 10px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.sp-step:hover { transform: translateY(-1px); }
+.sp-step.active { border-color: currentColor; }
+.sp-questions { display: grid; gap: 8px; }
+.sp-q { background: #fff; border: 1px solid var(--card-border); border-radius: 12px; padding: 10px 12px; }
+.sp-q-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.sp-q-mark { font-size: 0.68rem; font-weight: 800; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+.sp-q-ok .sp-q-mark { background: #ecfdf5; color: #047857; }
+.sp-q-pass .sp-q-mark { background: #eff6ff; color: #1d4ed8; }
+.sp-q-check .sp-q-mark { background: #fff7ed; color: #c2410c; }
+.sp-q-no { border-color: #fecaca; }
+.sp-q-no .sp-q-mark { background: #fef2f2; color: #dc2626; }
+.sp-q-label { font-size: 0.8rem; font-weight: 800; }
+.sp-q-text { font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; flex: 1 1 260px; }
+.sp-hit {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  margin-top: 7px; padding: 6px 10px; border-radius: 9px; font-size: 0.78rem;
+}
+.sp-hit-no { background: #fef2f2; }
+.sp-hit-pass { background: #eff6ff; }
+.sp-hit-check { background: #fff7ed; }
+.sp-hit-name { font-weight: 700; }
+.sp-hit-reason { color: var(--text-muted); }
+.sp-foot { list-style: none; margin-top: 16px; display: grid; gap: 4px; }
+.sp-foot li { font-size: 0.74rem; color: var(--text-faint); }
+.sp-foot li::before { content: '· '; }
+@media (max-width: 640px) {
+  .sp-summary { padding: 20px; }
+  .sp-sum-name { font-size: 1.2rem; }
+  .sp-card { padding: 16px; }
+}
 
 /* Results: 분류결과 메인 + 분류 안 된 병력 사이드 */
 #al-content:not(.landing-mode) { max-width: 1120px; }

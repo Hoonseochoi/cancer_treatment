@@ -62,6 +62,82 @@ const LIGHT_INSURANCE_EXCEPTIONS = [
   '무지외반증', '팔목터널증후군', '결절종', '염좌', '추간판탈출증', '척추협착증', '요통', '척추변형', '척추병증', '어깨병터', '회전근개손상', '족저근막염', '건초염', '힘줄염', '윤활막염', '골절', '외상성 무릎손상', '상과염', '연골손상', '윤활낭염', '인대 및 건손상', '탈구', '비장손상', '눈꺼풀 이상', '눈물길폐쇄', '다래끼', '부비동염', '비염', '사시', '외이도염', '중이염', '코의폴립', '백내장', '녹내장', '군날개', '난청', '메니에르병', '이명', '결막염', '각막염', '미로염', '코피', '기타 망막질환', '시력이상', '원추각막', '황반변성', '망막박리', '요실금', '유산', '자궁외임신', '다태임신', '인공수정', '분만', '제왕절개', '정계정맥류', '잠복고환', '자궁탈출증', '방광류', '직장류', '요로결석', '골반염증성질환', '고환염', '음낭수종', '방광염', '요로감염', '신우신염', '요도염', '전립선염', '자궁경부염', '자궁내막증', '질염', '외음염', '여성형 유방', '치질', '치루', '항문농양', '탈장', '유문협착', '담낭염', '담석증', '충수염', 'A형간염', 'E형간염', '위장염', '위식도역류질환', '소화성궤양', '위염', '하지정맥류', '대장용종', '자궁근종', '자궁폴립', '갑상선결절', '갑상선종', '난소기형종', '난소낭종', '담낭용종', '위용종', '지방종', '성대결절', '후두양성종양', '바르톨린샘 낭종', '임플란트', '치아우식증', '치아파절', '치주염', '치근낭', '치주농양', '치은염', '치근단염', '치수염', '치아결손', '부정교합', '기타 치과질환', '치아흔들림', '치통', '손톱', '발톱질환', '사마귀', '티눈', '상처', '다한증', '액취증', '연조직염', '모발질환', '구내염', '화상', '단순포진', '대상포진', '백선증', '수두', '습진', '피부혈관종', '헤르페스', '아토피', '건선', '두드러기', '백반증', '이감염증', '피부염', '수포성 질환', '구순구개열', '기흉', '폐렴', '편도염', '기관지염', '볼거리-이하선염', '상기도감염', '뇌수막염', '벨마비', '신경통', '쯔쯔가무시병', '갱년기장애', '코로나19', '갑상선기능항진증', '갑상선기능저하증', '갑상선염', '유방이상소견', '골관절염', '전립선비대증', '게실질환', '림프절염', '절단', '결핵', '장폐쇄', '복막염', '타석증', '외상성고막천공', '유방염', '어지럼증', '외상성뇌손상', '장기기증자', '피부양성신생물', '현기증', '항문의 양성신생물', '자궁의 양성신생물', '여성 외부생식기 양성신생물', '남성 외부생식기 양성신생물', '아나필락시스쇼크', '익수', '저체온증', '과로', '수족구',
 ];
 
+// ───────────────────────── 간편(유병자) 알릴의무 ─────────────────────────
+// 출처: 삼성화재 상품 In-Sight 2026년 11월호 "상품별 알릴사항 · 유병자"(12~13쪽), 유병자 5년내 중대질환 질병코드(14쪽),
+//       경증상병 프리패스 플랜(15~16쪽). 설계화면·청약서 알릴사항 중 병력 부분만 옮긴 참고용이고, 담보별 추가 질문(간·폐·신장, 치매 등)은 뺐다.
+
+// 질병군: 원문 코드(점 없이) 앞자리 또는 진단명 키워드로 찾는다. AI가 추정한 코드는 쓰지 않고 진단명으로만 본다(app.js matchesSimpleDisease).
+const SIMPLE_DISEASES = {
+  cancer: {
+    label: '암',
+    codes: ['C', 'D45', 'D46', 'D471', 'D473', 'D474', 'D475'],
+    keywords: ['악성신생물', '암종', '암', '백혈병', '림프종', '골수이형성', '진성적혈구증가증', '골수섬유증'],
+  },
+  angina: { label: '협심증', codes: ['I20'], keywords: ['협심증'] },
+  mi: { label: '심근경색', codes: ['I21', 'I22', 'I23'], keywords: ['심근경색'] },
+  stroke: { label: '뇌졸중증', codes: ['I60', 'I61', 'I62', 'I63', 'I64'], keywords: ['뇌졸중', '뇌출혈', '뇌경색', '지주막하출혈', '뇌내출혈', '두개내출혈', '중풍'] },
+  valve: {
+    label: '심장판막증',
+    codes: ['I05', 'I06', 'I07', 'I08', 'I34', 'I35', 'I36', 'I37', 'I38', 'I39', 'T820', 'T826', 'Z952', 'Z953', 'Z954'],
+    keywords: ['판막', '승모판', '대동맥판', '삼첨판', '폐동맥판', '심내막염'],
+  },
+  cirrhosis: { label: '간경화증', codes: ['K74', 'K703', 'K717'], keywords: ['간경화', '간경변'] },
+  hypertension: { label: '고혈압', codes: ['I10', 'I11', 'I12', 'I13', 'I15'], keywords: ['고혈압'] },
+  diabetes: { label: '당뇨병', codes: ['E10', 'E11', 'E12', 'E13', 'E14'], keywords: ['당뇨'] },
+  dyslipidemia: { label: '이상지질혈증', codes: ['E78'], keywords: ['고지혈', '이상지질', '고콜레스테롤', '고중성지방', '고트리글리세리드'] },
+  cerebrovascular: {
+    label: '뇌혈관질환',
+    codes: ['I60', 'I61', 'I62', 'I63', 'I64', 'I65', 'I66', 'I67', 'I68', 'I69'],
+    keywords: ['뇌혈관', '뇌졸중', '뇌출혈', '뇌경색', '지주막하출혈', '뇌내출혈', '두개내출혈', '뇌동맥', '대뇌동맥', '중풍'],
+  },
+  ischemic: { label: '허혈성심장질환', codes: ['I20', 'I21', 'I22', 'I23', 'I24', 'I25'], keywords: ['협심증', '심근경색', '허혈성심'] },
+};
+
+const SIMPLE_MAJOR5 = ['cancer', 'angina', 'mi', 'stroke', 'valve'];
+const SIMPLE_MAJOR6 = [...SIMPLE_MAJOR5, 'cirrhosis'];
+
+// 질문 종류(kind) — 판정은 app.js evaluateSimpleQuestion
+//  recent3m : 3개월 이내 입원/수술 필요소견·추가검사 필요소견·질병확정진단·질병의심소견 (투약·정기처방은 묻지 않는다)
+//  admitSurgery : N년 이내 입원·수술(제왕절개 포함)
+//  disease : 그 질병으로 진단·입원·수술 (투약만은 묻지 않지만 진단이 포함되므로 그 병이 있으면 걸린다)
+//  diseaseAny : 그 질병으로 진단·입원·수술·투약·치료
+//  diseaseHeavy : 그 질병으로 입원·수술·치료(7일 이상)·투약(30일 이상) — 진단만 받은 것은 안 걸린다
+const simpleQ = {
+  recent3m: () => ({ kind: 'recent3m', months: 3, label: '3개월 이내', text: '진찰 또는 검사(건강검진 포함)를 통하여 입원/수술 필요소견, 추가검사(재검사) 필요소견, 질병확정진단, 질병의심소견' }),
+  admitSurgery: years => ({ kind: 'admitSurgery', months: years * 12, label: `${years}년 이내`, text: '입원, 수술(제왕절개 포함)' }),
+  major5: (years = 5) => ({ kind: 'disease', months: years * 12, diseases: SIMPLE_MAJOR5, label: `${years}년 이내`, text: '5대질병 진단, 입원, 수술 · 암, 협심증, 심근경색, 뇌졸중증(뇌출혈·뇌경색), 심장판막증' }),
+  major6: () => ({ kind: 'disease', months: 60, diseases: SIMPLE_MAJOR6, label: '5년 이내', text: '6대질병 진단, 입원, 수술 · 5대질병 + 간경화증' }),
+  diabetes: () => ({ kind: 'diseaseAny', months: 60, diseases: ['diabetes'], label: '5년 이내', text: '당뇨병으로 진단, 입원, 수술, 투약, 치료' }),
+  htnDiabetes: () => ({ kind: 'diseaseAny', months: 60, diseases: ['hypertension', 'diabetes'], label: '5년 이내', text: '고혈압 또는 당뇨병으로 진단, 입원, 수술, 투약, 치료' }),
+  dyslipidemia: () => ({ kind: 'diseaseHeavy', months: 60, diseases: ['dyslipidemia'], label: '5년 이내', text: '이상지질혈증(고지혈증 포함)으로 입원, 수술, 치료(7일 이상), 투약(30일 이상)' }),
+  cerebroIschemic: () => ({ kind: 'diseaseAny', months: 60, diseases: ['cerebrovascular', 'ischemic'], label: '5년 이내', text: '뇌혈관 또는 허혈성심장질환으로 진단, 입원, 수술, 치료(7일 이상), 투약(30일 이상)' }),
+};
+
+// 상품(알릴사항 유형). nRange가 있으면 "3.N.5"처럼 N(입원·수술 묻는 햇수)을 고를 수 있는 상품이다.
+// strictExtra: 고지 기준이 얼마나 까다로운지 견줄 때 N년에 더하는 값(추가 질병 질문 1개당 +2, 6대질병 +1, 5대질병을 1년만 물으면 -1).
+//   보통 고지가 까다로울수록(건강한 사람만 받을수록) 보험료가 낮다 — 실제 보험료 순서는 설계로 확인해야 한다.
+const SIMPLE_PRODUCTS = [
+  { id: 'refresh-3n5', name: '새로고침', code: '315~355', nRange: [1, 5], build: n => [simpleQ.recent3m(), simpleQ.admitSurgery(n), simpleQ.major5()], strictExtra: 0 },
+  { id: 'silsok2', name: '실속라이프 2종', code: '315~365', nRange: [1, 6], build: n => [simpleQ.recent3m(), simpleQ.admitSurgery(n), simpleQ.major5()], strictExtra: 0 },
+  { id: 'thefit1680', name: 'THE FIT 1680', code: '305~365', isNew: true, nRange: [0, 6], build: n => [simpleQ.recent3m(), ...(n ? [simpleQ.admitSurgery(n)] : []), simpleQ.major5()], strictExtra: 0 },
+  { id: 'gogo3655', name: '3655 고고 새로고침', code: '3.6.5 + 당뇨', n: 6, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(6), simpleQ.major5(), simpleQ.diabetes()], strictExtra: 2 },
+  { id: 'refresh3105', name: '3.10.5 새로고침', code: '3.10.5', n: 10, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(10), simpleQ.major5()], strictExtra: 0 },
+  { id: 'refresh3115', name: '311-5 새로고침', code: '311-5', n: 1, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(1), simpleQ.major5(1)], strictExtra: -1 },
+  { id: 'dangdang-gd', name: '365 당당 새로고침 100세 (고,당)', code: '3.6.5 + 고·당', n: 6, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(6), simpleQ.major6(), simpleQ.htnDiabetes()], strictExtra: 3 },
+  { id: 'dangdang-dj', name: '365 당당 새로고침 100세 (당,지)', code: '3.6.5 + 당·지', n: 6, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(6), simpleQ.major6(), simpleQ.diabetes(), simpleQ.dyslipidemia()], strictExtra: 5 },
+  {
+    id: 'dangdang-all', name: '365 당당 (고,당,지,뇌,심) · THE FIT 당당한 1680', code: '3.6.5 + 고·당·지·뇌·심', isNew: true, n: 6,
+    build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(6), simpleQ.major6(), simpleQ.htnDiabetes(), simpleQ.dyslipidemia(), simpleQ.cerebroIschemic()],
+    strictExtra: 7,
+  },
+];
+
+// 온[ON]통보장은 355-5 / 365-5 / 365-6 고당지뇌심 유형을 고를 수 있다 — 같은 알릴사항이라 결과 안내에만 덧붙인다.
+const SIMPLE_NOTES = [
+  '온[ON]통보장은 3.5.5 · 3.6.5 · 365 고당지뇌심 유형으로도 가입할 수 있어요',
+  '간·폐·신장 통합/약물치료비, 치매 담보는 따로 묻는 질문이 있어요(설계 화면에서 확인)',
+];
+
 if (typeof module !== 'undefined') {
-  module.exports = { Q_DEFS, DISEASE_11, DISEASE_11_KEYWORDS, DISCLOSURE_EXCEPTIONS, LIGHT_INSURANCE_EXCEPTIONS };
+  module.exports = { Q_DEFS, DISEASE_11, DISEASE_11_KEYWORDS, DISCLOSURE_EXCEPTIONS, LIGHT_INSURANCE_EXCEPTIONS, SIMPLE_DISEASES, SIMPLE_PRODUCTS, SIMPLE_NOTES };
 }

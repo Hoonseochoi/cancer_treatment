@@ -579,14 +579,33 @@ function recordsToHistories(rawRecords, todayStr, sourceLines = []) {
   };
   // 코드 없이 이름만 온 기록은 같은 이름의 코드 있는 병력에 붙인다.
   const groupByName = new Map();
+  // 추정 코드만 있고 진단명이 빠진 기록("22|~C50||진단")은 같은 추정 코드가 붙은, 이름 있는 병력에 붙인다
+  // (같은 줄 → 가장 가까운 윗줄 순). 안 그러면 "진단명 미상(C50)"이 따로 생긴다.
+  const namedEstimated = [];
   for (const r of records) {
     const group = groupOf(r);
-    if (group && cleanName(r.name)) groupByName.set(compactText(cleanName(r.name)), group);
+    if (group && cleanName(r.name)) {
+      groupByName.set(compactText(cleanName(r.name)), group);
+      if (r.code.startsWith('~')) namedEstimated.push({ code: group.code, lineNo: r.lineNo, group });
+    }
   }
+  const estimatedOwner = r => {
+    if (!r.code.startsWith('~') || cleanName(r.name)) return null;
+    const code = normalizeDiseaseCode(r.code.replace(/^~/, ''));
+    const same = namedEstimated.filter(x => x.code === code);
+    const above = same.filter(x => x.lineNo <= r.lineNo).sort((a, b) => b.lineNo - a.lineNo)[0];
+    if (above) return above;
+    const keys = new Set(same.map(x => x.group.key));
+    return keys.size === 1 ? same[0] : null;
+  };
 
   const groups = new Map();
-  for (const r of records) {
-    const { key, code } = groupOf(r)
+  for (const record of records) {
+    const owner = estimatedOwner(record);
+    // 붙일 병력을 찾았는데 이 기록의 줄번호가 빈 줄(AI 줄번호 밀림)이면 그 병력의 줄로 옮긴다 — 다른 줄 중복기록으로 세지 않게
+    const r = owner && !compactText(sourceLines[record.lineNo - 1] || '') ? { ...record, lineNo: owner.lineNo } : record;
+    const { key, code } = (owner && owner.group)
+      || groupOf(r)
       || groupByName.get(compactText(cleanName(r.name)))
       || { key: `name:${compactText(cleanName(r.name))}`, code: '' };
     if (!groups.has(key)) groups.set(key, { code, records: [], lineNos: new Set(), estimated: true, duplicates: 0, seen: new Map(), extraCodes: new Set() });
@@ -875,8 +894,165 @@ function classifyHistories(histories, todayStr) {
   return result;
 }
 
+// ───────────────────────── 간편(유병자) 알릴의무 ─────────────────────────
+// 상품마다 알릴사항 질문(data.js SIMPLE_PRODUCTS)을 병력에 대 보고, 어느 질문에 어떤 병력이 걸리는지·가입할 수 있는지를 낸다.
+// 판정 결과: hit(예 — 걸림) / review(날짜 미상 등 사람이 확인) / null(아니오).
+
+// AI가 추정한 코드는 틀릴 수 있어(고지혈에 I10 등) 표준 Q5처럼 원문 코드 또는 진단명으로만 질병군을 찾는다.
+function matchesSimpleDisease(h, keys) {
+  const code = h.코드추정 ? '' : String(h.진단코드 || '').replace(/[.\s]/g, '').toUpperCase();
+  const name = String(h.진단명 || '').replace(/\s/g, '');
+  return keys.filter(k => {
+    const d = SIMPLE_DISEASES[k];
+    return (code && d.codes.some(p => code.startsWith(p))) || d.keywords.some(w => name.includes(w));
+  });
+}
+
+// "5년전", "3개월전", "작년"처럼 날짜 대신 지난 기간만 적힌 병력 → 대략 몇 개월 전인지(못 읽으면 null)
+function approxMonthsAgo(h) {
+  const src = String(h.원본 || '');
+  const y = /(\d+)\s*년\s*전/.exec(src);
+  if (y) return Number(y[1]) * 12;
+  const m = /(\d+)\s*개월\s*전/.exec(src);
+  if (m) return Number(m[1]);
+  if (/작년/.test(src)) return 12;
+  return null;
+}
+
+// months 이내인지 — true / false / null(경계에 걸치거나 날짜를 몰라 확인필요).
+// 대략적인 기간("5년전")은 1년 오차를 두고, 그 안에 걸치면 확인필요로 둔다.
+function simpleWithin(h, todayStr, months) {
+  if (h.최근진료일) return withinMonthsFor(h, todayStr, months);
+  const approx = approxMonthsAgo(h);
+  if (approx === null) return null;
+  if (approx <= months - 12) return true;
+  if (approx >= months + 12) return false;
+  return null;
+}
+
+function shortDate(iso) {
+  return iso ? iso.slice(2).replace(/-/g, '.') : '';
+}
+
+// 병력이 왜 걸렸는지 한 줄로 — "24.06.14 입원 3일", "26.01.19 수술 인공수정체삽입술", "계속 복용 중"
+function simpleReason(h, kind) {
+  const when = h.최근진료일 ? shortDate(h.최근진료일) : '';
+  const parts = [];
+  if (kind === 'admitSurgery' || kind === 'diseaseHeavy' || kind === 'disease' || kind === 'diseaseAny') {
+    if (h.입원여부) parts.push(`입원${h.입원일수 ? ` ${h.입원일수}일` : ''}`);
+    if (h.수술여부) parts.push(`수술${h.수술명 ? ` ${h.수술명}` : ''}`);
+  }
+  if (kind !== 'admitSurgery' && h.상시복용여부) parts.push('계속 복용 중');
+  if (kind === 'diseaseHeavy' && h.계속투약일수 >= 30) parts.push(`투약 ${h.계속투약일수}일`);
+  if (!parts.length) parts.push(kind === 'recent3m' ? '진료' : '진단·진료');
+  return [when, parts.join(' · ')].filter(Boolean).join(' ');
+}
+
+function unknownDateReason(h, months) {
+  const src = String(h.원본 || '');
+  const approx = /(\d+\s*(?:년|개월)\s*전|작년)/.exec(src);
+  const span = months >= 12 ? `${months / 12}년` : `${months}개월`;
+  return approx ? `날짜 미상(원문: ${approx[1].replace(/\s/g, '')}) — ${span} 이내인지 확인` : `날짜 미상 — ${span} 이내인지 확인`;
+}
+
+function evaluateSimpleQuestion(q, h, todayStr) {
+  const hit = reason => ({ status: 'hit', reason });
+  const review = reason => ({ status: 'review', reason });
+  const decide = (within, kind) => {
+    if (within === true) return hit(simpleReason(h, kind));
+    if (within === null) return review(h.최근진료일 ? `${shortDate(h.최근진료일)} — 기간 경계, 날짜 확인` : unknownDateReason(h, q.months));
+    return null;
+  };
+
+  if (q.kind === 'recent3m') {
+    // 간편 3개월 질문은 투약을 묻지 않는다 — 원래 앓던 병의 정기 처방만이면 해당 없음, 3개월 안에 처음 진단받았으면 해당
+    const regularOnly = h.상시복용여부 && !h.입원여부 && !h.수술여부 && !h.재검사여부;
+    if (regularOnly) {
+      return h.최초진단일 && withinMonths(h.최초진단일, todayStr, 3) ? hit(`${shortDate(h.최초진단일)} 처음 진단`) : null;
+    }
+    return decide(simpleWithin(h, todayStr, q.months), q.kind);
+  }
+
+  if (q.kind === 'admitSurgery') {
+    if (!h.입원여부 && !h.수술여부 && !h.치료내용미상) return null;
+    const within = simpleWithin(h, todayStr, q.months);
+    if (!h.입원여부 && !h.수술여부) return within === false ? null : review('치료 내용을 못 읽었어요 — 입원·수술 있었는지 확인');
+    return decide(within, q.kind);
+  }
+
+  const matched = matchesSimpleDisease(h, q.diseases);
+  if (!matched.length) return null;
+  // 지금 계속 약을 먹고 있으면 그 병은 기간 안에 진료·투약한 것으로 본다
+  const within = h.상시복용여부 ? true : simpleWithin(h, todayStr, q.months);
+
+  if (q.kind === 'diseaseHeavy') {
+    const heavy = h.입원여부 || h.수술여부 || h.상시복용여부 || h.계속치료일수 >= 7 || h.계속투약일수 >= 30;
+    if (!heavy) return h.치료내용미상 && within !== false ? review('치료 내용을 못 읽었어요 — 입원·수술·7일 이상 치료·30일 이상 투약 있었는지 확인') : null;
+  }
+  return decide(within, q.kind);
+}
+
+// 경증상병 프리패스 플랜: 3개월·N년 입원수술 질문에 걸린 게 모두 경증상병 목록 병이고(입원 30일 이내), 5년 중대질환은 안 걸리면 가입할 수 있다.
+const SIMPLE_FREEPASS_KINDS = ['recent3m', 'admitSurgery'];
+function isFreepassHit(q, h) {
+  return SIMPLE_FREEPASS_KINDS.includes(q.kind) && isLightInsuranceException(h.진단명) && !(h.입원일수 > 30);
+}
+
+function evaluateSimpleVariant(questions, histories, todayStr) {
+  const rows = questions.map(q => ({ q, hits: [], reviews: [] }));
+  histories.forEach(h => {
+    rows.forEach(row => {
+      const v = evaluateSimpleQuestion(row.q, h, todayStr);
+      if (!v) return;
+      // AI가 옮기지 못한 원문 줄로 만든 병력은 걸려도 확인필요로 둔다
+      if (v.status === 'hit' && !h.원문확인필요) row.hits.push({ h, reason: v.reason, freepass: isFreepassHit(row.q, h) });
+      else row.reviews.push({ h, reason: v.status === 'hit' ? `${v.reason} — 원문 확인 필요` : v.reason });
+    });
+  });
+  const hits = rows.flatMap(r => r.hits);
+  const reviews = rows.reduce((n, r) => n + r.reviews.length, 0);
+  const blocked = hits.some(x => !x.freepass);
+  const status = blocked ? 'no' : hits.length ? 'freepass' : reviews ? 'check' : 'ok';
+  return { rows, status, reviews };
+}
+
+const SIMPLE_STATUS_RANK = { ok: 0, check: 1, freepass: 2, no: 3 };
+
+function simpleVariantLabel(p, n) {
+  return p.nRange ? `3.${n}.5` : p.code;
+}
+
+// 상품마다 N을 바꿔 가며 보고, 가입할 수 있는 것 중 고지 기준이 가장 까다로운(보통 보험료가 낮은) 유형을 고른다.
+function evaluateSimpleProducts(histories, todayStr) {
+  const products = SIMPLE_PRODUCTS.map(p => {
+    const ns = p.nRange ? Array.from({ length: p.nRange[1] - p.nRange[0] + 1 }, (_, i) => p.nRange[0] + i) : [p.n];
+    const variants = ns.map(n => ({
+      n,
+      label: simpleVariantLabel(p, n),
+      strictness: n + p.strictExtra,
+      ...evaluateSimpleVariant(p.build(n), histories, todayStr),
+    }));
+    const possible = variants.filter(v => v.status !== 'no');
+    const best = possible.length ? possible.reduce((a, b) => (b.strictness > a.strictness ? b : a)) : null;
+    return { product: p, variants, best };
+  });
+  const candidates = products
+    .filter(x => x.best)
+    .map(x => ({ product: x.product, variant: x.best }))
+    .sort((a, b) => b.variant.strictness - a.variant.strictness
+      || SIMPLE_STATUS_RANK[a.variant.status] - SIMPLE_STATUS_RANK[b.variant.status]);
+  const top = candidates[0] || null;
+  // 추천 상품에 확인할 병력이 있으면, 확인 결과가 나빠도 걸리지 않는(확인할 것 없는) 차선을 같이 보여준다
+  const fallback = top && top.variant.reviews
+    ? candidates.find(c => c !== top && !c.variant.reviews) || null
+    : null;
+  return { products, candidates, top, fallback };
+}
+
 if (typeof module !== 'undefined') {
   module.exports.classifyHistories = classifyHistories;
+  module.exports.evaluateSimpleProducts = evaluateSimpleProducts;
+  module.exports.evaluateSimpleQuestion = evaluateSimpleQuestion;
   module.exports.isExceptionDisease = isExceptionDisease;
   module.exports.yearsElapsed = yearsElapsed;
   module.exports.getTreatmentTypeLabel = getTreatmentTypeLabel;
@@ -1105,11 +1281,203 @@ if (typeof document !== 'undefined') {
     }
   }
 
+  // ───── 표준 / 간편 알릴의무 전환 ─────
+  let disclosureMode = 'standard';
+  // 상품 카드에서 직접 고른 N(3.N.5) — 다시 그려도 유지한다. 고르지 않았으면 추천(best) 유형을 보여준다.
+  const simpleChosenN = new Map();
+
+  const SIMPLE_STATUS = {
+    ok: { label: '가입 가능', cls: 'ok' },
+    check: { label: '확인 필요', cls: 'check' },
+    freepass: { label: '경증 프리패스', cls: 'pass' },
+    no: { label: '가입 불가', cls: 'no' },
+  };
+  const MODE_COPY = {
+    standard: { eyebrow: '표준알릴의무 분류결과', title: '문항별 분류결과', lead: '병력명을 누르면 고지 체크표시와 세부 내용이 열려요. 원문과 대조해 확인해주세요.' },
+    simple: { eyebrow: '간편(유병자) 알릴의무 검토', title: '상품별로 어디서 걸리는지', lead: '삼성화재 유병자 상품(26.11 In-Sight 기준)의 알릴사항 질문에 병력을 대 봤어요. 설계 화면의 실제 질문과 꼭 대조해주세요.' },
+  };
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function statusBadge(status) {
+    const s = SIMPLE_STATUS[status];
+    return el('span', `sp-badge sp-${s.cls}`, s.label);
+  }
+
+  function productTitle(p, variant) {
+    return p.nRange ? `${p.name} ${variant.label}` : p.name;
+  }
+
+  function setDisclosureMode(mode) {
+    disclosureMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(btn => {
+      const on = btn.dataset.mode === mode;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', String(on));
+    });
+    const copy = MODE_COPY[mode];
+    const set = (id, text) => { const node = document.getElementById(id); if (node) node.textContent = text; };
+    set('result-eyebrow', copy.eyebrow);
+    set('result-title', copy.title);
+    set('result-lead', copy.lead);
+    const standard = document.getElementById('classify-result');
+    const simple = document.getElementById('simple-result');
+    if (standard) standard.hidden = mode !== 'standard';
+    if (simple) simple.hidden = mode !== 'simple';
+  }
+
+  // 걸린 병력 한 줄: 진단명 + 이유. 프리패스로 넘어가는 건 따로 표시한다.
+  function simpleHitLine(item, kind) {
+    const line = el('div', `sp-hit sp-hit-${kind}`);
+    line.append(el('span', 'sp-hit-name', item.h.진단명 || '(이름없음)'), el('span', 'sp-hit-reason', item.reason));
+    if (kind === 'pass') line.appendChild(el('span', 'sp-badge sp-pass sp-badge-sm', '경증 프리패스'));
+    return line;
+  }
+
+  function buildSimpleQuestionRows(variant) {
+    const list = el('div', 'sp-questions');
+    variant.rows.forEach(({ q, hits, reviews }) => {
+      const blocked = hits.some(x => !x.freepass);
+      const state = blocked ? 'no' : hits.length ? 'pass' : reviews.length ? 'check' : 'ok';
+      const row = el('div', `sp-q sp-q-${state}`);
+      const head = el('div', 'sp-q-head');
+      const mark = el('span', 'sp-q-mark', { ok: '아니오', pass: '예 · 프리패스', check: '확인', no: '예 · 걸림' }[state]);
+      const label = el('span', 'sp-q-label', q.label);
+      head.append(mark, label, el('span', 'sp-q-text', q.text));
+      row.appendChild(head);
+      hits.forEach(x => row.appendChild(simpleHitLine(x, x.freepass ? 'pass' : 'no')));
+      reviews.forEach(x => row.appendChild(simpleHitLine(x, 'check')));
+      list.appendChild(row);
+    });
+    return list;
+  }
+
+  function buildSimpleSummary(simple) {
+    const box = el('section', 'sp-summary');
+    const { top, fallback, candidates } = simple;
+    if (!top) {
+      box.classList.add('sp-summary-none');
+      box.append(
+        el('div', 'sp-sum-label', '검토 결과'),
+        el('div', 'sp-sum-name', '가입 가능한 간편 상품이 없어요'),
+        el('p', 'sp-sum-desc', '모든 유형에서 걸리는 질문이 있어요. 아래 상품별로 어디서 걸리는지 확인하고, 인수 심사(부담보·할증) 가능 여부를 문의해보세요.'),
+      );
+      return box;
+    }
+    const v = top.variant;
+    const name = el('div', 'sp-sum-name');
+    name.append(document.createTextNode(`${top.product.name} `), el('b', '', top.product.nRange ? v.label : top.product.code));
+    const tags = el('div', 'sp-sum-tags');
+    tags.appendChild(statusBadge(v.status));
+    if (v.reviews) tags.appendChild(el('span', 'sp-badge sp-check', `확인 ${v.reviews}건`));
+    box.append(el('div', 'sp-sum-label', '추천 · 가입 가능한 유형 중 고지 기준이 가장 까다로운 상품'), name, tags);
+
+    const notes = el('ul', 'sp-sum-notes');
+    const passHits = v.rows.flatMap(r => r.hits.filter(x => x.freepass));
+    if (passHits.length) {
+      const names = [...new Set(passHits.map(x => x.h.진단명))].join(', ');
+      notes.appendChild(el('li', '', `${names} — 경증상병 프리패스 대상이에요. 치료가 끝난 다음날부터 암·뇌·심·사망 담보까지 가입할 수 있어요(N년 내 입원 30일 이내 조건)`));
+    }
+    v.rows.forEach(r => r.reviews.forEach(x => notes.appendChild(el('li', 'sp-note-check', `확인: ${x.h.진단명} — ${x.reason}`))));
+    if (fallback) {
+      notes.appendChild(el('li', 'sp-note-alt', `확인 결과 해당되면 → ${productTitle(fallback.product, fallback.variant)} (${SIMPLE_STATUS[fallback.variant.status].label})`));
+    }
+    if (notes.children.length) box.appendChild(notes);
+
+    if (candidates.length > 1) {
+      const rank = el('div', 'sp-rank');
+      rank.appendChild(el('span', 'sp-rank-label', '가입 가능 후보'));
+      candidates.forEach((c, i) => {
+        const chip = el('span', `sp-rank-chip sp-${SIMPLE_STATUS[c.variant.status].cls}`, `${i + 1}. ${productTitle(c.product, c.variant)}`);
+        rank.appendChild(chip);
+      });
+      box.appendChild(rank);
+    }
+    box.appendChild(el('p', 'sp-sum-foot', '순위는 고지 질문이 많고 기간이 길수록(보통 보험료가 낮을수록) 앞에 둔 추정이에요. 실제 보험료는 설계로 비교해주세요.'));
+    return box;
+  }
+
+  function buildSimpleProductCard({ product: p, variants, best }) {
+    const chosenN = simpleChosenN.get(p.id);
+    const shown = variants.find(v => v.n === chosenN) || best || variants[variants.length - 1];
+    const card = el('article', `sp-card sp-card-${SIMPLE_STATUS[shown.status].cls}`);
+    const head = el('div', 'sp-card-head');
+    const title = el('div', 'sp-card-title');
+    title.appendChild(el('span', 'sp-card-name', p.name));
+    if (p.isNew) title.appendChild(el('span', 'sp-new', 'NEW'));
+    title.appendChild(el('span', 'sp-card-code', p.nRange ? `${p.code} · ${shown.label}` : p.code));
+    head.append(title, statusBadge(shown.status));
+    card.appendChild(head);
+
+    // N을 고를 수 있는 상품은 3.0.5~3.6.5를 한 줄로 보여 주고, 눌러서 그 유형의 질문을 본다
+    if (p.nRange) {
+      const ladder = el('div', 'sp-ladder');
+      variants.forEach(v => {
+        const btn = el('button', `sp-step sp-${SIMPLE_STATUS[v.status].cls}${v === shown ? ' active' : ''}`, v.label);
+        btn.type = 'button';
+        btn.title = SIMPLE_STATUS[v.status].label;
+        btn.addEventListener('click', () => { simpleChosenN.set(p.id, v.n); renderAll(); });
+        ladder.appendChild(btn);
+      });
+      card.appendChild(ladder);
+    }
+    card.appendChild(buildSimpleQuestionRows(shown));
+    return card;
+  }
+
+  function renderSimpleResult(simple) {
+    const container = document.getElementById('simple-result');
+    if (!container) return;
+    container.innerHTML = '';
+    container.appendChild(buildSimpleSummary(simple));
+    // 가입 가능한 상품을 먼저, 그다음 고지 기준이 까다로운 순
+    const order = x => (x.best ? 0 : 1);
+    const cards = [...simple.products].sort((a, b) => order(a) - order(b)
+      || ((b.best || b.variants[0]).strictness - (a.best || a.variants[0]).strictness));
+    const grid = el('div', 'sp-cards');
+    cards.forEach(x => grid.appendChild(buildSimpleProductCard(x)));
+    container.appendChild(grid);
+    const foot = el('ul', 'sp-foot');
+    SIMPLE_NOTES.forEach(t => foot.appendChild(el('li', '', t)));
+    container.appendChild(foot);
+  }
+
+  function buildSimpleCopyText(simple) {
+    const lines = ['[간편(유병자) 알릴의무 상품 검토 - 초안, 설계 화면 알릴사항과 대조 필수]', ''];
+    if (simple.top) {
+      const v = simple.top.variant;
+      lines.push(`추천: ${productTitle(simple.top.product, v)} (${SIMPLE_STATUS[v.status].label}${v.reviews ? `, 확인 ${v.reviews}건` : ''})`);
+      if (simple.fallback) lines.push(`확인 결과 해당되면: ${productTitle(simple.fallback.product, simple.fallback.variant)}`);
+    } else {
+      lines.push('추천: 가입 가능한 간편 상품 없음');
+    }
+    lines.push('');
+    simple.products.forEach(({ product: p, variants, best }) => {
+      const v = best || variants[variants.length - 1];
+      lines.push(`■ ${productTitle(p, v)} — ${SIMPLE_STATUS[v.status].label}`);
+      v.rows.forEach(({ q, hits, reviews }) => {
+        hits.forEach(x => lines.push(`  - [${q.label}] ${x.h.진단명} (${x.reason})${x.freepass ? ' → 경증 프리패스' : ' → 걸림'}`));
+        reviews.forEach(x => lines.push(`  - [${q.label}] ${x.h.진단명} (${x.reason}) → 확인`));
+      });
+    });
+    return lines.join('\n').trim();
+  }
+
+  document.querySelectorAll('.mode-tab').forEach(btn => {
+    btn.addEventListener('click', () => setDisclosureMode(btn.dataset.mode));
+  });
+
   function renderAll() {
     updateResultsMode();
     const result = classifyHistories(histories, TODAY_ISO);
     carryOverOpenDetails(result);
     renderClassifyResult(result);
+    renderSimpleResult(evaluateSimpleProducts(histories, TODAY_ISO));
     renderUnclassified(result);
   }
 
@@ -1251,8 +1619,9 @@ if (typeof document !== 'undefined') {
   const copyBtn = document.getElementById('copy-btn');
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
-      const result = classifyHistories(histories, TODAY_ISO);
-      const text = buildCopyText(result);
+      const text = disclosureMode === 'simple'
+        ? buildSimpleCopyText(evaluateSimpleProducts(histories, TODAY_ISO))
+        : buildCopyText(classifyHistories(histories, TODAY_ISO));
 
       const handleFailure = () => {
         if (copyTextFallback(text)) {
