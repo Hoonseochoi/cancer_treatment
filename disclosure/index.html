@@ -7,14 +7,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261110d">
+  <link rel="stylesheet" href="style.css?v=20261110e">
 </head>
 <!-- 기본은 잠금 상태. access.js가 로그인·이용 횟수를 확인하면 locked를 뗀다 -->
 <body class="locked">
   <nav id="al-nav">
     <div class="nav-inner">
       <a href="#" class="nav-logo">
-        <img src="../surinsur.png" alt="슈인슈" class="nav-logo-img">
+        <img src="../logo.png" alt="슈린슈 SURINSUR" class="nav-logo-img">
         <span>고지도우미</span>
       </a>
       <button id="reset-all-btn" class="nav-back" type="button" style="background:none;border:none;cursor:pointer;">전체 초기화</button>
@@ -24,7 +24,7 @@
 
   <main id="al-content" class="landing-mode">
     <section class="hero" id="lock-screen">
-      <img src="../surinsur.png" alt="슈린슈" class="hero-logo">
+      <img src="../logo.png" alt="슈린슈 SURINSUR" class="hero-logo">
       <span class="lock-badge">PRO · 회원 전용</span>
       <h1 class="hero-title">자동고지AI</h1>
       <p class="hero-sub lock-message" id="lock-message" role="status">로그인 정보를 확인하고 있어요…</p>
@@ -36,8 +36,21 @@
     </section>
 
     <section class="hero" id="landing-hero">
-      <img src="../surinsur.png" alt="슈린슈" class="hero-logo">
-      <h1 class="hero-title">슈린슈 고지도우미</h1>
+      <img src="../logo.png" alt="슈린슈 SURINSUR" class="hero-logo">
+      <h1 class="hero-title"><span class="hero-title-wrap">슈린슈 고지도우미
+        <!-- 치어리더 슈린 — 제목 오른쪽 위에서 둥둥 떠 폼폼을 흔든다(처음 화면에서만) -->
+        <span class="cheer-shurin" aria-hidden="true">
+          <span class="cheer-figure">
+            <img class="cheer-char" src="../shurin/shurin_cheer_body.png" alt="" width="360" height="360">
+            <img class="cheer-skirt" src="../shurin/cheer_skirt.svg" alt="" width="240" height="70">
+            <img class="cheer-bow" src="../shurin/cheer_bow.svg" alt="" width="120" height="80">
+            <img class="cheer-pom cheer-pom-l" src="../shurin/cheer_pompom_a.svg" alt="" width="200" height="200">
+            <img class="cheer-pom cheer-pom-r" src="../shurin/cheer_pompom_b.svg" alt="" width="200" height="200">
+            <i class="cheer-confetti cf1"></i><i class="cheer-confetti cf2"></i><i class="cheer-confetti cf3"></i><i class="cheer-confetti cf4"></i><i class="cheer-confetti cf5"></i>
+          </span>
+          <span class="cheer-bubble">고지 화이팅!</span>
+        </span>
+      </span></h1>
       <p class="hero-sub">병력을 형식 없이 적어주시면 표준알릴의무에 맞춰 정리해드려요</p>
 
       <div class="chat-input-wrap" id="chat-input-wrap">
@@ -102,10 +115,10 @@
 
   <!-- 배포 후 브라우저가 옛 data.js/ai.js와 새 app.js를 섞어 쓰면 전역 참조가 깨지므로, 스크립트를 바꾸면 v를 올린다 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data.js?v=20261110d"></script>
-  <script src="ai.js?v=20261110d"></script>
-  <script src="access.js?v=20261110d"></script>
-  <script src="log.js?v=20261110d"></script>
-  <script src="app.js?v=20261110d"></script>
+  <script src="data.js?v=20261110e"></script>
+  <script src="ai.js?v=20261110e"></script>
+  <script src="access.js?v=20261110e"></script>
+  <script src="log.js?v=20261110e"></script>
+  <script src="app.js?v=20261110e"></script>
 </body>
 </html>
