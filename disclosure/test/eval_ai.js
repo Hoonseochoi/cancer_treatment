@@ -12,7 +12,8 @@ function loadScript(file) {
 
 Object.assign(global, loadScript('data.js'));
 const { OPENROUTER_API_KEY } = loadScript('config.js');
-const { extractRecordsWithAI, OPENROUTER_MODEL } = require('../ai.js');
+const { extractRecords } = require('../ai.js');
+const { directRequester, OPENROUTER_MODEL } = require('./direct_requester.js');
 const { buildHistoriesWithAI, classifyHistories } = require('../app.js');
 
 const args = process.argv.slice(2);
@@ -42,8 +43,9 @@ function summarize(h) {
   for (const [i, raw] of cases.entries()) {
     const t0 = Date.now();
     const requestLog = [];
+    const requester = directRequester({ rawText: raw, today, apiKey: OPENROUTER_API_KEY });
     const extract = onlyLines => {
-      const pending = extractRecordsWithAI(raw, OPENROUTER_API_KEY, { today, onlyLines });
+      const pending = extractRecords(raw, requester, { onlyLines });
       return pending.then(out => { requestLog.push(...out.chunks.map(c => `${c.provider || '?'} ${c.ms}ms`)); return out; });
     };
     try {

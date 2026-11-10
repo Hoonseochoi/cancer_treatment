@@ -22,20 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: disclosure/config.js 생성 (Secret에서 키 주입)
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: |
-          cat > disclosure/config.js << EOF
-          // 이 파일은 배포 시 GitHub Actions가 Secret(OPENROUTER_API_KEY)으로부터
-          // 자동 생성합니다. 저장소에는 커밋되지 않습니다 (.gitignore 처리).
-          const OPENROUTER_API_KEY = '${OPENROUTER_API_KEY}';
-
-          if (typeof module !== 'undefined') {
-            module.exports = { OPENROUTER_API_KEY };
-          }
-          EOF
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

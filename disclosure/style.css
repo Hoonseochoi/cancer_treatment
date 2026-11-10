@@ -86,13 +86,27 @@ body {
 .chat-input-wrap:focus-within {
   border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy-soft), var(--shadow-card-hover);
 }
+.chat-field { position: relative; flex: 1; min-width: 0; display: flex; }
 .chat-textarea {
-  flex: 1; min-height: 24px; max-height: 160px; resize: none;
+  flex: 1; min-height: 24px; max-height: 320px; resize: none;
   background: transparent; border: none; outline: none;
   font-family: inherit; font-size: 0.94rem; line-height: 1.6; color: var(--text);
   padding: 6px 0;
 }
-.chat-textarea::placeholder { color: var(--text-faint); }
+.chat-textarea::placeholder { color: transparent; }
+/* 빈 입력창 위에 겹쳐 보이는 고지 예시. 글자를 입력하면 사라진다 */
+.input-example {
+  position: absolute; inset: 6px 0 auto 0; pointer-events: none; text-align: left;
+  font-size: 0.8rem; line-height: 1.55; color: var(--text-faint);
+}
+.input-example p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.input-example .ex-lead { color: var(--text-muted, var(--text-faint)); font-weight: 600; font-size: 0.86rem; margin-bottom: 6px; }
+.input-example .ex-gap { margin-top: 8px; }
+.input-example .blur { filter: blur(3.5px); user-select: none; }
+.chat-textarea:not(:placeholder-shown) + .input-example { display: none; }
+/* 처음 화면에서는 예시가 다 보이도록 칸을 넓힌다 */
+#al-content.landing-mode .chat-input-wrap { max-width: 600px; }
+#al-content.landing-mode .chat-textarea { min-height: 300px; }
 .chat-send-btn {
   flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
   background: var(--navy); color: #fff; border: none; cursor: pointer;
@@ -237,16 +251,25 @@ body.unlocking #lock-screen { opacity: 0; transform: translateY(-10px) scale(0.9
   background: linear-gradient(90deg, #0F1E42, #2C55B8); border-radius: 99px; padding: 5px 12px;
   box-shadow: 0 4px 14px rgba(15, 30, 66, 0.25);
 }
-#unlock-input-wrap { align-items: center; }
-.unlock-input { height: 36px; padding: 0; letter-spacing: 1px; }
-.unlock-input::placeholder { letter-spacing: 0; }
-.unlock-message { min-height: 1.3em; margin-top: 12px; font-size: 0.8rem; font-weight: 600; color: #c2410c; }
-.chat-input-wrap.is-error { border-color: #f97316; box-shadow: 0 0 0 3px #ffedd5; animation: unlock-shake 0.35s ease; }
-@keyframes unlock-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  75% { transform: translateX(6px); }
+.lock-message { margin-bottom: 22px; }
+.lock-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.lock-actions[hidden], .lock-contact[hidden], .usage-note[hidden] { display: none; }
+.lock-btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 22px;
+  border-radius: 99px; font-size: 0.9rem; font-weight: 700; text-decoration: none;
+  color: #fff; background: var(--navy); box-shadow: var(--shadow-card);
+  transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease;
 }
+.lock-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-card-hover); }
+.lock-btn-ghost { color: var(--navy); background: var(--card-bg); border: 1px solid var(--card-border-strong); }
+.lock-contact {
+  margin: 0 auto; max-width: 420px; padding: 14px 18px; border-radius: 16px;
+  font-size: 0.88rem; font-weight: 600; color: var(--text);
+  background: var(--card-bg); border: 1px solid var(--card-border-strong);
+}
+.lock-contact a, .usage-note a { color: var(--navy); font-weight: 700; }
+.usage-note { margin-top: 12px; font-size: 0.78rem; color: var(--text-faint); }
+.usage-note b { color: var(--navy); }
 
 /* Results: 분류결과 메인 + 분류 안 된 병력 사이드 */
 #al-content:not(.landing-mode) { max-width: 1120px; }

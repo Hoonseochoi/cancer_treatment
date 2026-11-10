@@ -414,7 +414,7 @@ function tableRowHistories(sourceLines) {
 }
 
 // AI 기록 추출 → 규칙 병합. 빠뜨린 원문 줄은 그 줄만 한 번 더 요청하고, 그래도 없으면 "원문 확인 필요"로 남긴다.
-// extract(onlyLines?)는 { chunks, sourceLines }를 돌려주는 함수(브라우저에선 extractRecordsWithAI, 테스트에선 가짜).
+// extract(onlyLines?)는 { chunks, sourceLines }를 돌려주는 함수(브라우저에선 ai.js extractRecords, 테스트에선 가짜).
 async function buildHistoriesWithAI(extract, todayStr) {
   const { chunks, sourceLines } = await extract();
   // 심사 결과표 행은 규칙으로 읽고, 그 줄에서 나온 AI 기록과 누락 판정은 쓰지 않는다
@@ -1291,7 +1291,7 @@ if (typeof document !== 'undefined') {
     // 채팅 입력창처럼 내용에 맞춰 높이가 자동으로 늘어나게 한다.
     function autoResize() {
       historyInput.style.height = 'auto';
-      historyInput.style.height = `${Math.min(historyInput.scrollHeight, 160)}px`;
+      historyInput.style.height = `${Math.min(historyInput.scrollHeight, 320)}px`;
       parseBtn.disabled = !historyInput.value.trim();
     }
     autoResize();
@@ -1349,30 +1349,51 @@ if (typeof document !== 'undefined') {
         return;
       }
 
-      // 우리 포맷(🔴...)으로 바로 안 읽히면, 텍스트가 비어있지 않은 경우에만
-      // AI(OpenRouter)에게 우리 포맷으로 변환을 맡긴다 (config.js에 키가 있을 때만).
-      const hasApiKey = typeof OPENROUTER_API_KEY !== 'undefined' && OPENROUTER_API_KEY;
-      if (hasApiKey && typeof extractRecordsWithAI === 'function') {
+      // 우리 포맷(🔴...)으로 바로 안 읽히면 AI에게 기록 줄 옮겨 적기를 맡긴다.
+      // AI 호출은 서버 함수(disclosure-extract)가 한다 — 로그인 회원 확인과 이용 횟수(승인 회원 외 평생 3회) 차감도 서버에서.
+      if (typeof DisclosureAccess !== 'undefined' && typeof extractRecords === 'function') {
+        const accessToken = await DisclosureAccess.token();
+        if (!accessToken) {
+          setLoading(false);
+          DisclosureAccess.showLogin();
+          showToast('로그인한 회원만 이용할 수 있어요');
+          return;
+        }
+        // 정리 1번 = 이용 1회. 나눠 보낸 요청·빠뜨린 줄 재요청은 같은 runId라 1회로 센다.
+        const requester = functionRequester({
+          rawText: text, today: TODAY_ISO, runId: DisclosureAccess.newRunId(), accessToken, anonKey: DisclosureAccess.anonKey,
+        });
         try {
           // AI는 원문 기록만 옮겨 적고, 병력 묶기·합산·분류는 규칙(recordsToHistories/classifyHistories)이 한다.
           let requests = 0;
-          const extract = onlyLines => extractRecordsWithAI(text, OPENROUTER_API_KEY, { today: TODAY_ISO, onlyLines })
+          const extract = onlyLines => extractRecords(text, requester, { onlyLines })
             .then(out => { requests += out.chunks.length; return out; });
           const { histories: aiHistories, records, retriedLines, missingLines } = await buildHistoriesWithAI(extract, TODAY_ISO);
-          logRun({ source: 'ai', histories: aiHistories, records, requests, retriedLines, missingLines, model: OPENROUTER_MODEL });
+          const meta = requester.meta || {};
+          DisclosureAccess.applyResult(meta);
+          logRun({ source: 'ai', histories: aiHistories, records, requests, retriedLines, missingLines, model: meta.model });
           if (aiHistories.length > 0) {
             finishWithHistories(aiHistories);
             showToast('병력을 정리했어요. 병력명을 눌러 원문과 꼭 대조해주세요');
           } else {
-            // 입력을 지우지 않고 남겨 다시 시도하거나 고칠 수 있게 한다.
             setLoading(false);
             showToast('원문에서 병력 기록을 찾지 못했어요. 내용을 확인해 다시 시도해주세요');
           }
         } catch (e) {
+          setLoading(false);
+          if (e && e.code === 'LIMIT') {
+            DisclosureAccess.showLimit();
+            showToast('승인된 회원만 이용가능합니다 · 승인 문의는 contact@surinsur.com 으로 메일 주세요 !');
+            return;
+          }
+          if (e && e.code === 'LOGIN') {
+            DisclosureAccess.showLogin();
+            showToast('로그인이 만료됐어요. 다시 로그인해주세요');
+            return;
+          }
           console.error('AI 추출 실패:', e);
           logRun({ source: 'ai', histories: [], error: String(e && e.message ? e.message : e) });
-          setLoading(false);
-          showToast('AI 호출에 실패했어요. 입력은 그대로 두었으니 다시 시도해주세요');
+          showToast(e && e.code === 'BAD' ? e.message : 'AI 호출에 실패했어요. 입력은 그대로 두었으니 다시 시도해주세요');
         }
         return;
       }
