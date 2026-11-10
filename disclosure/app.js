@@ -278,6 +278,14 @@ const MONTH_DAY_RE = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/;
 // 날짜·코드가 없어도 병력으로 봐야 하는 문구(계속 복용 약, 진단명 꼴)와, 병력이 아닌 설계 요청 문구
 const MEDICATION_PHRASE_RE = /복용|투약|처방/;
 const ONGOING_MEDICATION_RE = /복용\s*중|정기\s*처방|계속\s*복용/;
+// "고고당X", "고혈압X", "당뇨 없음"은 "그 병 없음"이라는 메모다 — 병력이 아니다(고·고·당 = 고혈압·고지혈·당뇨)
+const NEGATION_NOTE_RE = /^(?:고혈압|고지혈증?|당뇨병?|이상지질혈증|고|당|지|뇌|심|암|[\/·,])+(?:X|×|없음|무)$/;
+const isNegationNote = text => NEGATION_NOTE_RE.test(compactText(text));
+// 원문에 수술했다고만 적고 수술명은 없는 경우("수술후 지속적 추적관찰", "수술o", "수술받음") — "수술x·수술없음"은 제외
+const SURGERY_MENTION_RE = /수술\s*(?:후|받|함|했|하였|o|O|ㅇ|있음|력)/;
+const SURGERY_DENIED_RE = /수술\s*(?:x|X|×|없|안\s*함|무)/;
+// 검사·선별·접촉·예방접종 코드(Z00~Z13, Z20~Z28)는 기간이 길어도 "계속 치료"로 보지 않는다
+const SCREENING_CODE_RE = /^Z(?:0\d|1[0-3]|2[0-8])/;
 const DISEASE_NAME_RE = /[가-힣](?:염|증|병|암)(?![가-힣])/;
 const REQUEST_PHRASE_RE = /설계|요청|부탁|문의|드립니다|주세요/;
 // 심평원 복사본의 "입원", "(통원)", "처방" 같은 섹션 제목 줄
@@ -328,6 +336,8 @@ function findUncoveredLines(records, sourceLines) {
   const treatments = records.filter(r => r.type === '수술' || r.type === '시술');
   const treatmentLines = treatments.map(r => r.lineNo);
   const treatmentTexts = treatments.map(r => compactText(`${r.detail}${r.name}`));
+  const nearbyDates = n => new Set(records.filter(r => Math.abs(r.lineNo - n) <= 2)
+    .flatMap(r => [r.start, r.end].map(x => resolveRecordDate(x, '9999-12-31'))).filter(Boolean));
   const uncovered = [];
   sourceLines.forEach((line, i) => {
     const n = i + 1;
@@ -338,10 +348,14 @@ function findUncoveredLines(records, sourceLines) {
       return;
     }
     if (covered.has(n)) return;
-    if (extractDates(line).length > 0 || MONTH_DAY_RE.test(line)) {
+    const lineDates = extractDates(line);
+    // "최초진단 21.11.15"처럼 날짜만 따로 적힌 줄: 그 날짜가 바로 위아래(2줄 안) 기록에 이미 쓰였으면 반영된 것으로 본다
+    if (lineDates.length && lineDates.every(d => nearbyDates(n).has(d))) return;
+    if (lineDates.length > 0 || MONTH_DAY_RE.test(line)) {
       uncovered.push(n);
       return;
     }
+    if (isNegationNote(line)) return;
     // 날짜·코드가 없어도 "고혈압 / 당뇨 약 복용중"처럼 병력 문구가 있으면 확인 대상(설계 요청 문장은 제외)
     const hasCode = CODE_TOKEN_RE.test(line.replace(/\./g, ''));
     const hasHistoryWords = !REQUEST_PHRASE_RE.test(line) && !SECTION_HEADER_RE.test(line) && !HEADING_LINE_RE.test(line)
@@ -569,7 +583,7 @@ function linkContinuationRecords(records, sourceLines) {
 
 function recordsToHistories(rawRecords, todayStr, sourceLines = []) {
   const cleanName = n => (n || '').replace(/\((양방|한방)\)/g, '').trim();
-  const records = linkContinuationRecords(rawRecords, sourceLines);
+  const records = linkContinuationRecords(rawRecords.filter(r => !(isNegationNote(r.name) && !r.code.replace(/^~/, ''))), sourceLines);
 
   // AI가 추정한 코드(~)는 서로 다른 병에 같은 코드를 붙이기도 해서(고지혈·고혈압 모두 ~I10) 추정 코드끼리는 진단명까지 같아야 한 병력으로 묶는다.
   const groupOf = r => {
@@ -658,7 +672,23 @@ function recordsToHistories(rawRecords, todayStr, sourceLines = []) {
     const surgeries = treatments.filter(r => !matchesProcedure(r));
     const doubtfulSurgeries = surgeries.filter(r => r.type === '시술');
     // AI가 수술 기록을 끝내 빠뜨려도 이 병력의 원문 줄에 "~술"이 적혀 있으면 수술로 처리한다(비고에 원문 확인 표시).
+    // 이 병력의 원문 줄: 기록이 나온 줄 + 같은 코드가 적힌 줄(날짜 줄과 진단명 줄이 나뉜 복사본 대비)
+    const groupLineNos = new Set(g.lineNos);
+    if (g.code.length >= 3) sourceLines.forEach((line, i) => { if (compactText(line).includes(g.code)) groupLineNos.add(i + 1); });
+    const groupLines = [...groupLineNos].map(n => sourceLines[n - 1] || '');
     const missedSurgeryWords = treatments.length ? [] : [...new Set([...g.lineNos].flatMap(n => surgeryWordsIn(sourceLines[n - 1])))];
+    // "수술후 지속적 추적관찰"처럼 수술명 없이 수술했다고만 적힌 병력도 수술로 둔다(날짜·수술명은 원문 확인)
+    const surgeryMentioned = !treatments.length && !missedSurgeryWords.length
+      && groupLines.some(l => SURGERY_MENTION_RE.test(l) && !SURGERY_DENIED_RE.test(l));
+    // "2021.11.10~2025.06.14"처럼 진료 기간만 있고 횟수가 없으면 7회 이상 통원(계속 7일 이상 치료)이었는지 알 수 없다
+    const spanDays = r => {
+      const s = resolveRecordDate(r.start, todayStr);
+      const e = resolveRecordDate(r.end, todayStr);
+      return s && e ? daysBetween(s, e) : 0;
+    };
+    const rangeOnly = ofType('진단').filter(r => r.value === null && spanDays(r) >= 7);
+    const visitCountUnknown = rangeOnly.length > 0 && !rs.some(r => ['통원', '진단'].includes(r.type) && r.value !== null)
+      && !SCREENING_CODE_RE.test(g.code);
     // "21.09.24~25.05.01 (7)"처럼 횟수가 붙은 진단 기록은 통원 횟수로 본다(7회 이상 통원 Q4 누락 방지, 비고에 원문 확인 표시).
     const countedDiagnoses = ofType('진단').filter(r => r.value !== null);
     const visits = [...ofType('통원'), ...countedDiagnoses];
@@ -685,6 +715,8 @@ function recordsToHistories(rawRecords, todayStr, sourceLines = []) {
       procedures.length && `시술(수술 아님) ${procedures.map(r => withCount(r, '회')).join(', ')}`,
       doubtfulSurgeries.length && `수술로 처리(AI는 시술로 봄 — 원문 확인) ${doubtfulSurgeries.map(r => withCount(r, '회')).join(', ')}`,
       missedSurgeryWords.length && `원문에 수술명이 있어 수술로 처리(AI 누락 — 원문 확인) ${missedSurgeryWords.join(', ')}`,
+      surgeryMentioned && '원문에 수술했다고 적혀 있어 수술로 처리(수술명·수술일 원문 확인)',
+      visitCountUnknown && `진료 기간(${rangeOnly.map(range).join(', ')})만 있고 통원 횟수가 없어요 — 7회 이상 통원이면 Q4 해당(원문 확인)`,
       countedDiagnoses.length && `횟수를 통원으로 처리(원문 확인) ${countedDiagnoses.map(r => withCount(r, '회')).join(', ')}`,
       rs.some(r => r.admissionDoubt) && `원문에 입원 표기가 없어 입원에서 제외(원문 확인) ${rs.filter(r => r.admissionDoubt).map(range).join(', ')}`,
       rs.some(r => r.valueDoubt) && '원문에 없는 일수·횟수는 뺐어요(원문 확인)',
@@ -712,9 +744,11 @@ function recordsToHistories(rawRecords, todayStr, sourceLines = []) {
       최근진료일: dates[dates.length - 1] || null,
       입원여부: admissions.length > 0,
       입원일수: sumValues(admissions),
-      수술여부: surgeries.length > 0 || missedSurgeryWords.length > 0,
+      수술여부: surgeries.length > 0 || missedSurgeryWords.length > 0 || surgeryMentioned,
       // 코드 없이 처치명만 진단명 칸에 온 수술(치근활택술 등)은 그 이름을 수술명으로 쓴다.
-      수술명: [...surgeries.map(r => [detailOf(r) || (g.code ? '' : cleanName(r.name)) || '수술명 미상', r.value > 1 ? `${r.value}회` : ''].filter(Boolean).join(' ')), ...missedSurgeryWords].join(', ') || null,
+      수술명: [...surgeries.map(r => [detailOf(r) || (g.code ? '' : cleanName(r.name)) || '수술명 미상', r.value > 1 ? `${r.value}회` : ''].filter(Boolean).join(' ')), ...missedSurgeryWords, ...(surgeryMentioned ? ['수술명 미상'] : [])].join(', ') || null,
+      // 진료 기간만 있고 통원 횟수를 모름 → Q4(7회 이상 통원·계속 7일 이상 치료) 확인필요
+      통원횟수미상: visitCountUnknown,
       계속치료일수: null,
       계속투약일수: medicationDays.length ? Math.max(...medicationDays) : null,
       통원횟수: sumValues(visits),
@@ -864,6 +898,9 @@ function classifyHistories(histories, todayStr) {
         else if (within) result.Q4.included.push(h);
       } else if (h.상시복용여부) {
         // 지금 계속 복용 중인 약은 "계속하여 30일 이상 투약"일 가능성이 높지만 일수가 없어 확인필요로 둔다
+        result.Q4.review.push(h);
+      } else if (h.통원횟수미상 && within !== false) {
+        // 진료 기간만 적혀 통원 횟수를 모르면 7회 이상 통원이었을 수 있어 확인필요로 둔다
         result.Q4.review.push(h);
       }
     }
