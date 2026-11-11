@@ -52,6 +52,13 @@ const DisclosureAccess = (function () {
 
   const showLogin = () => lock('로그인한 회원만 이용할 수 있어요.<br>모든 회원은 <b>3회</b>까지 무료로 이용할 수 있어요.', { login: true });
   const showLimit = () => lock('무료 이용 3회를 모두 사용했어요.<br><b>승인된 회원만 이용가능합니다</b>', { contact: true });
+  const INSURER_NAMES = { meritz: '메리츠', db: 'DB손해보험', heungkuk: '흥국화재', mirae: '미래에셋생명', hanwha: '한화' };
+  const showInsurerLock = insurer => {
+    const name = INSURER_NAMES[insurer];
+    lock(name
+      ? `<b>${name}는 아직 지원이 안 돼요</b><br>지금은 삼성화재 가입제안서를 주로 분석하는 회원만 이용할 수 있어요.`
+      : '<b>삼성화재 가입제안서를 분석한 회원만 이용할 수 있어요</b><br><a href="../index.html">메인 화면</a>에서 삼성화재 가입제안서를 분석하면 열려요.');
+  };
   const showError = () => lock('이용 정보를 확인하지 못했어요.<br>잠시 후 새로고침해주세요.');
 
   async function token() {
@@ -89,8 +96,13 @@ const DisclosureAccess = (function () {
       showError();
       return;
     }
+    // 지금은 삼성화재 기준이라 주로 삼성 가입제안서를 분석하는 회원(또는 승인 회원)만 쓴다 — 서버도 같은 기준으로 막는다
+    const rules = await loadSimpleRules(accessToken);
+    if (!status.approved && rules && rules.allowed === false) {
+      showInsurerLock(rules.insurer);
+      return;
+    }
     renderUsage();
-    loadSimpleRules(accessToken);
     if (!status.approved && status.remaining <= 0) {
       showLimit();
       return;
@@ -120,6 +132,7 @@ const DisclosureAccess = (function () {
       simpleState = 'error';
     }
     window.dispatchEvent(new Event('disclosure:simple-rules'));
+    return simpleState === 'error' ? null : { allowed: simpleState === 'allowed', insurer: simpleInsurer };
   }
 
   const ready = init();
