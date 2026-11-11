@@ -1050,6 +1050,9 @@ const bothEyesOperated = (h, histories) => {
   const text = same.map(x => x.진단명 + (x.수술명 || '')).join(' ');
   return /양안|양측|양쪽/.test(text) || (/오른|우안|우측/.test(text) && /왼|좌안|좌측/.test(text));
 };
+const surgeryText = h => compactText(`${h.수술명 || ''}${h.진단명 || ''}${h.비고 || ''}`);
+const removedUterus = h => !!h.수술여부 && /자궁(?:적출|절제)|전자궁|자궁전절제/.test(surgeryText(h));
+const removedBothOvaries = h => /(?:양측|양쪽)난소|난소(?:양측|양쪽)|양측부속기|양측난관난소/.test(surgeryText(h));
 function findUwEntry(h, histories = []) {
   if (typeof SIMPLE_UW_GUIDE === 'undefined') return null;
   const name = compactText(h.진단명);
@@ -1064,6 +1067,11 @@ function findUwEntry(h, histories = []) {
     if (e.when === 'nosurgery') return !h.수술여부;
     if (e.when === 'bilateral') return !!h.수술여부 && bothEyesOperated(h, histories);
     if (e.when === 'unilateral') return !(h.수술여부 && bothEyesOperated(h, histories));
+    // 자궁(·양측난소)을 떼어냈는지 — 수술명·진단명으로 본다
+    if (e.when === 'hysterectomy') return removedUterus(h);
+    if (e.when === 'noHysterectomy') return !removedUterus(h);
+    if (e.when === 'hysterectomyBSO') return removedUterus(h) && removedBothOvaries(h);
+    if (e.when === 'noHysterectomyBSO') return !(removedUterus(h) && removedBothOvaries(h));
     return true;
   };
   return matches.find(fits) || null;
