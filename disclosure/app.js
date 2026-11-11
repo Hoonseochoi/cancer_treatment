@@ -1045,10 +1045,11 @@ function isFreepassHit(q, h, histories = []) {
 // ───── 간편보험 U/W가이드(삼성화재 전산 "간편보험 U/W가이드", data.js SIMPLE_UW_GUIDE) ─────
 // 3개월·N년 입원수술 질문에 걸려도, 가이드 조건(입원일수·수술 여부 등)을 맞추면 일부 담보를 빼고 받아준다(조건부 인수).
 // 간편고지형에만 적용 — 311 상품·건강고지형은 해당 없음. 최종 승인은 심사자 확인.
-const bothEyesOperated = (h, histories) => {
-  const same = histories.filter(x => x.수술여부 && /백내장/.test(x.진단명 || ''));
+// 같은 병(백내장·녹내장·하지정맥류 등)을 양쪽 다 수술했는지 — "양측·양안" 표기 또는 오른쪽·왼쪽 수술 병력이 둘 다 있으면
+const bothSidesOperated = (h, histories, key = '백내장') => {
+  const same = histories.filter(x => x.수술여부 && (x.진단명 || '').includes(key));
   const text = same.map(x => x.진단명 + (x.수술명 || '')).join(' ');
-  return /양안|양측|양쪽/.test(text) || (/오른|우안|우측/.test(text) && /왼|좌안|좌측/.test(text));
+  return /양안|양측|양쪽|양하지/.test(text) || (/오른|우안|우측|우하지/.test(text) && /왼|좌안|좌측|좌하지/.test(text));
 };
 const surgeryText = h => compactText(`${h.수술명 || ''}${h.진단명 || ''}${h.비고 || ''}`);
 const removedUterus = h => !!h.수술여부 && /자궁(?:적출|절제)|전자궁|자궁전절제/.test(surgeryText(h));
@@ -1065,8 +1066,8 @@ function findUwEntry(h, histories = []) {
   const fits = e => {
     if (e.when === 'surgery') return !!h.수술여부;
     if (e.when === 'nosurgery') return !h.수술여부;
-    if (e.when === 'bilateral') return !!h.수술여부 && bothEyesOperated(h, histories);
-    if (e.when === 'unilateral') return !(h.수술여부 && bothEyesOperated(h, histories));
+    if (e.when === 'bilateral') return !!h.수술여부 && bothSidesOperated(h, histories, e.sideKey);
+    if (e.when === 'unilateral') return !(h.수술여부 && bothSidesOperated(h, histories, e.sideKey));
     // 자궁(·양측난소)을 떼어냈는지 — 수술명·진단명으로 본다
     if (e.when === 'hysterectomy') return removedUterus(h);
     if (e.when === 'noHysterectomy') return !removedUterus(h);
