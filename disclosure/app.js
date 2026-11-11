@@ -1571,10 +1571,34 @@ if (typeof document !== 'undefined') {
     return card;
   }
 
+  // 간편 알릴의무는 삼성화재 U/W가이드 기준이라 삼성 회원에게만 열린다(규칙은 서버가 삼성 회원에게만 내려줌)
+  const simpleState = () => (typeof DisclosureAccess !== 'undefined' ? DisclosureAccess.simpleState : 'allowed');
+  function simpleLockCard(state) {
+    const box = el('section', 'sp-summary sp-summary-none');
+    const insurerName = { meritz: '메리츠화재', db: 'DB손해보험', heungkuk: '흥국화재', mirae: '미래에셋생명' }[DisclosureAccess.simpleInsurer] || '';
+    if (state === 'loading') {
+      box.append(el('div', 'sp-sum-label', '간편(유병자) 알릴의무'), el('p', 'sp-sum-desc', '삼성화재 간편보험 인수기준을 불러오고 있어요…'));
+    } else if (state === 'error') {
+      box.append(el('div', 'sp-sum-label', '간편(유병자) 알릴의무'), el('div', 'sp-sum-name', '인수기준을 불러오지 못했어요'),
+        el('p', 'sp-sum-desc', '잠시 후 새로고침해주세요.'));
+    } else {
+      box.append(
+        el('div', 'sp-sum-label', '간편(유병자) 알릴의무 · 삼성화재 기준'),
+        el('div', 'sp-sum-name', '삼성 가입제안서를 분석하는 회원만 볼 수 있어요'),
+        el('p', 'sp-sum-desc', `간편 상품 검토는 삼성화재 간편보험 인수가이드 기준이에요. 메인 화면에서 삼성화재 가입제안서를 한 번 분석하면 열려요.${insurerName ? ` (지금 회원 정보: 주로 ${insurerName} 분석)` : ''} 표준 알릴의무 분류는 그대로 이용할 수 있어요.`),
+      );
+    }
+    return box;
+  }
+
   function renderSimpleResult(simple) {
     const container = document.getElementById('simple-result');
     if (!container) return;
     container.innerHTML = '';
+    if (simpleState() !== 'allowed') {
+      container.appendChild(simpleLockCard(simpleState()));
+      return;
+    }
     container.appendChild(buildSimpleSummary(simple));
     // 가입 가능한 상품을 먼저, 그다음 고지 기준이 까다로운 순
     const order = x => (x.best ? 0 : 1);
@@ -1613,13 +1637,15 @@ if (typeof document !== 'undefined') {
   document.querySelectorAll('.mode-tab').forEach(btn => {
     btn.addEventListener('click', () => setDisclosureMode(btn.dataset.mode));
   });
+  // 삼성 회원 확인·규칙 받기가 끝나면 간편 탭을 다시 그린다
+  window.addEventListener('disclosure:simple-rules', () => renderAll());
 
   function renderAll() {
     updateResultsMode();
     const result = classifyHistories(histories, TODAY_ISO);
     carryOverOpenDetails(result);
     renderClassifyResult(result);
-    renderSimpleResult(evaluateSimpleProducts(histories, TODAY_ISO));
+    renderSimpleResult(simpleState() === 'allowed' ? evaluateSimpleProducts(histories, TODAY_ISO) : null);
     renderUnclassified(result);
   }
 
@@ -1761,7 +1787,7 @@ if (typeof document !== 'undefined') {
   const copyBtn = document.getElementById('copy-btn');
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
-      const text = disclosureMode === 'simple'
+      const text = disclosureMode === 'simple' && simpleState() === 'allowed'
         ? buildSimpleCopyText(evaluateSimpleProducts(histories, TODAY_ISO))
         : buildCopyText(classifyHistories(histories, TODAY_ISO));
 

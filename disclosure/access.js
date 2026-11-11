@@ -5,12 +5,16 @@ const ACCESS_SUPABASE_URL = 'https://omgwvnibssizmhovporl.supabase.co';
 // js/supabase.js와 같은 공개(anon) 키 — 로그인 세션을 읽고 함수 게이트웨이를 통과하는 데만 쓴다
 const ACCESS_SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tZ3d2bmlic3Npem1ob3Zwb3JsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NzA4MDYsImV4cCI6MjA4NzE0NjgwNn0.Cx9OFo_UAJOB2AnsRUg1FbWAD8avU7ktYIea1z4hCDY';
 const ACCESS_LOGIN_URL = '../login.html?next=disclosure/';
+const DISCLOSURE_RULES_URL = 'https://omgwvnibssizmhovporl.supabase.co/functions/v1/disclosure-rules';
 const ACCESS_SIGNUP_URL = '../login.html?mode=signup&next=disclosure/';
 
 const DisclosureAccess = (function () {
   const sb = window.supabase ? window.supabase.createClient(ACCESS_SUPABASE_URL, ACCESS_SUPABASE_ANON) : null;
   const $ = id => document.getElementById(id);
   let status = null; // { approved, used, limit, remaining }
+  // 간편 알릴의무(삼성 U/W가이드) 이용 상태: loading → allowed | denied | error
+  let simpleState = 'loading';
+  let simpleInsurer = null;
 
   function lock(message, { login = false, contact = false } = {}) {
     // 이미 정리 결과를 보고 있으면 화면을 잠가 결과를 가리지 않는다(안내는 토스트·이용 안내 줄로)
@@ -86,6 +90,7 @@ const DisclosureAccess = (function () {
       return;
     }
     renderUsage();
+    loadSimpleRules(accessToken);
     if (!status.approved && status.remaining <= 0) {
       showLimit();
       return;
@@ -93,10 +98,36 @@ const DisclosureAccess = (function () {
     unlock();
   }
 
+  // 간편 알릴의무 규칙(삼성화재 대외비 U/W가이드)은 삼성 회원에게만 서버가 내려준다 — 받으면 data.js의 빈 값에 채운다
+  async function loadSimpleRules(accessToken) {
+    try {
+      const res = await fetch(DISCLOSURE_RULES_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}`, apikey: ACCESS_SUPABASE_ANON },
+        body: '{}',
+      });
+      const data = await res.json().catch(() => ({}));
+      simpleInsurer = data.insurer || null;
+      if (res.ok && data.allowed && data.rules) {
+        SIMPLE_UW_GUIDE = data.rules.guide || [];
+        SIMPLE_FREEPASS_DISEASES = data.rules.freepass || [];
+        simpleState = 'allowed';
+      } else {
+        simpleState = res.ok ? 'denied' : 'error';
+      }
+    } catch (e) {
+      console.warn('간편 규칙 불러오기 실패:', e);
+      simpleState = 'error';
+    }
+    window.dispatchEvent(new Event('disclosure:simple-rules'));
+  }
+
   const ready = init();
 
   return {
     ready,
+    get simpleState() { return simpleState; },
+    get simpleInsurer() { return simpleInsurer; },
     token,
     anonKey: ACCESS_SUPABASE_ANON,
     newRunId: () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`),

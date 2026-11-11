@@ -32,6 +32,8 @@ function summarizeClassification(histories, todayStr) {
 // 간편 알릴의무 결과: 추천·차선 + 상품마다 유형별 판정과 어느 질문에 무엇이 걸렸는지
 function summarizeSimple(histories, todayStr) {
   if (typeof evaluateSimpleProducts !== 'function') return null;
+  // 삼성 규칙을 받지 않은 회원(간편 탭 잠김)은 간편 결과를 남기지 않는다
+  if (typeof DisclosureAccess !== 'undefined' && DisclosureAccess.simpleState !== 'allowed') return null;
   const simple = evaluateSimpleProducts(histories, todayStr);
   const brief = c => c && { product: c.product.id, name: c.product.name, variant: c.variant.label, status: c.variant.status, reviews: c.variant.reviews };
   const question = q => `${q.label} ${q.text.split(' · ')[0]}`;

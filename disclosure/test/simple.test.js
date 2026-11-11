@@ -5,6 +5,16 @@ const fs = require('fs');
 const dataModule = { exports: {} };
 new Function('module', 'exports', fs.readFileSync(path.join(__dirname, '..', 'data.js'), 'utf8'))(dataModule, dataModule.exports);
 Object.assign(global, dataModule.exports);
+// U/W가이드·프리패스 목록은 저장소에 없다(대외비) — 로컬 비공개 파일이 있을 때만 이 테스트를 돌린다
+const privatePath = path.join(__dirname, '..', 'private', 'uw_rules.json');
+if (!fs.existsSync(privatePath)) {
+  console.log('SKIP: disclosure/private/uw_rules.json 없음 — 간편 테스트 건너뜀');
+  console.log('전체 통과: simple.test.js');
+  process.exit(0);
+}
+const uwRules = JSON.parse(fs.readFileSync(privatePath, 'utf8'));
+global.SIMPLE_UW_GUIDE = uwRules.guide;
+global.SIMPLE_FREEPASS_DISEASES = uwRules.freepass;
 const { evaluateSimpleProducts, evaluateSimpleQuestion } = require('../app.js');
 
 const TODAY = '2026-11-10';

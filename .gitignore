@@ -25,3 +25,6 @@ db/
 # Edge Function 비밀값 — 절대 커밋하지 않는다
 supabase/functions/.env
 db/clause_chunks.json
+
+# 간편보험 U/W가이드(대외비) — 저장소·사이트에 올리지 않는다. 서버(DB disclosure_uw_rules)에서 삼성 회원에게만 내려준다
+disclosure/private/
