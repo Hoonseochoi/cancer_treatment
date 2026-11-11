@@ -1030,30 +1030,100 @@ function evaluateSimpleQuestion(q, h, todayStr) {
 }
 
 // 경증상병 프리패스 플랜: 3개월·N년 입원수술 질문에 걸린 게 모두 경증상병 목록 병이고(입원 30일 이내), 5년 중대질환은 안 걸리면 가입할 수 있다.
+// 목록은 In-Sight 15~16쪽(data.js SIMPLE_FREEPASS_DISEASES). U/W가이드에 그 병의 프리패스 O/X가 있으면 그것을 따른다.
 const SIMPLE_FREEPASS_KINDS = ['recent3m', 'admitSurgery'];
-function isFreepassHit(q, h) {
-  return SIMPLE_FREEPASS_KINDS.includes(q.kind) && isLightInsuranceException(h.진단명) && !(h.입원일수 > 30);
+const inFreepassList = h => {
+  const name = compactText(h.진단명);
+  return SIMPLE_FREEPASS_DISEASES.some(k => name.includes(compactText(k)));
+};
+function isFreepassHit(q, h, histories = []) {
+  if (!SIMPLE_FREEPASS_KINDS.includes(q.kind) || h.입원일수 > 30) return false;
+  const entry = findUwEntry(h, histories);
+  return entry && typeof entry.freepass === 'boolean' ? entry.freepass : inFreepassList(h);
 }
 
-function evaluateSimpleVariant(questions, histories, todayStr) {
+// ───── 간편보험 U/W가이드(삼성화재 전산 "간편보험 U/W가이드", data.js SIMPLE_UW_GUIDE) ─────
+// 3개월·N년 입원수술 질문에 걸려도, 가이드 조건(입원일수·수술 여부 등)을 맞추면 일부 담보를 빼고 받아준다(조건부 인수).
+// 간편고지형에만 적용 — 311 상품·건강고지형은 해당 없음. 최종 승인은 심사자 확인.
+const bothEyesOperated = (h, histories) => {
+  const same = histories.filter(x => x.수술여부 && /백내장/.test(x.진단명 || ''));
+  const text = same.map(x => x.진단명 + (x.수술명 || '')).join(' ');
+  return /양안|양측|양쪽/.test(text) || (/오른|우안|우측/.test(text) && /왼|좌안|좌측/.test(text));
+};
+function findUwEntry(h, histories = []) {
+  if (typeof SIMPLE_UW_GUIDE === 'undefined') return null;
+  const name = compactText(h.진단명);
+  const code = h.코드추정 ? '' : String(h.진단코드 || '').replace(/[.\s]/g, '').toUpperCase();
+  // 키워드가 배열이면 모두 들어 있어야 한다(["골절","손목"] = 손목 골절)
+  const has = k => (Array.isArray(k) ? k.every(w => name.includes(compactText(w))) : name.includes(compactText(k)));
+  const matches = SIMPLE_UW_GUIDE.filter(e => e.keywords.some(has)
+    || (code && (e.codes || []).some(p => code.startsWith(p))));
+  // 같은 병이 수술 여부·양측 수술 여부로 나뉜 항목은 병력에 맞는 쪽을 고른다
+  const fits = e => {
+    if (e.when === 'surgery') return !!h.수술여부;
+    if (e.when === 'nosurgery') return !h.수술여부;
+    if (e.when === 'bilateral') return !!h.수술여부 && bothEyesOperated(h, histories);
+    if (e.when === 'unilateral') return !(h.수술여부 && bothEyesOperated(h, histories));
+    return true;
+  };
+  return matches.find(fits) || null;
+}
+
+// 걸린 병력 하나에 가이드를 대 본다 → { ok, column, label, conditions[], coverage, entry } | null(가이드에 없음)
+function uwDecision(h, todayStr, histories = []) {
+  const entry = findUwEntry(h, histories);
+  if (!entry) return null;
+  const base = { entry, name: entry.name };
+  if (!h.입원여부 && !h.수술여부) {
+    // 3개월 안 확정진단만 있고(입원·수술·재검사·의심소견 없음) 완치면 전담보 인수
+    return { ...base, ok: true, column: 'A', label: '전담보 인수', conditions: ['완치 확인'], coverage: '' };
+  }
+  // 치료종결(마지막 진료) 3개월 이내면 B열, 지났으면 C열. 날짜를 모르면 더 엄한 B열로 본다
+  const recent = h.최근진료일 ? withinMonths(h.최근진료일, todayStr, 3) !== false : true;
+  const rule = recent ? entry.recent : entry.later;
+  const column = recent ? 'B' : 'C';
+  if (!rule) return { ...base, ok: false, column, label: '치료종결 3개월 안에는 비대상', conditions: [], coverage: '' };
+  const fail = why => ({ ...base, ok: false, column, label: why, conditions: [], coverage: rule.coverage || '' });
+  if (rule.admitNone && h.입원여부) return fail('입원했으면 불가(통원 제거만)');
+  if (h.입원여부 && rule.admitDays && h.입원일수 > rule.admitDays) return fail(`입원 ${rule.admitDays}일 초과`);
+  if (rule.surgery === 'none' && h.수술여부) return fail('수술하면 불가');
+  if (rule.surgery === 'required' && !h.수술여부) return fail('수술(완전제거)해야 인수');
+  const conditions = [
+    rule.immediate,
+    rule.admitNone && '입원 없이 통원',
+    rule.admitDays && `입원 ${rule.admitDays}일 이내${h.입원여부 && h.입원일수 == null ? '(입원일수 확인)' : ''}`,
+    rule.surgeryText,
+    ...(rule.extra || []),
+  ].filter(Boolean);
+  return { ...base, ok: true, column, label: rule.coverage ? '조건부 인수' : '전담보 인수', conditions, coverage: rule.coverage || '' };
+}
+
+function evaluateSimpleVariant(questions, histories, todayStr, { uwGuide = true } = {}) {
   const rows = questions.map(q => ({ q, hits: [], reviews: [] }));
   histories.forEach(h => {
     rows.forEach(row => {
       const v = evaluateSimpleQuestion(row.q, h, todayStr);
       if (!v) return;
       // AI가 옮기지 못한 원문 줄로 만든 병력은 걸려도 확인필요로 둔다
-      if (v.status === 'hit' && !h.원문확인필요) row.hits.push({ h, reason: v.reason, freepass: isFreepassHit(row.q, h) });
-      else row.reviews.push({ h, reason: v.status === 'hit' ? `${v.reason} — 원문 확인 필요` : v.reason });
+      if (v.status === 'hit' && !h.원문확인필요) {
+        const freepass = isFreepassHit(row.q, h, histories);
+        // 프리패스가 아니면 U/W가이드로 조건부 인수가 되는지 본다(3개월·N년 입원수술 질문만, 중대질환 질문은 해당 없음)
+        const uw = !freepass && uwGuide && SIMPLE_FREEPASS_KINDS.includes(row.q.kind) ? uwDecision(h, todayStr, histories) : null;
+        row.hits.push({ h, reason: v.reason, freepass, uw });
+      } else {
+        row.reviews.push({ h, reason: v.status === 'hit' ? `${v.reason} — 원문 확인 필요` : v.reason });
+      }
     });
   });
   const hits = rows.flatMap(r => r.hits);
   const reviews = rows.reduce((n, r) => n + r.reviews.length, 0);
-  const blocked = hits.some(x => !x.freepass);
-  const status = blocked ? 'no' : hits.length ? 'freepass' : reviews ? 'check' : 'ok';
+  const blocked = hits.some(x => !x.freepass && !(x.uw && x.uw.ok));
+  const conditional = hits.some(x => !x.freepass && x.uw && x.uw.ok);
+  const status = blocked ? 'no' : conditional ? 'conditional' : hits.length ? 'freepass' : reviews ? 'check' : 'ok';
   return { rows, status, reviews };
 }
 
-const SIMPLE_STATUS_RANK = { ok: 0, check: 1, freepass: 2, no: 3 };
+const SIMPLE_STATUS_RANK = { ok: 0, check: 1, freepass: 2, conditional: 3, no: 4 };
 
 function simpleVariantLabel(p, n) {
   return p.nRange ? `3.${n}.5` : p.code;
@@ -1067,7 +1137,7 @@ function evaluateSimpleProducts(histories, todayStr) {
       n,
       label: simpleVariantLabel(p, n),
       strictness: n + p.strictExtra,
-      ...evaluateSimpleVariant(p.build(n), histories, todayStr),
+      ...evaluateSimpleVariant(p.build(n), histories, todayStr, { uwGuide: !p.noUwGuide }),
     }));
     const possible = variants.filter(v => v.status !== 'no');
     const best = possible.length ? possible.reduce((a, b) => (b.strictness > a.strictness ? b : a)) : null;
@@ -1083,13 +1153,19 @@ function evaluateSimpleProducts(histories, todayStr) {
   const fallback = top && top.variant.reviews
     ? candidates.find(c => c !== top && !c.variant.reviews) || null
     : null;
-  return { products, candidates, top, fallback };
+  // 추천이 담보 제한(조건부 인수)이면, 제한 없이 들 수 있는 가장 나은 유형도 같이 보여준다
+  const unrestricted = top && top.variant.status === 'conditional'
+    ? candidates.find(c => c.variant.status !== 'conditional') || null
+    : null;
+  return { products, candidates, top, fallback, unrestricted };
 }
 
 if (typeof module !== 'undefined') {
   module.exports.classifyHistories = classifyHistories;
   module.exports.evaluateSimpleProducts = evaluateSimpleProducts;
   module.exports.evaluateSimpleQuestion = evaluateSimpleQuestion;
+  module.exports.findUwEntry = findUwEntry;
+  module.exports.uwDecision = uwDecision;
   module.exports.isExceptionDisease = isExceptionDisease;
   module.exports.yearsElapsed = yearsElapsed;
   module.exports.getTreatmentTypeLabel = getTreatmentTypeLabel;
@@ -1327,6 +1403,7 @@ if (typeof document !== 'undefined') {
     ok: { label: '가입 가능', cls: 'ok' },
     check: { label: '확인 필요', cls: 'check' },
     freepass: { label: '경증 프리패스', cls: 'pass' },
+    conditional: { label: '조건부 인수', cls: 'cond' },
     no: { label: '가입 불가', cls: 'no' },
   };
   const MODE_COPY = {
@@ -1370,24 +1447,35 @@ if (typeof document !== 'undefined') {
 
   // 걸린 병력 한 줄: 진단명 + 이유. 프리패스로 넘어가는 건 따로 표시한다.
   function simpleHitLine(item, kind) {
-    const line = el('div', `sp-hit sp-hit-${kind}`);
+    const wrap = el('div', `sp-hit-wrap sp-hit-${kind}`);
+    const line = el('div', 'sp-hit');
     line.append(el('span', 'sp-hit-name', item.h.진단명 || '(이름없음)'), el('span', 'sp-hit-reason', item.reason));
     if (kind === 'pass') line.appendChild(el('span', 'sp-badge sp-pass sp-badge-sm', '경증 프리패스'));
-    return line;
+    if (item.uw) line.appendChild(el('span', `sp-badge sp-badge-sm ${item.uw.ok ? 'sp-cond' : 'sp-no'}`, `U/W ${item.uw.label}`));
+    wrap.appendChild(line);
+    // U/W가이드 조건·빠지는 담보
+    if (item.uw && item.uw.ok && (item.uw.conditions.length || item.uw.coverage)) {
+      const detail = el('div', 'sp-uw');
+      if (item.uw.conditions.length) detail.appendChild(el('div', 'sp-uw-cond', `조건 · ${item.uw.conditions.join(' · ')}`));
+      if (item.uw.coverage) detail.appendChild(el('div', 'sp-uw-cov', `담보 제한 · ${item.uw.coverage}`));
+      wrap.appendChild(detail);
+    }
+    return wrap;
   }
 
   function buildSimpleQuestionRows(variant) {
     const list = el('div', 'sp-questions');
     variant.rows.forEach(({ q, hits, reviews }) => {
-      const blocked = hits.some(x => !x.freepass);
-      const state = blocked ? 'no' : hits.length ? 'pass' : reviews.length ? 'check' : 'ok';
+      const blocked = hits.some(x => !x.freepass && !(x.uw && x.uw.ok));
+      const cond = hits.some(x => !x.freepass && x.uw && x.uw.ok);
+      const state = blocked ? 'no' : cond ? 'cond' : hits.length ? 'pass' : reviews.length ? 'check' : 'ok';
       const row = el('div', `sp-q sp-q-${state}`);
       const head = el('div', 'sp-q-head');
-      const mark = el('span', 'sp-q-mark', { ok: '아니오', pass: '예 · 프리패스', check: '확인', no: '예 · 걸림' }[state]);
+      const mark = el('span', 'sp-q-mark', { ok: '아니오', pass: '예 · 프리패스', cond: '예 · 조건부 인수', check: '확인', no: '예 · 걸림' }[state]);
       const label = el('span', 'sp-q-label', q.label);
       head.append(mark, label, el('span', 'sp-q-text', q.text));
       row.appendChild(head);
-      hits.forEach(x => row.appendChild(simpleHitLine(x, x.freepass ? 'pass' : 'no')));
+      hits.forEach(x => row.appendChild(simpleHitLine(x, x.freepass ? 'pass' : x.uw && x.uw.ok ? 'cond' : 'no')));
       reviews.forEach(x => row.appendChild(simpleHitLine(x, 'check')));
       list.appendChild(row);
     });
@@ -1420,7 +1508,14 @@ if (typeof document !== 'undefined') {
       const names = [...new Set(passHits.map(x => x.h.진단명))].join(', ');
       notes.appendChild(el('li', '', `${names} — 경증상병 프리패스 대상이에요. 치료가 끝난 다음날부터 암·뇌·심·사망 담보까지 가입할 수 있어요(N년 내 입원 30일 이내 조건)`));
     }
+    const uwHits = v.rows.flatMap(r => r.hits.filter(x => !x.freepass && x.uw && x.uw.ok));
+    [...new Map(uwHits.map(x => [x.h, x])).values()].forEach(x => {
+      notes.appendChild(el('li', '', `${x.h.진단명} — U/W가이드 ${x.uw.label}${x.uw.conditions.length ? ` (${x.uw.conditions.join(' · ')})` : ''}${x.uw.coverage ? ` · 담보 제한: ${x.uw.coverage}` : ''}`));
+    });
     v.rows.forEach(r => r.reviews.forEach(x => notes.appendChild(el('li', 'sp-note-check', `확인: ${x.h.진단명} — ${x.reason}`))));
+    if (simple.unrestricted) {
+      notes.appendChild(el('li', 'sp-note-alt', `담보 제한 없이 가입하려면 → ${productTitle(simple.unrestricted.product, simple.unrestricted.variant)} (${SIMPLE_STATUS[simple.unrestricted.variant.status].label})`));
+    }
     if (fallback) {
       notes.appendChild(el('li', 'sp-note-alt', `확인 결과 해당되면 → ${productTitle(fallback.product, fallback.variant)} (${SIMPLE_STATUS[fallback.variant.status].label})`));
     }
@@ -1498,7 +1593,8 @@ if (typeof document !== 'undefined') {
       const v = best || variants[variants.length - 1];
       lines.push(`■ ${productTitle(p, v)} — ${SIMPLE_STATUS[v.status].label}`);
       v.rows.forEach(({ q, hits, reviews }) => {
-        hits.forEach(x => lines.push(`  - [${q.label}] ${x.h.진단명} (${x.reason})${x.freepass ? ' → 경증 프리패스' : ' → 걸림'}`));
+        hits.forEach(x => lines.push(`  - [${q.label}] ${x.h.진단명} (${x.reason})${x.freepass ? ' → 경증 프리패스'
+          : x.uw && x.uw.ok ? ` → U/W ${x.uw.label}${x.uw.coverage ? ` (담보 제한: ${x.uw.coverage})` : ''}` : ' → 걸림'}`));
         reviews.forEach(x => lines.push(`  - [${q.label}] ${x.h.진단명} (${x.reason}) → 확인`));
       });
     });

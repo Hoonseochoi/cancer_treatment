@@ -38,6 +38,7 @@ function summarizeSimple(histories, todayStr) {
   return {
     top: brief(simple.top),
     fallback: brief(simple.fallback),
+    unrestricted: brief(simple.unrestricted),
     products: simple.products.map(({ product, variants, best }) => {
       const shown = best || variants[variants.length - 1];
       return {
@@ -46,7 +47,11 @@ function summarizeSimple(histories, todayStr) {
         status: best ? best.status : 'no',
         variants: Object.fromEntries(variants.map(v => [v.label, v.status])),
         hits: shown.rows.flatMap(r => [
-          ...r.hits.map(x => ({ q: question(r.q), name: x.h.진단명, reason: x.reason, result: x.freepass ? 'freepass' : 'hit' })),
+          ...r.hits.map(x => ({
+            q: question(r.q), name: x.h.진단명, reason: x.reason,
+            result: x.freepass ? 'freepass' : x.uw && x.uw.ok ? 'uw' : 'hit',
+            uw: x.uw ? { entry: x.uw.name, column: x.uw.column, ok: x.uw.ok, label: x.uw.label } : undefined,
+          })),
           ...r.reviews.map(x => ({ q: question(r.q), name: x.h.진단명, reason: x.reason, result: 'review' })),
         ]),
       };

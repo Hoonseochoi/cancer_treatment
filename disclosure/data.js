@@ -122,7 +122,7 @@ const SIMPLE_PRODUCTS = [
   { id: 'thefit1680', name: 'THE FIT 1680', code: '305~365', isNew: true, nRange: [0, 6], build: n => [simpleQ.recent3m(), ...(n ? [simpleQ.admitSurgery(n)] : []), simpleQ.major5()], strictExtra: 0 },
   { id: 'gogo3655', name: '3655 고고 새로고침', code: '3.6.5 + 당뇨', n: 6, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(6), simpleQ.major5(), simpleQ.diabetes()], strictExtra: 2 },
   { id: 'refresh3105', name: '3.10.5 새로고침', code: '3.10.5', n: 10, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(10), simpleQ.major5()], strictExtra: 0 },
-  { id: 'refresh3115', name: '311-5 새로고침', code: '311-5', n: 1, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(1), simpleQ.major5(1)], strictExtra: -1 },
+  { id: 'refresh3115', name: '311-5 새로고침', code: '311-5', n: 1, noUwGuide: true, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(1), simpleQ.major5(1)], strictExtra: -1 },
   { id: 'dangdang-gd', name: '365 당당 새로고침 100세 (고,당)', code: '3.6.5 + 고·당', n: 6, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(6), simpleQ.major6(), simpleQ.htnDiabetes()], strictExtra: 3 },
   { id: 'dangdang-dj', name: '365 당당 새로고침 100세 (당,지)', code: '3.6.5 + 당·지', n: 6, build: () => [simpleQ.recent3m(), simpleQ.admitSurgery(6), simpleQ.major6(), simpleQ.diabetes(), simpleQ.dyslipidemia()], strictExtra: 5 },
   {
@@ -132,6 +132,13 @@ const SIMPLE_PRODUCTS = [
   },
 ];
 
+// 경증상병 프리패스 대상 병 목록과 간편보험 U/W가이드(삼성화재 대외비)는 이 공개 파일에 두지 않는다.
+// 로그인한 삼성 회원(삼성 가입제안서를 분석한 적 있는 회원·승인 회원)에게만 서버(Edge Function disclosure-rules)가
+// DB(disclosure_uw_rules)에서 내려주고, access.js가 아래 두 값에 채운다. 비어 있으면 간편 탭은 잠긴다.
+// 로컬 테스트는 저장소에 올리지 않는 disclosure/private/uw_rules.json을 읽는다.
+let SIMPLE_FREEPASS_DISEASES = [];
+let SIMPLE_UW_GUIDE = [];
+
 // 온[ON]통보장은 355-5 / 365-5 / 365-6 고당지뇌심 유형을 고를 수 있다 — 같은 알릴사항이라 결과 안내에만 덧붙인다.
 const SIMPLE_NOTES = [
   '온[ON]통보장은 3.5.5 · 3.6.5 · 365 고당지뇌심 유형으로도 가입할 수 있어요',
@@ -139,5 +146,5 @@ const SIMPLE_NOTES = [
 ];
 
 if (typeof module !== 'undefined') {
-  module.exports = { Q_DEFS, DISEASE_11, DISEASE_11_KEYWORDS, DISCLOSURE_EXCEPTIONS, LIGHT_INSURANCE_EXCEPTIONS, SIMPLE_DISEASES, SIMPLE_PRODUCTS, SIMPLE_NOTES };
+  module.exports = { Q_DEFS, DISEASE_11, DISEASE_11_KEYWORDS, DISCLOSURE_EXCEPTIONS, LIGHT_INSURANCE_EXCEPTIONS, SIMPLE_DISEASES, SIMPLE_PRODUCTS, SIMPLE_NOTES, SIMPLE_FREEPASS_DISEASES, SIMPLE_UW_GUIDE };
 }
