@@ -176,6 +176,10 @@ function recordDateRegexes(r) {
   const sep = '\\s*[-./년월]\\s*';
   return [r.start, r.end].map(s => (s || '').replace(/\D/g, '')).filter(d => [4, 6, 8].includes(d.length)).map(d => {
     const digits = d.length === 8 ? d.slice(2) : d;
+    // "2022.08"을 AI가 2208로 적는 경우(앞 두 자리가 월일 수 없음) → 연월로 찾는다
+    if (digits.length === 4 && Number(digits.slice(0, 2)) > 12) {
+      return new RegExp(`(?<!\\d)(?:20)?${digits.slice(0, 2)}${sep}0?${Number(digits.slice(2))}(?![\\d])`);
+    }
     const year = digits.length === 6 ? digits.slice(0, 2) : null;
     const md = digits.slice(-4);
     return new RegExp(`(?<!\\d)${year ? `(?:20)?${year}${sep}` : ''}0?${Number(md.slice(0, 2))}${sep}0?${Number(md.slice(2))}(?!\\d)`);
@@ -218,8 +222,10 @@ function locateRecordLine(r, sourceLines) {
     const dateHit = dateRes.some(re => re.test(line));
     const codeNear = hasCode(i) || hasCode(i - 1) || hasCode(i + 1);
     const lineHasDate = extractDates(line).length > 0 || MONTH_DAY_RE.test(line);
+    // 약 이름·처치명이 적힌 줄이면 그 줄이 기록 줄일 가능성이 크다(같은 코드 줄 근처로 끌려가지 않게)
+    const detailHit = detailToken && compactText(line).includes(detailToken) ? 1 : 0;
     const score = dateRes.length
-      ? (dateHit ? 2 : 0) + (codeNear ? 1 : 0)
+      ? (dateHit ? 2 : 0) + (codeNear ? 1 : 0) + detailHit
       // 날짜 없이 온 기록("마지막처방일" 줄의 투약)은 코드가 같은/옆 줄에 있으면서 날짜가 적힌 줄을 기록 줄로 본다
       : (codeNear ? 1 : 0) + (codeNear && lineHasDate ? 1 : 0) + (detailToken && compactText(line).includes(detailToken) ? 3 : 0);
     if (score > bestScore || (score > 0 && score === bestScore && Math.abs(i - claimed) < Math.abs(best - claimed))) {
@@ -251,8 +257,18 @@ function collectRecords(chunks, sourceLines) {
         if (lineDates.length) {
           r.start = lineDates[0].slice(2).replace(/-/g, '');
           if (lineDates.length > 1) r.end = lineDates[lineDates.length - 1].slice(2).replace(/-/g, '');
+        } else {
+          // "10-15, 16 도수치료" — 연도 없는 월-일은 MMDD로(올해 기준, 오늘보다 뒤면 작년)
+          const md = (MONTH_DAY_LIST_RE.exec(sourceLines[lineNo - 1] || '') || []);
+          if (md.length) {
+            const days = [md[2], ...((md[3] || '').match(/\d{1,2}/g) || [])];
+            const mmdd = d => `${md[1].padStart(2, '0')}${String(d).padStart(2, '0')}`;
+            r.start = mmdd(days[0]);
+            if (days.length > 1) r.end = mmdd(days[days.length - 1]);
+          }
         }
       }
+      if (ANSWERED_QUESTION_RE.test(sourceLines[lineNo - 1] || '')) continue;
       const inScope = chunk.lines ? chunk.lines.includes(lineNo) : lineNo >= chunk.from && lineNo <= chunk.to;
       if ((chunks.length > 1 || chunk.lines) && !inScope) continue;
       if (isNegatedRecord(r, sourceLines[lineNo - 1])) continue;
@@ -274,6 +290,22 @@ function collectRecords(chunks, sourceLines) {
 
 const CODE_TOKEN_RE = /(?<![A-Za-z0-9])A?[A-Z]\d{2,5}(?!\d)/;
 const MONTH_DAY_RE = /(\d{1,2})\s*월\s*(\d{1,2})\s*일/;
+// 줄 첫머리의 "10-15, 16 도수치료"·"11-6, 7 물리치료"(월-일, 같은 달 날짜 나열). "2-3회"처럼 횟수인 경우는 빼려고 뒤에 한글 처치명이 와야 한다
+const MONTH_DAY_LIST_RE = /^\s*(\d{1,2})-(\d{1,2})((?:\s*,\s*\d{1,2})*)\s+(?![회일번개년])(?=[가-힣])/;
+function monthDayListDates(line, todayStr) {
+  const m = MONTH_DAY_LIST_RE.exec(line || '');
+  if (!m) return [];
+  const month = Number(m[1]);
+  const days = [m[2], ...(m[3].match(/\d{1,2}/g) || [])].map(Number);
+  if (month < 1 || month > 12 || days.some(d => d < 1 || d > 31)) return [];
+  return days.map(d => resolveRecordDate(`${String(month).padStart(2, '0')}${String(d).padStart(2, '0')}`, todayStr)).filter(Boolean);
+}
+// "[최근 3개월 이내 …] 있음"·"[최근 5년 이내 암·백혈병…] 아니오"처럼 알릴의무 질문에 답한 머리 줄 — 병력이 아니다
+const ANSWERED_QUESTION_RE = /^\s*\[[^\]]*(?:이내|개월|년)[^\]]*\]\s*(?:예|아니오|아니요|있음|없음|해당\s*없음|[oxOXyYnN])?\s*$/;
+// "- 현재 상태: 완치"처럼 경과만 적은 줄 — 날짜가 있어도 새 기록이 아니다
+const STATUS_LINE_RE = /^\s*[-·•*]?\s*현재\s*상태\s*[:：]/;
+// "**병력 (병력 각각 기재)**"·"**고혈압/고지혈/당뇨병 있을경우**"처럼 양식의 굵은 제목 줄
+const BOLD_HEADING_RE = /^\s*\*\*[^*]+\*\*\s*$/;
 
 // 날짜·코드가 없어도 병력으로 봐야 하는 문구(계속 복용 약, 진단명 꼴)와, 병력이 아닌 설계 요청 문구
 const MEDICATION_PHRASE_RE = /복용|투약|처방/;
@@ -287,7 +319,7 @@ const SURGERY_DENIED_RE = /수술\s*(?:x|X|×|없|안\s*함|무)/;
 // 검사·선별·접촉·예방접종 코드(Z00~Z13, Z20~Z28)는 기간이 길어도 "계속 치료"로 보지 않는다
 const SCREENING_CODE_RE = /^Z(?:0\d|1[0-3]|2[0-8])/;
 const DISEASE_NAME_RE = /[가-힣](?:염|증|병|암)(?![가-힣])/;
-const REQUEST_PHRASE_RE = /설계|요청|부탁|문의|드립니다|주세요/;
+const REQUEST_PHRASE_RE = /설계|요청|부탁|문의|드립니다|주세요|진단비|치료비|수술비|입원일당|보험료|비급여|갱신형|준비해|기초수급/;
 // 심평원 복사본의 "입원", "(통원)", "처방" 같은 섹션 제목 줄
 const SECTION_HEADER_RE = /^\s*[(\[]?\s*(입원|통원|외래|처방|투약|수술)\s*[)\]]?\s*(?:내역|기록|병력)?\s*:?\s*$/;
 // "최근 3개월 이내 질병/치료 이력", "5년 내 입원 및 수술 이력" 같은 기간 제목 줄
@@ -348,10 +380,11 @@ function findUncoveredLines(records, sourceLines) {
       return;
     }
     if (covered.has(n)) return;
+    if (ANSWERED_QUESTION_RE.test(line) || STATUS_LINE_RE.test(line) || BOLD_HEADING_RE.test(line)) return;
     const lineDates = extractDates(line);
     // "최초진단 21.11.15"처럼 날짜만 따로 적힌 줄: 그 날짜가 바로 위아래(2줄 안) 기록에 이미 쓰였으면 반영된 것으로 본다
     if (lineDates.length && lineDates.every(d => nearbyDates(n).has(d))) return;
-    if (lineDates.length > 0 || MONTH_DAY_RE.test(line)) {
+    if (lineDates.length > 0 || MONTH_DAY_RE.test(line) || MONTH_DAY_LIST_RE.test(line)) {
       uncovered.push(n);
       return;
     }
@@ -363,6 +396,9 @@ function findUncoveredLines(records, sourceLines) {
     if (!hasCode && !hasHistoryWords) return;
     // 날짜 없이 진단명·코드만 있는 줄은 이미 잡힌 병력의 코드 줄이거나 기록 줄 바로 옆(진단명 줄)이면 반영된 것으로 본다
     if (codes.some(c => compactText(line).includes(c)) || covered.has(n - 1) || covered.has(n + 1)) return;
+    // "약 처방 주기 : 두달에 한번"처럼 같은 문단(빈 줄 없이 이어진) 2줄 안에 기록이 있으면 그 기록의 항목 줄로 본다
+    const sameBlock = (a, b) => sourceLines.slice(Math.min(a, b) - 1, Math.max(a, b)).every(l => l.trim());
+    if ([n - 2, n + 2].some(k => covered.has(k) && sameBlock(n, k))) return;
     uncovered.push(n);
   });
   return uncovered;
@@ -374,7 +410,7 @@ function uncoveredLineHistories(lineNos, sourceLines, todayStr) {
     const line = sourceLines[n - 1].trim();
     const md = line.match(MONTH_DAY_RE);
     const monthDay = md ? resolveRecordDate(`${md[1].padStart(2, '0')}${md[2].padStart(2, '0')}`, todayStr) : null;
-    const dates = [...extractDates(line), monthDay].filter(Boolean).sort();
+    const dates = [...extractDates(line), monthDay, ...monthDayListDates(line, todayStr)].filter(Boolean).sort();
     const code = line.replace(/\./g, '').match(CODE_TOKEN_RE);
     return {
       id: nextHistoryId++,
