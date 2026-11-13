@@ -26,9 +26,13 @@ function buildSurgeryPolicy(results) {
     const find = re => surg.find(r => re.test(key(r)));
     const val = r => (r ? parseKoAmount(r.amount) : 0);
 
+    // 질병 입원·통원 수술비는 Ⅱ·Ⅳ처럼 특약이 여럿일 수 있고 특약마다 따로 나온다(diseaseSurgeryFamilies).
+    // 예전엔 먼저 보이는 하나만 잡아서 Ⅳ(백내장·대장양성종양 제외) 금액이 대장용종에 붙었다(실측).
+    const fams = typeof diseaseSurgeryFamilies === 'function' ? diseaseSurgeryFamilies(surg) : [];
     const p = {
-        입원: val(find(/질병.*입원수술비/)),
-        통원: val(find(/질병.*통원수술비/)),
+        입원: fams.reduce((t, f) => t + f.입원, 0),
+        통원: fams.reduce((t, f) => t + f.통원, 0),
+        baseFam: fams,
         종5: {}, 종8: {}, 군: {}, 양성: {}, 전용: {},
         _raw: surg
     };
@@ -92,6 +96,18 @@ function isMeritzFiveExcluded(s, v) {
     return false;
 }
 
+// 질병 입원·통원 수술비Ⅳ(백내장, 대장양성종양 제외)가 나오지 않는 수술 — 약관 제6조②
+//   9호 수정체의 장애(H25~H28) / 10호 결장·직장·항문 및 항문관의 양성 신생물 및 용종(D12, K63.5)
+// 대장·위 용종 절제는 위내시경으로 뗀 위 용종이면 대상이다(대장이 아님).
+function surgeryIVExcluded(s, v) {
+    const t = (s.name || '') + ' ' + ((v && v.label) || '');
+    if (/백내장|수정체/.test(t)) return '9호 수정체의 장애(H25~H28)';
+    if (s.benign === '대장' && !/위내시경|위\s*용종|위·십이지장/.test((v && v.label) || '')) {
+        return '10호 결장·직장·항문 양성 신생물 및 용종(D12, K63.5)';
+    }
+    return '';
+}
+
 // 111대 그룹 담보명은 상품마다 표기가 달라(5대주요기관관혈 / 5대주요기관 등) 유연하게 찾는다.
 function matchGroupKey(policy, group, gwan) {
     const keys = Object.keys(policy.군);
@@ -128,9 +144,20 @@ function calcSurgeryVariant(policy, s, v) {
             else rows.push({ k, s: '질병수술비에 더해 한 번 더', v: policy.추가, on: true, c: '매회' });
         }
     } else if (base > 0) {
-        const name = policy.입원 >= policy.통원 ? '질병 입원 수술비' : '질병 통원 수술비';
-        if (blocked('base')) rows.push({ k: name, s: exWhy, v: 0, on: false });
-        else rows.push({ k: name, s: '입원·통원 중 택일', v: base, on: true });
+        // 특약마다 한 줄. 같은 특약 안에서는 입원·통원 중 큰 쪽 하나.
+        const fams = (policy.baseFam && policy.baseFam.length) ? policy.baseFam
+            : [{ 입원: policy.입원, 통원: policy.통원, base, exIV: false }];
+        const multi = fams.filter(f => f.base > 0).length > 1;
+        fams.forEach(f => {
+            if (!(f.base > 0)) return;
+            const io = f.입원 >= f.통원 ? '입원' : '통원';
+            const tag = f.exIV ? 'Ⅳ' : (multi && /Ⅱ/.test(f.key || '') ? 'Ⅱ' : '');
+            const name = `질병 ${io} 수술비${tag}`;
+            const iv = f.exIV && surgeryIVExcluded(s, v);
+            if (blocked('base')) rows.push({ k: name, s: exWhy, v: 0, on: false });
+            else if (iv) rows.push({ k: name, s: `제6조②${iv} — 수술비Ⅳ 면책`, v: 0, on: false });
+            else rows.push({ k: name, s: '입원·통원 중 택일', v: f.base, on: true });
+        });
     }
     // g5/g8이 null이면 분류표에 대응 항목이 없다는 뜻이다(하이푸 등 비수술 시술).
     // 지급 대상이 아니라는 사실 자체가 상담에서 중요하므로 0원 줄로 남겨 보여준다.

@@ -471,6 +471,37 @@ function samsungBundleLine(item) {
     return { n: '통합치료비 ' + (item.비급여 ? '비급여 ' : '특정치료 ') + hit[1], cycle: hit[2] };
 }
 
+// ── diseaseSurgeryFamilies ──
+// 질병 입원·통원 수술비를 특약별로 묶는다. 삼성은 Ⅱ와 Ⅳ를 같이 들 수 있고 둘은 따로 지급된다.
+//   Ⅱ  : 질병 입원·통원 수술비Ⅱ — 면책 제6조② 1~8호(+경증질병 제외형은 9호)
+//   Ⅳ  : 질병 입원·통원 수술비Ⅳ(백내장, 대장양성종양 제외) — 위에 더해
+//         9호 수정체의 장애(H25~H28), 10호 결장·직장·항문 양성 신생물 및 용종(D12, K63.5) 면책
+//         (약관 2-104 / 16-1-9 제6조②)
+// 특약 안에서 입원(2일 이상)과 통원(외래·당일입원)은 서로 배타라 큰 쪽 하나만 본다.
+// 메리츠는 어댑터가 붙인 표준 이름(canon)으로 찾는다.
+function diseaseSurgeryFamilies(surg) {
+    const fam = new Map();
+    (surg || []).forEach(r => {
+        const k = String((r && (r.canon || r.name)) || '').replace(/\s+/g, '');
+        const m = k.match(/질병(입원|통원)수술비/);
+        if (!m) return;
+        const key = k.replace(/질병(입원|통원)수술비/, '질병수술비')
+                     .replace(/\((당일입원제외|외래및당일입원)\)/g, '');
+        if (!fam.has(key)) {
+            fam.set(key, { key, 입원: 0, 통원: 0, inR: null, outR: null,
+                           exIV: /백내장,?대장양성종양제외/.test(k) });
+        }
+        const f = fam.get(key), a = parseKoAmount(r.amount);
+        if (m[1] === '입원' && a > f.입원) { f.입원 = a; f.inR = r; }
+        if (m[1] === '통원' && a > f.통원) { f.통원 = a; f.outR = r; }
+    });
+    return [...fam.values()].map(f => {
+        f.base = Math.max(f.입원, f.통원);
+        f.best = f.base > 0 ? (f.입원 >= f.통원 ? f.inR : f.outR) : null;
+        return f;
+    });
+}
+
 // ── applySurgeryTiersToCancerSurgery ──
 // 암 수술 1건이 발생하면 암 전용 담보 외에 일반 수술비 계열도 함께 지급된다.
 //   · 질병 입원/통원 수술비 — 암도 질병이므로 지급 (입원·통원은 서로 배타 → 큰 쪽만)
@@ -522,15 +553,14 @@ function applySurgeryTiersToCancerSurgery(summaryMap, results) {
 
     let addMin = 0, addMax = 0;
 
-    // 1) 질병 수술비 (입원/통원 배타 → 큰 쪽 하나만)
-    const ipwon = pick(/질병.*입원수술비/);
-    const tongwon = pick(/질병.*통원수술비/);
-    const base = Math.max(amt(ipwon), amt(tongwon));
-    if (base > 0) {
-        const src = amt(ipwon) >= amt(tongwon) ? ipwon : tongwon;
-        addMin += base; addMax += base;
-        push(src.name, src.amount);
-    }
+    // 1) 질병 수술비 (특약마다 입원/통원 배타 → 큰 쪽 하나만)
+    //    Ⅱ와 Ⅳ(백내장·대장양성종양 제외)를 함께 든 제안서는 두 특약이 따로 나온다.
+    //    암은 어느 쪽 면책에도 없다 — 예전엔 먼저 보이는 하나만 더했다(실측: Ⅳ 70만 + Ⅱ 30만 중 70만만).
+    diseaseSurgeryFamilies(surg).forEach(f => {
+        if (!f.best) return;
+        addMin += f.base; addMax += f.base;
+        push(f.best.name, f.best.amount);
+    });
 
     // 2) 질병 1~5종 수술비 — 5종(관혈적 근치수술)을 기준으로 잡는다.
     //    3종(내시경·경피적)~5종 범위로 두면 PDF·대표값에 3종만 찍혀 5종 500만원이
