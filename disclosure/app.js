@@ -312,7 +312,9 @@ const MEDICATION_PHRASE_RE = /복용|투약|처방/;
 const ONGOING_MEDICATION_RE = /복용\s*중|정기\s*처방|계속\s*복용/;
 // "고고당X", "고혈압X", "당뇨 없음"은 "그 병 없음"이라는 메모다 — 병력이 아니다(고·고·당 = 고혈압·고지혈·당뇨)
 const NEGATION_NOTE_RE = /^(?:고혈압|고지혈증?|당뇨병?|이상지질혈증|고|당|지|뇌|심|암|[\/·,])+(?:X|×|없음|무)$/;
-const isNegationNote = text => NEGATION_NOTE_RE.test(compactText(text));
+// "입원, 수술, 11대, 6대 질병 없음"·"입원/수술 X"처럼 고지 항목을 늘어놓고 없다고만 한 줄
+const DENIAL_LIST_RE = /^(?:입원|수술|통원|투약|치료|검사|재검사?|추가검사|\d+대(?:질병|질환)?|중대질환|질병|질환|병력|고지사항|특이사항|[\/·,및])+(?:X|×|없음|무|해당없음|아니오)$/;
+const isNegationNote = text => NEGATION_NOTE_RE.test(compactText(text)) || DENIAL_LIST_RE.test(compactText(text));
 // 원문에 수술했다고만 적고 수술명은 없는 경우("수술후 지속적 추적관찰", "수술o", "수술받음") — "수술x·수술없음"은 제외
 const SURGERY_MENTION_RE = /수술\s*(?:후|받|함|했|하였|o|O|ㅇ|있음|력)/;
 const SURGERY_DENIED_RE = /수술\s*(?:x|X|×|없|안\s*함|무)/;
@@ -794,6 +796,8 @@ function recordsToHistories(rawRecords, todayStr, sourceLines = []) {
       현재상태: '',
       비고: notes.join(' / '),
       원본: [...sourceLineNos].sort((a, b) => a - b).map(n => sourceLines[n - 1]).filter(s => s && s.trim()).map(s => s.trim()).join('\n'),
+      // 이 병력이 합친 원문 줄 번호(AI 점검 메모가 "빠진 줄"을 가릴 때 쓴다)
+      원문줄: [...sourceLineNos].sort((a, b) => a - b),
     });
   }
   return histories;
@@ -1090,6 +1094,20 @@ const bothSidesOperated = (h, histories, key = '백내장') => {
 const surgeryText = h => compactText(`${h.수술명 || ''}${h.진단명 || ''}${h.비고 || ''}`);
 const removedUterus = h => !!h.수술여부 && /자궁(?:적출|절제)|전자궁|자궁전절제/.test(surgeryText(h));
 const removedBothOvaries = h => /(?:양측|양쪽)난소|난소(?:양측|양쪽)|양측부속기|양측난관난소/.test(surgeryText(h));
+// 같은 병이 수술 여부·양측 수술 여부로 나뉜 항목은 병력에 맞는 쪽을 고른다
+function uwFits(e, h, histories) {
+  if (e.when === 'surgery') return !!h.수술여부;
+  if (e.when === 'nosurgery') return !h.수술여부;
+  if (e.when === 'bilateral') return !!h.수술여부 && bothSidesOperated(h, histories, e.sideKey);
+  if (e.when === 'unilateral') return !(h.수술여부 && bothSidesOperated(h, histories, e.sideKey));
+  // 자궁(·양측난소)을 떼어냈는지 — 수술명·진단명으로 본다
+  if (e.when === 'hysterectomy') return removedUterus(h);
+  if (e.when === 'noHysterectomy') return !removedUterus(h);
+  if (e.when === 'hysterectomyBSO') return removedUterus(h) && removedBothOvaries(h);
+  if (e.when === 'noHysterectomyBSO') return !(removedUterus(h) && removedBothOvaries(h));
+  return true;
+}
+
 function findUwEntry(h, histories = []) {
   if (typeof SIMPLE_UW_GUIDE === 'undefined') return null;
   const name = compactText(h.진단명);
@@ -1098,25 +1116,24 @@ function findUwEntry(h, histories = []) {
   const has = k => (Array.isArray(k) ? k.every(w => name.includes(compactText(w))) : name.includes(compactText(k)));
   const matches = SIMPLE_UW_GUIDE.filter(e => e.keywords.some(has)
     || (code && (e.codes || []).some(p => code.startsWith(p))));
-  // 같은 병이 수술 여부·양측 수술 여부로 나뉜 항목은 병력에 맞는 쪽을 고른다
-  const fits = e => {
-    if (e.when === 'surgery') return !!h.수술여부;
-    if (e.when === 'nosurgery') return !h.수술여부;
-    if (e.when === 'bilateral') return !!h.수술여부 && bothSidesOperated(h, histories, e.sideKey);
-    if (e.when === 'unilateral') return !(h.수술여부 && bothSidesOperated(h, histories, e.sideKey));
-    // 자궁(·양측난소)을 떼어냈는지 — 수술명·진단명으로 본다
-    if (e.when === 'hysterectomy') return removedUterus(h);
-    if (e.when === 'noHysterectomy') return !removedUterus(h);
-    if (e.when === 'hysterectomyBSO') return removedUterus(h) && removedBothOvaries(h);
-    if (e.when === 'noHysterectomyBSO') return !(removedUterus(h) && removedBothOvaries(h));
-    return true;
-  };
-  return matches.find(fits) || null;
+  return matches.find(e => uwFits(e, h, histories)) || null;
+}
+
+// 키워드·코드로 못 찾은 병력에 AI가 골라 준 가이드 항목(h.uwHint = 항목 id).
+// 수술/비수술처럼 조건으로만 나뉜 항목은 AI가 묶음으로 고르므로, 같은 묶음에서 병력에 맞는 쪽을 규칙으로 고른다.
+const uwBaseName = n => String(n || '').replace(/\(.*$/, '').trim();
+function findUwHintEntry(h, histories = []) {
+  if (!h.uwHint || typeof SIMPLE_UW_GUIDE === 'undefined') return null;
+  const hinted = SIMPLE_UW_GUIDE.find(e => e.id === h.uwHint);
+  if (!hinted) return null;
+  if (!hinted.when) return hinted;
+  const group = SIMPLE_UW_GUIDE.filter(e => e.when && uwBaseName(e.name) === uwBaseName(hinted.name));
+  return group.find(e => uwFits(e, h, histories)) || null;
 }
 
 // 걸린 병력 하나에 가이드를 대 본다 → { ok, column, label, conditions[], coverage, entry } | null(가이드에 없음)
-function uwDecision(h, todayStr, histories = []) {
-  const entry = findUwEntry(h, histories);
+function uwDecision(h, todayStr, histories = [], entryOverride = null) {
+  const entry = entryOverride || findUwEntry(h, histories);
   if (!entry) return null;
   const base = { entry, name: entry.name };
   if (!h.입원여부 && !h.수술여부) {
@@ -1153,8 +1170,12 @@ function evaluateSimpleVariant(questions, histories, todayStr, { uwGuide = true 
       if (v.status === 'hit' && !h.원문확인필요) {
         const freepass = isFreepassHit(row.q, h, histories);
         // 프리패스가 아니면 U/W가이드로 조건부 인수가 되는지 본다(3개월·N년 입원수술 질문만, 중대질환 질문은 해당 없음)
-        const uw = !freepass && uwGuide && SIMPLE_FREEPASS_KINDS.includes(row.q.kind) ? uwDecision(h, todayStr, histories) : null;
-        row.hits.push({ h, reason: v.reason, freepass, uw });
+        const uwAsked = !freepass && uwGuide && SIMPLE_FREEPASS_KINDS.includes(row.q.kind);
+        const uw = uwAsked ? uwDecision(h, todayStr, histories) : null;
+        // 가이드에서 못 찾았으면 AI가 고른 항목으로 "참고" 판정만 붙인다 — 상품 판정(status)에는 쓰지 않는다
+        const hintEntry = uwAsked && !uw ? findUwHintEntry(h, histories) : null;
+        const aiUw = hintEntry ? uwDecision(h, todayStr, histories, hintEntry) : null;
+        row.hits.push({ h, reason: v.reason, freepass, uw, aiUw });
       } else {
         row.reviews.push({ h, reason: v.status === 'hit' ? `${v.reason} — 원문 확인 필요` : v.reason });
       }
@@ -1211,6 +1232,7 @@ if (typeof module !== 'undefined') {
   module.exports.evaluateSimpleQuestion = evaluateSimpleQuestion;
   module.exports.findUwEntry = findUwEntry;
   module.exports.uwDecision = uwDecision;
+  module.exports.findUwHintEntry = findUwHintEntry;
   module.exports.isExceptionDisease = isExceptionDisease;
   module.exports.yearsElapsed = yearsElapsed;
   module.exports.getTreatmentTypeLabel = getTreatmentTypeLabel;
@@ -1382,6 +1404,15 @@ if (typeof document !== 'undefined') {
       badge.textContent = isOngoingMedication ? '계속투약중' : `${elapsed}년경과`;
       row.appendChild(badge);
     }
+
+    // AI가 약 이름으로 고른 약 종류(참고용 — 분류에는 쓰지 않는다)
+    if (h.약종류 && h.약종류 !== '그외') {
+      const drug = document.createElement('span');
+      drug.className = 'cat-badge cat-drug';
+      drug.textContent = h.약종류;
+      drug.title = `AI가 약 이름(${h.약물명 || ''})으로 고른 약 종류예요`;
+      row.appendChild(drug);
+    }
   }
 
   // 어느 문항에도 들지 않은 병력도 지우지 않고 사이드에 모아 점검하게 한다.
@@ -1498,6 +1529,14 @@ if (typeof document !== 'undefined') {
     if (kind === 'pass') line.appendChild(el('span', 'sp-badge sp-pass sp-badge-sm', '경증 프리패스'));
     if (item.uw) line.appendChild(el('span', `sp-badge sp-badge-sm ${item.uw.ok ? 'sp-cond' : 'sp-no'}`, `U/W ${item.uw.label}`));
     wrap.appendChild(line);
+    // 가이드 키워드로는 못 찾고 AI가 비슷한 항목을 골라 준 경우 — 판정에는 쓰지 않고 참고로만 보여준다
+    if (!item.uw && item.aiUw) {
+      const hint = el('div', 'sp-uw sp-uw-ai');
+      const conds = item.aiUw.ok && item.aiUw.conditions.length ? ` · ${item.aiUw.conditions.join(' · ')}` : '';
+      hint.appendChild(el('div', 'sp-uw-cond', `AI 추천 가이드 · ${item.aiUw.name} → ${item.aiUw.label}${conds}`));
+      hint.appendChild(el('div', 'sp-uw-cov', 'AI가 비슷한 항목으로 고른 참고 정보예요. 판정에는 넣지 않았으니 가이드에서 직접 확인해주세요.'));
+      wrap.appendChild(hint);
+    }
     // U/W가이드 조건·빠지는 담보
     if (item.uw && item.uw.ok && (item.uw.conditions.length || item.uw.coverage)) {
       const detail = el('div', 'sp-uw');
@@ -1675,6 +1714,8 @@ if (typeof document !== 'undefined') {
   });
   // 삼성 회원 확인·규칙 받기가 끝나면 간편 탭을 다시 그린다
   window.addEventListener('disclosure:simple-rules', () => renderAll());
+  // AI 보조 결과(약 종류·가이드 추천)가 오면 태그·간편 결과를 다시 그린다
+  window.addEventListener('disclosure:assist', () => renderAll());
 
   function renderAll() {
     updateResultsMode();
@@ -1683,6 +1724,7 @@ if (typeof document !== 'undefined') {
     renderClassifyResult(result);
     renderSimpleResult(simpleState() === 'allowed' ? evaluateSimpleProducts(histories, TODAY_ISO) : null);
     renderUnclassified(result);
+    if (typeof DisclosureAssist !== 'undefined') DisclosureAssist.render(histories);
   }
 
   // 3개월/1년/5년 경계 판단은 날짜 하루 차이도 결과가 바뀌므로 UTC가 아닌 사용자 현지 날짜를 쓴다.
@@ -1892,6 +1934,7 @@ if (typeof document !== 'undefined') {
 
       const finishWithHistories = (newHistories) => {
         histories = newHistories;
+        if (typeof DisclosureAssist !== 'undefined') DisclosureAssist.reset();
         uncheckedKeys.clear();
         renderAll();
         historyInput.value = '';
@@ -1949,6 +1992,10 @@ if (typeof document !== 'undefined') {
           logRun({ source: 'ai', histories: aiHistories, records, requests, retriedLines, missingLines, model: meta.model });
           if (aiHistories.length > 0) {
             finishWithHistories(aiHistories);
+            // 정리가 끝난 뒤 AI 보조(확인 질문·점검 메모·가이드/약 종류 연결)를 기다리지 않고 따로 부른다
+            if (typeof DisclosureAssist !== 'undefined') {
+              DisclosureAssist.run({ runId, rawText: text, histories: aiHistories, todayStr: TODAY_ISO, accessToken });
+            }
             showToast('병력을 정리했어요. 병력명을 눌러 원문과 꼭 대조해주세요');
           } else {
             setLoading(false);

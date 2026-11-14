@@ -204,6 +204,15 @@ const TODAY = '2026-09-15';
   console.log('PASS: 떨어진 수술명 줄 반영 인정');
 }
 
+// "입원, 수술, 11대, 6대 질병 없음"처럼 고지 항목을 늘어놓고 없다고만 한 줄은 빠뜨린 병력 줄이 아님
+{
+  const { findUncoveredLines } = require('../app.js');
+  const source = ['2023-01-25~2024-09-21 기타 아토피성 피부염 / 11일', '', '입원, 수술, 11대, 6대 질병 없음', '입원/수술 X'];
+  const records = parseRecordLines('1|L208|기타 아토피성 피부염|통원|230125|240921|11|');
+  assert.deepStrictEqual(findUncoveredLines(records, source), []);
+  console.log('PASS: 고지 항목 부인 줄 무시');
+}
+
 // 코드 없이 처치명만 진단명 칸에 온 수술은 그 이름을 수술명으로 씀
 {
   const [h] = recordsToHistories(parseRecordLines('18||치근활택술|수술|230921|241118|9|'), TODAY);

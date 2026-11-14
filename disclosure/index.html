@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261113a">
+  <link rel="stylesheet" href="style.css?v=20261114a">
 </head>
 <!-- 기본은 잠금 상태. access.js가 로그인·이용 횟수를 확인하면 locked를 뗀다 -->
 <body class="locked">
@@ -100,6 +100,7 @@
           <p class="slead" id="result-lead">병력명을 누르면 고지 체크표시와 세부 내용이 열려요. 원문과 대조해 확인해주세요.</p>
           <div id="classify-result"></div>
           <div id="simple-result" hidden></div>
+          <div id="assist-panel" hidden></div>
           <button id="copy-btn" class="btn-primary copy-sticky" type="button">결과 복사</button>
         </section>
 
@@ -115,10 +116,11 @@
 
   <!-- 배포 후 브라우저가 옛 data.js/ai.js와 새 app.js를 섞어 쓰면 전역 참조가 깨지므로, 스크립트를 바꾸면 v를 올린다 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data.js?v=20261113a"></script>
-  <script src="ai.js?v=20261113a"></script>
-  <script src="access.js?v=20261113a"></script>
-  <script src="log.js?v=20261113a"></script>
-  <script src="app.js?v=20261113a"></script>
+  <script src="data.js?v=20261114a"></script>
+  <script src="ai.js?v=20261114a"></script>
+  <script src="access.js?v=20261114a"></script>
+  <script src="log.js?v=20261114a"></script>
+  <script src="assist.js?v=20261114a"></script>
+  <script src="app.js?v=20261114a"></script>
 </body>
 </html>

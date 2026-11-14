@@ -53,6 +53,7 @@ function summarizeSimple(histories, todayStr) {
             q: question(r.q), name: x.h.진단명, reason: x.reason,
             result: x.freepass ? 'freepass' : x.uw && x.uw.ok ? 'uw' : 'hit',
             uw: x.uw ? { entry: x.uw.name, column: x.uw.column, ok: x.uw.ok, label: x.uw.label } : undefined,
+            aiUw: x.aiUw ? { entry: x.aiUw.name, ok: x.aiUw.ok, label: x.aiUw.label } : undefined,
           })),
           ...r.reviews.map(x => ({ q: question(r.q), name: x.h.진단명, reason: x.reason, result: 'review' })),
         ]),
